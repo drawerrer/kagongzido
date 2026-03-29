@@ -1,0 +1,25 @@
+{
+  "name": "kagongzido",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "granite dev",
+    "build": "granite build"
+  },
+  "dependencies": {
+    "@apps-in-toss/framework": "^2.0.1",
+    "@toss/tds-react-native": "latest",
+    "react": "18.3.1",
+    "react-native": "0.74.6",
+    "react-native-gesture-handler": "^2.20.2",
+    "react-native-maps": "^1.18.0",
+    "react-native-reanimated": "^3.16.1",
+    "react-native-safe-area-context": "^4.12.0"
+  },
+  "devDependencies": {
+    "@granite-js/react-native": "^1.5.0",
+    "@types/react": "^18.3.1",
+    "@types/react-native": "^0.73.0",
+    "typescript": "^5.3.3"
+  }
+}
