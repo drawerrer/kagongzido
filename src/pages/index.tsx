@@ -10,10 +10,12 @@ import {
   PanResponder,
   StatusBar,
   Image,
+  Modal,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { getCurrentLocation, GetCurrentLocationPermissionError } from '@apps-in-toss/framework';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import SearchPage from './search';
 
 import CategoryChips from '../components/CategoryChips';
 import SortDropdown from '../components/SortDropdown';
@@ -37,6 +39,9 @@ export default function HomePage() {
     latitude: number;
     longitude: number;
   } | null>(null);
+
+  // 검색 화면 노출 상태
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
 
   // 카페 목록 상태
   const [cafes] = useState<Cafe[]>(MOCK_CAFES);
@@ -163,16 +168,30 @@ export default function HomePage() {
         </View>
       </View>
 
-      {/* ── 검색바 ── */}
+      {/* ── 검색바 (탭 시 검색 화면 진입) ── */}
       <View style={styles.searchBarWrapper}>
-        <View style={styles.searchBar}>
+        <TouchableOpacity
+          style={styles.searchBar}
+          onPress={() => setIsSearchVisible(true)}
+          activeOpacity={0.8}
+        >
           <Text style={styles.searchIcon}>🔍</Text>
-          <Text style={styles.searchPlaceholder}>입력하세요</Text>
-        </View>
+          <Text style={styles.searchPlaceholder}>장소, 주소 검색</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.filterButton}>
           <Text style={styles.filterIcon}>⊟</Text>
         </TouchableOpacity>
       </View>
+
+      {/* ── 검색 화면 (Modal) ── */}
+      <Modal
+        visible={isSearchVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsSearchVisible(false)}
+      >
+        <SearchPage onClose={() => setIsSearchVisible(false)} />
+      </Modal>
 
       {/* ── 지도 ── */}
       <MapView
