@@ -1,16 +1,22 @@
-import { appsInToss } from '@apps-in-toss/framework/plugins';
-import { defineConfig } from '@granite-js/react-native/config';
+import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
   appName: 'kagongzido',
-  plugins: [
-    appsInToss({
-      brand: {
-        displayName: '취향맞춤 카페지도',
-        primaryColor: '#3182F6',
-        icon: null,
-      },
-      permissions: ['location'],
-    }),
-  ],
+  web: {
+    host: 'localhost',
+    port: 3000,
+    commands: {
+      dev: 'rsbuild dev',
+      build: 'rsbuild build',
+    },
+  },
+  permissions: ['geolocation'],
+  outdir: 'dist',
+  brand: {
+    displayName: '카공지도',
+    primaryColor: '#3182F6',
+  },
+  webViewProps: {
+    type: 'partner',
+  },
 });

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.ait/
+*.ait
+.env
+.env.local
+.DS_Store

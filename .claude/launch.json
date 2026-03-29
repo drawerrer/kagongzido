@@ -2,10 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "granite dev",
-      "runtimeExecutable": "yarn",
-      "runtimeArgs": ["dev"],
-      "port": 8081
+      "name": "dev (granite)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "preview (rsbuild)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview"],
+      "port": 3000
     }
   ]
 }
