@@ -15,6 +15,8 @@ interface ReviewItem {
   avatarColor: string;
   date: string;
   content: string;
+  images?: string[];      // gradient 문자열 배열 (플레이스홀더)
+  isReporter?: boolean;   // 카페 제보자 여부 → 항상 최상단
 }
 
 interface CafeDetailData {
@@ -40,6 +42,18 @@ interface CafeDetailData {
 // ────────── 상수 ────────────────────────────────────────────
 const DAY_ORDER: DayKey[] = ['월', '화', '수', '목', '금', '토', '일'];
 const JS_TO_KR: DayKey[] = ['일', '월', '화', '수', '목', '금', '토'];
+
+/** 카페 분위기를 연상시키는 다크 그라디언트 플레이스홀더 */
+const PHOTO_BG = [
+  'linear-gradient(145deg,#1C1C1E 0%,#2C2C2E 100%)',
+  'linear-gradient(145deg,#1a1a2e 0%,#2d2d44 100%)',
+  'linear-gradient(145deg,#2d1b0e 0%,#4e3020 100%)',
+  'linear-gradient(145deg,#0f2530 0%,#1a3d50 100%)',
+  'linear-gradient(145deg,#1e1e1e 0%,#3a3a3a 100%)',
+  'linear-gradient(145deg,#1a2a1a 0%,#2d4a2d 100%)',
+  'linear-gradient(145deg,#2a1a2a 0%,#4a2a4a 100%)',
+  'linear-gradient(145deg,#2d2200 0%,#4a3800 100%)',
+];
 
 const AMENITY_CONFIG: Record<string, { icon: string; label: string }> = {
   parking:          { icon: '🅿️',  label: '주차' },
@@ -83,18 +97,37 @@ const MOCK_DETAILS: Record<string, CafeDetailData> = {
     },
     reviews: [
       {
+        id: 'r_reporter',
+        author: '카공러버',
+        avatarColor: '#3182F6',
+        date: '2024.11.20',
+        content: '직접 제보한 카페예요! 서울 강남 최고의 카공 카페입니다. 콘센트가 모든 자리에 있고 조용한 편이에요. 커피도 맛있고 직원분들도 친절해서 자주 올 것 같아요. 2층 창가 자리 추천드려요 :)',
+        images: [PHOTO_BG[0], PHOTO_BG[1], PHOTO_BG[2]],
+        isReporter: true,
+      },
+      {
         id: 'r1',
         author: '조은유',
         avatarColor: '#A78BFA',
         date: '2024.12.15',
         content: '카페 분위기가 너무 좋아요. 조용하고 집중이 잘 되는 공간이에요. 커피도 맛있고 콘센트도 충분해서 자주 방문할 것 같아요!',
+        images: [PHOTO_BG[3], PHOTO_BG[4]],
       },
       {
         id: 'r2',
         author: '이민준',
         avatarColor: '#34D399',
         date: '2024.12.10',
-        content: '콘센트도 충분하고 자리도 넓어서 카공하기 딱 좋아요! 음료도 맛있고 가격도 합리적이에요.',
+        content: '콘센트도 충분하고 자리도 넓어서 카공하기 딱 좋아요!',
+        images: [PHOTO_BG[6], PHOTO_BG[7]],
+      },
+      {
+        id: 'r3',
+        author: '박서연',
+        avatarColor: '#F59E0B',
+        date: '2024.12.08',
+        content: '분위기는 좋은데 주말에는 좀 붐벼요. 평일 오전에 오시면 정말 여유롭게 공부할 수 있어요. 아메리카노 맛도 기대 이상이에요.',
+        images: [PHOTO_BG[5]],
       },
     ],
   },
@@ -279,16 +312,139 @@ function AmenityBadge({ icon, label }: { icon: string; label: string }) {
   );
 }
 
-function ReviewCard({ review }: { review: ReviewItem }) {
+// ── 포토 플레이스홀더 셀 ─────────────────────────────────────
+function PhotoCell({
+  bg, size = 80, radius = 8, label,
+}: {
+  bg: string; size?: number | string; radius?: number; label?: string;
+}) {
   return (
     <div style={{
-      padding: '16px 0',
-      borderBottom: '1px solid #F2F4F6',
+      width: size, height: size, borderRadius: radius, flexShrink: 0,
+      background: bg, overflow: 'hidden',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      position: 'relative',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        {/* 아바타 */}
+      <span style={{ fontSize: typeof size === 'number' ? size * 0.28 : 22, opacity: 0.18 }}>☕</span>
+      {label && (
         <div style={{
-          width: 36, height: 36, borderRadius: 18,
+          position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
+        }}>
+          <span style={{ fontSize: 18, color: 'white', fontWeight: 700 }}>{label}</span>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }}>더보기</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── 포토 모아보기 (리뷰 섹션 상단) ──────────────────────────
+function PhotoMosaic({
+  allPhotos,
+  maxVisible = 6,
+}: {
+  allPhotos: string[];
+  maxVisible?: number;
+}) {
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+
+  if (allPhotos.length === 0) return null;
+
+  const visible = allPhotos.slice(0, maxVisible);
+  const remaining = allPhotos.length - maxVisible;
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      {/* 확장 뷰 */}
+      {expandedIdx !== null && (
+        <div style={{
+          width: '100%', aspectRatio: '4/3', borderRadius: 12, overflow: 'hidden',
+          background: allPhotos[expandedIdx],
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative', marginBottom: 8,
+        }}>
+          <span style={{ fontSize: 60, opacity: 0.15 }}>☕</span>
+          <button
+            onClick={() => setExpandedIdx(null)}
+            style={{
+              position: 'absolute', top: 10, right: 10,
+              width: 30, height: 30, borderRadius: 15,
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'white', fontSize: 15,
+            }}
+          >✕</button>
+        </div>
+      )}
+
+      {/* 썸네일 그리드 */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 3,
+        borderRadius: 12,
+        overflow: 'hidden',
+      }}>
+        {visible.map((bg, i) => {
+          const isLastSlot = i === maxVisible - 1 && remaining > 0;
+          return (
+            <div
+              key={i}
+              onClick={() => !isLastSlot && setExpandedIdx(i)}
+              style={{
+                aspectRatio: '1 / 1',
+                background: bg,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative',
+                cursor: 'pointer',
+                overflow: 'hidden',
+              }}
+            >
+              <span style={{ fontSize: 22, opacity: 0.18 }}>☕</span>
+              {/* 선택된 사진 하이라이트 */}
+              {expandedIdx === i && !isLastSlot && (
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  boxShadow: 'inset 0 0 0 3px #3182F6',
+                }} />
+              )}
+              {/* 마지막 슬롯 더보기 오버레이 */}
+              {isLastSlot && (
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'rgba(0,0,0,0.55)',
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', gap: 2,
+                }}>
+                  <span style={{ fontSize: 20, color: 'white', fontWeight: 700, lineHeight: 1 }}>
+                    +{remaining}
+                  </span>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>더보기</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── 리뷰 카드 (강화) ─────────────────────────────────────────
+function ReviewCard({ review }: { review: ReviewItem }) {
+  const [textExpanded, setTextExpanded] = useState(false);
+  const [expandedImgIdx, setExpandedImgIdx] = useState<number | null>(null);
+  const CONTENT_THRESHOLD = 55; // 2줄 기준 글자 수 (대략)
+  const isLong = review.content.length > CONTENT_THRESHOLD;
+
+  return (
+    <div style={{ padding: '16px 0', borderBottom: '1px solid #F2F4F6' }}>
+
+      {/* 헤더: 아바타 + 닉네임 + 날짜 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <div style={{
+          width: 38, height: 38, borderRadius: 19,
           background: review.avatarColor,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
@@ -297,12 +453,84 @@ function ReviewCard({ review }: { review: ReviewItem }) {
             {review.author[0]}
           </span>
         </div>
-        <div>
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#191F28' }}>{review.author}</p>
-          <p style={{ fontSize: 12, color: '#B0B8C1' }}>{review.date}</p>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#191F28' }}>
+              {review.author}
+            </span>
+            {review.isReporter && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: '#3182F6',
+                background: '#EBF3FE', borderRadius: 4, padding: '2px 6px',
+                lineHeight: 1.4,
+              }}>
+                카페 제보자
+              </span>
+            )}
+          </div>
+          <span style={{ fontSize: 12, color: '#B0B8C1' }}>{review.date}</span>
         </div>
       </div>
-      <p style={{ fontSize: 14, color: '#4E5968', lineHeight: 1.6 }}>{review.content}</p>
+
+      {/* 첨부 이미지 – 확장 뷰 */}
+      {expandedImgIdx !== null && review.images && (
+        <div style={{
+          width: 343, maxWidth: '100%', aspectRatio: '4/3',
+          background: review.images[expandedImgIdx],
+          borderRadius: 10, overflow: 'hidden',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative', marginBottom: 10,
+        }}>
+          <span style={{ fontSize: 50, opacity: 0.15 }}>☕</span>
+          <button
+            onClick={() => setExpandedImgIdx(null)}
+            style={{
+              position: 'absolute', top: 8, right: 8,
+              width: 28, height: 28, borderRadius: 14,
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'white', fontSize: 13,
+            }}
+          >✕</button>
+        </div>
+      )}
+
+      {/* 첨부 이미지 – 썸네일 가로 스크롤 */}
+      {expandedImgIdx === null && review.images && review.images.length > 0 && (
+        <div style={{
+          display: 'flex', gap: 6, marginBottom: 10,
+          overflowX: 'auto', scrollbarWidth: 'none',
+        }}>
+          {review.images.map((bg, i) => (
+            <div key={i} onClick={() => setExpandedImgIdx(i)} style={{ cursor: 'pointer' }}>
+              <PhotoCell bg={bg} size={80} radius={8} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 리뷰 텍스트 (2줄 말줄임 → 탭 시 전체 펼침) */}
+      <div>
+        <p style={{
+          fontSize: 14, color: '#4E5968', lineHeight: 1.65, marginBottom: isLong ? 4 : 0,
+          ...(textExpanded ? {} : {
+            display: '-webkit-box' as any,
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical' as any,
+            overflow: 'hidden',
+          }),
+        }}>
+          {review.content}
+        </p>
+        {isLong && (
+          <button
+            onClick={() => setTextExpanded(e => !e)}
+            style={{ fontSize: 13, color: '#B0B8C1', fontWeight: 500 }}
+          >
+            {textExpanded ? '접기' : '더보기'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -489,6 +717,15 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
   const activeAmenities = Object.entries(AMENITY_CONFIG)
     .filter(([key]) => cafe.amenities[key as keyof typeof cafe.amenities] === true);
   const hasAmenities = activeAmenities.length > 0;
+
+  // 리뷰 정렬: 카페 제보자 → 나머지 (최신순)
+  const sortedReviews = [
+    ...cafe.reviews.filter(r => r.isReporter),
+    ...cafe.reviews.filter(r => !r.isReporter),
+  ];
+
+  // 포토 모아보기: 모든 리뷰 이미지 수집 (제보자 리뷰 사진 먼저)
+  const allReviewPhotos = sortedReviews.flatMap(r => r.images ?? []);
 
   // 오늘 영업시간
   const todayHours = cafe.hours[todayKey];
@@ -689,25 +926,33 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
 
         {/* ── 리뷰 섹션 ── */}
         <div style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: '#191F28' }}>
-              리뷰&nbsp;
-              <span style={{ color: '#3182F6' }}>{cafe.reviews.length}</span>개
-            </h2>
-          </div>
+          <h2 style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 16 }}>
+            리뷰&nbsp;<span style={{ color: '#3182F6' }}>{cafe.reviews.length}</span>개
+          </h2>
 
           {cafe.reviews.length === 0 ? (
             <div style={{
-              textAlign: 'center', padding: '32px 0', color: '#B0B8C1',
+              textAlign: 'center', padding: '32px 0',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
             }}>
-              <p style={{ fontSize: 32, marginBottom: 8 }}>💬</p>
-              <p style={{ fontSize: 14 }}>아직 리뷰가 없어요</p>
-              <p style={{ fontSize: 13 }}>첫 번째 리뷰를 남겨보세요!</p>
+              <span style={{ fontSize: 36 }}>💬</span>
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#4E5968' }}>
+                아직 리뷰가 없어요
+              </p>
+              <p style={{ fontSize: 13, color: '#B0B8C1' }}>첫 번째 리뷰를 남겨보세요!</p>
             </div>
           ) : (
-            cafe.reviews.map(review => (
-              <ReviewCard key={review.id} review={review} />
-            ))
+            <>
+              {/* 포토 모아보기 (기본 6장, 초과 시 +N 더보기) */}
+              {allReviewPhotos.length > 0 && (
+                <PhotoMosaic allPhotos={allReviewPhotos} maxVisible={6} />
+              )}
+
+              {/* 리뷰 카드 목록 (제보자 항상 최상단) */}
+              {sortedReviews.map(review => (
+                <ReviewCard key={review.id} review={review} />
+              ))}
+            </>
           )}
         </div>
 
