@@ -4,6 +4,7 @@ import SearchPage from './pages/SearchPage';
 import CollectionPage from './pages/CollectionPage';
 import MyPage from './pages/MyPage';
 import DetailPage from './pages/DetailPage';
+import { FavoritesProvider } from './context/FavoritesContext';
 
 // 피그마 "홈 | 가이드북 | 모음집 | 마이페이지" 탭 구조와 동일
 type TabId = 'home' | 'guidebook' | 'collection' | 'mypage';
@@ -34,6 +35,7 @@ export default function App() {
   }
 
   return (
+    <FavoritesProvider>
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
       {showSearch ? (
@@ -88,6 +90,7 @@ export default function App() {
         </>
       )}
     </div>
+    </FavoritesProvider>
   );
 }
 

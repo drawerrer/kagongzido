@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import BottomSheet from '../components/BottomSheet';
 import Snackbar from '../components/Snackbar';
+import { useFavorites } from '../context/FavoritesContext';
 
 // SF Pro 시스템 폰트 (피그마 폰트와 매핑)
 const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
@@ -24,36 +25,7 @@ interface Collection {
 type BottomSheetType = null | 'create' | 'select-collection';
 type SnackbarType = null | 'deleted' | 'added';
 
-// ─── 목업 데이터 ──────────────────────────────────────────────
-const MOCK_STORES: Store[] = [
-  {
-    id: '1',
-    name: '간장공장공장장은장공장장',
-    address: '서울특별시 어쩌구 저쩌로 182길',
-    rating: 5,
-    reviewCount: 2543,
-    badge: '시간 제한 없음',
-    photos: ['', '', '', ''],
-  },
-  {
-    id: '2',
-    name: '영주빵집',
-    address: '서울특별시 어쩌구 저쩌로 182길',
-    rating: 5,
-    reviewCount: 100,
-    badge: '시간 제한 없음',
-    photos: ['', '', '', ''],
-  },
-  {
-    id: '3',
-    name: '채원콩',
-    address: '서울특별시 어쩌구 저쩌로 182길',
-    rating: 5,
-    reviewCount: 21,
-    badge: '시간 제한 없음',
-    photos: ['', '', '', ''],
-  },
-];
+// 목업 데이터 제거 — 이제 FavoritesContext에서 실시간으로 가져옴
 
 const MOCK_COLLECTIONS: Collection[] = [
   { id: 'recent', name: '최근' },
@@ -357,10 +329,11 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 
 // ─── 메인 페이지 ──────────────────────────────────────────────
 export default function CollectionPage() {
+  const { favorites, removeFavorite: removeFavoriteFromContext } = useFavorites();
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
   const [collections, setCollections] = useState<Collection[]>(MOCK_COLLECTIONS);
-  const [stores] = useState<Store[]>(MOCK_STORES);
+  const stores = favorites; // Context에서 실시간으로 받아옴
   const [bottomSheet, setBottomSheet] = useState<BottomSheetType>(null);
   const [snackbar, setSnackbar] = useState<SnackbarType>(null);
   const [newCollectionName, setNewCollectionName] = useState('');
@@ -384,6 +357,7 @@ export default function CollectionPage() {
   };
 
   const deleteSelected = () => {
+    selectedStoreIds.forEach(id => removeFavoriteFromContext(id));
     setIsEditMode(false);
     setSelectedStoreIds(new Set());
     setSnackbar('deleted');
@@ -410,7 +384,7 @@ export default function CollectionPage() {
       {/* ── 헤더 ── */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px 20px 12px',
+        padding: '20px 16px',
         borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
       }}>
         <h1 style={{
@@ -436,10 +410,10 @@ export default function CollectionPage() {
       {/* ── 스크롤 본문 ── */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
 
-        {/* 컬렉션 카드 가로 스크롤 — 피그마: padding 12px, gap 10px */}
+        {/* 컬렉션 카드 가로 스크롤 */}
         <div style={{
           display: 'flex', gap: 10, overflowX: 'auto',
-          padding: '12px 20px', scrollbarWidth: 'none',
+          padding: '20px 16px 0', scrollbarWidth: 'none',
         }}>
           {collections.map((col) => (
             <CollectionCard key={col.id} label={col.name} isEditMode={isEditMode} />
@@ -447,11 +421,11 @@ export default function CollectionPage() {
           <CollectionCard label="새 컬렉션" isNew onPress={() => setBottomSheet('create')} />
         </div>
 
-        {/* 저장한 매장 섹션 */}
-        <div style={{ padding: '0 20px' }}>
+        {/* 저장한 매장 섹션 — 섹션 간 gap 0 */}
+        <div style={{ padding: '20px 16px 0' }}>
 
-          {/* 섹션 헤더 — 피그마: Bold 700, 20px, rgba(0,12,30,0.8), height 45 */}
-          <div style={{ height: 45, display: 'flex', alignItems: 'center' }}>
+          {/* 섹션 헤더 */}
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
             <h2 style={{
               fontFamily: SFPro, fontWeight: 700, fontSize: 20,
               lineHeight: '25px', color: 'rgba(0, 12, 30, 0.8)',
