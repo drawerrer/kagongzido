@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import BottomSheet from '../components/BottomSheet';
+import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
 
 // ────────── 타입 ────────────────────────────────────────────
 type DayKey = '월' | '화' | '수' | '목' | '금' | '토' | '일';
@@ -343,9 +344,11 @@ function PhotoCell({
 function PhotoMosaic({
   allPhotos,
   maxVisible = 6,
+  onMore,
 }: {
   allPhotos: string[];
   maxVisible?: number;
+  onMore?: () => void;
 }) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
 
@@ -391,7 +394,7 @@ function PhotoMosaic({
           return (
             <div
               key={i}
-              onClick={() => !isLastSlot && setExpandedIdx(i)}
+              onClick={() => isLastSlot ? onMore?.() : setExpandedIdx(i)}
               style={{
                 aspectRatio: '1 / 1',
                 background: bg,
@@ -679,6 +682,7 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
   const [showDirectionsSheet, setShowDirectionsSheet] = useState(false);
   const [showLoginSheet, setShowLoginSheet] = useState(false);
   const [copyToastVisible, setCopyToastVisible] = useState(false);
+  const [showPhotoReview, setShowPhotoReview] = useState(false);
 
   const { label: statusLabel, color: statusColor } = getStatusInfo(cafe);
   const todayKey = getTodayKey();
@@ -727,9 +731,36 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
   // 포토 모아보기: 모든 리뷰 이미지 수집 (제보자 리뷰 사진 먼저)
   const allReviewPhotos = sortedReviews.flatMap(r => r.images ?? []);
 
+  // PhotoReviewPage용 ReviewPhoto[] (각 사진에 리뷰 메타데이터 포함)
+  const allReviewPhotosFull: ReviewPhoto[] = sortedReviews.flatMap(r =>
+    (r.images ?? []).map(bg => ({
+      bg,
+      reviewId: r.id,
+      reviewAuthor: r.author,
+      reviewAvatarColor: r.avatarColor,
+      reviewDate: r.date,
+      reviewContent: r.content,
+      isReporter: r.isReporter ?? false,
+    }))
+  );
+
   // 오늘 영업시간
   const todayHours = cafe.hours[todayKey];
   const hasHoursData = todayHours !== undefined;
+
+  // 포토리뷰 전체보기 페이지
+  if (showPhotoReview) {
+    return (
+      <PhotoReviewPage
+        photos={allReviewPhotosFull}
+        cafeName={cafe.name}
+        isFavorite={isFavorite}
+        onFavoriteToggle={handleFavorite}
+        onBack={() => setShowPhotoReview(false)}
+        onClose={onClose}
+      />
+    );
+  }
 
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden', background: 'white' }}>
@@ -945,7 +976,11 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
             <>
               {/* 포토 모아보기 (기본 6장, 초과 시 +N 더보기) */}
               {allReviewPhotos.length > 0 && (
-                <PhotoMosaic allPhotos={allReviewPhotos} maxVisible={6} />
+                <PhotoMosaic
+                  allPhotos={allReviewPhotos}
+                  maxVisible={6}
+                  onMore={() => setShowPhotoReview(true)}
+                />
               )}
 
               {/* 리뷰 카드 목록 (제보자 항상 최상단) */}
