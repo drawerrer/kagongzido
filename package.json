@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "granite dev",
+    "dev:rsbuild": "rsbuild dev",
     "build": "granite build",
     "preview": "rsbuild preview",
     "deploy": "ait deploy"

@@ -133,11 +133,12 @@ function SortPopup({
 }
 
 // ── 카페 목록 행 ──────────────────────────
-function CafeRow({ cafe }: { cafe: Cafe }) {
+function CafeRow({ cafe, onTap }: { cafe: Cafe; onTap: () => void }) {
   const fmtDist = (m: number) => (m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`);
 
   return (
     <div
+      onClick={onTap}
       style={{
         display: 'flex',
         gap: 12,
@@ -226,9 +227,10 @@ function CafeRow({ cafe }: { cafe: Cafe }) {
 // ── MapPage (메인 화면) ───────────────────
 interface MapPageProps {
   onSearchOpen: () => void;
+  onDetailOpen: (cafeId: string) => void;
 }
 
-export default function MapPage({ onSearchOpen }: MapPageProps) {
+export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
 
@@ -504,7 +506,7 @@ export default function MapPage({ onSearchOpen }: MapPageProps) {
         {/* 카페 목록 */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {cafes.length > 0 ? (
-            cafes.map(cafe => <CafeRow key={cafe.id} cafe={cafe} />)
+            cafes.map(cafe => <CafeRow key={cafe.id} cafe={cafe} onTap={() => onDetailOpen(cafe.id)} />)
           ) : (
             <div
               style={{

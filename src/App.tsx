@@ -3,6 +3,7 @@ import MapPage from './pages/MapPage';
 import SearchPage from './pages/SearchPage';
 import CollectionPage from './pages/CollectionPage';
 import MyPage from './pages/MyPage';
+import DetailPage from './pages/DetailPage';
 
 // 피그마 "홈 | 가이드북 | 모음집 | 마이페이지" 탭 구조와 동일
 type TabId = 'home' | 'guidebook' | 'collection' | 'mypage';
@@ -17,6 +18,20 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [showSearch, setShowSearch] = useState(false);
+  const [detailCafeId, setDetailCafeId] = useState<string | null>(null);
+
+  // 상세페이지 (탭바 완전히 가림)
+  if (detailCafeId) {
+    return (
+      <div style={{ height: '100%' }}>
+        <DetailPage
+          cafeId={detailCafeId}
+          onBack={() => setDetailCafeId(null)}
+          onClose={() => setDetailCafeId(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -28,7 +43,12 @@ export default function App() {
         <>
           {/* ── 화면 영역 ── */}
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            {activeTab === 'home'       && <MapPage onSearchOpen={() => setShowSearch(true)} />}
+            {activeTab === 'home'       && (
+              <MapPage
+                onSearchOpen={() => setShowSearch(true)}
+                onDetailOpen={(id) => setDetailCafeId(id)}
+              />
+            )}
             {activeTab === 'guidebook'  && <GuidebookPlaceholder />}
             {activeTab === 'collection' && <CollectionPage />}
             {activeTab === 'mypage'     && <MyPage />}
