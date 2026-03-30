@@ -17,6 +17,15 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 ];
 
 export default function App() {
+  return (
+    <FavoritesProvider>
+      <AppInner />
+    </FavoritesProvider>
+  );
+}
+
+// FavoritesProvider 안에서 렌더링 — useFavorites를 DetailPage에서 안전하게 사용 가능
+function AppInner() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [showSearch, setShowSearch] = useState(false);
   const [detailCafeId, setDetailCafeId] = useState<string | null>(null);
@@ -35,7 +44,6 @@ export default function App() {
   }
 
   return (
-    <FavoritesProvider>
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
       {showSearch ? (
@@ -90,7 +98,6 @@ export default function App() {
         </>
       )}
     </div>
-    </FavoritesProvider>
   );
 }
 
