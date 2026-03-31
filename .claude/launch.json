@@ -11,7 +11,7 @@
       "name": "preview (rsbuild)",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview"],
-      "port": 3000
+      "port": 4173
     }
   ]
 }
