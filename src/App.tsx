@@ -60,7 +60,14 @@ function AppInner() {
               />
             )}
             {activeTab === 'guidebook'  && <GuidebookPlaceholder />}
-            {activeTab === 'collection' && <CollectionPage />}
+            {activeTab === 'collection' && (
+              <CollectionPage
+                onDetailOpen={(id) => setDetailCafeId(id)}
+                onGoHome={() => setActiveTab('home')}
+                onBack={() => setActiveTab('home')}
+                onClose={() => setActiveTab('home')}
+              />
+            )}
             {activeTab === 'mypage'     && <MyPage />}
           </div>
 

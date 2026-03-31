@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import BottomSheet from '../components/BottomSheet';
 import { useFavorites } from '../context/FavoritesContext';
 
@@ -670,9 +670,19 @@ interface DetailPageProps {
 export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps) {
   const cafe = getCafeDetail(cafeId);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { isFavorited, addFavorite, removeFavorite } = useFavorites();
+  const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed } = useFavorites();
 
   const [scrolled, setScrolled] = useState(false);
+
+  // 상세 화면 진입 시 최근 본 카페에 추가
+  useEffect(() => {
+    addRecentlyViewed({
+      id: cafe.id,
+      name: cafe.name,
+      photo: '', // 나중에 실제 사진 URL로 교체
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [hoursExpanded, setHoursExpanded] = useState(false);
   const [isLoggedIn] = useState(true); // mock: 로그인 상태 (Supabase 연동 전 임시)
 
