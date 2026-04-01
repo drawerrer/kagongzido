@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import FilterModal from '../components/FilterModal';
+import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 
 // ── 타입 ─────────────────────────────────
 interface Cafe {
@@ -38,9 +38,10 @@ function SearchIcon() {
   );
 }
 
-function FilterIcon() {
+function FilterIcon({ active }: { active: boolean }) {
+  const color = active ? '#020913' : 'white';
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <line x1="4" y1="6" x2="20" y2="6" />
       <line x1="7" y1="12" x2="17" y2="12" />
       <line x1="10" y1="18" x2="14" y2="18" />
@@ -238,7 +239,10 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
   const [sortType, setSortType] = useState<SortType>('조회순');
   const [sortPopupOpen, setSortPopupOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [filterOpenKey, setFilterOpenKey] = useState(0); // remount key
   const [panelExpanded, setPanelExpanded] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [filterApplied, setFilterApplied] = useState(false); // 한 번이라도 적용했는지
 
   // 카테고리 필터 적용
   const cafes = activeChip
@@ -360,20 +364,22 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
 
           {/* 필터 버튼 */}
           <button
-            onClick={() => setFilterOpen(true)}
+            onClick={() => { setFilterOpenKey(k => k + 1); setFilterOpen(true); }}
             style={{
               width: 44,
               height: 44,
               borderRadius: 22,
               flexShrink: 0,
-              background: '#4E5968',
+              background: filterApplied ? '#ffffff' : '#4E5968',
+              border: filterApplied ? '1px solid #E5E8EB' : 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              transition: 'background 0.2s',
             }}
           >
-            <FilterIcon />
+            <FilterIcon active={filterApplied} />
           </button>
         </div>
       </div>
@@ -526,7 +532,17 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
       </div>
 
       {/* ── 필터 모달 ── */}
-      <FilterModal isOpen={filterOpen} onClose={() => setFilterOpen(false)} />
+      <FilterModal
+        key={filterOpenKey}
+        isOpen={filterOpen}
+        initialFilters={appliedFilters}
+        onClose={() => setFilterOpen(false)}
+        onApply={(f) => {
+          setAppliedFilters(f);
+          setFilterApplied(true);
+          setFilterOpen(false);
+        }}
+      />
     </div>
   );
 }
