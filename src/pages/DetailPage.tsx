@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import BottomSheet from '../components/BottomSheet';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
+import WriteReviewPage from './WriteReviewPage';
 
 // ────────── 타입 ────────────────────────────────────────────
 type DayKey = '월' | '화' | '수' | '목' | '금' | '토' | '일';
@@ -578,13 +579,14 @@ function DirectionsSheet({ cafe, onClose }: { cafe: CafeDetailData; onClose: () 
 
 // ────────── 바텀시트: 더보기 액션 ────────────────────────────
 function MoreActionSheet({
-  onClose, onShare,
+  onClose, onShare, onWriteReview,
 }: {
   onClose: () => void;
   onShare: () => void;
+  onWriteReview: () => void;
 }) {
   const actions = [
-    { label: '후기 남기기', icon: '✏️', onClick: onClose },
+    { label: '후기 남기기', icon: '✏️', onClick: () => { onWriteReview(); onClose(); } },
     { label: '공유하기', icon: '🔗', onClick: () => { onShare(); onClose(); } },
     { label: '정보 수정 제안하기', icon: '📝', onClick: onClose },
   ];
@@ -683,6 +685,7 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
   const [showLoginSheet, setShowLoginSheet] = useState(false);
   const [copyToastVisible, setCopyToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
+  const [showWriteReview, setShowWriteReview] = useState(false);
 
   const { label: statusLabel, color: statusColor } = getStatusInfo(cafe);
   const todayKey = getTodayKey();
@@ -747,6 +750,17 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
   // 오늘 영업시간
   const todayHours = cafe.hours[todayKey];
   const hasHoursData = todayHours !== undefined;
+
+  // 리뷰 남기기 페이지
+  if (showWriteReview) {
+    return (
+      <WriteReviewPage
+        cafe={{ name: cafe.name, address: cafe.address }}
+        onBack={() => setShowWriteReview(false)}
+        onClose={onClose}
+      />
+    );
+  }
 
   // 포토리뷰 전체보기 페이지
   if (showPhotoReview) {
@@ -997,6 +1011,7 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
 
       {/* ── 플로팅 "리뷰 남기기" 버튼 ── */}
       <button
+        onClick={() => setShowWriteReview(true)}
         style={{
           position: 'absolute', bottom: 24, right: 20,
           background: '#3182F6', color: 'white',
@@ -1019,6 +1034,7 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
         <MoreActionSheet
           onClose={() => setShowMoreSheet(false)}
           onShare={handleShare}
+          onWriteReview={() => setShowWriteReview(true)}
         />
       )}
       {showDirectionsSheet && (
