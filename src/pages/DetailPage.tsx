@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import BottomSheet from '../components/BottomSheet';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
 import WriteReviewPage from './WriteReviewPage';
+import { useFavorites } from '../context/FavoritesContext';
 
 // ────────── 타입 ────────────────────────────────────────────
 type DayKey = '월' | '화' | '수' | '목' | '금' | '토' | '일';
@@ -674,11 +675,21 @@ interface DetailPageProps {
 export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps) {
   const cafe = getCafeDetail(cafeId);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed } = useFavorites();
 
   const [scrolled, setScrolled] = useState(false);
+
+  // 상세 화면 진입 시 최근 본 카페에 추가
+  useEffect(() => {
+    addRecentlyViewed({
+      id: cafe.id,
+      name: cafe.name,
+      photo: '', // 나중에 실제 사진 URL로 교체
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [hoursExpanded, setHoursExpanded] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [isLoggedIn] = useState(false); // mock
+  const [isLoggedIn] = useState(true); // mock: 로그인 상태 (Supabase 연동 전 임시)
 
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const [showDirectionsSheet, setShowDirectionsSheet] = useState(false);
@@ -686,6 +697,8 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
   const [copyToastVisible, setCopyToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
+
+  const isFavorite = isFavorited(cafeId);
 
   const { label: statusLabel, color: statusColor } = getStatusInfo(cafe);
   const todayKey = getTodayKey();
@@ -698,7 +711,19 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
 
   const handleFavorite = () => {
     if (!isLoggedIn) { setShowLoginSheet(true); return; }
-    setIsFavorite(f => !f);
+    if (isFavorite) {
+      removeFavorite(cafeId);
+    } else {
+      addFavorite({
+        id: cafe.id,
+        name: cafe.name,
+        address: cafe.address,
+        rating: 5,        // 나중에 Supabase 연동 시 실제 값으로 교체
+        reviewCount: 0,   // 나중에 Supabase 연동 시 실제 값으로 교체
+        badge: cafe.amenities.noTimeLimit ? '시간 제한 없음' : undefined,
+        photos: [],       // 나중에 실제 사진으로 교체
+      });
+    }
   };
 
   const handleShare = async () => {

@@ -4,6 +4,7 @@ import SearchPage from './pages/SearchPage';
 import CollectionPage from './pages/CollectionPage';
 import MyPage from './pages/MyPage';
 import DetailPage from './pages/DetailPage';
+import { FavoritesProvider } from './context/FavoritesContext';
 
 // 피그마 "홈 | 가이드북 | 모음집 | 마이페이지" 탭 구조와 동일
 type TabId = 'home' | 'guidebook' | 'collection' | 'mypage';
@@ -16,6 +17,15 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 ];
 
 export default function App() {
+  return (
+    <FavoritesProvider>
+      <AppInner />
+    </FavoritesProvider>
+  );
+}
+
+// FavoritesProvider 안에서 렌더링 — useFavorites를 DetailPage에서 안전하게 사용 가능
+function AppInner() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [showSearch, setShowSearch] = useState(false);
   const [detailCafeId, setDetailCafeId] = useState<string | null>(null);
@@ -50,7 +60,14 @@ export default function App() {
               />
             )}
             {activeTab === 'guidebook'  && <GuidebookPlaceholder />}
-            {activeTab === 'collection' && <CollectionPage />}
+            {activeTab === 'collection' && (
+              <CollectionPage
+                onDetailOpen={(id) => setDetailCafeId(id)}
+                onGoHome={() => setActiveTab('home')}
+                onBack={() => setActiveTab('home')}
+                onClose={() => setActiveTab('home')}
+              />
+            )}
             {activeTab === 'mypage'     && <MyPage />}
           </div>
 
