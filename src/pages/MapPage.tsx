@@ -517,7 +517,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
           right: 0,
           zIndex: 10,
           background: '#ffffff',
-          borderRadius: '28px 28px 0 0',
+          borderRadius: 28,
           height: panelExpanded ? '72vh' : `${PANEL_COLLAPSED}px`,
           transition: 'height 0.3s ease',
           display: 'flex',

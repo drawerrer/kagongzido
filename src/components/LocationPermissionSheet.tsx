@@ -148,7 +148,7 @@ export default function LocationPermissionSheet({
         left: 10,
         right: 10,
         background: '#ffffff',
-        borderRadius: '28px 28px 0 0',
+        borderRadius: 28,
         animation: 'locSlideUp 0.25s ease',
       }}>
         {/* Handle Area — 피그마: h=20 */}

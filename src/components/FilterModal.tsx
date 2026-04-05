@@ -164,10 +164,10 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
         style={{
           position: 'absolute',
           bottom: 0,
-          left: 0,
-          right: 0,
+          left: 10,
+          right: 10,
           background: '#ffffff',
-          borderRadius: '28px 28px 0 0',
+          borderRadius: 28,
           maxHeight: '92vh',
           display: 'flex',
           flexDirection: 'column',
