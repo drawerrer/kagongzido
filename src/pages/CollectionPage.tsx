@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import BottomSheet from '../components/BottomSheet';
 import Snackbar from '../components/Snackbar';
-import { useFavorites, RecentCafe } from '../context/FavoritesContext';
+import { useFavorites, RecentCafe, FavoritedStore } from '../context/FavoritesContext';
 
 // SF Pro 시스템 폰트
 const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
@@ -168,22 +168,32 @@ function StoreCard({
   store,
   isEditMode = false,
   isSelected = false,
+  isDragging = false,
+  isDragOver = false,
   onSelect,
   onPress,
+  onHandlePointerDown,
 }: {
   store: Store;
   isEditMode?: boolean;
   isSelected?: boolean;
+  isDragging?: boolean;
+  isDragOver?: boolean;
   onSelect?: () => void;
   onPress?: () => void;
+  onHandlePointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
 }) {
   return (
     <div
       onClick={isEditMode ? onSelect : onPress}
       style={{
         borderBottom: '1px solid rgba(0,0,0,0.06)',
+        borderTop: isDragOver ? '2px solid #3182F6' : 'none',
         cursor: 'pointer',
         paddingTop: 20, paddingBottom: 20,
+        opacity: isDragging ? 0.4 : 1,
+        transition: 'opacity 0.15s',
+        userSelect: 'none',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', paddingLeft: 16, paddingRight: 16 }}>
@@ -218,7 +228,14 @@ function StoreCard({
 
             {/* 일반 모드: 하트 아이콘 / 편집 모드: ↑↓ 소트 아이콘 */}
             {isEditMode ? (
-              <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div
+                onPointerDown={onHandlePointerDown}
+                style={{
+                  width: 24, height: 24, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'grab', touchAction: 'none',
+                }}
+              >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <g fill="rgba(0,19,43,0.3)" fillRule="evenodd" clipRule="evenodd">
                     <path d="M10.293 7.707a1 1 0 0 1 0-1.414l3-3a1 1 0 1 1 1.414 1.414l-3 3a1 1 0 0 1-1.414 0"/>
@@ -374,12 +391,24 @@ export default function CollectionPage({
 }) {
   const {
     favorites, removeFavorite: removeFavoriteFromContext,
+    reorderFavorites,
     recentlyViewed, collections, addCollection, updateCollection,
   } = useFavorites();
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
-  const stores = favorites;
+
+  // ── 드래그 순서 변경 ──
+  const [orderedStores, setOrderedStores] = useState<FavoritedStore[]>([]);
+  const [dragIndex, setDragIndex] = useState(-1);
+  const [dragOverIndex, setDragOverIndex] = useState(-1);
+  const storeListRef = useRef<HTMLDivElement>(null);
+  const itemRefsArr = useRef<(HTMLDivElement | null)[]>([]);
+
+  // favorites 변경 시 순서 동기화 (드래그 중 아닐 때)
+  useEffect(() => {
+    if (dragIndex === -1) setOrderedStores([...favorites]);
+  }, [favorites, dragIndex]);
   const [bottomSheet, setBottomSheet] = useState<BottomSheetType>(null);
   const [snackbar, setSnackbar] = useState<SnackbarType>(null);
   const [newCollectionName, setNewCollectionName] = useState('');
@@ -388,9 +417,45 @@ export default function CollectionPage({
   const [showPopover, setShowPopover] = useState(false);
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
 
-  const isEmpty = stores.length === 0;
+  const isEmpty = orderedStores.length === 0;
   const hasSelection = selectedStoreIds.size > 0;
   const dismissSnackbar = useCallback(() => setSnackbar(null), []);
+
+  // ── 드래그 핸들러 ──
+  const onHandlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragIndex(index);
+    setDragOverIndex(index);
+    storeListRef.current?.setPointerCapture(e.pointerId);
+  }, []);
+
+  const onListPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragIndex === -1) return;
+    const y = e.clientY;
+    let newOver = itemRefsArr.current.length - 1;
+    for (let i = 0; i < itemRefsArr.current.length; i++) {
+      const el = itemRefsArr.current[i];
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (y < rect.top + rect.height / 2) { newOver = i; break; }
+    }
+    if (newOver !== dragOverIndex) setDragOverIndex(newOver);
+  }, [dragIndex, dragOverIndex]);
+
+  const onListPointerUp = useCallback(() => {
+    if (dragIndex !== -1 && dragOverIndex !== -1 && dragIndex !== dragOverIndex) {
+      setOrderedStores(prev => {
+        const arr = [...prev];
+        const [moved] = arr.splice(dragIndex, 1);
+        arr.splice(dragOverIndex, 0, moved);
+        reorderFavorites(arr);
+        return arr;
+      });
+    }
+    setDragIndex(-1);
+    setDragOverIndex(-1);
+  }, [dragIndex, dragOverIndex, reorderFavorites]);
 
   const enterEditMode = () => {
     setIsEditMode(true);
@@ -580,16 +645,28 @@ export default function CollectionPage({
           {isEmpty ? (
             <EmptyState onAdd={() => onGoHome?.()} />
           ) : (
-            <div>
-              {stores.map(store => (
-                <StoreCard
+            <div
+              ref={storeListRef}
+              onPointerMove={isEditMode ? onListPointerMove : undefined}
+              onPointerUp={isEditMode ? onListPointerUp : undefined}
+              onPointerCancel={isEditMode ? onListPointerUp : undefined}
+            >
+              {orderedStores.map((store, index) => (
+                <div
                   key={store.id}
-                  store={store}
-                  isEditMode={isEditMode}
-                  isSelected={selectedStoreIds.has(store.id)}
-                  onSelect={() => toggleSelectStore(store.id)}
-                  onPress={() => onDetailOpen?.(store.id)}
-                />
+                  ref={el => { itemRefsArr.current[index] = el; }}
+                >
+                  <StoreCard
+                    store={store}
+                    isEditMode={isEditMode}
+                    isSelected={selectedStoreIds.has(store.id)}
+                    isDragging={isEditMode && dragIndex === index}
+                    isDragOver={isEditMode && dragOverIndex === index && dragIndex !== index}
+                    onHandlePointerDown={(e) => onHandlePointerDown(e, index)}
+                    onSelect={() => { if (dragIndex === -1) toggleSelectStore(store.id); }}
+                    onPress={() => onDetailOpen?.(store.id)}
+                  />
+                </div>
               ))}
             </div>
           )}

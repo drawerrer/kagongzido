@@ -35,6 +35,7 @@ interface FavoritesContextType {
   isFavorited: (id: string) => boolean;
   addFavorite: (store: FavoritedStore) => void;
   removeFavorite: (id: string) => void;
+  reorderFavorites: (newOrder: FavoritedStore[]) => void;
   // 최근 본 카페 (최대 4개, 최신순)
   recentlyViewed: RecentCafe[];
   addRecentlyViewed: (cafe: RecentCafe) => void;
@@ -89,6 +90,11 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     setCollections(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
   }, []);
 
+  // 찜 목록 순서 변경
+  const reorderFavorites = useCallback((newOrder: FavoritedStore[]) => {
+    setFavorites([...newOrder]);
+  }, []);
+
   // 컬렉션 삭제 ('recent'는 삭제 불가)
   const removeCollection = useCallback((id: string) => {
     if (id === 'recent') return;
@@ -97,7 +103,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
   return (
     <FavoritesContext.Provider value={{
-      favorites, isFavorited, addFavorite, removeFavorite,
+      favorites, isFavorited, addFavorite, removeFavorite, reorderFavorites,
       recentlyViewed, addRecentlyViewed,
       collections, addCollection, updateCollection, removeCollection,
     }}>
