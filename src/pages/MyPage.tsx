@@ -284,7 +284,7 @@ function MenuRow({
         cursor: onTap ? 'pointer' : 'default',
       }}
     >
-      <span style={{ fontSize: 16, color: dimmed ? '#C9CDD2' : '#191F28' }}>
+      <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(3,18,40,0.70)' }}>
         {label}
       </span>
       {right ?? (
@@ -831,7 +831,7 @@ export default function MyPage() {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {/* 닉네임 */}
         <div style={{ padding: '16px 20px 0' }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#191F28', letterSpacing: '-0.5px' }}>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#191F28', letterSpacing: '-0.5px' }}>
             김카페
           </h1>
         </div>
@@ -849,9 +849,9 @@ export default function MyPage() {
               style={{
                 flex: 1, padding: '12px 0',
                 fontSize: 15,
-                fontWeight: tab === t ? 700 : 400,
-                color: tab === t ? '#191F28' : '#B0B8C1',
-                borderBottom: tab === t ? '2px solid #191F28' : '2px solid transparent',
+                fontWeight: tab === t ? 700 : 590,
+                color: tab === t ? 'rgba(0,12,30,0.80)' : 'rgba(0,19,43,0.58)',
+                borderBottom: tab === t ? '2px solid #333d4b' : '2px solid transparent',
                 marginBottom: -1,
                 transition: 'all 0.15s',
               }}
