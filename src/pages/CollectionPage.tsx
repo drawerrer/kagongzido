@@ -17,18 +17,8 @@ interface Store {
   photos?: string[];
 }
 
-interface Collection {
-  id: string;
-  name: string;
-  memo?: string;
-}
-
 type BottomSheetType = null | 'create' | 'select-collection' | 'rename';
 type SnackbarType = null | 'deleted' | 'added' | 'renamed';
-
-const MOCK_COLLECTIONS: Collection[] = [
-  { id: 'recent', name: '최근' },
-];
 
 // ─── 컬렉션 카드 ──────────────────────────────────────────────
 function CollectionCard({
@@ -251,10 +241,9 @@ export default function CollectionPage({
   onBack?: () => void;
   onClose?: () => void;
 }) {
-  const { favorites, removeFavorite: removeFavoriteFromContext, recentlyViewed } = useFavorites();
+  const { favorites, removeFavorite: removeFavoriteFromContext, recentlyViewed, collections, addCollection, updateCollection } = useFavorites();
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
-  const [collections, setCollections] = useState<Collection[]>(MOCK_COLLECTIONS);
   const stores = favorites;
   const [bottomSheet, setBottomSheet] = useState<BottomSheetType>(null);
   const [snackbar, setSnackbar] = useState<SnackbarType>(null);
@@ -297,7 +286,7 @@ export default function CollectionPage({
 
   const createCollection = () => {
     if (!newCollectionName.trim()) return;
-    setCollections(prev => [...prev, { id: Date.now().toString(), name: newCollectionName.trim(), memo: newCollectionMemo.trim() }]);
+    addCollection({ name: newCollectionName.trim(), memo: newCollectionMemo.trim() });
     setNewCollectionName('');
     setNewCollectionMemo('');
     setBottomSheet(null);
@@ -315,9 +304,7 @@ export default function CollectionPage({
 
   const applyRename = () => {
     if (!renameTargetId || !renameValue.trim()) return;
-    setCollections(prev => prev.map(c =>
-      c.id === renameTargetId ? { ...c, name: renameValue.trim(), memo: renameMemo.trim() } : c
-    ));
+    updateCollection(renameTargetId, { name: renameValue.trim(), memo: renameMemo.trim() });
     setBottomSheet(null);
     setRenameTargetId(null);
     setSnackbar('renamed');
