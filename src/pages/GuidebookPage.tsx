@@ -162,6 +162,7 @@ function GuideBookMainView({
 }
 
 // ─── GuideBook/Main/Detail — 캐러셀 상세 화면 ────────────────
+// 버티컬 스크롤 없음 — 모든 요소가 한 화면에 보여야 함
 function GuideBookDetailView({
   guidebook,
   onDetailOpen,
@@ -175,6 +176,7 @@ function GuideBookDetailView({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const CARD_W = 261;
+  const CARD_H = 340; // 화면에 맞게 조정
   const CARD_GAP = 20;
 
   const handleScroll = useCallback(() => {
@@ -188,18 +190,18 @@ function GuideBookDetailView({
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#fff', overflow: 'hidden' }}>
 
-      {/* 헤더 — 부제 + n places (고정) */}
+      {/* 섹션명 — 선택한 큐레이션 이름 + 장소 숫자 */}
       <div style={{ paddingTop: 16, paddingBottom: 12, textAlign: 'center', flexShrink: 0 }}>
-        <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 15, color: '#191F28', lineHeight: '23px', padding: '0 16px' }}>
-          {guidebook.subtitle || guidebook.title.replace('\n', ' ')}
+        <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 15, color: '#191F28', lineHeight: '23px' }}>
+          {guidebook.title.replace('\n', ' ')}
         </p>
-        <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', marginTop: 4 }}>
+        <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', marginTop: 2 }}>
           {guidebook.count} places
         </p>
       </div>
 
-      {/* 캐러셀 — 피킹 슬라이드 카드 */}
-      <div style={{ flexShrink: 0, position: 'relative' }}>
+      {/* 캐러셀 — 중앙 카드 가장 크고, 좌우 3px 작음, 버티컬 센터 정렬 */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
         <style>{`.guide-carousel::-webkit-scrollbar { display: none; }`}</style>
         <div
           ref={scrollRef}
@@ -207,60 +209,61 @@ function GuideBookDetailView({
           onScroll={handleScroll}
           style={{
             display: 'flex',
+            alignItems: 'center', // 버티컬 센터
             gap: CARD_GAP,
             overflowX: 'auto',
             scrollSnapType: 'x mandatory',
             paddingLeft: 57,
             paddingRight: 57,
             scrollbarWidth: 'none',
+            width: '100%',
           }}
         >
-          {guidebook.stores.map((s, i) => (
-            <div
-              key={s.id}
-              style={{
-                width: CARD_W,
-                height: 373,
-                flexShrink: 0,
-                scrollSnapAlign: 'center',
-                borderRadius: 16,
-                overflow: 'hidden',
-                position: 'relative',
-                background: `linear-gradient(160deg, ${s.gradient[0]}, ${s.gradient[1]})`,
-                transform: i === currentIndex ? 'scaleY(1) translateY(0)' : 'scaleY(0.978) translateY(4px)',
-                transformOrigin: 'bottom center',
-                transition: 'transform 0.3s ease',
-              }}
-            >
-              {/* 카드 그라디언트 오버레이 */}
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(23,20,20,0.6) 100%)' }} />
-              {/* 페이지네이션 인디케이터 점 */}
-              <div style={{ position: 'absolute', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5 }}>
-                {guidebook.stores.map((_, di) => (
-                  <div key={di} style={{
-                    width: di === currentIndex ? 18 : 6,
-                    height: 6,
-                    borderRadius: 99,
-                    backgroundColor: di === currentIndex ? '#fff' : 'rgba(255,255,255,0.45)',
-                    transition: 'all 0.25s ease',
-                  }} />
-                ))}
+          {guidebook.stores.map((s, i) => {
+            const isActive = i === currentIndex;
+            return (
+              <div
+                key={s.id}
+                style={{
+                  width: CARD_W,
+                  height: isActive ? CARD_H : CARD_H - 6, // 좌우 3px씩 작음
+                  flexShrink: 0,
+                  scrollSnapAlign: 'center',
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  background: `linear-gradient(160deg, ${s.gradient[0]}, ${s.gradient[1]})`,
+                  transition: 'height 0.3s ease',
+                }}
+              >
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(23,20,20,0.6) 100%)' }} />
+                {/* 페이지네이션 점 */}
+                <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5 }}>
+                  {guidebook.stores.map((_, di) => (
+                    <div key={di} style={{
+                      width: di === currentIndex ? 18 : 6,
+                      height: 6,
+                      borderRadius: 99,
+                      backgroundColor: di === currentIndex ? '#fff' : 'rgba(255,255,255,0.45)',
+                      transition: 'all 0.25s ease',
+                    }} />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* 매장 메타 데이터 — 스와이프에 따라 즉시 업데이트 */}
-      <div style={{ flex: 1, padding: '20px 50px 0', overflow: 'hidden' }}>
+      {/* 카페 디테일 — 현재 캐러셀 카드 기준으로 업데이트 */}
+      <div style={{ flexShrink: 0, padding: '16px 50px 0' }}>
         <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', marginBottom: 4 }}>
           {store.district}
         </p>
-        <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 22, color: '#191F28', lineHeight: '29px', marginBottom: 14 }}>
+        <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 20, color: '#191F28', lineHeight: '27px', marginBottom: 10 }}>
           {store.name}
         </p>
-        {/* 주요 편의시설 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M8 2C6.34 2 5 3.34 5 5v1H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1V5c0-1.66-1.34-3-3-3z" fill="rgba(0,19,43,0.45)"/>
@@ -270,18 +273,21 @@ function GuideBookDetailView({
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M6 2v3H4l2 3H5l2 4 1-3h1l-2-3h2L6 2z" fill="rgba(0,19,43,0.45)" strokeLinecap="round"/>
+              <path d="M6 2v3H4l2 3H5l2 4 1-3h1l-2-3h2L6 2z" fill="rgba(0,19,43,0.45)"/>
             </svg>
             <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>콘센트</span>
             <span style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 13, color: '#191F28' }}>{store.outlet}</span>
           </div>
         </div>
-        {/* 퀵 액션 칩 버튼 3개 */}
+        {/* 퀵 액션 칩 — 고정 텍스트, 현재 카페 상세 페이지로 이동 */}
         <div style={{ display: 'flex', gap: 8 }}>
           {(['길찾기', '리뷰보기', '저장하기'] as const).map((label) => (
             <button
               key={label}
-              onClick={label === '저장하기' ? () => onSave(store) : undefined}
+              onClick={() => {
+                if (label === '저장하기') onSave(store);
+                onDetailOpen?.(store.id);
+              }}
               style={{
                 padding: '7px 14px',
                 borderRadius: 99,
@@ -300,8 +306,8 @@ function GuideBookDetailView({
         </div>
       </div>
 
-      {/* 자세히보기 CTA — 고정 하단 */}
-      <div style={{ padding: '12px 16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', flexShrink: 0 }}>
+      {/* CTA — 현재 캐러셀에서 보던 카페 상세 페이지로 이동 */}
+      <div style={{ flexShrink: 0, padding: '14px 16px', paddingBottom: 'calc(14px + env(safe-area-inset-bottom))' }}>
         <button
           onClick={() => store && onDetailOpen?.(store.id)}
           style={{
