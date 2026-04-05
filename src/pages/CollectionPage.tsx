@@ -286,14 +286,14 @@ function StoreCard({
             )}
           </div>
 
-          {/* 이미지 4장 (Figma: 80×80, cornerRadius 12, gap 12px) — 사진 없으면 플레이스홀더 */}
+          {/* 이미지 4장 (Kit Card: 80×80, cornerRadius 4, gap 8px) — 사진 없으면 플레이스홀더 */}
           <div style={{ position: 'relative', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
               {[0, 1, 2, 3].map((i) => {
                 const photo = store.photos?.[i];
                 return (
                   <div key={i} style={{
-                    width: 80, height: 80, borderRadius: 12,
+                    width: 80, height: 80, borderRadius: 4,
                     backgroundColor: '#E8EDF4', flexShrink: 0, overflow: 'hidden',
                   }}>
                     {photo && <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
@@ -544,18 +544,12 @@ export default function CollectionPage({
               <polyline points="15 18 9 12 15 6"/>
             </svg>
           </button>
-          {/* 타이틀 pill */}
+          {/* 타이틀 pill — 텍스트 없음 */}
           <div style={{
-            display: 'flex', alignItems: 'center',
             height: 34, borderRadius: 99,
             backgroundColor: 'rgba(0,23,51,0.02)',
             padding: '0 10px',
-          }}>
-            <span style={{
-              fontFamily: SFPro, fontWeight: 590, fontSize: 15,
-              color: '#191f28', whiteSpace: 'nowrap',
-            }}>위시 리스트</span>
-          </div>
+          }} />
         </div>
 
         {/* 오른쪽: 일반 모드만 ···|X 표시 */}
@@ -601,7 +595,7 @@ export default function CollectionPage({
         {showPopover && <Popover onEdit={enterEditMode} onClose={() => setShowPopover(false)} />}
       </div>
 
-      {/* ── info_2 bar (Figma: 46px, "편집모드" Medium 510 14px centered) ── */}
+      {/* ── info_2 bar (Figma: 46px, Medium 510 14px centered) ── */}
       <div style={{
         height: 46, backgroundColor: '#ffffff',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -610,7 +604,7 @@ export default function CollectionPage({
         <span style={{
           fontFamily: SFPro, fontWeight: 510, fontSize: 14,
           color: '#000000', lineHeight: '25.5px',
-        }}>편집모드</span>
+        }}>{isEditMode ? '편집모드' : '모음집'}</span>
       </div>
 
       {/* ── 스크롤 본문 ── */}
