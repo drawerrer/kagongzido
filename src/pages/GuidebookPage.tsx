@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import Snackbar from '../components/Snackbar';
 import { useFavorites } from '../context/FavoritesContext';
 
@@ -161,8 +161,15 @@ function GuideBookMainView({
   );
 }
 
-// ─── GuideBook/Main/Detail — 캐러셀 상세 화면 ────────────────
-// 버티컬 스크롤 없음 — 모든 요소가 한 화면에 보여야 함
+// ─── GuideBook/Main/Detail — 무한 수평 스크롤 캐러셀 화면 ────
+// 버티컬 스크롤 없음 / 중앙 카드 크게·좌우 작게 / 무한 루프
+const CARD_W = 261;
+const CARD_H = 360;
+const CARD_H_INACTIVE = 354; // 좌우 3px씩 작음
+const CARD_GAP = 20;
+const CAROUSEL_PADDING = (375 - CARD_W) / 2; // 57px — 중앙 카드가 화면 정중앙
+const ITEM_W = CARD_W + CARD_GAP;
+
 function GuideBookDetailView({
   guidebook,
   onDetailOpen,
@@ -172,25 +179,60 @@ function GuideBookDetailView({
   onDetailOpen?: (id: string) => void;
   onSave: (store: MockStore) => void;
 }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const stores = guidebook.stores;
 
-  const CARD_W = 261;
-  const CARD_H = 340; // 화면에 맞게 조정
-  const CARD_GAP = 20;
+  // 무한 루프용 3중 배열 (앞·중간·뒤 각 1세트씩)
+  const loopedStores = useMemo(() => [...stores, ...stores, ...stores], [stores]);
+
+  // absIndex: loopedStores 기준 현재 중앙 카드 인덱스 (중간 세트부터 시작)
+  const [absIndex, setAbsIndex] = useState(stores.length);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isRepositioning = useRef(false);
+
+  // 가이드북 바뀔 때 초기화
+  useEffect(() => {
+    setAbsIndex(stores.length);
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = stores.length * ITEM_W;
+    }
+  }, [guidebook.id, stores.length]);
 
   const handleScroll = useCallback(() => {
-    if (!scrollRef.current) return;
-    const idx = Math.round(scrollRef.current.scrollLeft / (CARD_W + CARD_GAP));
-    setCurrentIndex(Math.max(0, Math.min(idx, guidebook.stores.length - 1)));
-  }, [guidebook.stores.length]);
+    if (isRepositioning.current || !scrollRef.current) return;
+    const el = scrollRef.current;
+    const newAbs = Math.round(el.scrollLeft / ITEM_W);
+    setAbsIndex(newAbs);
 
-  const store = guidebook.stores[currentIndex];
+    // 스크롤 멈춘 뒤 필요하면 중간 세트로 순간이동 (무한 루프 효과)
+    if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    scrollTimer.current = setTimeout(() => {
+      if (!scrollRef.current || isRepositioning.current) return;
+      const curAbs = Math.round(scrollRef.current.scrollLeft / ITEM_W);
+      if (curAbs < stores.length) {
+        isRepositioning.current = true;
+        const next = scrollRef.current.scrollLeft + stores.length * ITEM_W;
+        scrollRef.current.scrollLeft = next;
+        setAbsIndex(Math.round(next / ITEM_W));
+        setTimeout(() => { isRepositioning.current = false; }, 80);
+      } else if (curAbs >= stores.length * 2) {
+        isRepositioning.current = true;
+        const next = scrollRef.current.scrollLeft - stores.length * ITEM_W;
+        scrollRef.current.scrollLeft = next;
+        setAbsIndex(Math.round(next / ITEM_W));
+        setTimeout(() => { isRepositioning.current = false; }, 80);
+      }
+    }, 200);
+  }, [stores.length]);
+
+  // 현재 중앙 카드에 해당하는 실제 스토어 인덱스
+  const currentStoreIndex = ((absIndex % stores.length) + stores.length) % stores.length;
+  const store = stores[currentStoreIndex];
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#fff', overflow: 'hidden' }}>
 
-      {/* 섹션명 — 선택한 큐레이션 이름 + 장소 숫자 */}
+      {/* 섹션명 — 큐레이션 이름 + 장소 수 */}
       <div style={{ paddingTop: 16, paddingBottom: 12, textAlign: 'center', flexShrink: 0 }}>
         <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 15, color: '#191F28', lineHeight: '23px' }}>
           {guidebook.title.replace('\n', ' ')}
@@ -200,7 +242,7 @@ function GuideBookDetailView({
         </p>
       </div>
 
-      {/* 캐러셀 — 중앙 카드 가장 크고, 좌우 3px 작음, 버티컬 센터 정렬 */}
+      {/* 수평 무한 캐러셀 — 중앙 크게, 좌우 3px 작게, 버티컬 센터 */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
         <style>{`.guide-carousel::-webkit-scrollbar { display: none; }`}</style>
         <div
@@ -209,53 +251,56 @@ function GuideBookDetailView({
           onScroll={handleScroll}
           style={{
             display: 'flex',
-            alignItems: 'center', // 버티컬 센터
+            alignItems: 'center',
             gap: CARD_GAP,
             overflowX: 'auto',
             scrollSnapType: 'x mandatory',
-            paddingLeft: 57,
-            paddingRight: 57,
+            paddingLeft: CAROUSEL_PADDING,
+            paddingRight: CAROUSEL_PADDING,
             scrollbarWidth: 'none',
             width: '100%',
+            boxSizing: 'border-box',
           }}
         >
-          {guidebook.stores.map((s, i) => {
-            const isActive = i === currentIndex;
+          {loopedStores.map((s, i) => {
+            const isActive = i === absIndex;
             return (
               <div
-                key={s.id}
+                key={i}
                 style={{
                   width: CARD_W,
-                  height: isActive ? CARD_H : CARD_H - 6, // 좌우 3px씩 작음
+                  height: isActive ? CARD_H : CARD_H_INACTIVE,
                   flexShrink: 0,
                   scrollSnapAlign: 'center',
                   borderRadius: 16,
                   overflow: 'hidden',
                   position: 'relative',
                   background: `linear-gradient(160deg, ${s.gradient[0]}, ${s.gradient[1]})`,
-                  transition: 'height 0.3s ease',
+                  transition: 'height 0.25s ease',
                 }}
               >
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(23,20,20,0.6) 100%)' }} />
-                {/* 페이지네이션 점 */}
-                <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5 }}>
-                  {guidebook.stores.map((_, di) => (
-                    <div key={di} style={{
-                      width: di === currentIndex ? 18 : 6,
-                      height: 6,
-                      borderRadius: 99,
-                      backgroundColor: di === currentIndex ? '#fff' : 'rgba(255,255,255,0.45)',
-                      transition: 'all 0.25s ease',
-                    }} />
-                  ))}
-                </div>
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 50%, rgba(23,20,20,0.6) 100%)' }} />
+                {/* 페이지네이션 점 — 중앙 카드에만 */}
+                {isActive && (
+                  <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5 }}>
+                    {stores.map((_, di) => (
+                      <div key={di} style={{
+                        width: di === currentStoreIndex ? 18 : 6,
+                        height: 6,
+                        borderRadius: 99,
+                        backgroundColor: di === currentStoreIndex ? '#fff' : 'rgba(255,255,255,0.45)',
+                        transition: 'all 0.25s ease',
+                      }} />
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* 카페 디테일 — 현재 캐러셀 카드 기준으로 업데이트 */}
+      {/* 카페 디테일 — 현재 중앙 이미지에 해당하는 정보 */}
       <div style={{ flexShrink: 0, padding: '16px 16px 0', textAlign: 'center' }}>
         <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', marginBottom: 4 }}>
           {store.district}
@@ -279,14 +324,14 @@ function GuideBookDetailView({
             <span style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 13, color: '#191F28' }}>{store.outlet}</span>
           </div>
         </div>
-        {/* 퀵 액션 칩 — 고정 텍스트, 현재 카페 상세 페이지로 이동 */}
+        {/* 퀵 액션 칩 — 고정 텍스트 / 해당 카페 상세로 이동 */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
           {(['길찾기', '리뷰보기', '저장하기'] as const).map((label) => (
             <button
               key={label}
               onClick={() => {
                 if (label === '저장하기') onSave(store);
-                onDetailOpen?.(store.id);
+                else onDetailOpen?.(store.id);
               }}
               style={{
                 padding: '7px 14px',
@@ -306,10 +351,10 @@ function GuideBookDetailView({
         </div>
       </div>
 
-      {/* CTA — 현재 캐러셀에서 보던 카페 상세 페이지로 이동 */}
+      {/* CTA — 현재 중앙 카페 상세 페이지로 이동 */}
       <div style={{ flexShrink: 0, padding: '14px 16px', paddingBottom: 'calc(14px + env(safe-area-inset-bottom))' }}>
         <button
-          onClick={() => store && onDetailOpen?.(store.id)}
+          onClick={() => onDetailOpen?.(store.id)}
           style={{
             width: '100%',
             height: 52,
