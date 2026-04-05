@@ -20,6 +20,7 @@ interface Store {
 interface Collection {
   id: string;
   name: string;
+  memo?: string;
 }
 
 type BottomSheetType = null | 'create' | 'select-collection' | 'rename';
@@ -258,8 +259,10 @@ export default function CollectionPage({
   const [bottomSheet, setBottomSheet] = useState<BottomSheetType>(null);
   const [snackbar, setSnackbar] = useState<SnackbarType>(null);
   const [newCollectionName, setNewCollectionName] = useState('');
+  const [newCollectionMemo, setNewCollectionMemo] = useState('');
   const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [renameMemo, setRenameMemo] = useState('');
   const [showPopover, setShowPopover] = useState(false);
 
   const isEmpty = stores.length === 0;
@@ -293,10 +296,10 @@ export default function CollectionPage({
   };
 
   const createCollection = () => {
-    if (newCollectionName.trim()) {
-      setCollections((prev) => [...prev, { id: Date.now().toString(), name: newCollectionName.trim() }]);
-      setNewCollectionName('');
-    }
+    if (!newCollectionName.trim()) return;
+    setCollections(prev => [...prev, { id: Date.now().toString(), name: newCollectionName.trim(), memo: newCollectionMemo.trim() }]);
+    setNewCollectionName('');
+    setNewCollectionMemo('');
     setBottomSheet(null);
     setSnackbar('added');
   };
@@ -306,14 +309,15 @@ export default function CollectionPage({
     if (!col) return;
     setRenameTargetId(colId);
     setRenameValue(col.name);
+    setRenameMemo(col.memo ?? '');
     setBottomSheet('rename');
   };
 
   const applyRename = () => {
     if (!renameTargetId || !renameValue.trim()) return;
-    const existing = collections.find(c => c.id === renameTargetId);
-    if (existing && renameValue.trim() === existing.name) { setBottomSheet(null); return; }
-    setCollections(prev => prev.map(c => c.id === renameTargetId ? { ...c, name: renameValue.trim() } : c));
+    setCollections(prev => prev.map(c =>
+      c.id === renameTargetId ? { ...c, name: renameValue.trim(), memo: renameMemo.trim() } : c
+    ));
     setBottomSheet(null);
     setRenameTargetId(null);
     setSnackbar('renamed');
@@ -427,37 +431,96 @@ export default function CollectionPage({
         </div>
       )}
 
-      {/* ── 바텀시트: 새 컬렉션 ── */}
-      <BottomSheet isOpen={bottomSheet === 'create'} onClose={() => setBottomSheet(null)}>
-        <div style={{ padding: '8px 20px 24px' }}>
-          <h2 style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 20, color: 'rgba(0, 12, 30, 0.8)', marginBottom: 20 }}>새 컬렉션</h2>
-          <input
-            value={newCollectionName}
-            onChange={(e) => setNewCollectionName(e.target.value)}
-            placeholder="컬렉션명"
-            maxLength={10}
-            style={{ width: '100%', padding: '14px 16px', border: '1px solid rgba(0, 0, 0, 0.1)', borderRadius: 12, fontFamily: SFPro, fontSize: 22, fontWeight: 590, color: 'rgba(0, 12, 30, 0.8)', outline: 'none', boxSizing: 'border-box', marginBottom: 16 }}
-          />
-          <button onClick={createCollection} style={{ width: '100%', padding: '16px 0', borderRadius: 12, fontFamily: SFPro, fontSize: 17, fontWeight: 590, backgroundColor: newCollectionName.trim() ? '#3182F6' : '#F2F4F6', color: newCollectionName.trim() ? '#fff' : 'rgba(0, 19, 43, 0.35)', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>적용하기</button>
+      {/* ── 바텀시트: 새 컬렉션 (Figma Wishlist/BottomSheet_Create) ── */}
+      <BottomSheet isOpen={bottomSheet === 'create'} onClose={() => { setBottomSheet(null); setNewCollectionName(''); setNewCollectionMemo(''); }}>
+        <div style={{ padding: '0 20px 24px' }}>
+          {/* 컬렉션명 섹션 */}
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 17, color: '#191F28', marginBottom: 10 }}>컬렉션명</p>
+            <input
+              value={newCollectionName}
+              onChange={(e) => setNewCollectionName(e.target.value)}
+              placeholder="노트북 열기 좋은 곳, 딥워크존 등"
+              maxLength={20}
+              autoFocus
+              style={{
+                width: '100%', padding: '10px 0', border: 'none', borderBottom: '1px solid rgba(0,0,0,0.12)',
+                fontFamily: SFPro, fontSize: 16, fontWeight: 510, color: '#191F28',
+                outline: 'none', boxSizing: 'border-box', backgroundColor: 'transparent',
+              }}
+            />
+          </div>
+          {/* 메모 섹션 */}
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 17, color: '#191F28', marginBottom: 10 }}>메모</p>
+            <input
+              value={newCollectionMemo}
+              onChange={(e) => setNewCollectionMemo(e.target.value)}
+              placeholder="남기고 싶은 메모를 적을 수 있어요"
+              style={{
+                width: '100%', padding: '10px 0', border: 'none', borderBottom: '1px solid rgba(0,0,0,0.12)',
+                fontFamily: SFPro, fontSize: 16, fontWeight: 510, color: '#191F28',
+                outline: 'none', boxSizing: 'border-box', backgroundColor: 'transparent',
+              }}
+            />
+          </div>
+          {/* 적용하기 버튼 */}
+          <button
+            onClick={createCollection}
+            disabled={!newCollectionName.trim()}
+            style={{
+              width: '100%', padding: '16px 0', borderRadius: 12, fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+              backgroundColor: newCollectionName.trim() ? '#3182F6' : '#F2F4F6',
+              color: newCollectionName.trim() ? '#fff' : 'rgba(0,19,43,0.35)',
+              border: 'none', cursor: newCollectionName.trim() ? 'pointer' : 'default', transition: 'all 0.2s',
+            }}
+          >적용하기</button>
         </div>
       </BottomSheet>
 
-      {/* ── 바텀시트: 컬렉션명 수정 ── */}
+      {/* ── 바텀시트: 컬렉션 편집 (Figma Wishlist/BottomSheet_Create 동일 디자인) ── */}
       <BottomSheet isOpen={bottomSheet === 'rename'} onClose={() => setBottomSheet(null)}>
-        <div style={{ padding: '8px 20px 24px' }}>
-          <h2 style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 20, color: 'rgba(0, 12, 30, 0.8)', marginBottom: 20 }}>컬렉션명 수정</h2>
-          <input
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
-            placeholder="컬렉션명"
-            maxLength={10}
-            autoFocus
-            style={{ width: '100%', padding: '14px 16px', border: '1px solid rgba(0, 0, 0, 0.1)', borderRadius: 12, fontFamily: SFPro, fontSize: 22, fontWeight: 590, color: 'rgba(0, 12, 30, 0.8)', outline: 'none', boxSizing: 'border-box', marginBottom: 16 }}
-          />
+        <div style={{ padding: '0 20px 24px' }}>
+          {/* 컬렉션명 섹션 */}
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 17, color: '#191F28', marginBottom: 10 }}>컬렉션명</p>
+            <input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder="노트북 열기 좋은 곳, 딥워크존 등"
+              maxLength={20}
+              autoFocus
+              style={{
+                width: '100%', padding: '10px 0', border: 'none', borderBottom: '1px solid rgba(0,0,0,0.12)',
+                fontFamily: SFPro, fontSize: 16, fontWeight: 510, color: '#191F28',
+                outline: 'none', boxSizing: 'border-box', backgroundColor: 'transparent',
+              }}
+            />
+          </div>
+          {/* 메모 섹션 */}
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 17, color: '#191F28', marginBottom: 10 }}>메모</p>
+            <input
+              value={renameMemo}
+              onChange={(e) => setRenameMemo(e.target.value)}
+              placeholder="남기고 싶은 메모를 적을 수 있어요"
+              style={{
+                width: '100%', padding: '10px 0', border: 'none', borderBottom: '1px solid rgba(0,0,0,0.12)',
+                fontFamily: SFPro, fontSize: 16, fontWeight: 510, color: '#191F28',
+                outline: 'none', boxSizing: 'border-box', backgroundColor: 'transparent',
+              }}
+            />
+          </div>
+          {/* 적용하기 버튼 */}
           <button
             onClick={applyRename}
-            disabled={!renameValue.trim() || renameValue.trim() === collections.find(c => c.id === renameTargetId)?.name}
-            style={{ width: '100%', padding: '16px 0', borderRadius: 12, fontFamily: SFPro, fontSize: 17, fontWeight: 590, backgroundColor: (renameValue.trim() && renameValue.trim() !== collections.find(c => c.id === renameTargetId)?.name) ? '#3182F6' : '#F2F4F6', color: (renameValue.trim() && renameValue.trim() !== collections.find(c => c.id === renameTargetId)?.name) ? '#fff' : 'rgba(0, 19, 43, 0.35)', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+            disabled={!renameValue.trim()}
+            style={{
+              width: '100%', padding: '16px 0', borderRadius: 12, fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+              backgroundColor: renameValue.trim() ? '#3182F6' : '#F2F4F6',
+              color: renameValue.trim() ? '#fff' : 'rgba(0,19,43,0.35)',
+              border: 'none', cursor: renameValue.trim() ? 'pointer' : 'default', transition: 'all 0.2s',
+            }}
           >적용하기</button>
         </div>
       </BottomSheet>
