@@ -191,7 +191,7 @@ function StoreCard({
         borderTop: isDragOver ? '2px solid #3182F6' : 'none',
         cursor: 'pointer',
         paddingTop: 20, paddingBottom: 20,
-        opacity: isDragging ? 0.4 : 1,
+        opacity: isDragging ? 0.4 : (isEditMode && !isSelected ? 0.7 : 1),
         transition: 'opacity 0.15s',
         userSelect: 'none',
       }}
@@ -286,17 +286,25 @@ function StoreCard({
             )}
           </div>
 
-          {/* 이미지 4장 (Figma: 80×80, cornerRadius 4, gap 8px) */}
+          {/* 이미지 4장 (Figma: 80×80, cornerRadius 12, gap 12px, overflow hidden + 우측 fade) */}
           {store.photos && store.photos.length > 0 && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              {store.photos.slice(0, 4).map((photo, i) => (
-                <div key={i} style={{
-                  width: 80, height: 80, borderRadius: 4,
-                  backgroundColor: '#E8EDF4', flexShrink: 0, overflow: 'hidden',
-                }}>
-                  {photo && <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                </div>
-              ))}
+            <div style={{ position: 'relative', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', gap: 12 }}>
+                {store.photos.slice(0, 4).map((photo, i) => (
+                  <div key={i} style={{
+                    width: 80, height: 80, borderRadius: 12,
+                    backgroundColor: '#E8EDF4', flexShrink: 0, overflow: 'hidden',
+                  }}>
+                    {photo && <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                  </div>
+                ))}
+              </div>
+              {/* 우측 그라데이션 페이드 (이미지 overflow 표시) */}
+              <div style={{
+                position: 'absolute', top: 0, right: 0, bottom: 0, width: 60,
+                background: 'linear-gradient(to right, rgba(255,255,255,0), #ffffff)',
+                pointerEvents: 'none',
+              }} />
             </div>
           )}
         </div>
