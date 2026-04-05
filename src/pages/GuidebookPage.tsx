@@ -190,6 +190,34 @@ function GuideBookDetailView({
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRepositioning = useRef(false);
 
+  // 마우스 드래그 스크롤 (데스크탑 테스트용)
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragScrollLeft = useRef(0);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    isDragging.current = true;
+    dragStartX.current = e.pageX;
+    dragScrollLeft.current = scrollRef.current.scrollLeft;
+    scrollRef.current.style.cursor = 'grabbing';
+    scrollRef.current.style.userSelect = 'none';
+  }, []);
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging.current || !scrollRef.current) return;
+    e.preventDefault();
+    const dx = e.pageX - dragStartX.current;
+    scrollRef.current.scrollLeft = dragScrollLeft.current - dx;
+  }, []);
+
+  const onMouseUp = useCallback(() => {
+    if (!scrollRef.current) return;
+    isDragging.current = false;
+    scrollRef.current.style.cursor = 'grab';
+    scrollRef.current.style.removeProperty('user-select');
+  }, []);
+
   // 가이드북 바뀔 때 초기화
   useEffect(() => {
     setAbsIndex(stores.length);
@@ -249,6 +277,10 @@ function GuideBookDetailView({
           ref={scrollRef}
           className="guide-carousel"
           onScroll={handleScroll}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -260,6 +292,7 @@ function GuideBookDetailView({
             scrollbarWidth: 'none',
             width: '100%',
             boxSizing: 'border-box',
+            cursor: 'grab',
           }}
         >
           {loopedStores.map((s, i) => {
