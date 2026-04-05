@@ -286,27 +286,28 @@ function StoreCard({
             )}
           </div>
 
-          {/* 이미지 4장 (Figma: 80×80, cornerRadius 12, gap 12px, overflow hidden + 우측 fade) */}
-          {store.photos && store.photos.length > 0 && (
-            <div style={{ position: 'relative', overflow: 'hidden' }}>
-              <div style={{ display: 'flex', gap: 12 }}>
-                {store.photos.slice(0, 4).map((photo, i) => (
+          {/* 이미지 4장 (Figma: 80×80, cornerRadius 12, gap 12px) — 사진 없으면 플레이스홀더 */}
+          <div style={{ position: 'relative', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', gap: 12 }}>
+              {[0, 1, 2, 3].map((i) => {
+                const photo = store.photos?.[i];
+                return (
                   <div key={i} style={{
                     width: 80, height: 80, borderRadius: 12,
                     backgroundColor: '#E8EDF4', flexShrink: 0, overflow: 'hidden',
                   }}>
                     {photo && <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                   </div>
-                ))}
-              </div>
-              {/* 우측 그라데이션 페이드 (이미지 overflow 표시) */}
-              <div style={{
-                position: 'absolute', top: 0, right: 0, bottom: 0, width: 60,
-                background: 'linear-gradient(to right, rgba(255,255,255,0), #ffffff)',
-                pointerEvents: 'none',
-              }} />
+                );
+              })}
             </div>
-          )}
+            {/* 우측 그라데이션 페이드 */}
+            <div style={{
+              position: 'absolute', top: 0, right: 0, bottom: 0, width: 60,
+              background: 'linear-gradient(to right, rgba(255,255,255,0), #ffffff)',
+              pointerEvents: 'none',
+            }} />
+          </div>
         </div>
       </div>
     </div>
