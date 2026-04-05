@@ -2,6 +2,7 @@ import { useState } from 'react';
 import MapPage from './pages/MapPage';
 import SearchPage from './pages/SearchPage';
 import CollectionPage from './pages/CollectionPage';
+import GuidebookPage from './pages/GuidebookPage';
 import MyPage from './pages/MyPage';
 import DetailPage from './pages/DetailPage';
 import { FavoritesProvider } from './context/FavoritesContext';
@@ -59,7 +60,13 @@ function AppInner() {
                 onDetailOpen={(id) => setDetailCafeId(id)}
               />
             )}
-            {activeTab === 'guidebook'  && <GuidebookPlaceholder />}
+            {activeTab === 'guidebook'  && (
+              <GuidebookPage
+                onDetailOpen={(id) => setDetailCafeId(id)}
+                onBack={() => setActiveTab('home')}
+                onClose={() => setActiveTab('home')}
+              />
+            )}
             {activeTab === 'collection' && (
               <CollectionPage
                 onDetailOpen={(id) => setDetailCafeId(id)}
@@ -108,26 +115,3 @@ function AppInner() {
   );
 }
 
-// 가이드북은 feature/guidebook 브랜치에서 작업 예정
-function GuidebookPlaceholder() {
-  return (
-    <div
-      style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 'var(--space-md)',
-      }}
-    >
-      <span style={{ fontSize: 48 }}>📖</span>
-      <p style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-        가이드북
-      </p>
-      <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
-        feature/guidebook 브랜치에서 개발 예정
-      </p>
-    </div>
-  );
-}
