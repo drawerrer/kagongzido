@@ -28,15 +28,16 @@ export default function BottomSheet({ isOpen, onClose, children }: BottomSheetPr
       />
       {/* 시트 본체 */}
       <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        backgroundColor: 'var(--color-surface)',
-        borderRadius: '16px 16px 0 0',
+        position: 'absolute', bottom: 0, left: 10, right: 10,
+        backgroundColor: '#ffffff',
+        borderRadius: '28px 28px 0 0',
         paddingBottom: 'env(safe-area-inset-bottom)',
         animation: 'slideUp 0.25s ease',
+        overflow: 'hidden',
       }}>
         {/* 핸들 */}
         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 8 }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: '#E5E8EB' }} />
+          <div style={{ width: 48, height: 4, borderRadius: 40, backgroundColor: '#E5E8EB' }} />
         </div>
         {children}
       </div>
