@@ -256,14 +256,14 @@ function GuideBookDetailView({
       </div>
 
       {/* 카페 디테일 — 현재 캐러셀 카드 기준으로 업데이트 */}
-      <div style={{ flexShrink: 0, padding: '16px 50px 0' }}>
+      <div style={{ flexShrink: 0, padding: '16px 16px 0', textAlign: 'center' }}>
         <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', marginBottom: 4 }}>
           {store.district}
         </p>
         <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 20, color: '#191F28', lineHeight: '27px', marginBottom: 10 }}>
           {store.name}
         </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M8 2C6.34 2 5 3.34 5 5v1H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1V5c0-1.66-1.34-3-3-3z" fill="rgba(0,19,43,0.45)"/>
@@ -280,7 +280,7 @@ function GuideBookDetailView({
           </div>
         </div>
         {/* 퀵 액션 칩 — 고정 텍스트, 현재 카페 상세 페이지로 이동 */}
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
           {(['길찾기', '리뷰보기', '저장하기'] as const).map((label) => (
             <button
               key={label}
