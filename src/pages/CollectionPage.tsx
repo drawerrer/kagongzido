@@ -239,11 +239,13 @@ function Popover({ onEdit, onClose }: { onEdit: () => void; onClose: () => void 
 // ─── 메인 페이지 ──────────────────────────────────────────────
 export default function CollectionPage({
   onDetailOpen,
+  onCollectionOpen,
   onGoHome,
   onBack,
   onClose,
 }: {
   onDetailOpen?: (id: string) => void;
+  onCollectionOpen?: (id: string, name: string) => void;
   onGoHome?: () => void;
   onBack?: () => void;
   onClose?: () => void;
@@ -381,6 +383,7 @@ export default function CollectionPage({
               isEditMode={isEditMode}
               recentItems={col.id === 'recent' ? recentlyViewed : []}
               onRename={() => openRename(col.id)}
+              onPress={!isEditMode ? () => onCollectionOpen?.(col.id, col.name) : undefined}
             />
           ))}
           <CollectionCard label="새 컬렉션" isNew onPress={() => setBottomSheet('create')} />

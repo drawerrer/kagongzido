@@ -2,6 +2,7 @@ import { useState } from 'react';
 import MapPage from './pages/MapPage';
 import SearchPage from './pages/SearchPage';
 import CollectionPage from './pages/CollectionPage';
+import CollectionDetailPage from './pages/CollectionDetailPage';
 import GuidebookPage from './pages/GuidebookPage';
 import MyPage from './pages/MyPage';
 import DetailPage from './pages/DetailPage';
@@ -30,8 +31,9 @@ function AppInner() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [showSearch, setShowSearch] = useState(false);
   const [detailCafeId, setDetailCafeId] = useState<string | null>(null);
+  const [collectionDetail, setCollectionDetail] = useState<{ id: string; name: string } | null>(null);
 
-  // 상세페이지 (탭바 완전히 가림)
+  // 카페 상세페이지 (탭바 완전히 가림)
   if (detailCafeId) {
     return (
       <div style={{ height: '100%' }}>
@@ -39,6 +41,21 @@ function AppInner() {
           cafeId={detailCafeId}
           onBack={() => setDetailCafeId(null)}
           onClose={() => setDetailCafeId(null)}
+        />
+      </div>
+    );
+  }
+
+  // 컬렉션 상세 (탭바 완전히 가림)
+  if (collectionDetail) {
+    return (
+      <div style={{ height: '100%' }}>
+        <CollectionDetailPage
+          collectionId={collectionDetail.id}
+          collectionName={collectionDetail.name}
+          onBack={() => setCollectionDetail(null)}
+          onClose={() => { setCollectionDetail(null); setActiveTab('collection'); }}
+          onDetailOpen={(id) => setDetailCafeId(id)}
         />
       </div>
     );
@@ -70,6 +87,7 @@ function AppInner() {
             {activeTab === 'collection' && (
               <CollectionPage
                 onDetailOpen={(id) => setDetailCafeId(id)}
+                onCollectionOpen={(id, name) => setCollectionDetail({ id, name })}
                 onGoHome={() => setActiveTab('home')}
                 onBack={() => setActiveTab('home')}
                 onClose={() => setActiveTab('home')}

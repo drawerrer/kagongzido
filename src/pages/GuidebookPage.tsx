@@ -492,6 +492,7 @@ export default function GuidebookPage({
         address: store.district,
         rating: 0,
         reviewCount: 0,
+        photos: [],
       });
     }
     setSnackbar('모음집에 담았어요');
