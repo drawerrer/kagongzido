@@ -226,8 +226,8 @@ function StoreCard({
               flex: 1, marginRight: 8,
             }}>{store.name}</p>
 
-            {/* 일반 모드: 하트 아이콘 / 편집 모드: ↑↓ 소트 아이콘 */}
-            {isEditMode ? (
+            {/* 정렬핸들: 편집모드만 (onHandlePointerDown 있을 때) / 기본모드: 하트 / 오거나이즈: 없음 */}
+            {onHandlePointerDown ? (
               <div
                 onPointerDown={onHandlePointerDown}
                 style={{
@@ -246,14 +246,14 @@ function StoreCard({
                   </g>
                 </svg>
               </div>
-            ) : (
+            ) : !isEditMode ? (
               <div style={{ width: 20, height: 20, flexShrink: 0 }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
                     fill="rgba(0,19,43,0.15)" stroke="rgba(0,19,43,0.2)" strokeWidth="1"/>
                 </svg>
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* 주소 */}
@@ -589,7 +589,7 @@ export default function CollectionPage({
         {/* 왼쪽: 뒤로가기 + 타이틀 */}
         <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
           <button
-            onClick={onBack ?? onGoHome}
+            onClick={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onBack ?? onGoHome)}
             style={{
               width: 44, height: 44, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -625,7 +625,7 @@ export default function CollectionPage({
             </button>
             <div style={{ width: 1, height: 16, backgroundColor: 'rgba(0,27,55,0.1)' }} />
             <button
-              onClick={onClose ?? onGoHome}
+              onClick={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onClose ?? onGoHome)}
               style={{
                 width: 46, height: 34,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
