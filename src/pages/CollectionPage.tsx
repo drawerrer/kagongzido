@@ -451,6 +451,7 @@ export default function CollectionPage({
   } = useFavorites();
 
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isOrganizeMode, setIsOrganizeMode] = useState(false); // 컬렉션 선택 모드
   const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
 
   // ── 드래그 순서 변경 ──
@@ -518,17 +519,16 @@ export default function CollectionPage({
     setShowPopover(false);
   };
 
-  // 삭제하기: 매장 다중 선택(체크박스) 모드 진입
-  const enterDeleteMode = () => {
-    setIsEditMode(true);
+  // 삭제하기 / 컬렉션에 추가하기: 컬렉션 선택 모드(Organize) 진입
+  const enterOrganizeMode = () => {
+    setIsOrganizeMode(true);
     setSelectedStoreIds(new Set());
     setShowPopover(false);
   };
 
-  // 컬렉션에 추가하기: 컬렉션 선택 바텀시트 오픈
-  const enterAddToCollectionMode = () => {
-    setBottomSheet('select-collection');
-    setShowPopover(false);
+  const exitOrganizeMode = () => {
+    setIsOrganizeMode(false);
+    setSelectedStoreIds(new Set());
   };
 
   const exitEditMode = () => {
@@ -613,7 +613,7 @@ export default function CollectionPage({
         </div>
 
         {/* 오른쪽: 일반 모드만 ···|X 표시 */}
-        {!isEditMode && (
+        {!isEditMode && !isOrganizeMode && (
           <div style={{
             display: 'flex', alignItems: 'center',
             height: 34, borderRadius: 99,
@@ -656,8 +656,8 @@ export default function CollectionPage({
           <Popover
             hasSavedStores={!isEmpty}
             onEdit={enterEditMode}
-            onDelete={enterDeleteMode}
-            onAddToCollection={enterAddToCollectionMode}
+            onDelete={enterOrganizeMode}
+            onAddToCollection={enterOrganizeMode}
             onSuggestInfo={() => setShowPopover(false)}
             onClose={() => setShowPopover(false)}
           />
@@ -673,7 +673,7 @@ export default function CollectionPage({
         <span style={{
           fontFamily: SFPro, fontWeight: 510, fontSize: 14,
           color: '#000000', lineHeight: '25.5px',
-        }}>{isEditMode ? '편집모드' : '모음집'}</span>
+        }}>{isEditMode ? '편집모드' : isOrganizeMode ? '컬렉션 선택' : '모음집'}</span>
       </div>
 
       {/* ── 스크롤 본문 ── */}
@@ -682,8 +682,8 @@ export default function CollectionPage({
         onScroll={() => showPopover && setShowPopover(false)}
       >
 
-        {/* 컬렉션 카드 가로 스크롤 (Figma: paddingTop 12px, paddingLeft 20px, gap 10px) */}
-        <div style={{
+        {/* 컬렉션 카드 가로 스크롤 — 오거나이즈 모드에서 숨김 */}
+        {!isOrganizeMode && <div style={{
           display: 'flex', gap: 10,
           overflowX: 'auto', padding: '12px 20px 16px',
           scrollbarWidth: 'none',
@@ -702,7 +702,7 @@ export default function CollectionPage({
             label="새 컬렉션" isNew
             onPress={() => setBottomSheet('create')}
           />
-        </div>
+        </div>}
 
         {/* 저장한 매장 (Figma: Listheader 41px, Bold 700 17px) */}
         <div>
@@ -733,11 +733,11 @@ export default function CollectionPage({
                 >
                   <StoreCard
                     store={store}
-                    isEditMode={isEditMode}
+                    isEditMode={isEditMode || isOrganizeMode}
                     isSelected={selectedStoreIds.has(store.id)}
                     isDragging={isEditMode && dragIndex === index}
                     isDragOver={isEditMode && dragOverIndex === index && dragIndex !== index}
-                    onHandlePointerDown={(e) => onHandlePointerDown(e, index)}
+                    onHandlePointerDown={isEditMode ? (e) => onHandlePointerDown(e, index) : undefined}
                     onSelect={() => { if (dragIndex === -1) toggleSelectStore(store.id); }}
                     onPress={() => onDetailOpen?.(store.id)}
                   />
@@ -747,21 +747,14 @@ export default function CollectionPage({
           )}
         </div>
 
-        {/* 편집 모드 하단 여백 */}
-        {isEditMode && <div style={{ height: 112 }} />}
+        {/* 편집/오거나이즈 모드 하단 여백 */}
+        {(isEditMode || isOrganizeMode) && <div style={{ height: 112 }} />}
       </div>
 
-      {/* ── 편집 모드 Bottom CTA (Figma: 112px 총, 버튼 335×56, cornerRadius 16) ── */}
+      {/* ── 편집 모드 Bottom CTA ── */}
       {isEditMode && (
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-        }}>
-          {/* 그라데이션 (36px) */}
-          <div style={{
-            height: 36,
-            background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, #ffffff 100%)',
-          }} />
-          {/* 버튼 영역 (76px) */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+          <div style={{ height: 36, background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, #ffffff 100%)' }} />
           <div style={{
             height: 76, backgroundColor: '#ffffff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -769,40 +762,68 @@ export default function CollectionPage({
           }}>
             {hasSelection ? (
               <>
-                {/* 삭제 — Figma Edit_Selected: rgba(49,130,246,0.16) bg, #2272eb text, 164x56 */}
-                <button
-                  onClick={deleteSelected}
-                  style={{
-                    flex: 1, height: 56, borderRadius: 16,
-                    fontFamily: SFPro, fontSize: 17, fontWeight: 590,
-                    backgroundColor: 'rgba(49,130,246,0.16)',
-                    color: '#2272eb',
-                    border: 'none', cursor: 'pointer',
-                  }}
-                >삭제</button>
-                {/* 완료 — Figma Edit_Selected: #3182f6 bg, #fff text, 164x56 */}
-                <button
-                  onClick={exitEditMode}
-                  style={{
-                    flex: 1, height: 56, borderRadius: 16,
-                    fontFamily: SFPro, fontSize: 17, fontWeight: 590,
-                    backgroundColor: '#3182f6', color: '#ffffff',
-                    border: 'none', cursor: 'pointer',
-                  }}
-                >완료</button>
-              </>
-            ) : (
-              /* 완료 단일 — Figma Edit_Default: #f2f4f6 bg, rgba(0,19,43,0.58) text, 335x56 */
-              <button
-                onClick={exitEditMode}
-                style={{
+                {/* 삭제 — rgba(49,130,246,0.16) bg, #2272eb text */}
+                <button onClick={deleteSelected} style={{
                   flex: 1, height: 56, borderRadius: 16,
                   fontFamily: SFPro, fontSize: 17, fontWeight: 590,
-                  backgroundColor: '#f2f4f6',
-                  color: 'rgba(0,19,43,0.58)',
+                  backgroundColor: 'rgba(49,130,246,0.16)', color: '#2272eb',
                   border: 'none', cursor: 'pointer',
-                }}
-              >완료</button>
+                }}>삭제</button>
+                {/* 완료 — #3182f6 bg */}
+                <button onClick={exitEditMode} style={{
+                  flex: 1, height: 56, borderRadius: 16,
+                  fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+                  backgroundColor: '#3182f6', color: '#ffffff',
+                  border: 'none', cursor: 'pointer',
+                }}>완료</button>
+              </>
+            ) : (
+              /* 완료 단일 — #f2f4f6 bg */
+              <button onClick={exitEditMode} style={{
+                flex: 1, height: 56, borderRadius: 16,
+                fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+                backgroundColor: '#f2f4f6', color: 'rgba(0,19,43,0.58)',
+                border: 'none', cursor: 'pointer',
+              }}>완료</button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── 컬렉션 선택 모드 Bottom CTA (Figma: Organize_Default/Selected) ── */}
+      {isOrganizeMode && (
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+          <div style={{ height: 36, background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, #ffffff 100%)' }} />
+          <div style={{
+            height: 76, backgroundColor: '#ffffff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            paddingLeft: 20, paddingRight: 20, gap: 8,
+          }}>
+            {hasSelection ? (
+              <>
+                {/* 삭제 — Organize_Selected: 선택 매장을 현재 모음집에서 삭제 */}
+                <button onClick={deleteSelected} style={{
+                  flex: 1, height: 56, borderRadius: 16,
+                  fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+                  backgroundColor: 'rgba(49,130,246,0.16)', color: '#2272eb',
+                  border: 'none', cursor: 'pointer',
+                }}>삭제</button>
+                {/* 완료 — 목적지 컬렉션 선택 바텀시트 호출 */}
+                <button onClick={() => setBottomSheet('select-collection')} style={{
+                  flex: 1, height: 56, borderRadius: 16,
+                  fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+                  backgroundColor: '#3182f6', color: '#ffffff',
+                  border: 'none', cursor: 'pointer',
+                }}>완료</button>
+              </>
+            ) : (
+              /* 완료 — Disabled: 선택 없을 때 인터랙션 비활성화 */
+              <button disabled style={{
+                flex: 1, height: 56, borderRadius: 16,
+                fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+                backgroundColor: '#f2f4f6', color: 'rgba(0,19,43,0.38)',
+                border: 'none', cursor: 'not-allowed', opacity: 1,
+              }}>완료</button>
             )}
           </div>
         </div>
@@ -1012,7 +1033,8 @@ export default function CollectionPage({
               setBottomSheet(null);
               setSelectedCollectionId(null);
               setSnackbar('added');
-              exitEditMode();
+              if (isOrganizeMode) exitOrganizeMode();
+              else exitEditMode();
             }}
             style={{
               flex: 1, height: 56, borderRadius: 16,
