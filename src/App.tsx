@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import MapPage from './pages/MapPage';
+import type { ReactNode } from 'react';
+import MapPage, { type MapPageState } from './pages/MapPage';
 import SearchPage from './pages/SearchPage';
 import CollectionPage from './pages/CollectionPage';
 import CollectionDetailPage from './pages/CollectionDetailPage';
@@ -8,14 +9,44 @@ import MyPage from './pages/MyPage';
 import DetailPage from './pages/DetailPage';
 import { FavoritesProvider } from './context/FavoritesContext';
 
+// ── 탭바 SVG 아이콘 ──────────────────────────────────────────
+function TabHomeIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+    </svg>
+  );
+}
+function TabGuideIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
+    </svg>
+  );
+}
+function TabCollectionIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
+    </svg>
+  );
+}
+function TabMypageIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+    </svg>
+  );
+}
+
 // 피그마 "홈 | 가이드북 | 모음집 | 마이페이지" 탭 구조와 동일
 type TabId = 'home' | 'guidebook' | 'collection' | 'mypage';
 
-const TABS: { id: TabId; label: string; icon: string }[] = [
-  { id: 'home',       label: '홈',     icon: '🏠' },
-  { id: 'guidebook',  label: '가이드북', icon: '📖' },
-  { id: 'collection', label: '모음집',  icon: '⭐' },
-  { id: 'mypage',     label: '마이',   icon: '👤' },
+const TABS: { id: TabId; label: string; icon: ReactNode }[] = [
+  { id: 'home',       label: '홈',     icon: <TabHomeIcon /> },
+  { id: 'guidebook',  label: '가이드북', icon: <TabGuideIcon /> },
+  { id: 'collection', label: '모음집',  icon: <TabCollectionIcon /> },
+  { id: 'mypage',     label: '마이',   icon: <TabMypageIcon /> },
 ];
 
 export default function App() {
@@ -32,15 +63,23 @@ function AppInner() {
   const [showSearch, setShowSearch] = useState(false);
   const [detailCafeId, setDetailCafeId] = useState<string | null>(null);
   const [collectionDetail, setCollectionDetail] = useState<{ id: string; name: string } | null>(null);
+  const [myPageSubPage, setMyPageSubPage] = useState<string | null>(null);
+  const [mapState, setMapState] = useState<MapPageState | null>(null);
+  const [guidebookView, setGuidebookView] = useState<string | null>(null);
+  const [guidebookStoreIndex, setGuidebookStoreIndex] = useState(0);
+  const [detailScrollToReview, setDetailScrollToReview] = useState(false);
 
-  // 카페 상세페이지 (탭바 완전히 가림)
+  // 카페 상세페이지 (자체 탭바 포함)
   if (detailCafeId) {
     return (
       <div style={{ height: '100%' }}>
         <DetailPage
           cafeId={detailCafeId}
-          onBack={() => setDetailCafeId(null)}
-          onClose={() => setDetailCafeId(null)}
+          onBack={() => { setDetailCafeId(null); setDetailScrollToReview(false); }}
+          onClose={() => { setDetailCafeId(null); setDetailScrollToReview(false); }}
+          activeTab={activeTab}
+          onTabChange={(tab) => { setDetailCafeId(null); setDetailScrollToReview(false); setActiveTab(tab as TabId); }}
+          scrollToReview={detailScrollToReview}
         />
       </div>
     );
@@ -75,13 +114,20 @@ function AppInner() {
               <MapPage
                 onSearchOpen={() => setShowSearch(true)}
                 onDetailOpen={(id) => setDetailCafeId(id)}
+                initialState={mapState ?? undefined}
+                onStateChange={(s) => setMapState(s)}
               />
             )}
             {activeTab === 'guidebook'  && (
               <GuidebookPage
                 onDetailOpen={(id) => setDetailCafeId(id)}
+                onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
                 onBack={() => setActiveTab('home')}
                 onClose={() => setActiveTab('home')}
+                initialView={(guidebookView as any) ?? 'main'}
+                onViewChange={(v) => setGuidebookView(v)}
+                initialStoreIndex={guidebookStoreIndex}
+                onStoreIndexChange={(i) => setGuidebookStoreIndex(i)}
               />
             )}
             {activeTab === 'collection' && (
@@ -93,7 +139,13 @@ function AppInner() {
                 onClose={() => setActiveTab('home')}
               />
             )}
-            {activeTab === 'mypage'     && <MyPage />}
+            {activeTab === 'mypage'     && (
+              <MyPage
+                onDetailOpen={(id) => setDetailCafeId(id)}
+                initialSubPage={myPageSubPage as any}
+                onSubPageChange={setMyPageSubPage}
+              />
+            )}
           </div>
 
           {/* ── 탭 바 ── */}
@@ -122,7 +174,7 @@ function AppInner() {
                   transition: 'color 0.15s',
                 }}
               >
-                <span style={{ fontSize: 22 }}>{tab.icon}</span>
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
