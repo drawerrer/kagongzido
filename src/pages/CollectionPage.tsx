@@ -348,14 +348,12 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 function Popover({
   hasSavedStores,
   onEdit,
-  onDelete,
   onAddToCollection,
   onSuggestInfo,
   onClose,
 }: {
   hasSavedStores: boolean;
   onEdit: () => void;
-  onDelete: () => void;
   onAddToCollection: () => void;
   onSuggestInfo: () => void;
   onClose: () => void;
@@ -377,7 +375,6 @@ function Popover({
   const items = hasSavedStores
     ? [
         { label: '편집하기', action: onEdit },
-        { label: '삭제하기', action: onDelete },
         { label: '컬렉션에 추가하기', action: onAddToCollection },
         { label: '정보 수정 제안하기', action: onSuggestInfo },
       ]
@@ -604,12 +601,6 @@ export default function CollectionPage({
               <polyline points="15 18 9 12 15 6"/>
             </svg>
           </button>
-          {/* 타이틀 pill — 텍스트 없음 */}
-          <div style={{
-            height: 34, borderRadius: 99,
-            backgroundColor: 'rgba(0,23,51,0.02)',
-            padding: '0 10px',
-          }} />
         </div>
 
         {/* 오른쪽: 일반 모드만 ···|X 표시 */}
@@ -656,7 +647,6 @@ export default function CollectionPage({
           <Popover
             hasSavedStores={!isEmpty}
             onEdit={enterEditMode}
-            onDelete={enterOrganizeMode}
             onAddToCollection={enterOrganizeMode}
             onSuggestInfo={() => setShowPopover(false)}
             onClose={() => setShowPopover(false)}
