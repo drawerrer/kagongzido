@@ -546,7 +546,8 @@ export default function CollectionPage({
 
   const deleteSelected = () => {
     selectedStoreIds.forEach(id => removeFavoriteFromContext(id));
-    exitEditMode();
+    // 삭제 후 선택 초기화만 — 편집모드는 유지 (Edit_Default 단일 완료 버튼으로 원복)
+    setSelectedStoreIds(new Set());
     setSnackbar('deleted');
   };
 
@@ -768,30 +769,30 @@ export default function CollectionPage({
           }}>
             {hasSelection ? (
               <>
-                {/* 삭제 (Figma: rgba(7,25,76,0.05) bg) */}
+                {/* 삭제 — Figma Edit_Selected: rgba(49,130,246,0.16) bg, #2272eb text, 164x56 */}
                 <button
                   onClick={deleteSelected}
                   style={{
                     flex: 1, height: 56, borderRadius: 16,
                     fontFamily: SFPro, fontSize: 17, fontWeight: 590,
-                    backgroundColor: 'rgba(7,25,76,0.05)',
-                    color: 'rgba(3,18,40,0.7)',
+                    backgroundColor: 'rgba(49,130,246,0.16)',
+                    color: '#2272eb',
                     border: 'none', cursor: 'pointer',
                   }}
                 >삭제</button>
-                {/* 컬렉션 추가 */}
+                {/* 완료 — Figma Edit_Selected: #3182f6 bg, #fff text, 164x56 */}
                 <button
-                  onClick={() => setBottomSheet('select-collection')}
+                  onClick={exitEditMode}
                   style={{
                     flex: 1, height: 56, borderRadius: 16,
                     fontFamily: SFPro, fontSize: 17, fontWeight: 590,
-                    backgroundColor: '#3182F6', color: '#fff',
+                    backgroundColor: '#3182f6', color: '#ffffff',
                     border: 'none', cursor: 'pointer',
                   }}
-                >컬렉션 추가</button>
+                >완료</button>
               </>
             ) : (
-              /* 완료 (Figma: #f2f4f6) */
+              /* 완료 단일 — Figma Edit_Default: #f2f4f6 bg, rgba(0,19,43,0.58) text, 335x56 */
               <button
                 onClick={exitEditMode}
                 style={{
@@ -1026,7 +1027,7 @@ export default function CollectionPage({
 
       {/* ── 스낵바 ── */}
       {snackbar === 'deleted' && (
-        <Snackbar message="매장을 삭제했어요" actionLabel="되돌리기"
+        <Snackbar message="삭제되었습니다" actionLabel="실행 취소"
           onAction={() => setSnackbar(null)} onDismiss={dismissSnackbar} />
       )}
       {snackbar === 'added' && (
