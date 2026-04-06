@@ -550,7 +550,12 @@ export default function CollectionPage({
 
   const createCollection = () => {
     if (!newCollectionName.trim()) return;
-    addCollection({ name: newCollectionName.trim() });
+    const newId = addCollection({ name: newCollectionName.trim() });
+    // 오거나이즈 모드에서 진입한 경우 선택된 매장도 새 컬렉션에 추가
+    if (isOrganizeMode && selectedStoreIds.size > 0) {
+      addStoresToCollection(newId, [...selectedStoreIds]);
+      exitOrganizeMode();
+    }
     setNewCollectionName('');
     setBottomSheet(null);
     setSnackbar('added');

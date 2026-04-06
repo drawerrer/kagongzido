@@ -43,7 +43,7 @@ interface FavoritesContextType {
   addRecentlyViewed: (cafe: RecentCafe) => void;
   // 컬렉션 목록 (화면 이동해도 유지)
   collections: Collection[];
-  addCollection: (col: Omit<Collection, 'id' | 'storeIds'>) => void;
+  addCollection: (col: Omit<Collection, 'id' | 'storeIds'>) => string; // 생성된 컬렉션 id 반환
   updateCollection: (id: string, updates: Partial<Omit<Collection, 'id'>>) => void;
   removeCollection: (id: string) => void;
   addStoresToCollection: (collectionId: string, storeIds: string[]) => void;
@@ -80,14 +80,16 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // 컬렉션 추가 ('recent'는 항상 첫 번째 고정)
+  // 컬렉션 추가 ('recent'는 항상 첫 번째 고정) — 생성된 id 반환
   const addCollection = useCallback((col: Omit<Collection, 'id' | 'storeIds'>) => {
-    const newCol: Collection = { id: Date.now().toString(), storeIds: [], ...col };
+    const newId = Date.now().toString();
+    const newCol: Collection = { id: newId, storeIds: [], ...col };
     setCollections(prev => {
       const recent = prev.find(c => c.id === 'recent')!;
       const rest = prev.filter(c => c.id !== 'recent');
       return [recent, newCol, ...rest];
     });
+    return newId;
   }, []);
 
   // 컬렉션 수정
