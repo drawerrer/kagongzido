@@ -287,26 +287,28 @@ function PhotoDetailView({
             {/* 작성일 */}
             <p style={{ fontSize: 12, color: '#B0B8C1', marginBottom: 8 }}>{photo.reviewDate}</p>
 
-            {/* 리뷰 텍스트 (2줄 말줄임) */}
-            <p style={{
-              fontSize: 14, color: '#4E5968', lineHeight: 1.6,
-              ...(!textExpanded ? {
-                display: '-webkit-box' as any,
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical' as any,
-                overflow: 'hidden',
-              } : {}),
-            }}>
-              {photo.reviewContent}
-            </p>
-            {photo.reviewContent.length > 55 && (
-              <button
-                onClick={() => setTextExpanded(e => !e)}
-                style={{ fontSize: 13, color: '#B0B8C1', marginTop: 2, fontWeight: 500, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
-              >
-                {textExpanded ? '접기' : '더보기'}
-              </button>
-            )}
+            {/* 리뷰 텍스트 (띄어쓰기 포함 50자 말줄임) */}
+            {(() => {
+              const THRESHOLD = 50;
+              const isLong = photo.reviewContent.length > THRESHOLD;
+              return (
+                <>
+                  <p style={{ fontSize: 14, color: '#4E5968', lineHeight: 1.6 }}>
+                    {isLong && !textExpanded
+                      ? photo.reviewContent.slice(0, THRESHOLD) + '...'
+                      : photo.reviewContent}
+                  </p>
+                  {isLong && (
+                    <button
+                      onClick={() => setTextExpanded(e => !e)}
+                      style={{ fontSize: 13, color: '#B0B8C1', marginTop: 2, fontWeight: 500, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                    >
+                      {textExpanded ? '접기' : '더보기'}
+                    </button>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>

@@ -1,8 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import BottomSheet from '../components/BottomSheet';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
 import WriteReviewPage from './WriteReviewPage';
 import { useFavorites } from '../context/FavoritesContext';
+
+// ── 편의시설 SVG 아이콘 ──────────────────────────────────────
+function IcParking()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 15v4q0 .825-.587 1.413T8 21t-1.412-.587T6 19V5q0-.825.588-1.412T8 3h5q2.5 0 4.25 1.75T19 9t-1.75 4.25T13 15zm0-4h3.2q.825 0 1.413-.587T15.2 9t-.587-1.412T13.2 7H10z"/></svg>; }
+function IcPets()        { return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8.35 3c1.18-.17 2.43 1.12 2.79 2.9.36 1.77-.29 3.35-1.47 3.53-1.17.18-2.43-1.11-2.8-2.89C6.5 4.77 7.17 3.19 8.35 3m7.15 0c1.19.19 1.85 1.77 1.5 3.54-.38 1.78-1.63 3.07-2.81 2.89-1.19-.18-1.84-1.76-1.47-3.53.36-1.78 1.61-3.07 2.78-2.9M3 7.6c1.14-.49 2.69.4 3.5 1.95.76 1.58.5 3.24-.63 3.73s-2.67-.39-3.46-1.96S1.9 8.08 3 7.6m18 0c1.1.48 1.38 2.15.59 3.72s-2.33 2.45-3.46 1.96-1.39-2.15-.63-3.73C18.31 8 19.86 7.11 21 7.6m-1.67 10.78c.04.94-.68 1.98-1.54 2.37-1.79.82-3.91-.88-5.9-.88s-4.13 1.77-5.89.88c-1-.49-1.69-1.79-1.56-2.87.18-1.49 1.97-2.29 3.03-3.38 1.41-1.41 2.41-4.06 4.42-4.06 2 0 3.06 2.61 4.41 4.06 1.11 1.22 2.96 2.25 3.03 3.88"/></svg>; }
+function IcTimerOff()   { return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22q-1.85 0-3.488-.712T5.65 19.35t-1.937-2.863T3 13q0-1.5.463-2.887T4.8 7.6L2.1 4.9q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l17 17q.275.275.275.7t-.275.7t-.7.275t-.7-.275l-1.7-1.7q-1.2.875-2.587 1.338T12 22M10 3q-.425 0-.712-.288T9 2t.288-.712T10 1h4q.425 0 .713.288T15 2t-.288.713T14 3zm8.7 12.9L13 10.2V9q0-.425-.288-.712T12 8q-.25 0-.462.1t-.338.3L9.075 6.275q-.45-.45-.325-1.075t.725-.825t1.238-.288T12 4q1.5 0 2.938.5t2.712 1.45l.7-.7q.275-.275.7-.275t.7.275t.275.7t-.275.7l-.7.7q.95 1.275 1.45 2.713T21 13q0 .65-.088 1.275t-.287 1.25q-.2.6-.825.725t-1.1-.35"/></svg>; }
+function IcPublicToilet(){ return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" clipRule="evenodd" d="M7 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm10 0a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM4 11a2 2 0 0 0-2 2v4h1.5v5h3V17H8v-4a2 2 0 0 0-2-2zm9 0c-1.1 0-2 .9-2 2l1.5 5H14v5h2v-5h1.5L19 13a2 2 0 0 0-2-2z"/></svg>; }
+function IcToilet()     { return <svg width="18" height="18" viewBox="0 0 15 15" fill="currentColor"><path d="M11 4V1c0-1-1-1-1 0v3H5V1c0-1-1-1-1 0v3H2.5c-1 0-1 1.5-.5 2.5s1.5 3 1.5 5.5c0 0 0 2 1 2H6v1h3v-1h1.5c1 0 1-2 1-2c0-2.5 1-4.5 1.5-5.5s.5-2.5-.5-2.5M7.25 9.5H5.5l3-4l-.5 3h2l-3 4"/></svg>; }
+function IcPeople()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8.35 3c1.18-.17 2.43 1.12 2.79 2.9.36 1.77-.29 3.35-1.47 3.53-1.17.18-2.43-1.11-2.8-2.89C6.5 4.77 7.17 3.19 8.35 3m7.15 0c1.19.19 1.85 1.77 1.5 3.54-.38 1.78-1.63 3.07-2.81 2.89-1.19-.18-1.84-1.76-1.47-3.53.36-1.78 1.61-3.07 2.78-2.9M3 7.6c1.14-.49 2.69.4 3.5 1.95.76 1.58.5 3.24-.63 3.73s-2.67-.39-3.46-1.96S1.9 8.08 3 7.6m18 0c1.1.48 1.38 2.15.59 3.72s-2.33 2.45-3.46 1.96-1.39-2.15-.63-3.73C18.31 8 19.86 7.11 21 7.6m-1.67 10.78c.04.94-.68 1.98-1.54 2.37-1.79.82-3.91-.88-5.9-.88s-4.13 1.77-5.89.88c-1-.49-1.69-1.79-1.56-2.87.18-1.49 1.97-2.29 3.03-3.38 1.41-1.41 2.41-4.06 4.42-4.06 2 0 3.06 2.61 4.41 4.06 1.11 1.22 2.96 2.25 3.03 3.88-.03 0-.06-.06-.11.05z"/></svg>; }
+function IcCoffee()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h2v3H5zm4 0h2v3H9zm4 0h2v3h-2zm6 7h-2V8a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3h2c1.103 0 2-.897 2-2v-5c0-1.103-.897-2-2-2m-2 7v-5h2l.002 5z"/></svg>; }
 
 // ────────── 타입 ────────────────────────────────────────────
 type DayKey = '월' | '화' | '수' | '목' | '금' | '토' | '일';
@@ -58,14 +68,14 @@ const PHOTO_BG = [
   'linear-gradient(145deg,#2d2200 0%,#4a3800 100%)',
 ];
 
-const AMENITY_CONFIG: Record<string, { icon: string; label: string }> = {
-  parking:          { icon: '🅿️',  label: '주차' },
-  pets:             { icon: '🐾',  label: '반려동물 동반' },
-  noTimeLimit:      { icon: '⏰',  label: '시간 제한 없음' },
-  separateRestroom: { icon: '🚻',  label: '남/녀 화장실 구분' },
-  indoorRestroom:   { icon: '🚿',  label: '내부화장실' },
-  groupVisit:       { icon: '👥',  label: '단체 방문 가능' },
-  decafFree:        { icon: '☕',  label: '디카페인 무료' },
+const AMENITY_CONFIG: Record<string, { icon: ReactNode; label: string }> = {
+  parking:          { icon: <IcParking />,      label: '주차' },
+  pets:             { icon: <IcPets />,          label: '반려동물 동반' },
+  noTimeLimit:      { icon: <IcTimerOff />,      label: '시간 제한 없음' },
+  separateRestroom: { icon: <IcPublicToilet />,  label: '남/녀 화장실 구분' },
+  indoorRestroom:   { icon: <IcToilet />,        label: '내부화장실' },
+  groupVisit:       { icon: <IcPeople />,        label: '단체 방문 가능' },
+  decafFree:        { icon: <IcCoffee />,        label: '디카페인 무료' },
 };
 
 // ────────── 목업 데이터 ──────────────────────────────────────
@@ -136,8 +146,38 @@ const MOCK_DETAILS: Record<string, CafeDetailData> = {
   },
 };
 
+// 이름·주소만 다르고 나머지는 default 템플릿을 공유하는 카페 목록
+const CAFE_NAME_MAP: Record<string, { name: string; address: string }> = {
+  // MyPage - MOCK_REPORTED
+  r1:  { name: '우모에',          address: '서울 용산구 한강대로84길 21-17 1층' },
+  r2:  { name: '본지르본 연희',   address: '서울 서대문구 연희로 93-10' },
+  r3:  { name: '카페 온도',       address: '서울 마포구 와우산로 21' },
+  r4:  { name: '모노 커피',       address: '서울 강남구 언주로 234' },
+  // MyPage - MOCK_RECENT
+  rc1: { name: '블루보틀 강남',   address: '서울 강남구 논현로 508' },
+  rc2: { name: '스타벅스 역삼역점', address: '서울 강남구 역삼로 123' },
+  rc3: { name: '우모에',          address: '서울 용산구 한강대로84길 21-17 1층' },
+  rc4: { name: '더 로스터리',     address: '서울 강남구 도곡로 321' },
+  rc5: { name: '카페 베이커리',   address: '서울 강남구 역삼동 567' },
+  // MyPage - MOCK_REVIEWS (cafeId)
+  '1': { name: '우모에',          address: '서울 용산구 한강대로84길 21-17 1층' },
+  '2': { name: '본지르본 연희',   address: '서울 서대문구 연희로 93-10' },
+  '3': { name: '카페 온도',       address: '서울 마포구 와우산로 21' },
+  '4': { name: '모노 커피',       address: '서울 강남구 언주로 234' },
+  '5': { name: '블루보틀 강남',   address: '서울 강남구 논현로 508' },
+  // GuidebookPage - FEATURE_STORES
+  gs1: { name: '도트커피',        address: '서울 영등포구' },
+  gs2: { name: '프릳츠 커피',     address: '서울 마포구' },
+  gs3: { name: '어니언',          address: '서울 성동구' },
+  gs4: { name: '오르에르',        address: '서울 강남구' },
+  gs5: { name: '스탠딩커피',      address: '경기 성남시' },
+};
+
 function getCafeDetail(cafeId: string): CafeDetailData {
-  return MOCK_DETAILS[cafeId] ?? { ...MOCK_DETAILS['default'], id: cafeId };
+  if (MOCK_DETAILS[cafeId]) return MOCK_DETAILS[cafeId];
+  const meta = CAFE_NAME_MAP[cafeId];
+  if (meta) return { ...MOCK_DETAILS['default'], id: cafeId, name: meta.name, address: meta.address };
+  return { ...MOCK_DETAILS['default'], id: cafeId };
 }
 
 // ────────── 유틸 함수 ────────────────────────────────────────
@@ -299,7 +339,7 @@ function InfoRow({
   );
 }
 
-function AmenityBadge({ icon, label }: { icon: string; label: string }) {
+function AmenityBadge({ icon, label }: { icon: ReactNode; label: string }) {
   return (
     <div style={{
       display: 'flex',
@@ -309,7 +349,7 @@ function AmenityBadge({ icon, label }: { icon: string; label: string }) {
       borderRadius: 8,
       padding: '8px 12px',
     }}>
-      <span style={{ fontSize: 16 }}>{icon}</span>
+      <span style={{ display: 'flex', alignItems: 'center', color: '#4E5968' }}>{icon}</span>
       <span style={{ fontSize: 13, fontWeight: 500, color: '#4E5968' }}>{label}</span>
     </div>
   );
@@ -440,7 +480,7 @@ function PhotoMosaic({
 function ReviewCard({ review }: { review: ReviewItem }) {
   const [textExpanded, setTextExpanded] = useState(false);
   const [expandedImgIdx, setExpandedImgIdx] = useState<number | null>(null);
-  const CONTENT_THRESHOLD = 55; // 2줄 기준 글자 수 (대략)
+  const CONTENT_THRESHOLD = 50; // 띄어쓰기 포함 50자
   const isLong = review.content.length > CONTENT_THRESHOLD;
 
   return (
@@ -514,18 +554,12 @@ function ReviewCard({ review }: { review: ReviewItem }) {
         </div>
       )}
 
-      {/* 리뷰 텍스트 (2줄 말줄임 → 탭 시 전체 펼침) */}
+      {/* 리뷰 텍스트 (50자 말줄임 → 더보기 탭 시 전체 펼침) */}
       <div>
-        <p style={{
-          fontSize: 14, color: '#4E5968', lineHeight: 1.65, marginBottom: isLong ? 4 : 0,
-          ...(textExpanded ? {} : {
-            display: '-webkit-box' as any,
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical' as any,
-            overflow: 'hidden',
-          }),
-        }}>
-          {review.content}
+        <p style={{ fontSize: 14, color: '#4E5968', lineHeight: 1.65, marginBottom: isLong ? 4 : 0 }}>
+          {isLong && !textExpanded
+            ? review.content.slice(0, 50) + '...'
+            : review.content}
         </p>
         {isLong && (
           <button
@@ -665,16 +699,33 @@ function CopyToast({ visible }: { visible: boolean }) {
   );
 }
 
+// ────────── 탭바 아이콘 ──────────────────────────────────────
+function NavHomeIcon()       { return <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>; }
+function NavGuideIcon()      { return <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>; }
+function NavCollectionIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>; }
+function NavMypageIcon()     { return <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>; }
+
+const DETAIL_TABS = [
+  { id: 'home',       label: '홈',     icon: <NavHomeIcon /> },
+  { id: 'guidebook',  label: '가이드북', icon: <NavGuideIcon /> },
+  { id: 'collection', label: '모음집',  icon: <NavCollectionIcon /> },
+  { id: 'mypage',     label: '마이',   icon: <NavMypageIcon /> },
+] as const;
+
 // ────────── 메인 컴포넌트 ────────────────────────────────────
 interface DetailPageProps {
   cafeId: string;
   onBack: () => void;
   onClose: () => void;
+  activeTab?: string;
+  onTabChange?: (tabId: string) => void;
+  scrollToReview?: boolean;
 }
 
-export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps) {
+export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview }: DetailPageProps) {
   const cafe = getCafeDetail(cafeId);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const reviewSectionRef = useRef<HTMLDivElement>(null);
   const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed } = useFavorites();
 
   const [scrolled, setScrolled] = useState(false);
@@ -686,6 +737,16 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
       name: cafe.name,
       photo: '', // 나중에 실제 사진 URL로 교체
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 리뷰 섹션으로 자동 스크롤
+  useEffect(() => {
+    if (scrollToReview && reviewSectionRef.current && scrollRef.current) {
+      setTimeout(() => {
+        reviewSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [hoursExpanded, setHoursExpanded] = useState(false);
@@ -854,7 +915,7 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        style={{ height: '100%', overflowY: 'auto' }}
+        style={{ height: '100%', overflowY: 'auto', paddingBottom: 60 }}
       >
         {/* 포토 히어로 */}
         <div style={{ height: 260, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
@@ -995,7 +1056,7 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
         )}
 
         {/* ── 리뷰 섹션 ── */}
-        <div style={{ padding: '20px' }}>
+        <div ref={reviewSectionRef} style={{ padding: '20px' }}>
           <h2 style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 16 }}>
             리뷰&nbsp;<span style={{ color: '#3182F6' }}>{cafe.reviews.length}</span>개
           </h2>
@@ -1038,7 +1099,7 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
       <button
         onClick={() => setShowWriteReview(true)}
         style={{
-          position: 'absolute', bottom: 24, right: 20,
+          position: 'absolute', bottom: 80, right: 20,
           background: '#3182F6', color: 'white',
           borderRadius: 24, height: 48, padding: '0 20px',
           fontSize: 14, fontWeight: 700,
@@ -1053,6 +1114,43 @@ export default function DetailPage({ cafeId, onBack, onClose }: DetailPageProps)
 
       {/* ── 복사 완료 토스트 ── */}
       <CopyToast visible={copyToastVisible} />
+
+      {/* ── 하단 탭 네비바 ── */}
+      <nav style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        display: 'flex',
+        borderTop: '1px solid #F2F4F6',
+        backgroundColor: 'white',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        zIndex: 100,
+      }}>
+        {DETAIL_TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange ? onTabChange(tab.id) : onClose()}
+            style={{
+              flex: 1,
+              padding: '10px 0 8px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 2,
+              color: activeTab === tab.id ? '#3182F6' : '#B0B8C1',
+              fontSize: 11,
+              fontWeight: activeTab === tab.id ? 600 : 400,
+              transition: 'color 0.15s',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
+              {tab.icon}
+            </span>
+            {tab.label}
+          </button>
+        ))}
+      </nav>
 
       {/* ── 바텀시트들 ── */}
       {showMoreSheet && (

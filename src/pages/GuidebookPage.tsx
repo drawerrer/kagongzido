@@ -173,11 +173,17 @@ const ITEM_W = CARD_W + CARD_GAP;
 function GuideBookDetailView({
   guidebook,
   onDetailOpen,
+  onDetailOpenToReview,
   onSave,
+  initialStoreIndex,
+  onStoreIndexChange,
 }: {
   guidebook: MockGuidebook;
   onDetailOpen?: (id: string) => void;
+  onDetailOpenToReview?: (id: string) => void;
   onSave: (store: MockStore) => void;
+  initialStoreIndex?: number;
+  onStoreIndexChange?: (index: number) => void;
 }) {
   const stores = guidebook.stores;
 
@@ -185,7 +191,7 @@ function GuideBookDetailView({
   const loopedStores = useMemo(() => [...stores, ...stores, ...stores], [stores]);
 
   // absIndex: loopedStores 기준 현재 중앙 카드 인덱스 (중간 세트부터 시작)
-  const [absIndex, setAbsIndex] = useState(stores.length);
+  const [absIndex, setAbsIndex] = useState(stores.length + (initialStoreIndex ?? 0));
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRepositioning = useRef(false);
@@ -216,6 +222,15 @@ function GuideBookDetailView({
     isDragging.current = false;
     scrollRef.current.style.cursor = 'grab';
     scrollRef.current.style.removeProperty('user-select');
+  }, []);
+
+  // 마운트 시 초기 스크롤 위치 설정
+  useEffect(() => {
+    const startAbs = stores.length + (initialStoreIndex ?? 0);
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = startAbs * ITEM_W;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 가이드북 바뀔 때 초기화
@@ -255,6 +270,11 @@ function GuideBookDetailView({
 
   // 현재 중앙 카드에 해당하는 실제 스토어 인덱스
   const currentStoreIndex = ((absIndex % stores.length) + stores.length) % stores.length;
+
+  // 인덱스 변경 시 부모에 알림
+  useEffect(() => {
+    onStoreIndexChange?.(currentStoreIndex);
+  }, [currentStoreIndex, onStoreIndexChange]);
   const store = stores[currentStoreIndex];
 
   return (
@@ -364,6 +384,7 @@ function GuideBookDetailView({
               key={label}
               onClick={() => {
                 if (label === '저장하기') onSave(store);
+                else if (label === '리뷰보기') onDetailOpenToReview?.(store.id);
                 else onDetailOpen?.(store.id);
               }}
               style={{
@@ -463,22 +484,37 @@ function GuideBookPastView({
 // ─── 메인 페이지 ──────────────────────────────────────────────
 export default function GuidebookPage({
   onDetailOpen,
+  onDetailOpenToReview,
   onBack,
   onClose,
+  initialView,
+  onViewChange,
+  initialStoreIndex,
+  onStoreIndexChange,
 }: {
   onDetailOpen?: (id: string) => void;
+  onDetailOpenToReview?: (id: string) => void;
   onBack?: () => void;
   onClose?: () => void;
+  initialView?: GuideView;
+  onViewChange?: (view: GuideView) => void;
+  initialStoreIndex?: number;
+  onStoreIndexChange?: (index: number) => void;
 }) {
   const { addFavorite, isFavorited } = useFavorites();
-  const [view, setView] = useState<GuideView>('main');
+  const [view, setView] = useState<GuideView>(initialView ?? 'main');
   const [activeGuidebook, setActiveGuidebook] = useState<MockGuidebook>(FEATURED);
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const dismissSnackbar = useCallback(() => setSnackbar(null), []);
 
+  const changeView = (v: GuideView) => {
+    setView(v);
+    onViewChange?.(v);
+  };
+
   const handleBack = () => {
     if (view !== 'main') {
-      setView('main');
+      changeView('main');
     } else {
       onBack?.();
     }
@@ -505,21 +541,24 @@ export default function GuidebookPage({
       {view === 'main' && (
         <GuideBookMainView
           guidebook={FEATURED}
-          onCardPress={() => { setActiveGuidebook(FEATURED); setView('detail'); }}
-          onPastPress={() => setView('past')}
+          onCardPress={() => { setActiveGuidebook(FEATURED); changeView('detail'); }}
+          onPastPress={() => changeView('past')}
         />
       )}
       {view === 'detail' && (
         <GuideBookDetailView
           guidebook={activeGuidebook}
           onDetailOpen={onDetailOpen}
+          onDetailOpenToReview={onDetailOpenToReview}
           onSave={handleSave}
+          initialStoreIndex={initialStoreIndex}
+          onStoreIndexChange={onStoreIndexChange}
         />
       )}
       {view === 'past' && (
         <GuideBookPastView
           guidebooks={PAST_GUIDEBOOKS}
-          onCardPress={(g) => { setActiveGuidebook(g); setView('detail'); }}
+          onCardPress={(g) => { setActiveGuidebook(g); changeView('detail'); }}
         />
       )}
 

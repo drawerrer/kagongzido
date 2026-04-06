@@ -41,12 +41,10 @@ function SearchIcon() {
 }
 
 function FilterIcon({ active }: { active: boolean }) {
-  const color = active ? '#020913' : 'white';
+  const color = active ? '#F2F4F6' : '#191F28';
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="4" y1="6" x2="20" y2="6" />
-      <line x1="7" y1="12" x2="17" y2="12" />
-      <line x1="10" y1="18" x2="14" y2="18" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill={color}>
+      <path d="M14 12v7.88c.04.3-.06.62-.29.83a.996.996 0 0 1-1.41 0l-2.01-2.01a.99.99 0 0 1-.29-.83V12h-.03L4.21 4.62a1 1 0 0 1 .17-1.4c.19-.14.4-.22.62-.22h14c.22 0 .43.08.62.22a1 1 0 0 1 .17 1.4L14.03 12z"/>
     </svg>
   );
 }
@@ -227,24 +225,40 @@ function CafeRow({ cafe, onTap }: { cafe: Cafe; onTap: () => void }) {
   );
 }
 
+// ── MapPage 상태 스냅샷 타입 ──────────────
+export interface MapPageState {
+  activeChip: string | null;
+  sortType: SortType;
+  panelExpanded: boolean;
+  appliedFilters: FilterState;
+  filterApplied: boolean;
+}
+
 // ── MapPage (메인 화면) ───────────────────
 interface MapPageProps {
   onSearchOpen: () => void;
   onDetailOpen: (cafeId: string) => void;
+  initialState?: MapPageState;
+  onStateChange?: (state: MapPageState) => void;
 }
 
-export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
+export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onStateChange }: MapPageProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
 
-  const [activeChip, setActiveChip] = useState<string | null>(null);
-  const [sortType, setSortType] = useState<SortType>('조회순');
+  const [activeChip, setActiveChip] = useState<string | null>(initialState?.activeChip ?? null);
+  const [sortType, setSortType] = useState<SortType>(initialState?.sortType ?? '조회순');
   const [sortPopupOpen, setSortPopupOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterOpenKey, setFilterOpenKey] = useState(0); // remount key
-  const [panelExpanded, setPanelExpanded] = useState(false);
-  const [appliedFilters, setAppliedFilters] = useState<FilterState>(DEFAULT_FILTERS);
-  const [filterApplied, setFilterApplied] = useState(false); // 한 번이라도 적용했는지
+  const [panelExpanded, setPanelExpanded] = useState(initialState?.panelExpanded ?? false);
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
+  const [filterApplied, setFilterApplied] = useState(initialState?.filterApplied ?? false); // 한 번이라도 적용했는지
+
+  // 상태 변경 시 부모에 알림
+  useEffect(() => {
+    onStateChange?.({ activeChip, sortType, panelExpanded, appliedFilters, filterApplied });
+  }, [activeChip, sortType, panelExpanded, appliedFilters, filterApplied]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── 위치 권한 상태 ──────────────────────
   type GpsStatus = 'granted' | 'denied' | 'unknown';
@@ -445,8 +459,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
               height: 44,
               borderRadius: 22,
               flexShrink: 0,
-              background: filterApplied ? '#ffffff' : '#4E5968',
-              border: filterApplied ? '1px solid #E5E8EB' : 'none',
+              background: filterApplied ? '#191F28' : '#F2F4F6',
+              border: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

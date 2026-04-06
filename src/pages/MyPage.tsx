@@ -214,7 +214,7 @@ function SubHeader({
 }
 
 /** 카페 2-컬럼 그리드 카드 */
-function CafeGrid({ cafes }: { cafes: CafeItem[] }) {
+function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (id: string) => void }) {
   return (
     <div style={{ padding: '16px 16px 0' }}>
       <p style={{ fontSize: 13, color: '#8B95A1', marginBottom: 14 }}>
@@ -226,7 +226,7 @@ function CafeGrid({ cafes }: { cafes: CafeItem[] }) {
         gap: 12,
       }}>
         {cafes.map(cafe => (
-          <div key={cafe.id} style={{ cursor: 'pointer' }}>
+          <div key={cafe.id} style={{ cursor: 'pointer' }} onClick={() => onDetailOpen?.(cafe.id)}>
             {/* 썸네일 */}
             <div style={{
               width: '100%',
@@ -304,15 +304,17 @@ function MenuRow({
 function ReportedCafePage({
   onBack,
   onClose,
+  onDetailOpen,
 }: {
   onBack: () => void;
   onClose: () => void;
+  onDetailOpen?: (id: string) => void;
 }) {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
       <SubHeader title="제보한 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        <CafeGrid cafes={MOCK_REPORTED} />
+        <CafeGrid cafes={MOCK_REPORTED} onDetailOpen={onDetailOpen} />
         <div style={{ height: 24 }} />
       </div>
     </div>
@@ -325,15 +327,17 @@ function ReportedCafePage({
 function RecentCafePage({
   onBack,
   onClose,
+  onDetailOpen,
 }: {
   onBack: () => void;
   onClose: () => void;
+  onDetailOpen?: (id: string) => void;
 }) {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
       <SubHeader title="최근 본 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        <CafeGrid cafes={MOCK_RECENT} />
+        <CafeGrid cafes={MOCK_RECENT} onDetailOpen={onDetailOpen} />
         <div style={{ height: 24 }} />
       </div>
     </div>
@@ -771,9 +775,22 @@ function WrittenReviewPage({
 // ─────────────────────────────────────────────────────────────
 // 메인: 마이페이지
 // ─────────────────────────────────────────────────────────────
-export default function MyPage() {
+export default function MyPage({
+  onDetailOpen,
+  initialSubPage,
+  onSubPageChange,
+}: {
+  onDetailOpen?: (id: string) => void;
+  initialSubPage?: SubPage | null;
+  onSubPageChange?: (page: SubPage | null) => void;
+} = {}) {
   const [tab, setTab] = useState<MyTab>('내 활동');
-  const [subPage, setSubPage] = useState<SubPage | null>(null);
+  const [subPage, setSubPage] = useState<SubPage | null>(initialSubPage ?? null);
+
+  const changeSubPage = (page: SubPage | null) => {
+    setSubPage(page);
+    onSubPageChange?.(page);
+  };
   const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
   const [versionToast, setVersionToast] = useState(false);
   const [showMoreSheet, setShowMoreSheet] = useState(false);
@@ -781,7 +798,7 @@ export default function MyPage() {
   const handleMoreAction = () => setShowMoreSheet(true);
   const handleClose = () => {
     // 탭 바 있는 구조에서 '닫기'는 서브페이지 닫기 or 마이페이지 기본 상태로
-    if (subPage) { setSubPage(null); setEditingReview(null); }
+    if (subPage) { changeSubPage(null); setEditingReview(null); }
     // 전체 닫기는 App.tsx에서 탭 전환으로 처리됨 (탭 바 구조이므로 onClose prop 없음)
   };
 
@@ -796,23 +813,23 @@ export default function MyPage() {
       <ReviewEditPage
         review={editingReview}
         onBack={() => setEditingReview(null)}
-        onClose={() => { setEditingReview(null); setSubPage(null); }}
+        onClose={() => { setEditingReview(null); changeSubPage(null); }}
         onSave={(_text, _photos) => setEditingReview(null)}
       />
     );
   }
 
   if (subPage === 'reported') {
-    return <ReportedCafePage onBack={() => setSubPage(null)} onClose={() => setSubPage(null)} />;
+    return <ReportedCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} onDetailOpen={onDetailOpen} />;
   }
   if (subPage === 'recent') {
-    return <RecentCafePage onBack={() => setSubPage(null)} onClose={() => setSubPage(null)} />;
+    return <RecentCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} onDetailOpen={onDetailOpen} />;
   }
   if (subPage === 'reviews') {
     return (
       <WrittenReviewPage
-        onBack={() => setSubPage(null)}
-        onClose={() => setSubPage(null)}
+        onBack={() => changeSubPage(null)}
+        onClose={() => changeSubPage(null)}
         onEdit={review => setEditingReview(review)}
       />
     );
@@ -865,9 +882,9 @@ export default function MyPage() {
         <div style={{ padding: '8px 20px' }}>
           {tab === '내 활동' ? (
             <>
-              <MenuRow label="제보한 카페" onTap={() => setSubPage('reported')} />
-              <MenuRow label="최근 본 카페" onTap={() => setSubPage('recent')} />
-              <MenuRow label="작성한 리뷰" onTap={() => setSubPage('reviews')} />
+              <MenuRow label="제보한 카페" onTap={() => changeSubPage('reported')} />
+              <MenuRow label="최근 본 카페" onTap={() => changeSubPage('recent')} />
+              <MenuRow label="작성한 리뷰" onTap={() => changeSubPage('reviews')} />
             </>
           ) : (
             <>
