@@ -789,13 +789,13 @@ export default function CollectionPage({
           }}>
             {hasSelection ? (
               <>
-                {/* 삭제 — Organize_Selected: 선택 매장을 현재 모음집에서 삭제 */}
-                <button onClick={deleteSelected} style={{
+                {/* 취소 — 오거나이즈 모드 종료 */}
+                <button onClick={exitOrganizeMode} style={{
                   flex: 1, height: 56, borderRadius: 16,
                   fontFamily: SFPro, fontSize: 17, fontWeight: 590,
                   backgroundColor: 'rgba(49,130,246,0.16)', color: '#2272eb',
                   border: 'none', cursor: 'pointer',
-                }}>삭제</button>
+                }}>취소</button>
                 {/* 완료 — 목적지 컬렉션 선택 바텀시트 호출 */}
                 <button onClick={() => setBottomSheet('select-collection')} style={{
                   flex: 1, height: 56, borderRadius: 16,
