@@ -603,9 +603,8 @@ export default function CollectionPage({
           </button>
         </div>
 
-        {/* 오른쪽: 일반 모드만 ···|X 표시 */}
-        {!isEditMode && !isOrganizeMode && (
-          <div style={{
+        {/* 오른쪽: 항상 고정 표시 */}
+        <div style={{
             display: 'flex', alignItems: 'center',
             height: 34, borderRadius: 99,
             backgroundColor: 'rgba(0,23,51,0.02)', overflow: 'hidden',
@@ -640,7 +639,6 @@ export default function CollectionPage({
               </svg>
             </button>
           </div>
-        )}
 
         {/* 팝오버 */}
         {showPopover && (
