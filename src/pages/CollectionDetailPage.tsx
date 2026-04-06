@@ -234,8 +234,12 @@ export default function CollectionDetailPage({
   onClose?: () => void;
   onDetailOpen?: (id: string) => void;
 }) {
-  const { recentlyViewed, favorites, removeCollection } = useFavorites();
+  const { recentlyViewed, favorites, collections, removeCollection } = useFavorites();
   const [showPopover, setShowPopover] = useState(false);
+
+  // 이 컬렉션에 추가된 storeIds만 필터링
+  const collection = collections.find(c => c.id === collectionId);
+  const collectionStoreIds = new Set(collection?.storeIds ?? []);
 
   const stores: CollectionStore[] = collectionId === 'recent'
     ? recentlyViewed.map((r: RecentCafe) => ({
@@ -248,16 +252,18 @@ export default function CollectionDetailPage({
         photos: r.photo ? [r.photo] : [],
         memo: '',
       }))
-    : favorites.map((f: FavoritedStore) => ({
-        id: f.id,
-        name: f.name,
-        address: f.address,
-        rating: f.rating,
-        reviewCount: f.reviewCount,
-        timeLimit: '',
-        photos: f.photos ?? [],
-        memo: '',
-      }));
+    : favorites
+        .filter((f: FavoritedStore) => collectionStoreIds.has(f.id))
+        .map((f: FavoritedStore) => ({
+          id: f.id,
+          name: f.name,
+          address: f.address,
+          rating: f.rating,
+          reviewCount: f.reviewCount,
+          timeLimit: '',
+          photos: f.photos ?? [],
+          memo: '',
+        }));
 
   const handleDelete = () => {
     removeCollection(collectionId);

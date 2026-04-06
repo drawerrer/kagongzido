@@ -444,7 +444,7 @@ export default function CollectionPage({
   const {
     favorites, removeFavorite: removeFavoriteFromContext,
     reorderFavorites,
-    recentlyViewed, collections, addCollection, updateCollection,
+    recentlyViewed, collections, addCollection, updateCollection, addStoresToCollection,
   } = useFavorites();
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -1018,6 +1018,8 @@ export default function CollectionPage({
           <button
             onClick={() => {
               if (!selectedCollectionId) return;
+              // 선택된 매장들을 선택한 컬렉션에 실제로 추가
+              addStoresToCollection(selectedCollectionId, [...selectedStoreIds]);
               setBottomSheet(null);
               setSelectedCollectionId(null);
               setSnackbar('added');
