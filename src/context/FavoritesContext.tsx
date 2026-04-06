@@ -24,6 +24,7 @@ export interface Collection {
   name: string;
   memo?: string;
   storeIds: string[]; // 이 컬렉션에 속한 매장 ID 목록
+  memos?: Record<string, string>; // storeId → 메모 텍스트
 }
 
 const DEFAULT_COLLECTIONS: Collection[] = [
@@ -46,6 +47,8 @@ interface FavoritesContextType {
   updateCollection: (id: string, updates: Partial<Omit<Collection, 'id'>>) => void;
   removeCollection: (id: string) => void;
   addStoresToCollection: (collectionId: string, storeIds: string[]) => void;
+  removeStoresFromCollection: (collectionId: string, storeIds: string[]) => void;
+  updateCollectionMemo: (collectionId: string, storeId: string, memo: string) => void;
 }
 
 // ─── Context 생성 ─────────────────────────────────────────────
@@ -112,11 +115,31 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     setCollections(prev => prev.filter(c => c.id !== id));
   }, []);
 
+  // 컬렉션에서 매장 제거
+  const removeStoresFromCollection = useCallback((collectionId: string, storeIds: string[]) => {
+    const idSet = new Set(storeIds);
+    setCollections(prev => prev.map(c =>
+      c.id === collectionId
+        ? { ...c, storeIds: c.storeIds.filter(id => !idSet.has(id)) }
+        : c
+    ));
+  }, []);
+
+  // 컬렉션 내 특정 매장의 메모 저장
+  const updateCollectionMemo = useCallback((collectionId: string, storeId: string, memo: string) => {
+    setCollections(prev => prev.map(c =>
+      c.id === collectionId
+        ? { ...c, memos: { ...(c.memos ?? {}), [storeId]: memo } }
+        : c
+    ));
+  }, []);
+
   return (
     <FavoritesContext.Provider value={{
       favorites, isFavorited, addFavorite, removeFavorite, reorderFavorites,
       recentlyViewed, addRecentlyViewed,
-      collections, addCollection, updateCollection, removeCollection, addStoresToCollection,
+      collections, addCollection, updateCollection, removeCollection,
+      addStoresToCollection, removeStoresFromCollection, updateCollectionMemo,
     }}>
       {children}
     </FavoritesContext.Provider>
