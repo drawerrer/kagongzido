@@ -345,38 +345,84 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 }
 
 // ─── 팝오버 메뉴 ─────────────────────────────────────────────
-function Popover({ onEdit, onClose }: { onEdit: () => void; onClose: () => void }) {
+function Popover({
+  hasSavedStores,
+  onEdit,
+  onDelete,
+  onAddToCollection,
+  onSuggestInfo,
+  onClose,
+}: {
+  hasSavedStores: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onAddToCollection: () => void;
+  onSuggestInfo: () => void;
+  onClose: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handler = (e: MouseEvent | TouchEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
   }, [onClose]);
 
-  const items = [
-    { label: '편집하기', action: onEdit },
-    { label: '공유하기', action: onClose },
-    { label: '정보 수정 제안하기', action: onClose },
-  ];
+  const items = hasSavedStores
+    ? [
+        { label: '편집하기', action: onEdit },
+        { label: '삭제하기', action: onDelete },
+        { label: '컬렉션에 추가하기', action: onAddToCollection },
+        { label: '정보 수정 제안하기', action: onSuggestInfo },
+      ]
+    : [
+        { label: '편집하기', action: onEdit },
+        { label: '정보 수정 제안하기', action: onSuggestInfo },
+      ];
+
   return (
     <div ref={ref} style={{
-      position: 'absolute', top: 44, right: 16, zIndex: 100,
-      backgroundColor: '#fff', borderRadius: 12,
-      boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-      minWidth: 180, overflow: 'hidden',
+      position: 'absolute', top: 49, right: 10, zIndex: 100,
+      width: 180,
+      backgroundColor: 'rgba(253,253,254,0.89)',
+      border: '1px solid rgba(253,253,255,0.75)',
+      borderRadius: 20,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
+      overflow: 'hidden',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
     }}>
+      {/* 타이틀 "메뉴" — Figma: 13px/590/#031832, height 30px */}
+      <div style={{
+        height: 30,
+        display: 'flex', alignItems: 'center',
+        paddingLeft: 16,
+      }}>
+        <span style={{
+          fontFamily: SFPro, fontWeight: 590, fontSize: 13,
+          color: '#031832',
+        }}>메뉴</span>
+      </div>
+      {/* 메뉴 항목 — Figma: 17px/510/#031228, height 44px */}
       {items.map((item, i) => (
         <button
           key={i}
           onClick={() => { item.action(); onClose(); }}
           style={{
-            width: '100%', textAlign: 'left', padding: '14px 16px',
-            fontFamily: SFPro, fontSize: 15, fontWeight: 510,
-            color: 'rgba(0,12,30,0.8)', background: 'none', border: 'none',
-            borderBottom: i < items.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
-            cursor: 'pointer',
+            width: '100%', height: 44,
+            display: 'flex', alignItems: 'center',
+            paddingLeft: 16,
+            fontFamily: SFPro, fontSize: 17, fontWeight: 510,
+            color: '#031228',
+            background: 'none', border: 'none',
+            cursor: 'pointer', textAlign: 'left',
+            borderRadius: 12,
           }}
         >{item.label}</button>
       ))}
@@ -469,6 +515,19 @@ export default function CollectionPage({
   const enterEditMode = () => {
     setIsEditMode(true);
     setSelectedStoreIds(new Set());
+    setShowPopover(false);
+  };
+
+  // 삭제하기: 매장 다중 선택(체크박스) 모드 진입
+  const enterDeleteMode = () => {
+    setIsEditMode(true);
+    setSelectedStoreIds(new Set());
+    setShowPopover(false);
+  };
+
+  // 컬렉션에 추가하기: 컬렉션 선택 바텀시트 오픈
+  const enterAddToCollectionMode = () => {
+    setBottomSheet('select-collection');
     setShowPopover(false);
   };
 
@@ -592,7 +651,16 @@ export default function CollectionPage({
         )}
 
         {/* 팝오버 */}
-        {showPopover && <Popover onEdit={enterEditMode} onClose={() => setShowPopover(false)} />}
+        {showPopover && (
+          <Popover
+            hasSavedStores={!isEmpty}
+            onEdit={enterEditMode}
+            onDelete={enterDeleteMode}
+            onAddToCollection={enterAddToCollectionMode}
+            onSuggestInfo={() => setShowPopover(false)}
+            onClose={() => setShowPopover(false)}
+          />
+        )}
       </div>
 
       {/* ── info_2 bar (Figma: 46px, Medium 510 14px centered) ── */}
@@ -608,7 +676,10 @@ export default function CollectionPage({
       </div>
 
       {/* ── 스크롤 본문 ── */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div
+        style={{ flex: 1, overflowY: 'auto' }}
+        onScroll={() => showPopover && setShowPopover(false)}
+      >
 
         {/* 컬렉션 카드 가로 스크롤 (Figma: paddingTop 12px, paddingLeft 20px, gap 10px) */}
         <div style={{
