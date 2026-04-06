@@ -23,10 +23,11 @@ export interface Collection {
   id: string;
   name: string;
   memo?: string;
+  storeIds: string[]; // 이 컬렉션에 속한 매장 ID 목록
 }
 
 const DEFAULT_COLLECTIONS: Collection[] = [
-  { id: 'recent', name: '최근' },
+  { id: 'recent', name: '최근', storeIds: [] },
 ];
 
 // ─── Context 타입 ─────────────────────────────────────────────
@@ -41,9 +42,10 @@ interface FavoritesContextType {
   addRecentlyViewed: (cafe: RecentCafe) => void;
   // 컬렉션 목록 (화면 이동해도 유지)
   collections: Collection[];
-  addCollection: (col: Omit<Collection, 'id'>) => void;
+  addCollection: (col: Omit<Collection, 'id' | 'storeIds'>) => void;
   updateCollection: (id: string, updates: Partial<Omit<Collection, 'id'>>) => void;
   removeCollection: (id: string) => void;
+  addStoresToCollection: (collectionId: string, storeIds: string[]) => void;
 }
 
 // ─── Context 생성 ─────────────────────────────────────────────
@@ -76,8 +78,8 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // 컬렉션 추가 ('recent'는 항상 첫 번째 고정)
-  const addCollection = useCallback((col: Omit<Collection, 'id'>) => {
-    const newCol: Collection = { id: Date.now().toString(), ...col };
+  const addCollection = useCallback((col: Omit<Collection, 'id' | 'storeIds'>) => {
+    const newCol: Collection = { id: Date.now().toString(), storeIds: [], ...col };
     setCollections(prev => {
       const recent = prev.find(c => c.id === 'recent')!;
       const rest = prev.filter(c => c.id !== 'recent');
@@ -95,6 +97,15 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     setFavorites([...newOrder]);
   }, []);
 
+  // 컬렉션에 매장 추가 (중복 제거)
+  const addStoresToCollection = useCallback((collectionId: string, storeIds: string[]) => {
+    setCollections(prev => prev.map(c =>
+      c.id === collectionId
+        ? { ...c, storeIds: [...new Set([...c.storeIds, ...storeIds])] }
+        : c
+    ));
+  }, []);
+
   // 컬렉션 삭제 ('recent'는 삭제 불가)
   const removeCollection = useCallback((id: string) => {
     if (id === 'recent') return;
@@ -105,7 +116,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     <FavoritesContext.Provider value={{
       favorites, isFavorited, addFavorite, removeFavorite, reorderFavorites,
       recentlyViewed, addRecentlyViewed,
-      collections, addCollection, updateCollection, removeCollection,
+      collections, addCollection, updateCollection, removeCollection, addStoresToCollection,
     }}>
       {children}
     </FavoritesContext.Provider>
