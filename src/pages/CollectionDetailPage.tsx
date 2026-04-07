@@ -393,7 +393,10 @@ function StoreCard({
   const placeholderColors = ['#D4C4B0', '#C4B4A0', '#B4A490', '#A49480'];
 
   return (
-    <div>
+    <div
+      onClick={() => isEditMode && onToggleSelect(store.id)}
+      style={{ cursor: isEditMode ? 'pointer' : 'default' }}
+    >
       <div style={{ padding: '20px 16px 0', display: 'flex', alignItems: 'flex-start' }}>
         {/* 체크박스 (편집모드) */}
         {isEditMode && (
@@ -408,7 +411,10 @@ function StoreCard({
                   <path d="M7 12l3.5 3.5L17 8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </>
               ) : (
-                <circle cx="12" cy="12" r="11" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
+                <>
+                  <circle cx="12" cy="12" r="11" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
+                  <path d="M7 12l3.5 3.5L17 8" stroke="rgba(0,0,0,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </>
               )}
             </svg>
           </button>
@@ -417,7 +423,7 @@ function StoreCard({
         {/* 메인 콘텐츠 */}
         <div
           style={{ flex: 1, minWidth: 0, cursor: isEditMode ? 'default' : 'pointer' }}
-          onClick={() => !isEditMode && onDetailOpen?.(store.id)}
+          onClick={(e) => { if (!isEditMode) { e.stopPropagation(); onDetailOpen?.(store.id); } }}
         >
           {/* Info + 아이콘 */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -517,7 +523,7 @@ function StoreCard({
             minHeight: 40,
             cursor: isEditMode ? 'default' : 'pointer',
           }}
-          onClick={() => !isEditMode && onMemoTap(store.id)}
+          onClick={(e) => { if (!isEditMode) { e.stopPropagation(); onMemoTap(store.id); } }}
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
             <path d="M8.5 1.5a1.5 1.5 0 0 1 2.12 2.12L3.5 10.74 1 11l.26-2.5L8.5 1.5z"
