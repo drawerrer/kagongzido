@@ -491,7 +491,7 @@ export default function CollectionPage({
   onPhotoMore?: (storeId: string, photos: string[], cafeName: string) => void;
 }) {
   const {
-    favorites, removeFavorite: removeFavoriteFromContext,
+    favorites, addFavorite: addFavoriteFromContext, removeFavorite: removeFavoriteFromContext,
     reorderFavorites,
     recentlyViewed, collections, addCollection, updateCollection, addStoresToCollection,
     reorderCollections,
@@ -565,10 +565,20 @@ export default function CollectionPage({
   const [renameValue, setRenameValue] = useState('');
   const [showPopover, setShowPopover] = useState(false);
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<Set<string>>(new Set());
+  const [deletedStores, setDeletedStores] = useState<FavoritedStore[]>([]);
+  const [addedToCollectionIds, setAddedToCollectionIds] = useState<string[]>([]);
+  const [renameToast, setRenameToast] = useState<string | null>(null);
 
   const isEmpty = orderedStores.length === 0;
   const hasSelection = selectedStoreIds.size > 0;
   const dismissSnackbar = useCallback(() => setSnackbar(null), []);
+
+  // 이름 변경 토스트 자동 소멸
+  useEffect(() => {
+    if (!renameToast) return;
+    const t = setTimeout(() => setRenameToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [renameToast]);
 
   // ── 드래그 핸들러 ──
   const onHandlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>, index: number) => {
@@ -638,8 +648,9 @@ export default function CollectionPage({
   };
 
   const deleteSelected = () => {
-    selectedStoreIds.forEach(id => removeFavoriteFromContext(id));
-    // 삭제 후 선택 초기화만 — 편집모드는 유지 (Edit_Default 단일 완료 버튼으로 원복)
+    const toDelete = orderedStores.filter(s => selectedStoreIds.has(s.id));
+    setDeletedStores(toDelete);
+    toDelete.forEach(s => removeFavoriteFromContext(s.id));
     setSelectedStoreIds(new Set());
     setSnackbar('deleted');
   };
@@ -669,10 +680,11 @@ export default function CollectionPage({
 
   const applyRename = () => {
     if (!renameTargetId || !renameValue.trim()) return;
-    updateCollection(renameTargetId, { name: renameValue.trim() });
+    const newName = renameValue.trim();
+    updateCollection(renameTargetId, { name: newName });
     setBottomSheet(null);
     setRenameTargetId(null);
-    setSnackbar('renamed');
+    setRenameToast(`'${newName}'으로 변경됐어요`);
   };
 
   // 현재 rename 대상 컬렉션 이름
@@ -1149,9 +1161,11 @@ export default function CollectionPage({
             onClick={() => {
               if (selectedCollectionIds.size === 0) return;
               // 선택된 모든 컬렉션에 매장 추가
-              selectedCollectionIds.forEach(colId => {
+              const addedIds = [...selectedCollectionIds];
+              addedIds.forEach(colId => {
                 addStoresToCollection(colId, [...selectedStoreIds]);
               });
+              setAddedToCollectionIds(addedIds);
               setBottomSheet(null);
               setSelectedCollectionIds(new Set());
               setSnackbar('added');
@@ -1172,15 +1186,37 @@ export default function CollectionPage({
       {/* ── 스낵바 ── */}
       {snackbar === 'deleted' && (
         <Snackbar message="삭제되었습니다" actionLabel="실행 취소"
-          onAction={() => setSnackbar(null)} onDismiss={dismissSnackbar} />
+          onAction={() => {
+            deletedStores.forEach(s => addFavoriteFromContext(s));
+            setDeletedStores([]);
+            setSnackbar(null);
+          }}
+          onDismiss={dismissSnackbar} />
       )}
       {snackbar === 'added' && (
         <Snackbar message="컬렉션에 담았어요" actionLabel="보러가기"
-          onAction={() => setSnackbar(null)} onDismiss={dismissSnackbar} />
+          onAction={() => {
+            const firstId = addedToCollectionIds[0];
+            const col = collections.find(c => c.id === firstId);
+            if (col) onCollectionOpen?.(col.id, col.name);
+            setSnackbar(null);
+          }}
+          onDismiss={dismissSnackbar} />
       )}
-      {snackbar === 'renamed' && (
-        <Snackbar message="컬렉션 이름이 변경되었어요" actionLabel="확인"
-          onAction={() => setSnackbar(null)} onDismiss={dismissSnackbar} />
+
+      {/* ── 이름 변경 토스트 (Collection/Main_Toast_Rename) ── */}
+      {renameToast && (
+        <div style={{
+          position: 'absolute', top: 60, left: '50%', transform: 'translateX(-50%)',
+          backgroundColor: '#ffffff', borderRadius: 9999,
+          padding: '10px 20px', boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
+          zIndex: 200, whiteSpace: 'nowrap', pointerEvents: 'none',
+        }}>
+          <span style={{
+            fontFamily: SFPro, fontWeight: 590, fontSize: 15,
+            color: 'rgba(0,12,30,0.8)', lineHeight: '22.5px',
+          }}>{renameToast}</span>
+        </div>
       )}
     </div>
   );
