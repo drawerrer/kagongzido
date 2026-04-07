@@ -602,8 +602,9 @@ function StoreCard({
           {store.memo ? (
             <span style={{
               fontFamily: SFPro, fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.58)',
-              lineHeight: '16.2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
-            }}>{store.memo}</span>
+              lineHeight: '16.2px', flex: 1,
+              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+            } as React.CSSProperties}>{store.memo}</span>
           ) : (
             <span style={{
               fontFamily: SFPro, fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.25)',
