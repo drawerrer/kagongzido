@@ -532,7 +532,7 @@ function StoreCard({
             <span style={{
               fontFamily: SFPro, fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.25)',
               lineHeight: '16.2px',
-            }}>메모 추가</span>
+            }}>이곳을 기억하고 싶은 특별한 이유를 적어두세요</span>
           )}
         </div>
       )}
