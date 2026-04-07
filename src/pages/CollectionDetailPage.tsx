@@ -451,7 +451,8 @@ function StoreCard({
             {isEditMode ? (
               <div style={{ width: 24, height: 24, flexShrink: 0, marginLeft: 8, marginTop: 2 }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 8h16M4 12h16M4 16h16" stroke="rgba(0,29,58,0.18)" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M8 10l4-4 4 4" stroke="rgba(0,29,58,0.35)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M8 14l4 4 4-4" stroke="rgba(0,29,58,0.35)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             ) : (
