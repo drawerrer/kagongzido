@@ -18,7 +18,6 @@ interface MockGuidebook {
   id: string;
   title: string;
   subtitle: string;
-  count: number;
   gradient: [string, string];
   stores: MockStore[];
 }
@@ -38,17 +37,16 @@ const FEATURED: MockGuidebook = {
   id: 'featured',
   title: '서울 근교\n신상 카페',
   subtitle: '커피에 진심인 바리스타의 스페셜티 로스터리',
-  count: 5,
   gradient: ['#C4A882', '#5A3C24'],
   stores: FEATURE_STORES,
 };
 
 const PAST_GUIDEBOOKS: MockGuidebook[] = [
-  { id: 'p1', title: '빵 냄새 가득\n포근한 분위기', subtitle: '따뜻하고 아늑한 베이커리 카페 모음', count: 5, gradient: ['#C4A882', '#8B6B4A'], stores: FEATURE_STORES },
-  { id: 'p2', title: '햇볕은 쨍쨍\n바람은 살랑살랑', subtitle: '뷰 맛집 야외 테라스 카페', count: 4, gradient: ['#87CEEB', '#3A80C0'], stores: FEATURE_STORES },
-  { id: 'p3', title: '나만 알고싶은\n카페', subtitle: '숨은 보석 같은 카페들', count: 6, gradient: ['#D4B8A0', '#7A5A42'], stores: FEATURE_STORES },
-  { id: 'p4', title: '화이트와 우드톤의\n만남', subtitle: '감성 인테리어 카페 큐레이션', count: 5, gradient: ['#E8DDD0', '#B0A090'], stores: FEATURE_STORES },
-  { id: 'p5', title: '집중력 가득', subtitle: '카공하기 딱 좋은 조용한 카페', count: 7, gradient: ['#4A4042', '#1A181C'], stores: FEATURE_STORES },
+  { id: 'p1', title: '빵 냄새 가득\n포근한 분위기', subtitle: '따뜻하고 아늑한 베이커리 카페 모음', gradient: ['#C4A882', '#8B6B4A'], stores: FEATURE_STORES },
+  { id: 'p2', title: '햇볕은 쨍쨍\n바람은 살랑살랑', subtitle: '뷰 맛집 야외 테라스 카페', gradient: ['#87CEEB', '#3A80C0'], stores: FEATURE_STORES },
+  { id: 'p3', title: '나만 알고싶은\n카페', subtitle: '숨은 보석 같은 카페들', gradient: ['#D4B8A0', '#7A5A42'], stores: FEATURE_STORES },
+  { id: 'p4', title: '화이트와 우드톤의\n만남', subtitle: '감성 인테리어 카페 큐레이션', gradient: ['#E8DDD0', '#B0A090'], stores: FEATURE_STORES },
+  { id: 'p5', title: '집중력 가득', subtitle: '카공하기 딱 좋은 조용한 카페', gradient: ['#4A4042', '#1A181C'], stores: FEATURE_STORES },
 ];
 
 // ─── 공통 네비게이션 바 ───────────────────────────────────────
@@ -146,7 +144,7 @@ function GuideBookMainView({
                 fontSize: 18,
                 color: '#fff',
               }}>
-                {guidebook.count} places
+                {guidebook.stores.length} places
               </span>
             </div>
           </div>
@@ -302,7 +300,7 @@ function GuideBookDetailView({
           {guidebook.title.replace('\n', ' ')}
         </p>
         <p style={{ fontFamily: SFPro, fontWeight: 400, fontSize: 14, color: '#000000' }}>
-          {guidebook.count} places
+          {guidebook.stores.length} places
         </p>
       </div>
 
@@ -534,7 +532,7 @@ function GuideBookPastView({
                   fontSize: 9,
                   color: '#fff',
                 }}>
-                  {g.count} places
+                  {g.stores.length} places
                 </p>
               </div>
             </div>
