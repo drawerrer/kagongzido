@@ -247,15 +247,18 @@ function AddStoreSheet({
     if (dy < -30) setExpanded(false);
   };
 
-  // 콘텐츠 드래그 (half 상태에서 위로 드래그 → 확장 / expanded 상태에서 스크롤 top + 아래 드래그 → 축소)
+  // 콘텐츠 드래그 — 스크롤 최상단일 때만 시트 확장/축소로 인식
+  const dragStartScrollTop = useRef(0);
   const onContentPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     dragStartY.current = e.clientY;
+    dragStartScrollTop.current = scrollRef.current?.scrollTop ?? 0;
   };
   const onContentPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     const dy = dragStartY.current - e.clientY;
-    if (!expanded && dy > 40) {
+    const wasAtTop = dragStartScrollTop.current === 0;
+    if (!expanded && wasAtTop && dy > 40) {
       setExpanded(true);
-    } else if (expanded && dy < -40 && (scrollRef.current?.scrollTop ?? 0) === 0) {
+    } else if (expanded && wasAtTop && dy < -40) {
       setExpanded(false);
     }
   };
@@ -308,7 +311,7 @@ function AddStoreSheet({
         {/* 매장 리스트 */}
         <div
           ref={scrollRef}
-          style={{ flex: 1, overflowY: expanded ? 'auto' : 'hidden', marginTop: 12 }}
+          style={{ flex: 1, overflowY: 'auto', marginTop: 12 }}
           onPointerDown={onContentPointerDown}
           onPointerUp={onContentPointerUp}
         >
