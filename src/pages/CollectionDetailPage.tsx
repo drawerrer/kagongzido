@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useFavorites, FavoritedStore, RecentCafe } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
 
@@ -373,29 +373,40 @@ function StoreCard({
   isSelected,
   heartFilled,
   showMemo = true,
+  isDragging = false,
+  isDragOver = false,
   onToggleSelect,
   onMemoTap,
   onDetailOpen,
   onHeartTap,
   onPhotoMore,
+  onHandleDrag,
 }: {
   store: CollectionStore;
   isEditMode: boolean;
   isSelected: boolean;
   heartFilled: boolean;
   showMemo?: boolean;
+  isDragging?: boolean;
+  isDragOver?: boolean;
   onToggleSelect: (id: string) => void;
   onMemoTap: (id: string) => void;
   onDetailOpen?: (id: string) => void;
   onHeartTap?: (id: string) => void;
   onPhotoMore?: () => void;
+  onHandleDrag?: (e: React.PointerEvent<HTMLDivElement>) => void;
 }) {
   const placeholderColors = ['#D4C4B0', '#C4B4A0', '#B4A490', '#A49480'];
 
   return (
     <div
       onClick={() => isEditMode && onToggleSelect(store.id)}
-      style={{ cursor: isEditMode ? 'pointer' : 'default' }}
+      style={{
+        cursor: isEditMode ? 'pointer' : 'default',
+        opacity: isDragging ? 0.4 : 1,
+        borderTop: isDragOver ? '2px solid #3182F6' : '2px solid transparent',
+        transition: 'opacity 0.15s',
+      }}
     >
       <div style={{ padding: '20px 16px 0', display: 'flex', alignItems: 'flex-start' }}>
         {/* 체크박스 (편집모드) */}
@@ -449,7 +460,10 @@ function StoreCard({
             </div>
             {/* 편집모드: 순서 핸들 / 기본: 하트 */}
             {isEditMode ? (
-              <div style={{ width: 24, height: 24, flexShrink: 0, marginLeft: 8, marginTop: 2 }}>
+              <div
+                onPointerDown={onHandleDrag}
+                style={{ width: 24, height: 24, flexShrink: 0, marginLeft: 8, marginTop: 2, cursor: 'grab', touchAction: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <g fill="rgba(0,19,43,0.3)" fillRule="evenodd" clipRule="evenodd">
                     <path d="M10.293 7.707a1 1 0 0 1 0-1.414l3-3a1 1 0 1 1 1.414 1.414l-3 3a1 1 0 0 1-1.414 0"/>
@@ -609,7 +623,7 @@ export default function CollectionDetailPage({
   const {
     recentlyViewed, favorites, collections,
     removeCollection, removeFavorite, addFavorite, isFavorited,
-    addStoresToCollection, removeStoresFromCollection, updateCollectionMemo,
+    addStoresToCollection, removeStoresFromCollection, updateCollectionMemo, updateCollection,
   } = useFavorites();
 
   const [showPopover, setShowPopover] = useState(false);
@@ -625,9 +639,22 @@ export default function CollectionDetailPage({
   const snackbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── 드래그 순서변경 ──
+  const [orderedStoreIds, setOrderedStoreIds] = useState<string[]>([]);
+  const [dragIndex, setDragIndex] = useState(-1);
+  const [dragOverIndex, setDragOverIndex] = useState(-1);
+  const storeListRef = useRef<HTMLDivElement>(null);
+  const itemRefsArr = useRef<(HTMLDivElement | null)[]>([]);
+
   const isRecent = collectionId === 'recent';
   const collection = collections.find(c => c.id === collectionId);
-  const collectionStoreIds = new Set(collection?.storeIds ?? []);
+
+  // 드래그 중이 아닐 때 collection storeIds와 동기화
+  useEffect(() => {
+    if (!isRecent && dragIndex === -1) {
+      setOrderedStoreIds(collection?.storeIds ?? []);
+    }
+  }, [collection?.storeIds, dragIndex, isRecent]);
 
   const stores: CollectionStore[] = isRecent
     ? recentlyViewed.map((r: RecentCafe) => ({
@@ -640,8 +667,9 @@ export default function CollectionDetailPage({
         photos: r.photo ? [r.photo] : [],
         memo: '',
       }))
-    : favorites
-        .filter((f: FavoritedStore) => collectionStoreIds.has(f.id))
+    : orderedStoreIds
+        .map((id) => favorites.find((f: FavoritedStore) => f.id === id))
+        .filter((f): f is FavoritedStore => !!f)
         .map((f: FavoritedStore) => ({
           id: f.id,
           name: f.name,
@@ -654,7 +682,43 @@ export default function CollectionDetailPage({
         }));
 
   // 매장 추가 시트에 보여줄 매장: favorites 중 이 컬렉션에 없는 것
+  const collectionStoreIds = new Set(collection?.storeIds ?? []);
   const addableStores = favorites.filter(f => !collectionStoreIds.has(f.id));
+
+  const onHandlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragIndex(index);
+    setDragOverIndex(index);
+    storeListRef.current?.setPointerCapture(e.pointerId);
+  }, []);
+
+  const onListPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragIndex === -1) return;
+    const y = e.clientY;
+    let newOver = itemRefsArr.current.length - 1;
+    for (let i = 0; i < itemRefsArr.current.length; i++) {
+      const el = itemRefsArr.current[i];
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (y < rect.top + rect.height / 2) { newOver = i; break; }
+    }
+    if (newOver !== dragOverIndex) setDragOverIndex(newOver);
+  }, [dragIndex, dragOverIndex]);
+
+  const onListPointerUp = useCallback(() => {
+    if (dragIndex !== -1 && dragOverIndex !== -1 && dragIndex !== dragOverIndex) {
+      setOrderedStoreIds(prev => {
+        const arr = [...prev];
+        const [moved] = arr.splice(dragIndex, 1);
+        arr.splice(dragOverIndex, 0, moved);
+        updateCollection(collectionId, { storeIds: arr });
+        return arr;
+      });
+    }
+    setDragIndex(-1);
+    setDragOverIndex(-1);
+  }, [dragIndex, dragOverIndex, updateCollection, collectionId]);
 
   // ── 팝오버 아이템 (컨텍스트별) ──
   const popoverItems = isRecent
@@ -900,23 +964,34 @@ export default function CollectionDetailPage({
         )
       ) : (
         <div
+          ref={storeListRef}
           style={{ flex: 1, overflowY: 'auto' }}
           onScroll={() => showPopover && setShowPopover(false)}
+          onPointerMove={isEditMode ? onListPointerMove : undefined}
+          onPointerUp={isEditMode ? onListPointerUp : undefined}
+          onPointerCancel={isEditMode ? onListPointerUp : undefined}
         >
-          {stores.map((store) => (
-            <StoreCard
+          {stores.map((store, index) => (
+            <div
               key={store.id}
-              store={store}
-              isEditMode={isEditMode}
-              isSelected={selectedIds.has(store.id)}
-              heartFilled={isRecent ? isFavorited(store.id) : true}
-              showMemo={!isRecent}
-              onToggleSelect={toggleSelect}
-              onMemoTap={(id) => setMemoTargetId(id)}
-              onDetailOpen={onDetailOpen}
-              onHeartTap={handleHeartTap}
-              onPhotoMore={() => onPhotoMore?.(store.id, store.photos, store.name)}
-            />
+              ref={el => { itemRefsArr.current[index] = el; }}
+            >
+              <StoreCard
+                store={store}
+                isEditMode={isEditMode}
+                isSelected={selectedIds.has(store.id)}
+                heartFilled={isRecent ? isFavorited(store.id) : true}
+                showMemo={!isRecent}
+                isDragging={isEditMode && dragIndex === index}
+                isDragOver={isEditMode && dragOverIndex === index && dragIndex !== index}
+                onToggleSelect={toggleSelect}
+                onMemoTap={(id) => setMemoTargetId(id)}
+                onDetailOpen={onDetailOpen}
+                onHeartTap={handleHeartTap}
+                onPhotoMore={() => onPhotoMore?.(store.id, store.photos, store.name)}
+                onHandleDrag={isEditMode && !isRecent ? (e) => onHandlePointerDown(e, index) : undefined}
+              />
+            </div>
           ))}
         </div>
       )}
