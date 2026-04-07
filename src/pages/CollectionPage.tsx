@@ -800,7 +800,7 @@ export default function CollectionPage({
               fontFamily: SFPro, fontWeight: 700, fontSize: 17,
               lineHeight: '21.25px', color: 'rgba(0,12,30,0.8)',
               margin: 0,
-            }}>저장한 매장</h2>
+            }}>저장한 매장 ({orderedStores.length})</h2>
           </div>
 
           {isEmpty ? (
