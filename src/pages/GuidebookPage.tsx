@@ -50,7 +50,17 @@ const PAST_GUIDEBOOKS: MockGuidebook[] = [
 ];
 
 // ─── 공통 네비게이션 바 ───────────────────────────────────────
-function NavBar({ onBack, onClose }: { onBack?: () => void; onClose?: () => void }) {
+function NavBar({
+  onBack,
+  onClose,
+  onDotsPress,
+  dotsActive,
+}: {
+  onBack?: () => void;
+  onClose?: () => void;
+  onDotsPress?: () => void;
+  dotsActive?: boolean;
+}) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', height: 44, borderBottom: '1px solid rgba(0,0,0,0.06)', flexShrink: 0, backgroundColor: '#fff' }}>
       {/* Left: 뒤로가기 + 앱 아이콘 + 앱명 */}
@@ -73,7 +83,17 @@ function NavBar({ onBack, onClose }: { onBack?: () => void; onClose?: () => void
       {/* Right: Fixed Icon Area */}
       <div style={{ paddingRight: 8, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', height: 34, borderRadius: 99, backgroundColor: 'rgba(0,23,51,0.02)', overflow: 'hidden' }}>
-          <button style={{ width: 46, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer' }}>
+          {/* … 버튼 — 클릭 시 팝오버 토글 */}
+          <button
+            onClick={onDotsPress}
+            style={{
+              width: 46, height: 34,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: dotsActive ? 'rgba(0,23,51,0.06)' : 'none',
+              border: 'none', cursor: 'pointer',
+              transition: 'background 0.15s',
+            }}
+          >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="#191f28">
               <circle cx="4" cy="10" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/>
             </svg>
@@ -570,6 +590,7 @@ export default function GuidebookPage({
   const [activeGuidebook, setActiveGuidebook] = useState<MockGuidebook>(FEATURED);
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const dismissSnackbar = useCallback(() => setSnackbar(null), []);
+  const [showPopover, setShowPopover] = useState(false);
 
   const changeView = (v: GuideView) => {
     setView(v);
@@ -599,8 +620,13 @@ export default function GuidebookPage({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#fff' }}>
-      <NavBar onBack={handleBack} onClose={onClose ?? onBack} />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#fff', position: 'relative' }}>
+      <NavBar
+        onBack={handleBack}
+        onClose={onClose ?? onBack}
+        onDotsPress={() => setShowPopover(v => !v)}
+        dotsActive={showPopover}
+      />
 
       {view === 'main' && (
         <GuideBookMainView
@@ -625,6 +651,84 @@ export default function GuidebookPage({
           guidebooks={PAST_GUIDEBOOKS}
           onCardPress={(g) => { setActiveGuidebook(g); changeView('detail'); }}
         />
+      )}
+
+      {/* ─── 팝오버 메뉴 — 피그마: GuideBook/Main_Popover ─── */}
+      {showPopover && (
+        <>
+          {/* 투명 backdrop — 팝오버 외부 터치 시 닫기 */}
+          <div
+            style={{ position: 'absolute', inset: 0, zIndex: 99 }}
+            onClick={() => setShowPopover(false)}
+          />
+          {/* 메뉴 팝오버 — 피그마: radius=20, bg rgba(253,253,254,0.89), stroke rgba(253,253,255,0.75) */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 49,          // nav(44px) + gap(5px)
+              right: 10,        // 피그마: frame 우측에서 10px
+              width: 180,
+              borderRadius: 20,
+              backgroundColor: 'rgba(253,253,254,0.89)',
+              border: '1px solid rgba(253,253,255,0.75)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+              zIndex: 100,
+              overflow: 'hidden',
+            }}
+          >
+            {/* 타이틀 영역 — 피그마: height=30, 13px/590, rgba(3,24,50,0.46) */}
+            <div style={{ height: 30, display: 'flex', alignItems: 'center', paddingLeft: 16, paddingTop: 2 }}>
+              <span style={{
+                fontFamily: SFPro,
+                fontWeight: 590,
+                fontSize: 13,
+                color: 'rgba(3,24,50,0.46)',
+                lineHeight: '19.5px',
+              }}>
+                메뉴
+              </span>
+            </div>
+
+            {/* 메뉴 아이템: 공유하기 — 피그마: height=44, 17px/510, rgba(3,18,40,0.7) */}
+            <button
+              onClick={() => { setShowPopover(false); }}
+              style={{
+                display: 'flex', alignItems: 'center',
+                width: '100%', height: 44,
+                paddingLeft: 16, paddingRight: 16,
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: SFPro, fontWeight: 510, fontSize: 17,
+                color: 'rgba(3,18,40,0.7)',
+                textAlign: 'left', borderRadius: 12,
+                boxSizing: 'border-box',
+              }}
+            >
+              공유하기
+            </button>
+
+            {/* 메뉴 아이템: 정보 수정 제안하기 — 피그마: height=44, 동일 스타일 */}
+            <button
+              onClick={() => { setShowPopover(false); }}
+              style={{
+                display: 'flex', alignItems: 'center',
+                width: '100%', height: 44,
+                paddingLeft: 16, paddingRight: 16,
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: SFPro, fontWeight: 510, fontSize: 17,
+                color: 'rgba(3,18,40,0.7)',
+                textAlign: 'left', borderRadius: 12,
+                boxSizing: 'border-box',
+              }}
+            >
+              정보 수정 제안하기
+            </button>
+
+            {/* 하단 여백 — 피그마: 총 height 138 = 30+44+44+10(padding) */}
+            <div style={{ height: 10 }} />
+          </div>
+        </>
       )}
 
       {snackbar && <Snackbar message={snackbar} onDismiss={dismissSnackbar} />}
