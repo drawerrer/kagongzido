@@ -714,8 +714,19 @@ export default function CollectionDetailPage({
   const handleHeartTap = (storeId: string) => {
     if (isRecent) {
       if (isFavorited(storeId)) {
-        // 이미 찜됨 → 삭제 확인
-        setShowDeleteStoreId(storeId);
+        // 최근 탭: 다이얼로그 없이 바로 삭제 + 스낵바
+        const favStore = favorites.find(f => f.id === storeId);
+        removeFavorite(storeId);
+        if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+        setSnackbar({
+          msg: '매장을 삭제했어요',
+          actionLabel: '되돌리기',
+          undoFn: () => {
+            if (favStore) addFavorite(favStore);
+            setSnackbar(null);
+          },
+        });
+        snackbarTimerRef.current = setTimeout(() => setSnackbar(null), 3000);
       } else {
         // 찜 안됨 → 추가
         const store = stores.find(s => s.id === storeId);
@@ -725,7 +736,7 @@ export default function CollectionDetailPage({
         }
       }
     } else {
-      // 커스텀 컬렉션 → 삭제 확인
+      // 커스텀 컬렉션 → 다이얼로그 → 삭제
       setShowDeleteStoreId(storeId);
     }
   };
