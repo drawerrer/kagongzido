@@ -128,7 +128,7 @@ function DeleteStoreDialog({ onConfirm, onCancel }: { onConfirm: () => void; onC
 // ─── 메모 바텀시트 ─────────────────────────────────────────────
 function MemoSheet({ initialMemo, onApply, onClose }: { initialMemo: string; onApply: (memo: string) => void; onClose: () => void }) {
   const [value, setValue] = useState(initialMemo);
-  const MAX = 60;
+  const MAX = 45;
   const isActive = value.trim().length > 0;
 
   return (
