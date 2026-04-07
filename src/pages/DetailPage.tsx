@@ -720,9 +720,10 @@ interface DetailPageProps {
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
   scrollToReview?: boolean;
+  openDirections?: boolean;
 }
 
-export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview }: DetailPageProps) {
+export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections }: DetailPageProps) {
   const cafe = getCafeDetail(cafeId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
@@ -749,12 +750,21 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   const [hoursExpanded, setHoursExpanded] = useState(false);
   const [isLoggedIn] = useState(true); // mock: 로그인 상태 (Supabase 연동 전 임시)
 
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const [showDirectionsSheet, setShowDirectionsSheet] = useState(false);
   const [showLoginSheet, setShowLoginSheet] = useState(false);
+
+  // 길찾기 바텀시트 자동 열기 (가이드북 길찾기 버튼에서 진입 시)
+  useEffect(() => {
+    if (openDirections) {
+      setTimeout(() => setShowDirectionsSheet(true), 150);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [copyToastVisible, setCopyToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);

@@ -188,6 +188,7 @@ function GuideBookDetailView({
   guidebook,
   onDetailOpen,
   onDetailOpenToReview,
+  onDirectionsOpen,
   onSave,
   initialStoreIndex,
   onStoreIndexChange,
@@ -195,6 +196,7 @@ function GuideBookDetailView({
   guidebook: MockGuidebook;
   onDetailOpen?: (id: string) => void;
   onDetailOpenToReview?: (id: string) => void;
+  onDirectionsOpen?: (id: string) => void;
   onSave: (store: MockStore) => void;
   initialStoreIndex?: number;
   onStoreIndexChange?: (index: number) => void;
@@ -420,6 +422,7 @@ function GuideBookDetailView({
               onClick={() => {
                 if (label === '저장하기') onSave(store);
                 else if (label === '리뷰보기') onDetailOpenToReview?.(store.id);
+                else if (label === '길찾기') onDirectionsOpen?.(store.id);
                 else onDetailOpen?.(store.id);
               }}
               style={{
@@ -546,6 +549,7 @@ function GuideBookPastView({
 export default function GuidebookPage({
   onDetailOpen,
   onDetailOpenToReview,
+  onDirectionsOpen,
   onBack,
   onClose,
   initialView,
@@ -555,6 +559,7 @@ export default function GuidebookPage({
 }: {
   onDetailOpen?: (id: string) => void;
   onDetailOpenToReview?: (id: string) => void;
+  onDirectionsOpen?: (id: string) => void;
   onBack?: () => void;
   onClose?: () => void;
   initialView?: GuideView;
@@ -611,6 +616,7 @@ export default function GuidebookPage({
           guidebook={activeGuidebook}
           onDetailOpen={onDetailOpen}
           onDetailOpenToReview={onDetailOpenToReview}
+          onDirectionsOpen={onDirectionsOpen}
           onSave={handleSave}
           initialStoreIndex={initialStoreIndex}
           onStoreIndexChange={onStoreIndexChange}

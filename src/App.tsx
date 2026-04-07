@@ -73,6 +73,7 @@ function AppInner() {
   const [guidebookView, setGuidebookView] = useState<string | null>(null);
   const [guidebookStoreIndex, setGuidebookStoreIndex] = useState(0);
   const [detailScrollToReview, setDetailScrollToReview] = useState(false);
+  const [detailOpenDirections, setDetailOpenDirections] = useState(false);
 
   // 포토리뷰 전체보기
   if (photoReview) {
@@ -104,11 +105,12 @@ function AppInner() {
       <div style={{ height: '100%' }}>
         <DetailPage
           cafeId={detailCafeId}
-          onBack={() => { setDetailCafeId(null); setDetailScrollToReview(false); }}
-          onClose={() => { setDetailCafeId(null); setDetailScrollToReview(false); }}
+          onBack={() => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
+          onClose={() => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
           activeTab={activeTab}
-          onTabChange={(tab) => { setDetailCafeId(null); setDetailScrollToReview(false); setActiveTab(tab as TabId); }}
+          onTabChange={(tab) => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); setActiveTab(tab as TabId); }}
           scrollToReview={detailScrollToReview}
+          openDirections={detailOpenDirections}
         />
       </div>
     );
@@ -154,6 +156,7 @@ function AppInner() {
               <GuidebookPage
                 onDetailOpen={(id) => setDetailCafeId(id)}
                 onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
+                onDirectionsOpen={(id) => { setDetailCafeId(id); setDetailOpenDirections(true); }}
                 onBack={() => setActiveTab('home')}
                 onClose={() => setActiveTab('home')}
                 initialView={(guidebookView as any) ?? 'main'}
