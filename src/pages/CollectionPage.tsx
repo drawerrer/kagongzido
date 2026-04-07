@@ -555,10 +555,10 @@ export default function CollectionPage({
     if (isOrganizeMode && selectedStoreIds.size > 0) {
       addStoresToCollection(newId, [...selectedStoreIds]);
       exitOrganizeMode();
+      setSnackbar('added'); // 실제로 매장을 담았을 때만 표시
     }
     setNewCollectionName('');
     setBottomSheet(null);
-    setSnackbar('added');
   };
 
   const openRename = (colId: string) => {
