@@ -447,14 +447,8 @@ function StoreCard({
                 )}
               </div>
             </div>
-            {/* 편집모드: 순서 핸들 / 기본: 하트 */}
-            {isEditMode ? (
-              <div style={{ width: 24, height: 24, flexShrink: 0, marginLeft: 8, marginTop: 2 }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 8h16M4 12h16M4 16h16" stroke="rgba(0,29,58,0.18)" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </div>
-            ) : (
+            {/* 기본: 하트 (편집모드에서는 숨김) */}
+            {!isEditMode && (
               <button
                 onClick={(e) => { e.stopPropagation(); onHeartTap?.(store.id); }}
                 style={{ width: 20, height: 20, flexShrink: 0, marginLeft: 12, marginTop: 2, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
