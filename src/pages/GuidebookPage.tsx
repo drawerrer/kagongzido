@@ -307,7 +307,7 @@ function GuideBookDetailView({
       </div>
 
       {/* 수평 무한 캐러셀 — 피그마: 413px 영역, 중앙 크게·좌우 작게 */}
-      <div style={{ flex: 1, minHeight: CARD_H, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
         <style>{`.guide-carousel::-webkit-scrollbar { display: none; }`}</style>
         <div
           ref={scrollRef}
@@ -357,7 +357,7 @@ function GuideBookDetailView({
                         width: 6,
                         height: 6,
                         borderRadius: 99,
-                        backgroundColor: di === currentStoreIndex ? '#6b7684' : '#d9d9d9',
+                        backgroundColor: di === currentStoreIndex ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.35)',
                         transition: 'background-color 0.25s ease',
                       }} />
                     ))}
