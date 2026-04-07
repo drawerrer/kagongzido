@@ -223,6 +223,8 @@ function AddStoreSheet({
   onGoHome?: () => void;
 }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState(false);
+  const dragStartY = useRef(0);
   const hasSelection = selectedIds.size > 0;
 
   const toggle = (id: string) => {
@@ -233,132 +235,158 @@ function AddStoreSheet({
     });
   };
 
+  const onHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragStartY.current = e.clientY;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onHandlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const dy = dragStartY.current - e.clientY; // 양수 = 위로 드래그
+    if (dy > 30) setExpanded(true);
+    if (dy < -30) setExpanded(false);
+  };
+
   return (
     <div
       style={{
         position: 'absolute', inset: 0, zIndex: 200,
         backgroundColor: 'rgba(0,0,0,0.4)',
-        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
       }}
       onClick={onClose}
     >
       <div
         style={{
-          margin: '0 10px',
-          maxHeight: '82%',
+          position: 'absolute',
+          bottom: 0, left: 0, right: 0,
+          height: expanded ? '92%' : '55%',
+          backgroundColor: '#ffffff',
+          borderRadius: '20px 20px 0 0',
           display: 'flex', flexDirection: 'column',
+          transition: 'height 0.3s cubic-bezier(0.32,0.72,0,1)',
+          overflow: 'hidden',
         }}
         onClick={e => e.stopPropagation()}
       >
-        <div style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '28px 28px 0 0',
-          overflow: 'hidden',
-          display: 'flex', flexDirection: 'column',
-          maxHeight: '100%',
-        }}>
-          {/* 핸들 */}
-          <div style={{ height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, paddingTop: 8 }}>
-            <div style={{ width: 36, height: 4, borderRadius: 40, backgroundColor: '#e5e8eb' }} />
-          </div>
+        {/* 드래그 핸들 */}
+        <div
+          onPointerDown={onHandlePointerDown}
+          onPointerUp={onHandlePointerUp}
+          style={{
+            height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0, cursor: 'grab', touchAction: 'none',
+          }}
+        >
+          <div style={{ width: 36, height: 4, borderRadius: 40, backgroundColor: '#e5e8eb' }} />
+        </div>
 
-          {/* 타이틀 */}
-          <div style={{ padding: '12px 20px 0', flexShrink: 0 }}>
-            <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)', marginBottom: 0 }}>
-              어떤 매장을 추가할까요?
-            </p>
-          </div>
-
-          {/* 선택 개수 서브헤더 */}
+        {/* 타이틀 */}
+        <div style={{ padding: '4px 20px 0', flexShrink: 0 }}>
+          <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)', marginBottom: 0 }}>
+            어떤 매장을 추가할까요?
+          </p>
           {hasSelection && (
-            <div style={{ padding: '6px 20px 0', flexShrink: 0 }}>
-              <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 14, color: '#3182f6', marginBottom: 0 }}>
-                {selectedIds.size}개의 매장을 선택했어요
+            <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 14, color: 'rgba(0,19,43,0.45)', marginTop: 4, marginBottom: 0 }}>
+              {selectedIds.size}개의 매장을 선택했어요
+            </p>
+          )}
+        </div>
+
+        {/* 매장 리스트 */}
+        <div style={{ flex: 1, overflowY: 'auto', marginTop: 12 }}>
+          {availableStores.length === 0 ? (
+            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+              <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 14, color: 'rgba(0,19,43,0.45)' }}>
+                저장한 매장이 없어요
               </p>
             </div>
-          )}
-
-          {/* 매장 리스트 */}
-          <div style={{ flex: 1, overflowY: 'auto', marginTop: 8 }}>
-            {availableStores.length === 0 ? (
-              <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-                <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 14, color: 'rgba(0,19,43,0.45)' }}>
-                  추가할 수 있는 매장이 없어요
-                </p>
-              </div>
-            ) : (
-              availableStores.map(store => {
-                const isSelected = selectedIds.has(store.id);
-                return (
-                  <button
-                    key={store.id}
-                    onClick={() => toggle(store.id)}
-                    style={{
-                      width: '100%', padding: '16px 20px',
-                      display: 'flex', alignItems: 'flex-start', gap: 12,
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      opacity: isSelected ? 1 : 0.7,
-                      transition: 'opacity 0.15s',
-                      textAlign: 'left',
-                    }}
-                  >
-                    {/* 이미지 썸네일 */}
-                    <div style={{
-                      width: 56, height: 56, borderRadius: 8, flexShrink: 0, overflow: 'hidden',
-                      backgroundColor: '#e8edf4',
-                    }}>
-                      {store.photos[0] && (
-                        <img src={store.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      )}
-                    </div>
-                    {/* 텍스트 */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 15, color: 'rgba(0,12,30,0.8)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{store.name}</p>
-                      <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 12, color: 'rgba(0,19,43,0.58)', marginBottom: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{store.address}</p>
+          ) : (
+            availableStores.map(store => {
+              const isSelected = selectedIds.has(store.id);
+              const placeholderColors = ['#D4C4B0', '#C4B4A0', '#B4A490', '#A49480'];
+              return (
+                <div
+                  key={store.id}
+                  onClick={() => toggle(store.id)}
+                  style={{ padding: '16px 16px 0', cursor: 'pointer' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+                    {/* 이름·주소·별점 */}
+                    <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
+                      <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)', lineHeight: '23px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {store.name}
+                      </p>
+                      <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)', lineHeight: '17.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {store.address}
+                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="#FBBC04">
+                          <path d="M8 1.5l1.73 3.51 3.87.56-2.8 2.73.66 3.85L8 10.07l-3.46 1.82.66-3.85-2.8-2.73 3.87-.56L8 1.5z" />
+                        </svg>
+                        <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>{store.rating.toFixed(1)}</span>
+                        <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>({store.reviewCount.toLocaleString()})</span>
+                      </div>
                     </div>
                     {/* 체크 서클 */}
                     <div style={{
-                      width: 24, height: 24, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+                      width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
                       border: `2px solid ${isSelected ? '#3182f6' : 'rgba(0,19,43,0.2)'}`,
                       backgroundColor: isSelected ? '#3182f6' : 'transparent',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                      {isSelected && (
-                        <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-                          <path d="M1 4l3.5 3.5L11 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
+                      <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                        <path d="M1 4l3.5 3.5L11 1" stroke={isSelected ? '#fff' : 'rgba(0,19,43,0.2)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     </div>
-                  </button>
-                );
-              })
-            )}
+                  </div>
+                  {/* 사진 4장 */}
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+                    {Array.from({ length: 4 }, (_, idx) => (
+                      <div key={idx} style={{
+                        flex: 1, aspectRatio: '1', borderRadius: 4, overflow: 'hidden',
+                        backgroundColor: store.photos[idx] ? undefined : placeholderColors[idx % 4],
+                      }}>
+                        {store.photos[idx] && (
+                          <img src={store.photos[idx]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          )}
 
-            {/* 새로운 매장 찾아보기 */}
-            <button
-              onClick={onGoHome}
-              style={{
-                width: '100%', height: 56,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: SFPro, fontWeight: 590, fontSize: 15,
-                color: '#3182f6',
-              }}
-            >
-              + 새로운 매장 찾아보기
-            </button>
+          {/* 새로운 매장 찾아보기 */}
+          <div
+            onClick={(e) => { e.stopPropagation(); onGoHome?.(); }}
+            style={{
+              padding: '12px 16px 20px',
+              display: 'flex', alignItems: 'center', gap: 12,
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              backgroundColor: 'rgba(0,27,55,0.06)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 3v10M3 8h10" stroke="rgba(0,12,30,0.8)" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </div>
+            <span style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(0,12,30,0.8)' }}>새로운 매장 찾아보기</span>
           </div>
+        </div>
 
-          {/* 확인 버튼 */}
+        {/* 하단 버튼 */}
+        <div style={{ display: 'flex', gap: 8, padding: '12px 16px 20px', flexShrink: 0 }}>
+          <button
+            onClick={onClose}
+            style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}
+          >닫기</button>
           <button
             onClick={() => hasSelection && onConfirm([...selectedIds])}
-            style={{
-              width: '100%', height: 56, flexShrink: 0,
-              backgroundColor: hasSelection ? '#3182f6' : 'rgba(26,122,249,0.47)',
-              border: 'none', cursor: hasSelection ? 'pointer' : 'default',
-              fontFamily: SFPro, fontWeight: 590, fontSize: 17,
-              color: '#ffffff',
-            }}
+            style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: hasSelection ? '#3182f6' : 'rgba(26,122,249,0.47)', border: 'none', cursor: hasSelection ? 'pointer' : 'default', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: '#ffffff' }}
           >확인</button>
         </div>
       </div>
@@ -681,9 +709,6 @@ export default function CollectionDetailPage({
           memo: collection?.memos?.[f.id] ?? '',
         }));
 
-  // 매장 추가 시트에 보여줄 매장: favorites 중 이 컬렉션에 없는 것
-  const collectionStoreIds = new Set(collection?.storeIds ?? []);
-  const addableStores = favorites.filter(f => !collectionStoreIds.has(f.id));
 
   const onHandlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>, index: number) => {
     e.preventDefault();
@@ -1052,7 +1077,7 @@ export default function CollectionDetailPage({
       {/* 매장 추가 바텀시트 */}
       {showAddStoreSheet && (
         <AddStoreSheet
-          availableStores={addableStores}
+          availableStores={favorites}
           onConfirm={handleAddStoreConfirm}
           onClose={() => setShowAddStoreSheet(false)}
           onGoHome={() => { setShowAddStoreSheet(false); onGoHome?.(); }}
