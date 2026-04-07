@@ -324,9 +324,9 @@ function StoreCard({
             )}
           </div>
 
-          {/* 이미지 10장 (Kit Card: 80×80, cornerRadius 4, gap 8px) */}
-          <div style={{ position: 'relative', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', gap: 8 }}>
+          {/* 이미지 10장 (Kit Card: 80×80, cornerRadius 4, gap 8px) — 가로 스크롤 */}
+          <div style={{ overflowX: 'auto', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', gap: 8, width: 'max-content' }}>
               {Array.from({ length: 10 }, (_, i) => {
                 const photo = store.photos?.[i];
                 const isLast = i === 9;
@@ -351,12 +351,6 @@ function StoreCard({
                 );
               })}
             </div>
-            {/* 우측 그라데이션 페이드 */}
-            <div style={{
-              position: 'absolute', top: 0, right: 0, bottom: 0, width: 60,
-              background: 'linear-gradient(to right, rgba(255,255,255,0), #ffffff)',
-              pointerEvents: 'none',
-            }} />
           </div>
         </div>
       </div>

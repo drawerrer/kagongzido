@@ -389,9 +389,9 @@ function StoreCard({
             )}
           </div>
 
-          {/* 이미지 10장 (편집모드: 그라디언트 페이드 / 마지막장: 더보기 오버레이) */}
-          <div style={{ position: 'relative', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', gap: 8 }}>
+          {/* 이미지 10장 — 가로 스크롤 / 마지막장: 더보기 오버레이 */}
+          <div style={{ overflowX: 'auto', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', gap: 8, width: 'max-content' }}>
               {Array.from({ length: 10 }, (_, idx) => {
                 const isLast = idx === 9;
                 const showOverlay = isLast && !isEditMode;
@@ -420,14 +420,6 @@ function StoreCard({
                 );
               })}
             </div>
-            {/* 편집모드 오버플로우 그라디언트 */}
-            {isEditMode && (
-              <div style={{
-                position: 'absolute', top: 0, right: 0, bottom: 0, width: 80,
-                background: 'linear-gradient(to right, transparent, #ffffff)',
-                pointerEvents: 'none',
-              }} />
-            )}
           </div>
         </div>
       </div>
