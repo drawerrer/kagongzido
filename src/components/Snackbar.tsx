@@ -30,8 +30,9 @@ export default function Snackbar({ message, actionLabel, onAction, onDismiss, du
         bottom: 90,
         left: '50%',
         transform: 'translateX(-50%)',
-        width: 274,
-        height: 59,
+        width: 'calc(100vw - 32px)',
+        maxWidth: 358,
+        minHeight: 59,
         borderRadius: 9999,
         backgroundColor: 'rgba(25,31,40,0.92)',
         display: 'flex',
@@ -58,8 +59,6 @@ export default function Snackbar({ message, actionLabel, onAction, onDismiss, du
           fontFamily: SFPro, fontWeight: 590, fontSize: 15,
           color: '#ffffff',
           whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
         }}>
           {message}
         </span>
