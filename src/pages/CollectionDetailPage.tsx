@@ -809,8 +809,8 @@ export default function CollectionDetailPage({
         <div style={{ flex: 1 }} />
 
         <div style={{ display: 'flex', alignItems: 'center', height: 34, borderRadius: 99, backgroundColor: 'rgba(0,23,51,0.02)', overflow: 'hidden' }}>
-          {/* 최근 & 편집모드에는 ··· 없음 */}
-          {!isRecent && !isEditMode && (
+          {/* 편집모드에는 ··· 없음 */}
+          {!isEditMode && (
             <>
               <button
                 onClick={() => setShowPopover(v => !v)}

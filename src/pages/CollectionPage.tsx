@@ -874,7 +874,11 @@ export default function CollectionPage({
                     onHandlePointerDown={isEditMode ? (e) => onHandlePointerDown(e, index) : undefined}
                     onSelect={() => { if (dragIndex === -1) toggleSelectStore(store.id); }}
                     onPress={() => onDetailOpen?.(store.id)}
-                    onRemoveFavorite={() => removeFavoriteFromContext(store.id)}
+                    onRemoveFavorite={() => {
+                      setDeletedStores([store]);
+                      removeFavoriteFromContext(store.id);
+                      setSnackbar('deleted');
+                    }}
                     onPhotoMore={() => onPhotoMore?.(store.id, store.photos ?? [], store.name)}
                   />
                 </div>
@@ -1199,7 +1203,7 @@ export default function CollectionPage({
 
       {/* ── 스낵바 ── */}
       {snackbar === 'deleted' && (
-        <Snackbar message="삭제되었습니다" actionLabel="실행 취소"
+        <Snackbar message="매장을 삭제했어요" actionLabel="되돌리기"
           onAction={() => {
             deletedStores.forEach(s => addFavoriteFromContext(s));
             setDeletedStores([]);
