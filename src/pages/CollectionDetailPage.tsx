@@ -853,8 +853,23 @@ export default function CollectionDetailPage({
       {stores.length === 0 && !isEditMode ? (
         isRecent ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
-            <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 13, color: '#191F28', textAlign: 'center', lineHeight: '19px', marginBottom: 4 }}>아직 최근 본 매장이 없어요</p>
-            <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', textAlign: 'center', lineHeight: '19px' }}>홈에서 카페를 탐색하면 여기에 기록돼요</p>
+            <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 13, color: '#191F28', textAlign: 'center', lineHeight: '19px', marginBottom: 4 }}>아직 최근에 본 매장이 없어요</p>
+            <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', textAlign: 'center', lineHeight: '19px', marginBottom: 20 }}>홈에서 카페를 탐색하면 여기에 기록돼요</p>
+            <button
+              onClick={onGoHome}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                height: 38, paddingLeft: 16, paddingRight: 16,
+                borderRadius: 9999,
+                backgroundColor: '#191F28',
+                border: 'none', cursor: 'pointer',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 2v10M2 7h10" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+              <span style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 14, color: '#ffffff' }}>매장 보러가기</span>
+            </button>
           </div>
         ) : (
           <EmptyState onAddStore={() => setShowAddStoreSheet(true)} />
