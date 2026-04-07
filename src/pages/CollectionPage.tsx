@@ -556,14 +556,16 @@ export default function CollectionPage({
   const createCollection = () => {
     if (!newCollectionName.trim()) return;
     const newId = addCollection({ name: newCollectionName.trim() });
-    // 오거나이즈 모드에서 진입한 경우 선택된 매장도 새 컬렉션에 추가
-    if (isOrganizeMode && selectedStoreIds.size > 0) {
-      addStoresToCollection(newId, [...selectedStoreIds]);
-      exitOrganizeMode();
-      setSnackbar('added'); // 실제로 매장을 담았을 때만 표시
-    }
     setNewCollectionName('');
-    setBottomSheet(null);
+
+    if (isOrganizeMode) {
+      // 오거나이즈 모드: 바로 담지 않고 select-collection 시트로 돌아가
+      // 방금 만든 컬렉션을 선택 상태로 미리 표시
+      setSelectedCollectionId(newId);
+      setBottomSheet('select-collection');
+    } else {
+      setBottomSheet(null);
+    }
   };
 
   const openRename = (colId: string) => {
@@ -832,7 +834,11 @@ export default function CollectionPage({
       {/* Figma: 컬렉션명 Bold 20px / 입력 Semibold 22px #8b95a1 / 버튼 355×56 #3182f6 */}
       <BottomSheet
         isOpen={bottomSheet === 'create'}
-        onClose={() => { setBottomSheet(null); setNewCollectionName(''); }}
+        onClose={() => {
+          setNewCollectionName('');
+          // 오거나이즈 모드에서 뒤로가면 select-collection 시트로 복귀
+          setBottomSheet(isOrganizeMode ? 'select-collection' : null);
+        }}
       >
         <style>{`.bs-input::placeholder { color: #8b95a1; }`}</style>
         {/* 타이틀 - 24px 좌우 패딩 */}
