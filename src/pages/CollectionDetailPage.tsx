@@ -225,6 +225,7 @@ function AddStoreSheet({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState(false);
   const dragStartY = useRef(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const hasSelection = selectedIds.size > 0;
 
   const toggle = (id: string) => {
@@ -235,15 +236,28 @@ function AddStoreSheet({
     });
   };
 
+  // 핸들 드래그 (위: 확장, 아래: 축소)
   const onHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     dragStartY.current = e.clientY;
     e.currentTarget.setPointerCapture(e.pointerId);
   };
-
   const onHandlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    const dy = dragStartY.current - e.clientY; // 양수 = 위로 드래그
+    const dy = dragStartY.current - e.clientY;
     if (dy > 30) setExpanded(true);
     if (dy < -30) setExpanded(false);
+  };
+
+  // 콘텐츠 드래그 (half 상태에서 위로 드래그 → 확장 / expanded 상태에서 스크롤 top + 아래 드래그 → 축소)
+  const onContentPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragStartY.current = e.clientY;
+  };
+  const onContentPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const dy = dragStartY.current - e.clientY;
+    if (!expanded && dy > 40) {
+      setExpanded(true);
+    } else if (expanded && dy < -40 && (scrollRef.current?.scrollTop ?? 0) === 0) {
+      setExpanded(false);
+    }
   };
 
   return (
@@ -292,7 +306,12 @@ function AddStoreSheet({
         </div>
 
         {/* 매장 리스트 */}
-        <div style={{ flex: 1, overflowY: 'auto', marginTop: 12 }}>
+        <div
+          ref={scrollRef}
+          style={{ flex: 1, overflowY: expanded ? 'auto' : 'hidden', marginTop: 12 }}
+          onPointerDown={onContentPointerDown}
+          onPointerUp={onContentPointerUp}
+        >
           {availableStores.length === 0 ? (
             <div style={{ padding: '40px 20px', textAlign: 'center' }}>
               <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 14, color: 'rgba(0,19,43,0.45)' }}>
