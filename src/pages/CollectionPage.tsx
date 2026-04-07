@@ -325,7 +325,10 @@ function StoreCard({
           </div>
 
           {/* 이미지 10장 (Kit Card: 80×80, cornerRadius 4, gap 8px) — 가로 스크롤 */}
-          <div style={{ overflowX: 'auto', scrollbarWidth: 'none' }}>
+          <div
+            style={{ overflowX: 'auto', scrollbarWidth: 'none' }}
+            onWheel={(e) => { e.preventDefault(); (e.currentTarget as HTMLDivElement).scrollLeft += e.deltaY; }}
+          >
             <div style={{ display: 'flex', gap: 8, width: 'max-content' }}>
               {Array.from({ length: 10 }, (_, i) => {
                 const photo = store.photos?.[i];

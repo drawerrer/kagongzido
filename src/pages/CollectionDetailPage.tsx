@@ -390,7 +390,10 @@ function StoreCard({
           </div>
 
           {/* 이미지 10장 — 가로 스크롤 / 마지막장: 더보기 오버레이 */}
-          <div style={{ overflowX: 'auto', scrollbarWidth: 'none' }}>
+          <div
+            style={{ overflowX: 'auto', scrollbarWidth: 'none' }}
+            onWheel={(e) => { e.preventDefault(); (e.currentTarget as HTMLDivElement).scrollLeft += e.deltaY; }}
+          >
             <div style={{ display: 'flex', gap: 8, width: 'max-content' }}>
               {Array.from({ length: 10 }, (_, idx) => {
                 const isLast = idx === 9;
