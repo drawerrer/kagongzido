@@ -150,36 +150,45 @@ function CollectionCard({
 
       {/* 라벨 (새 컬렉션 제외) */}
       {!isNew && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, width: 121 }}>
-          <span
-            className={isEditMode && label !== '최근' ? 'collection-name-wiggle' : undefined}
+        isEditMode && label !== '최근' ? (
+          /* 편집모드: 텍스트+연필 전체 터치 가능 */
+          <button
+            onClick={onRename}
             style={{
-              fontFamily: SFPro, fontWeight: 590, fontSize: 15,
-              color: '#191f28', lineHeight: '22.5px',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1,
-              ...(isEditMode && label !== '최근' ? { '--wiggle-delay': wiggleDelay } as React.CSSProperties : {}),
+              display: 'flex', alignItems: 'center', gap: 4, width: 121,
+              background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
             }}
           >
-            {label}
-          </span>
-          {/* 편집 모드 연필 (최근 제외) */}
-          {isEditMode && label !== '최근' && (
-            <button
-              onClick={onRename}
+            <span
+              className="collection-name-wiggle"
               style={{
-                background: 'none', border: 'none', padding: 2,
-                cursor: 'pointer', flexShrink: 0,
+                fontFamily: SFPro, fontWeight: 590, fontSize: 15,
+                color: '#191f28', lineHeight: '22.5px',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1,
+                ['--wiggle-delay' as string]: wiggleDelay,
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="rgba(0,19,43,0.45)" strokeWidth="2"
-                strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-            </button>
-          )}
-        </div>
+              {label}
+            </span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="rgba(0,19,43,0.45)" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+        ) : (
+          /* 일반모드: 텍스트만 */
+          <div style={{ display: 'flex', alignItems: 'center', width: 121 }}>
+            <span style={{
+              fontFamily: SFPro, fontWeight: 590, fontSize: 15,
+              color: '#191f28', lineHeight: '22.5px',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {label}
+            </span>
+          </div>
+        )
       )}
     </div>
   );
