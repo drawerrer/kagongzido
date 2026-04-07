@@ -519,19 +519,20 @@ function StoreCard({
           }}
           onClick={() => !isEditMode && onMemoTap(store.id)}
         >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+            <path d="M8.5 1.5a1.5 1.5 0 0 1 2.12 2.12L3.5 10.74 1 11l.26-2.5L8.5 1.5z"
+              stroke="rgba(0,19,43,0.38)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
           {store.memo ? (
-            <>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M8.5 1.5a1.5 1.5 0 0 1 2.12 2.12L3.5 10.74 1 11l.26-2.5L8.5 1.5z"
-                  stroke="rgba(0,19,43,0.58)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span style={{
-                fontFamily: SFPro, fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.58)',
-                lineHeight: '16.2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
-              }}>{store.memo}</span>
-            </>
+            <span style={{
+              fontFamily: SFPro, fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.58)',
+              lineHeight: '16.2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
+            }}>{store.memo}</span>
           ) : (
-            <div style={{ height: 10 }} />
+            <span style={{
+              fontFamily: SFPro, fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.25)',
+              lineHeight: '16.2px',
+            }}>메모 추가</span>
           )}
         </div>
       )}
