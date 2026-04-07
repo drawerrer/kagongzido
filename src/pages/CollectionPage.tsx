@@ -222,10 +222,9 @@ function StoreCard({
     <div
       onClick={isEditMode ? onSelect : onPress}
       style={{
-        borderBottom: '1px solid rgba(0,0,0,0.06)',
         borderTop: isDragOver ? '2px solid #3182F6' : 'none',
         cursor: 'pointer',
-        paddingTop: 20, paddingBottom: 0,
+        paddingTop: 20, paddingBottom: 20,
         opacity: isDragging ? 0.4 : (isEditMode && !isSelected ? 0.7 : 1),
         transition: 'opacity 0.15s',
         userSelect: 'none',

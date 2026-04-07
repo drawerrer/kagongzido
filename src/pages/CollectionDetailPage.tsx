@@ -305,7 +305,7 @@ function StoreCard({
   const placeholderColors = ['#D4C4B0', '#C4B4A0', '#B4A490', '#A49480'];
 
   return (
-    <div style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+    <div>
       <div style={{ padding: '20px 16px 0', display: 'flex', alignItems: 'flex-start' }}>
         {/* 체크박스 (편집모드) */}
         {isEditMode && (
@@ -431,7 +431,7 @@ function StoreCard({
       <div
         style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          padding: '10px 16px 0',
+          padding: '10px 16px 20px',
           minHeight: 40,
           cursor: isEditMode ? 'default' : 'pointer',
         }}
