@@ -450,9 +450,14 @@ function StoreCard({
             {/* 편집모드: 순서 핸들 / 기본: 하트 */}
             {isEditMode ? (
               <div style={{ width: 24, height: 24, flexShrink: 0, marginLeft: 8, marginTop: 2 }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M8 10l4-4 4 4" stroke="rgba(0,29,58,0.35)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M8 14l4 4 4-4" stroke="rgba(0,29,58,0.35)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <g fill="rgba(0,19,43,0.3)" fillRule="evenodd" clipRule="evenodd">
+                    <path d="M10.293 7.707a1 1 0 0 1 0-1.414l3-3a1 1 0 1 1 1.414 1.414l-3 3a1 1 0 0 1-1.414 0"/>
+                    <path d="M17.707 7.707a1 1 0 0 1-1.414 0l-3-3a1 1 0 0 1 1.414-1.414l3 3a1 1 0 0 1 0 1.414"/>
+                    <path d="M14 5a1 1 0 0 1 1 1v8a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1m-4.293 7.293a1 1 0 0 1 0 1.414l-3 3a1 1 0 0 1-1.414-1.414l3-3a1 1 0 0 1 1.414 0"/>
+                    <path d="M2.293 12.293a1 1 0 0 1 1.414 0l3 3a1 1 0 1 1-1.414 1.414l-3-3a1 1 0 0 1 0-1.414"/>
+                    <path d="M6 15a1 1 0 0 1-1-1V6a1 1 0 1 1 2 0v8a1 1 0 0 1-1 1"/>
+                  </g>
                 </svg>
               </div>
             ) : (
