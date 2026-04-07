@@ -66,6 +66,7 @@ function AppInner() {
   const [detailCafeId, setDetailCafeId] = useState<string | null>(null);
   const [collectionDetail, setCollectionDetail] = useState<{ id: string; name: string } | null>(null);
   const [photoReview, setPhotoReview] = useState<{ storeId: string; cafeName: string; photos: string[] } | null>(null);
+  const [deletedCollectionData, setDeletedCollectionData] = useState<{ id: string; name: string; storeIds: string[] } | null>(null);
   const { isFavorited, addFavorite, removeFavorite, favorites } = useFavorites();
   const [myPageSubPage, setMyPageSubPage] = useState<string | null>(null);
   const [mapState, setMapState] = useState<MapPageState | null>(null);
@@ -124,6 +125,8 @@ function AppInner() {
           onClose={() => { setCollectionDetail(null); setActiveTab('collection'); }}
           onDetailOpen={(id) => setDetailCafeId(id)}
           onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
+          onCollectionDeleted={(data) => { setCollectionDetail(null); setDeletedCollectionData(data); }}
+          onGoHome={() => { setCollectionDetail(null); setActiveTab('home'); }}
         />
       </div>
     );
@@ -167,6 +170,8 @@ function AppInner() {
                 onBack={() => setActiveTab('home')}
                 onClose={() => setActiveTab('home')}
                 onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
+                deletedCollection={deletedCollectionData}
+                onClearDeletedCollection={() => setDeletedCollectionData(null)}
               />
             )}
             {activeTab === 'mypage'     && (

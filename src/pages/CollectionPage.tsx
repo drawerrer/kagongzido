@@ -18,7 +18,7 @@ interface Store {
 }
 
 type BottomSheetType = null | 'create' | 'select-collection' | 'rename';
-type SnackbarType = null | 'deleted' | 'added' | 'renamed';
+type SnackbarType = null | 'deleted' | 'added' | 'renamed' | 'collection-deleted';
 
 // ─── 컬렉션 카드 (Figma: 121×121px card, 6px gap, 23px label) ─
 function CollectionCard({
@@ -481,6 +481,8 @@ export default function CollectionPage({
   onBack,
   onClose,
   onPhotoMore,
+  deletedCollection,
+  onClearDeletedCollection,
 }: {
   onDetailOpen?: (id: string) => void;
   onCollectionOpen?: (id: string, name: string) => void;
@@ -488,6 +490,8 @@ export default function CollectionPage({
   onBack?: () => void;
   onClose?: () => void;
   onPhotoMore?: (storeId: string, photos: string[], cafeName: string) => void;
+  deletedCollection?: { id: string; name: string; storeIds: string[] } | null;
+  onClearDeletedCollection?: () => void;
 }) {
   const {
     favorites, addFavorite: addFavoriteFromContext, removeFavorite: removeFavoriteFromContext,
@@ -495,6 +499,7 @@ export default function CollectionPage({
     recentlyViewed, collections, addCollection, updateCollection, addStoresToCollection,
     reorderCollections,
   } = useFavorites();
+
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [isOrganizeMode, setIsOrganizeMode] = useState(false); // 컬렉션 선택 모드
@@ -567,6 +572,16 @@ export default function CollectionPage({
   const [deletedStores, setDeletedStores] = useState<FavoritedStore[]>([]);
   const [addedToCollectionIds, setAddedToCollectionIds] = useState<string[]>([]);
   const [renameToast, setRenameToast] = useState<string | null>(null);
+  const [deletedCollectionStore, setDeletedCollectionStore] = useState<{ name: string; storeIds: string[] } | null>(null);
+
+  // ── 컬렉션 삭제 스낵바 (CollectionDetailPage에서 전달) ──
+  useEffect(() => {
+    if (!deletedCollection) return;
+    setDeletedCollectionStore({ name: deletedCollection.name, storeIds: deletedCollection.storeIds });
+    setSnackbar('collection-deleted');
+    onClearDeletedCollection?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deletedCollection]);
 
   const isEmpty = orderedStores.length === 0;
   const hasSelection = selectedStoreIds.size > 0;
@@ -1198,6 +1213,20 @@ export default function CollectionPage({
             const firstId = addedToCollectionIds[0];
             const col = collections.find(c => c.id === firstId);
             if (col) onCollectionOpen?.(col.id, col.name);
+            setSnackbar(null);
+          }}
+          onDismiss={dismissSnackbar} />
+      )}
+      {snackbar === 'collection-deleted' && (
+        <Snackbar message="컬렉션을 삭제했어요" actionLabel="되돌리기"
+          onAction={() => {
+            if (deletedCollectionStore) {
+              const newId = addCollection({ name: deletedCollectionStore.name });
+              if (deletedCollectionStore.storeIds.length > 0) {
+                addStoresToCollection(newId, deletedCollectionStore.storeIds);
+              }
+              setDeletedCollectionStore(null);
+            }
             setSnackbar(null);
           }}
           onDismiss={dismissSnackbar} />
