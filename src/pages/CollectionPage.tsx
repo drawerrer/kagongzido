@@ -27,6 +27,7 @@ function CollectionCard({
   isEditMode = false,
   isDragging = false,
   isDragOver = false,
+  wiggleDelay = 0,
   onPress,
   onRename,
   onHandlePointerDown,
@@ -37,6 +38,7 @@ function CollectionCard({
   isEditMode?: boolean;
   isDragging?: boolean;
   isDragOver?: boolean;
+  wiggleDelay?: number;
   onPress?: () => void;
   onRename?: () => void;
   onHandlePointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
@@ -45,7 +47,7 @@ function CollectionCard({
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0,
-      opacity: isDragging ? 0.4 : 1,
+      opacity: isDragging ? 0.4 : isEditMode ? 0.7 : 1,
       borderLeft: isDragOver ? '2px solid #3182F6' : '2px solid transparent',
       transition: 'opacity 0.15s',
     }}>
@@ -149,11 +151,15 @@ function CollectionCard({
       {/* 라벨 (새 컬렉션 제외) */}
       {!isNew && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, width: 121 }}>
-          <span style={{
-            fontFamily: SFPro, fontWeight: 590, fontSize: 15,
-            color: '#191f28', lineHeight: '22.5px',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1,
-          }}>
+          <span
+            className={isEditMode && label !== '최근' ? 'collection-name-wiggle' : undefined}
+            style={{
+              fontFamily: SFPro, fontWeight: 590, fontSize: 15,
+              color: '#191f28', lineHeight: '22.5px',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1,
+              ...(isEditMode && label !== '최근' ? { '--wiggle-delay': wiggleDelay } as React.CSSProperties : {}),
+            }}
+          >
             {label}
           </span>
           {/* 편집 모드 연필 (최근 제외) */}
@@ -768,6 +774,7 @@ export default function CollectionPage({
                 isEditMode={isEditMode}
                 isDragging={isEditMode && colDragIndex === index}
                 isDragOver={isEditMode && colDragOverIndex === index && colDragIndex !== index}
+                wiggleDelay={index * 80}
                 recentItems={col.id === 'recent' ? recentlyViewed : []}
                 onRename={() => openRename(col.id)}
                 onPress={!isEditMode ? () => onCollectionOpen?.(col.id, col.name) : undefined}
