@@ -858,17 +858,17 @@ export default function CollectionDetailPage({
             <button
               onClick={onGoHome}
               style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                height: 38, paddingLeft: 16, paddingRight: 16,
-                borderRadius: 9999,
-                backgroundColor: '#191F28',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                width: 165, height: 48, borderRadius: 14,
+                backgroundColor: 'rgba(0,27,55,0.06)',
                 border: 'none', cursor: 'pointer',
+                fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(0,12,30,0.8)',
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M7 2v10M2 7h10" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round"/>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 4v12M4 10h12" stroke="rgba(0,12,30,0.8)" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
-              <span style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 14, color: '#ffffff' }}>매장 보러가기</span>
+              매장 보러가기
             </button>
           </div>
         ) : (
