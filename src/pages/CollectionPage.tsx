@@ -473,7 +473,7 @@ export default function CollectionPage({
   const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [showPopover, setShowPopover] = useState(false);
-  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState<Set<string>>(new Set());
 
   const isEmpty = orderedStores.length === 0;
   const hasSelection = selectedStoreIds.size > 0;
@@ -561,7 +561,7 @@ export default function CollectionPage({
     if (isOrganizeMode) {
       // 오거나이즈 모드: 바로 담지 않고 select-collection 시트로 돌아가
       // 방금 만든 컬렉션을 선택 상태로 미리 표시
-      setSelectedCollectionId(newId);
+      setSelectedCollectionIds(new Set([newId]));
       setBottomSheet('select-collection');
     } else {
       setBottomSheet(null);
@@ -934,7 +934,7 @@ export default function CollectionPage({
       {/* Figma: 타이틀 Bold 20px / 행 62px / 버튼 반반(8px gap) h56 cornerRadius16 */}
       <BottomSheet
         isOpen={bottomSheet === 'select-collection'}
-        onClose={() => { setBottomSheet(null); setSelectedCollectionId(null); }}
+        onClose={() => { setBottomSheet(null); setSelectedCollectionIds(new Set()); }}
       >
         {/* 타이틀 */}
         <div style={{ padding: '8px 24px 0' }}>
@@ -946,7 +946,7 @@ export default function CollectionPage({
 
         {/* 새 컬렉션 추가 행 (62px) */}
         <button
-          onClick={() => { setBottomSheet('create'); setSelectedCollectionId(null); }}
+          onClick={() => { setBottomSheet('create'); setSelectedCollectionIds(new Set()); }}
           style={{
             width: '100%', height: 62, padding: '0 24px',
             display: 'flex', alignItems: 'center', gap: 12,
@@ -974,7 +974,11 @@ export default function CollectionPage({
         {collections.filter(c => c.id !== 'recent').map(col => (
           <button
             key={col.id}
-            onClick={() => setSelectedCollectionId(prev => prev === col.id ? null : col.id)}
+            onClick={() => setSelectedCollectionIds(prev => {
+              const next = new Set(prev);
+              next.has(col.id) ? next.delete(col.id) : next.add(col.id);
+              return next;
+            })}
             style={{
               width: '100%', minHeight: 62, padding: '0 24px',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1005,12 +1009,12 @@ export default function CollectionPage({
             {/* 체크 서클 */}
             <div style={{
               width: 24, height: 24, borderRadius: '50%',
-              border: `2px solid ${selectedCollectionId === col.id ? '#3182f6' : 'rgba(0,19,43,0.2)'}`,
-              backgroundColor: selectedCollectionId === col.id ? '#3182f6' : 'transparent',
+              border: `2px solid ${selectedCollectionIds.has(col.id) ? '#3182f6' : 'rgba(0,19,43,0.2)'}`,
+              backgroundColor: selectedCollectionIds.has(col.id) ? '#3182f6' : 'transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
-              {selectedCollectionId === col.id && (
+              {selectedCollectionIds.has(col.id) && (
                 <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
                   <path d="M1 4l3.5 3.5L11 1" stroke="#fff" strokeWidth="1.8"
                     strokeLinecap="round" strokeLinejoin="round"/>
@@ -1023,7 +1027,7 @@ export default function CollectionPage({
         {/* 버튼 영역 (Figma: 20px 좌우 패딩, 8px gap, 각 h56 cornerRadius16) */}
         <div style={{ padding: '16px 20px', display: 'flex', gap: 8 }}>
           <button
-            onClick={() => { setBottomSheet(null); setSelectedCollectionId(null); }}
+            onClick={() => { setBottomSheet(null); setSelectedCollectionIds(new Set()); }}
             style={{
               flex: 1, height: 56, borderRadius: 16,
               fontFamily: SFPro, fontSize: 17, fontWeight: 590,
@@ -1034,11 +1038,13 @@ export default function CollectionPage({
           >닫기</button>
           <button
             onClick={() => {
-              if (!selectedCollectionId) return;
-              // 선택된 매장들을 선택한 컬렉션에 실제로 추가
-              addStoresToCollection(selectedCollectionId, [...selectedStoreIds]);
+              if (selectedCollectionIds.size === 0) return;
+              // 선택된 모든 컬렉션에 매장 추가
+              selectedCollectionIds.forEach(colId => {
+                addStoresToCollection(colId, [...selectedStoreIds]);
+              });
               setBottomSheet(null);
-              setSelectedCollectionId(null);
+              setSelectedCollectionIds(new Set());
               setSnackbar('added');
               if (isOrganizeMode) exitOrganizeMode();
               else exitEditMode();
@@ -1046,9 +1052,9 @@ export default function CollectionPage({
             style={{
               flex: 1, height: 56, borderRadius: 16,
               fontFamily: SFPro, fontSize: 17, fontWeight: 590,
-              backgroundColor: selectedCollectionId ? '#3182F6' : 'rgba(26,122,249,0.47)',
+              backgroundColor: selectedCollectionIds.size > 0 ? '#3182F6' : 'rgba(26,122,249,0.47)',
               color: '#ffffff',
-              border: 'none', cursor: selectedCollectionId ? 'pointer' : 'default',
+              border: 'none', cursor: selectedCollectionIds.size > 0 ? 'pointer' : 'default',
             }}
           >확인</button>
         </div>
