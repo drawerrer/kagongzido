@@ -205,6 +205,7 @@ function StoreCard({
   onPress,
   onHandlePointerDown,
   onRemoveFavorite,
+  onPhotoMore,
 }: {
   store: Store;
   isEditMode?: boolean;
@@ -215,6 +216,7 @@ function StoreCard({
   onPress?: () => void;
   onHandlePointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onRemoveFavorite?: () => void;
+  onPhotoMore?: () => void;
 }) {
   return (
     <div
@@ -322,17 +324,29 @@ function StoreCard({
             )}
           </div>
 
-          {/* 이미지 4장 (Kit Card: 80×80, cornerRadius 4, gap 8px) — 사진 없으면 플레이스홀더 */}
+          {/* 이미지 10장 (Kit Card: 80×80, cornerRadius 4, gap 8px) */}
           <div style={{ position: 'relative', overflow: 'hidden' }}>
             <div style={{ display: 'flex', gap: 8 }}>
-              {[0, 1, 2, 3].map((i) => {
+              {Array.from({ length: 10 }, (_, i) => {
                 const photo = store.photos?.[i];
+                const isLast = i === 9;
+                const showOverlay = isLast && !isEditMode;
                 return (
-                  <div key={i} style={{
-                    width: 80, height: 80, borderRadius: 4,
-                    backgroundColor: '#E8EDF4', flexShrink: 0, overflow: 'hidden',
-                  }}>
+                  <div key={i} style={{ position: 'relative', width: 80, height: 80, borderRadius: 4, backgroundColor: '#E8EDF4', flexShrink: 0, overflow: 'hidden' }}>
                     {photo && <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                    {showOverlay && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onPhotoMore?.(); }}
+                        style={{
+                          position: 'absolute', inset: 0,
+                          backgroundColor: 'rgba(0,0,0,0.6)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          border: 'none', cursor: 'pointer', borderRadius: 4,
+                        }}
+                      >
+                        <span style={{ fontFamily: '-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif', fontWeight: 510, fontSize: 14, color: '#ffffff', lineHeight: '25.5px' }}>더보기</span>
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -470,12 +484,14 @@ export default function CollectionPage({
   onGoHome,
   onBack,
   onClose,
+  onPhotoMore,
 }: {
   onDetailOpen?: (id: string) => void;
   onCollectionOpen?: (id: string, name: string) => void;
   onGoHome?: () => void;
   onBack?: () => void;
   onClose?: () => void;
+  onPhotoMore?: (storeId: string, photos: string[], cafeName: string) => void;
 }) {
   const {
     favorites, removeFavorite: removeFavoriteFromContext,
@@ -836,6 +852,7 @@ export default function CollectionPage({
                     onSelect={() => { if (dragIndex === -1) toggleSelectStore(store.id); }}
                     onPress={() => onDetailOpen?.(store.id)}
                     onRemoveFavorite={() => removeFavoriteFromContext(store.id)}
+                    onPhotoMore={() => onPhotoMore?.(store.id, store.photos ?? [], store.name)}
                   />
                 </div>
               ))}

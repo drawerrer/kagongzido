@@ -7,7 +7,9 @@ import CollectionDetailPage from './pages/CollectionDetailPage';
 import GuidebookPage from './pages/GuidebookPage';
 import MyPage from './pages/MyPage';
 import DetailPage from './pages/DetailPage';
+import PhotoReviewPage from './pages/PhotoReviewPage';
 import { FavoritesProvider } from './context/FavoritesContext';
+import { useFavorites } from './context/FavoritesContext';
 
 // ── 탭바 SVG 아이콘 ──────────────────────────────────────────
 function TabHomeIcon() {
@@ -63,11 +65,37 @@ function AppInner() {
   const [showSearch, setShowSearch] = useState(false);
   const [detailCafeId, setDetailCafeId] = useState<string | null>(null);
   const [collectionDetail, setCollectionDetail] = useState<{ id: string; name: string } | null>(null);
+  const [photoReview, setPhotoReview] = useState<{ storeId: string; cafeName: string; photos: string[] } | null>(null);
+  const { isFavorited, addFavorite, removeFavorite, favorites } = useFavorites();
   const [myPageSubPage, setMyPageSubPage] = useState<string | null>(null);
   const [mapState, setMapState] = useState<MapPageState | null>(null);
   const [guidebookView, setGuidebookView] = useState<string | null>(null);
   const [guidebookStoreIndex, setGuidebookStoreIndex] = useState(0);
   const [detailScrollToReview, setDetailScrollToReview] = useState(false);
+
+  // 포토리뷰 전체보기
+  if (photoReview) {
+    const store = favorites.find(f => f.id === photoReview.storeId);
+    return (
+      <div style={{ height: '100%' }}>
+        <PhotoReviewPage
+          photos={photoReview.photos.map((bg, i) => ({
+            bg, reviewId: `${photoReview.storeId}-${i}`,
+            reviewAuthor: '', reviewAvatarColor: '#e8edf4',
+            reviewDate: '', reviewContent: '', isReporter: false,
+          }))}
+          cafeName={photoReview.cafeName}
+          isFavorite={isFavorited(photoReview.storeId)}
+          onFavoriteToggle={() => {
+            if (!store) return;
+            isFavorited(photoReview.storeId) ? removeFavorite(photoReview.storeId) : addFavorite(store);
+          }}
+          onBack={() => setPhotoReview(null)}
+          onClose={() => setPhotoReview(null)}
+        />
+      </div>
+    );
+  }
 
   // 카페 상세페이지 (자체 탭바 포함)
   if (detailCafeId) {
@@ -95,6 +123,7 @@ function AppInner() {
           onBack={() => setCollectionDetail(null)}
           onClose={() => { setCollectionDetail(null); setActiveTab('collection'); }}
           onDetailOpen={(id) => setDetailCafeId(id)}
+          onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
         />
       </div>
     );
@@ -137,6 +166,7 @@ function AppInner() {
                 onGoHome={() => setActiveTab('home')}
                 onBack={() => setActiveTab('home')}
                 onClose={() => setActiveTab('home')}
+                onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
               />
             )}
             {activeTab === 'mypage'     && (

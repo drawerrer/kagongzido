@@ -291,6 +291,7 @@ function StoreCard({
   onMemoTap,
   onDetailOpen,
   onHeartTap,
+  onPhotoMore,
 }: {
   store: CollectionStore;
   isEditMode: boolean;
@@ -299,6 +300,7 @@ function StoreCard({
   onMemoTap: (id: string) => void;
   onDetailOpen?: (id: string) => void;
   onHeartTap?: (id: string) => void;
+  onPhotoMore?: () => void;
 }) {
   const placeholderColors = ['#D4C4B0', '#C4B4A0', '#B4A490', '#A49480'];
 
@@ -387,22 +389,36 @@ function StoreCard({
             )}
           </div>
 
-          {/* 이미지 4장 (편집모드: 그라디언트 페이드 처리) */}
+          {/* 이미지 10장 (편집모드: 그라디언트 페이드 / 마지막장: 더보기 오버레이) */}
           <div style={{ position: 'relative', overflow: 'hidden' }}>
             <div style={{ display: 'flex', gap: 8 }}>
-              {[0, 1, 2, 3].map((idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    width: 80, height: 80, borderRadius: 4, flexShrink: 0, overflow: 'hidden',
-                    backgroundColor: store.photos[idx] ? undefined : placeholderColors[idx],
-                  }}
-                >
-                  {store.photos[idx] && (
-                    <img src={store.photos[idx]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  )}
-                </div>
-              ))}
+              {Array.from({ length: 10 }, (_, idx) => {
+                const isLast = idx === 9;
+                const showOverlay = isLast && !isEditMode;
+                return (
+                  <div key={idx} style={{
+                    position: 'relative', width: 80, height: 80, borderRadius: 4, flexShrink: 0, overflow: 'hidden',
+                    backgroundColor: store.photos[idx] ? undefined : placeholderColors[idx % 4],
+                  }}>
+                    {store.photos[idx] && (
+                      <img src={store.photos[idx]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    )}
+                    {showOverlay && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onPhotoMore?.(); }}
+                        style={{
+                          position: 'absolute', inset: 0,
+                          backgroundColor: 'rgba(0,0,0,0.6)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          border: 'none', cursor: 'pointer', borderRadius: 4,
+                        }}
+                      >
+                        <span style={{ fontFamily: '-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif', fontWeight: 510, fontSize: 14, color: '#ffffff', lineHeight: '25.5px' }}>더보기</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             {/* 편집모드 오버플로우 그라디언트 */}
             {isEditMode && (
@@ -487,12 +503,14 @@ export default function CollectionDetailPage({
   onBack,
   onClose,
   onDetailOpen,
+  onPhotoMore,
 }: {
   collectionName: string;
   collectionId: string;
   onBack?: () => void;
   onClose?: () => void;
   onDetailOpen?: (id: string) => void;
+  onPhotoMore?: (storeId: string, photos: string[], cafeName: string) => void;
 }) {
   const {
     recentlyViewed, favorites, collections,
@@ -706,6 +724,7 @@ export default function CollectionDetailPage({
               onMemoTap={(id) => setMemoTargetId(id)}
               onDetailOpen={onDetailOpen}
               onHeartTap={isRecent ? undefined : (id) => removeFavorite(id)}
+              onPhotoMore={() => onPhotoMore?.(store.id, store.photos, store.name)}
             />
           ))}
         </div>
