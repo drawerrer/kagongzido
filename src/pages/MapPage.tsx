@@ -436,8 +436,48 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
 
+      {/* ── Navigation with Status Bar ── */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 30,
+          background: 'white',
+          borderBottom: '1px solid #F2F4F6',
+          paddingTop: 'env(safe-area-inset-top)',
+        }}
+      >
+        <div
+          style={{
+            height: 44,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0 16px',
+          }}
+        >
+          {/* 좌측: 앱 로고 + 타이틀 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: '#191F28', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                <path d="M2 19V7a2 2 0 012-2h1.5A2.5 2.5 0 018 2.5h8A2.5 2.5 0 0118.5 5H20a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2zm10-1.5a5.5 5.5 0 100-11 5.5 5.5 0 000 11zm0-2a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/>
+              </svg>
+            </div>
+            <span style={{ fontSize: 15, fontWeight: 600, color: '#191F28', letterSpacing: -0.3 }}>취향맞춤 카페지도</span>
+          </div>
+          {/* 우측: 더보기 버튼 */}
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#B0B8C1">
+              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
       {/* ── 카카오 지도 배경 ── */}
-      <div ref={mapRef} style={{ position: 'absolute', inset: 0, background: '#E8EAED' }}>
+      <div ref={mapRef} style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 44px)', bottom: 0, left: 0, right: 0, background: '#E8EAED' }}>
         {!import.meta.env.VITE_KAKAO_MAP_KEY && (
           /* API 키 미설정 시 안내 */
           <div
@@ -464,7 +504,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
       <div
         style={{
           position: 'absolute',
-          top: 0,
+          top: 'calc(env(safe-area-inset-top) + 44px)',
           left: 0,
           right: 0,
           zIndex: 20,
