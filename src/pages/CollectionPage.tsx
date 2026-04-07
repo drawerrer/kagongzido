@@ -25,19 +25,30 @@ function CollectionCard({
   label,
   isNew = false,
   isEditMode = false,
+  isDragging = false,
+  isDragOver = false,
   onPress,
   onRename,
+  onHandlePointerDown,
   recentItems = [],
 }: {
   label: string;
   isNew?: boolean;
   isEditMode?: boolean;
+  isDragging?: boolean;
+  isDragOver?: boolean;
   onPress?: () => void;
   onRename?: () => void;
+  onHandlePointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
   recentItems?: RecentCafe[];
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0,
+      opacity: isDragging ? 0.4 : 1,
+      borderLeft: isDragOver ? '2px solid #3182F6' : '2px solid transparent',
+      transition: 'opacity 0.15s',
+    }}>
       <button
         onClick={onPress}
         style={{
@@ -109,14 +120,19 @@ function CollectionCard({
 
           {/* 편집 모드: 드래그 소트 오버레이 (최근 제외) */}
           {isEditMode && !isNew && label !== '최근' && (
-            <div style={{
-              position: 'absolute', inset: 0,
-              backgroundColor: 'rgba(232,232,253,0.36)',
-              borderRadius: 4,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {/* ↑↓ 아이콘 — pepicons-pop:down-up */}
-              <svg width="24" height="24" viewBox="0 0 20 20" fill="none">
+            <div
+              onPointerDown={onHandlePointerDown}
+              style={{
+                position: 'absolute', inset: 0,
+                backgroundColor: 'rgba(232,232,253,0.36)',
+                borderRadius: 4,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'grab', touchAction: 'none',
+              }}
+            >
+              {/* 아이콘 90도 회전 → ←→ 수평 방향 */}
+              <svg width="24" height="24" viewBox="0 0 20 20" fill="none"
+                style={{ transform: 'rotate(90deg)' }}>
                 <g fill="rgba(0,19,43,0.58)" fillRule="evenodd" clipRule="evenodd">
                   <path d="M10.293 7.707a1 1 0 0 1 0-1.414l3-3a1 1 0 1 1 1.414 1.414l-3 3a1 1 0 0 1-1.414 0"/>
                   <path d="M17.707 7.707a1 1 0 0 1-1.414 0l-3-3a1 1 0 0 1 1.414-1.414l3 3a1 1 0 0 1 0 1.414"/>
@@ -450,6 +466,7 @@ export default function CollectionPage({
     favorites, removeFavorite: removeFavoriteFromContext,
     reorderFavorites,
     recentlyViewed, collections, addCollection, updateCollection, addStoresToCollection,
+    reorderCollections,
   } = useFavorites();
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -467,6 +484,52 @@ export default function CollectionPage({
   useEffect(() => {
     if (dragIndex === -1) setOrderedStores([...favorites]);
   }, [favorites, dragIndex]);
+
+  // ── 컬렉션 수평 드래그 ──
+  const [orderedCollections, setOrderedCollections] = useState<typeof collections>([]);
+  const [colDragIndex, setColDragIndex] = useState(-1);
+  const [colDragOverIndex, setColDragOverIndex] = useState(-1);
+  const colRowRef = useRef<HTMLDivElement>(null);
+  const colRefsArr = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    if (colDragIndex === -1) setOrderedCollections([...collections]);
+  }, [collections, colDragIndex]);
+
+  const onColHandlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setColDragIndex(index);
+    setColDragOverIndex(index);
+    colRowRef.current?.setPointerCapture(e.pointerId);
+  }, []);
+
+  const onColRowPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (colDragIndex === -1) return;
+    const x = e.clientX;
+    let newOver = colRefsArr.current.length - 1;
+    for (let i = 0; i < colRefsArr.current.length; i++) {
+      const rect = colRefsArr.current[i]?.getBoundingClientRect();
+      if (!rect) continue;
+      if (x < rect.left + rect.width / 2) { newOver = i; break; }
+    }
+    if (newOver !== colDragOverIndex) setColDragOverIndex(newOver);
+  }, [colDragIndex, colDragOverIndex]);
+
+  const onColRowPointerUp = useCallback(() => {
+    if (colDragIndex !== -1 && colDragOverIndex !== -1 && colDragIndex !== colDragOverIndex) {
+      setOrderedCollections(prev => {
+        const arr = [...prev];
+        const [moved] = arr.splice(colDragIndex, 1);
+        arr.splice(colDragOverIndex, 0, moved);
+        reorderCollections(arr);
+        return arr;
+      });
+    }
+    setColDragIndex(-1);
+    setColDragOverIndex(-1);
+  }, [colDragIndex, colDragOverIndex, reorderCollections]);
+
   const [bottomSheet, setBottomSheet] = useState<BottomSheetType>(null);
   const [snackbar, setSnackbar] = useState<SnackbarType>(null);
   const [newCollectionName, setNewCollectionName] = useState('');
@@ -683,20 +746,36 @@ export default function CollectionPage({
       >
 
         {/* 컬렉션 카드 가로 스크롤 — 오거나이즈 모드에서 숨김 */}
-        {!isOrganizeMode && <div style={{
-          display: 'flex', gap: 10,
-          overflowX: 'auto', padding: '12px 20px 16px',
-          scrollbarWidth: 'none',
-        }}>
-          {collections.map((col) => (
-            <CollectionCard
+        {!isOrganizeMode && <div
+          ref={colRowRef}
+          onPointerMove={isEditMode ? onColRowPointerMove : undefined}
+          onPointerUp={isEditMode ? onColRowPointerUp : undefined}
+          onPointerCancel={isEditMode ? onColRowPointerUp : undefined}
+          style={{
+            display: 'flex', gap: 10,
+            overflowX: isEditMode ? 'hidden' : 'auto',
+            padding: '12px 20px 16px',
+            scrollbarWidth: 'none',
+            touchAction: isEditMode ? 'none' : 'pan-x',
+          }}>
+          {orderedCollections.map((col, index) => (
+            <div
               key={col.id}
-              label={col.name}
-              isEditMode={isEditMode}
-              recentItems={col.id === 'recent' ? recentlyViewed : []}
-              onRename={() => openRename(col.id)}
-              onPress={!isEditMode ? () => onCollectionOpen?.(col.id, col.name) : undefined}
-            />
+              ref={el => { colRefsArr.current[index] = el; }}
+            >
+              <CollectionCard
+                label={col.name}
+                isEditMode={isEditMode}
+                isDragging={isEditMode && colDragIndex === index}
+                isDragOver={isEditMode && colDragOverIndex === index && colDragIndex !== index}
+                recentItems={col.id === 'recent' ? recentlyViewed : []}
+                onRename={() => openRename(col.id)}
+                onPress={!isEditMode ? () => onCollectionOpen?.(col.id, col.name) : undefined}
+                onHandlePointerDown={isEditMode && col.id !== 'recent'
+                  ? (e) => onColHandlePointerDown(e, index)
+                  : undefined}
+              />
+            </div>
           ))}
           <CollectionCard
             label="새 컬렉션" isNew

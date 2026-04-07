@@ -49,6 +49,7 @@ interface FavoritesContextType {
   addStoresToCollection: (collectionId: string, storeIds: string[]) => void;
   removeStoresFromCollection: (collectionId: string, storeIds: string[]) => void;
   updateCollectionMemo: (collectionId: string, storeId: string, memo: string) => void;
+  reorderCollections: (newOrder: Collection[]) => void;
 }
 
 // ─── Context 생성 ─────────────────────────────────────────────
@@ -136,12 +137,17 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     ));
   }, []);
 
+  const reorderCollections = useCallback((newOrder: Collection[]) => {
+    setCollections([...newOrder]);
+  }, []);
+
   return (
     <FavoritesContext.Provider value={{
       favorites, isFavorited, addFavorite, removeFavorite, reorderFavorites,
       recentlyViewed, addRecentlyViewed,
       collections, addCollection, updateCollection, removeCollection,
       addStoresToCollection, removeStoresFromCollection, updateCollectionMemo,
+      reorderCollections,
     }}>
       {children}
     </FavoritesContext.Provider>
