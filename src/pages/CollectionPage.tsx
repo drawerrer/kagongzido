@@ -1081,6 +1081,11 @@ export default function CollectionPage({
             fontFamily: SFPro, fontWeight: 700, fontSize: 20,
             color: 'rgba(0,12,30,0.8)', lineHeight: '27px', marginBottom: 0,
           }}>어디로 컬렉션을 추가할까요?</p>
+          {selectedCollectionIds.size > 0 && (
+            <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 14, color: 'rgba(0,19,43,0.45)', marginTop: 4, marginBottom: 0 }}>
+              {selectedCollectionIds.size}개의 컬렉션을 선택했어요
+            </p>
+          )}
         </div>
 
         {/* 새 컬렉션 추가 행 (62px) */}
