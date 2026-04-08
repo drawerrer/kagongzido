@@ -91,7 +91,7 @@ function DeleteCollectionDialog({ onConfirm, onCancel }: { onConfirm: () => void
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, padding: '20px 16px 16px' }}>
-          <button onClick={onCancel} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}>취소</button>
+          <button onClick={onCancel} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}>닫기</button>
           <button onClick={onConfirm} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(240,68,82,0.16)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: '#e42939' }}>삭제하기</button>
         </div>
       </div>
@@ -118,7 +118,7 @@ function DeleteStoreDialog({ onConfirm, onCancel }: { onConfirm: () => void; onC
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, padding: '20px 16px 16px' }}>
-          <button onClick={onCancel} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}>취소</button>
+          <button onClick={onCancel} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}>닫기</button>
           <button onClick={onConfirm} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(240,68,82,0.16)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: '#e42939' }}>삭제하기</button>
         </div>
       </div>
