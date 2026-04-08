@@ -483,13 +483,25 @@ export default function PhotoReviewPage({
         </div>
       </header>
 
-      {/* ── 3열 그리드 (사진 n장 텍스트 제거) ── */}
+      {/* info_2 섹션: '포토리뷰 전체보기' (Figma 스펙, 14px, center) */}
+      <div style={{
+        padding: '12px 16px',
+        textAlign: 'center',
+        flexShrink: 0,
+        borderBottom: '1px solid #F2F4F6',
+      }}>
+        <span style={{ fontSize: 14, fontWeight: 500, color: '#000000' }}>
+          포토리뷰 전체보기
+        </span>
+      </div>
+
+      {/* ── 3열 그리드 (Figma: 16px 좌우 패딩, gap 1px) ── */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
           gap: 1,
-          padding: '0',
+          padding: '0 16px',
         }}>
           {photos.map((photo, i) => (
             <div
