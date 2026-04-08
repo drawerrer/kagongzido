@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import MapPage, { type MapPageState } from './pages/MapPage';
+import MapPage from './pages/MapPage';
 import SearchPage from './pages/SearchPage';
 import CollectionPage from './pages/CollectionPage';
 import CollectionDetailPage from './pages/CollectionDetailPage';
@@ -69,7 +69,6 @@ function AppInner() {
   const [deletedCollectionData, setDeletedCollectionData] = useState<{ id: string; name: string; storeIds: string[] } | null>(null);
   const { isFavorited, addFavorite, removeFavorite, favorites } = useFavorites();
   const [myPageSubPage, setMyPageSubPage] = useState<string | null>(null);
-  const [mapState, setMapState] = useState<MapPageState | null>(null);
   const [guidebookView, setGuidebookView] = useState<string | null>(null);
   const [guidebookStoreIndex, setGuidebookStoreIndex] = useState(0);
   const [detailScrollToReview, setDetailScrollToReview] = useState(false);
@@ -148,8 +147,6 @@ function AppInner() {
               <MapPage
                 onSearchOpen={() => setShowSearch(true)}
                 onDetailOpen={(id) => setDetailCafeId(id)}
-                initialState={mapState ?? undefined}
-                onStateChange={(s) => setMapState(s)}
               />
             )}
             {activeTab === 'guidebook'  && (
