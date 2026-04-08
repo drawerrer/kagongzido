@@ -423,14 +423,14 @@ function Popover({
 
   const items = hasSavedStores
     ? [
-        { label: '공유하기', action: onShare },
         { label: '편집하기', action: onEdit },
         { label: '컬렉션에 추가하기', action: onAddToCollection },
+        { label: '공유하기', action: onShare },
         { label: '정보 수정 제안하기', action: onSuggestInfo },
       ]
     : [
-        { label: '공유하기', action: onShare },
         { label: '편집하기', action: onEdit },
+        { label: '공유하기', action: onShare },
         { label: '정보 수정 제안하기', action: onSuggestInfo },
       ];
 

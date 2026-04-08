@@ -778,16 +778,16 @@ export default function CollectionDetailPage({
       ]
     : stores.length === 0
     ? [
-        { label: '공유하기', action: () => setShowShareSheet(true) },
         { label: '삭제하기', action: () => setShowDeleteCollectionDialog(true) },
         { label: '매장 추가하기', action: () => setShowAddStoreSheet(true) },
+        { label: '공유하기', action: () => setShowShareSheet(true) },
         { label: '정보 수정 제안하기', action: () => {} },
       ]
     : [
-        { label: '공유하기', action: () => setShowShareSheet(true) },
         { label: '편집하기', action: enterEditMode },
         { label: '컬렉션 삭제하기', action: () => setShowDeleteCollectionDialog(true) },
         { label: '매장 추가하기', action: () => setShowAddStoreSheet(true) },
+        { label: '공유하기', action: () => setShowShareSheet(true) },
         { label: '정보 수정 제안하기', action: () => {} },
       ];
 
