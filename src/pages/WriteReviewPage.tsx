@@ -672,7 +672,7 @@ function PhotoSourceSheet({
             background: 'white',
           }}
         >
-          취소
+          닫기
         </button>
       </div>
     </>
