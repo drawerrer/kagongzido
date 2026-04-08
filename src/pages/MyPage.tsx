@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import NavBar from '../components/NavBar';
 
 // ─────────────────────────────────────────────────────────────
 // 타입
@@ -108,54 +109,6 @@ const MOCK_REVIEWS: ReviewItem[] = [
 // 공통 컴포넌트
 // ─────────────────────────────────────────────────────────────
 
-/** 상단 헤더: ···  |  X */
-function TopHeader({
-  onMore,
-  onClose,
-}: {
-  onMore: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'flex-end',
-      padding: '12px 16px 0',
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        background: '#F2F4F6',
-        borderRadius: 20,
-        overflow: 'hidden',
-        height: 36,
-      }}>
-        <button
-          onClick={onMore}
-          style={{
-            width: 44, height: 36,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, color: '#4E5968', letterSpacing: 1,
-          }}
-        >
-          ···
-        </button>
-        <div style={{ width: 1, height: 16, background: '#D1D6DB' }} />
-        <button
-          onClick={onClose}
-          style={{
-            width: 40, height: 36,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M1 1L13 13M13 1L1 13" stroke="#4E5968" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
-    </div>
-  );
-}
 
 /** 서브페이지 헤더: 뒤로가기 + 타이틀 + ···|X */
 function SubHeader({
@@ -222,7 +175,7 @@ function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (
       </p>
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
         gap: 12,
       }}>
         {cafes.map(cafe => (
@@ -842,7 +795,7 @@ export default function MyPage({
       background: 'white', position: 'relative', overflow: 'hidden',
     }}>
       {/* 상단 헤더 */}
-      <TopHeader onMore={handleMoreAction} onClose={handleClose} />
+      <NavBar onBack={handleClose} onMore={handleMoreAction} onClose={handleClose} />
 
       {/* 스크롤 영역 */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -922,36 +875,46 @@ export default function MyPage({
         현재 최신 버전을 사용 중입니다
       </div>
 
-      {/* 더보기 바텀시트 */}
+      {/* 더보기 드롭다운 팝업 */}
       {showMoreSheet && (
         <>
+          {/* 외부 클릭 시 닫기 — 투명 backdrop */}
           <div
             onClick={() => setShowMoreSheet(false)}
-            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200 }}
+            style={{ position: 'absolute', inset: 0, zIndex: 199 }}
           />
+          {/* 팝업 본체 — DetailPage MorePopup과 동일한 디자인 */}
           <div style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0,
-            background: 'white', borderRadius: '16px 16px 0 0',
-            padding: '16px 20px 32px', zIndex: 201,
+            position: 'absolute', top: 52, right: 16, zIndex: 200,
+            background: 'rgba(253,253,254,0.89)',
+            backdropFilter: 'blur(11px)',
+            WebkitBackdropFilter: 'blur(11px)',
+            borderRadius: 20,
+            border: '1px solid rgba(253,253,255,0.75)',
+            boxShadow: '0 16px 60px rgba(0,27,55,0.10)',
+            minWidth: 180, padding: 4, overflow: 'hidden',
           }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: '#E5E8EB', margin: '0 auto 16px' }} />
-            <p style={{ fontSize: 16, fontWeight: 700, color: '#191F28', marginBottom: 12 }}>더보기</p>
+            <div style={{ padding: '10px 14px 6px', fontSize: 12, fontWeight: 600, color: 'rgba(3,18,40,0.35)', letterSpacing: '0.3px' }}>
+              메뉴
+            </div>
             {[
-              { label: '프로필 수정', icon: '✏️' },
-              { label: '계정 설정', icon: '⚙️' },
-              { label: '로그아웃', icon: '🚪' },
+              { label: '프로필 수정' },
+              { label: '계정 설정' },
+              { label: '로그아웃' },
             ].map(item => (
               <button
                 key={item.label}
                 onClick={() => setShowMoreSheet(false)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  width: '100%', padding: '15px 4px',
-                  borderBottom: '1px solid #F2F4F6', textAlign: 'left',
+                  display: 'flex', alignItems: 'center',
+                  width: '100%', padding: '12px 14px',
+                  borderRadius: 12, textAlign: 'left',
+                  background: 'transparent',
                 }}
               >
-                <span style={{ fontSize: 20 }}>{item.icon}</span>
-                <span style={{ fontSize: 16, color: '#191F28' }}>{item.label}</span>
+                <span style={{ fontSize: 15, fontWeight: 500, color: 'rgba(3,18,40,0.70)', whiteSpace: 'nowrap' }}>
+                  {item.label}
+                </span>
               </button>
             ))}
           </div>

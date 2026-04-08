@@ -66,15 +66,6 @@ function CloseIcon({ color = '#6B7684' }: { color?: string }) {
   );
 }
 
-function HeartFilledSmall({ filled, color }: { filled: boolean; color: string }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24"
-      fill={filled ? color : 'none'} stroke={color} strokeWidth="2"
-      strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-  );
-}
 
 // ────────── 공통 헤더 버튼 스타일 ────────────────────────────
 const hdrBtn: React.CSSProperties = {
@@ -95,6 +86,7 @@ function PhotoDetailView({
 }) {
   const [idx, setIdx] = useState(initialIndex);
   const [likedSet, setLikedSet] = useState<Set<number>>(new Set());
+  const [likeCountMap, setLikeCountMap] = useState<Map<number, number>>(new Map());
   const [showMeatball, setShowMeatball] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportDone, setReportDone] = useState(false);
@@ -105,11 +97,18 @@ function PhotoDetailView({
 
   const photo = photos[idx];
   const isLiked = likedSet.has(idx);
+  const likeCount = likeCountMap.get(idx) ?? 0;
 
   const toggleLike = () => {
     setLikedSet(s => {
       const ns = new Set(s);
-      ns.has(idx) ? ns.delete(idx) : ns.add(idx);
+      const wasLiked = ns.has(idx);
+      wasLiked ? ns.delete(idx) : ns.add(idx);
+      setLikeCountMap(m => {
+        const nm = new Map(m);
+        nm.set(idx, (nm.get(idx) ?? 0) + (wasLiked ? -1 : 1));
+        return nm;
+      });
       return ns;
     });
   };
@@ -140,28 +139,40 @@ function PhotoDetailView({
   return (
     <div style={{ height: '100%', background: '#111', display: 'flex', flexDirection: 'column', position: 'relative' }}>
 
-      {/* 뒤로가기 버튼 */}
-      <button
-        onClick={onBack}
-        style={{
-          position: 'absolute', top: 14, left: 16, zIndex: 20,
-          width: 36, height: 36, borderRadius: 18,
-          background: 'rgba(0,0,0,0.35)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: 'none', cursor: 'pointer',
-        }}
-      >
-        <BackIcon color="white" />
-      </button>
-
-      {/* 페이지 인디케이터 */}
+      {/* ── 상단바: 뒤로가기 + 페이지명 + 인디케이터 ── */}
       <div style={{
-        position: 'absolute', top: 22, left: '50%', transform: 'translateX(-50%)',
-        zIndex: 20, fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: 500,
-        background: 'rgba(0,0,0,0.3)', borderRadius: 20, padding: '3px 12px',
-        pointerEvents: 'none',
+        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
+        display: 'flex', alignItems: 'center',
+        padding: '10px 16px',
+        background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 100%)',
       }}>
-        {idx + 1} / {photos.length}
+        <button
+          onClick={onBack}
+          style={{
+            width: 36, height: 36, borderRadius: 18,
+            background: 'rgba(0,0,0,0.35)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: 'none', cursor: 'pointer', flexShrink: 0,
+          }}
+        >
+          <BackIcon color="white" />
+        </button>
+        {/* 페이지명 */}
+        <span style={{
+          flex: 1, textAlign: 'center',
+          fontSize: 15, fontWeight: 600, color: 'white',
+          letterSpacing: -0.2,
+        }}>
+          포토리뷰
+        </span>
+        {/* 인디케이터 */}
+        <span style={{
+          fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: 500,
+          background: 'rgba(0,0,0,0.3)', borderRadius: 20, padding: '3px 12px',
+          flexShrink: 0,
+        }}>
+          {idx + 1} / {photos.length}
+        </span>
       </div>
 
       {/* 풀스크린 사진 (스와이프 영역) */}
@@ -264,21 +275,75 @@ function PhotoDetailView({
                   </span>
                 )}
               </div>
-              {/* 우측: 미트볼 + 좋아요 */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                <button
-                  onClick={() => setShowMeatball(true)}
-                  style={{ display: 'flex', alignItems: 'center', border: 'none', background: 'none', cursor: 'pointer', padding: 2 }}
-                >
-                  <MoreDotsIcon color="#B0B8C1" />
-                </button>
+              {/* 우측: 미트볼(드롭다운) + 좋아요(pill) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                {/* 더보기 드롭다운 */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setShowMeatball(v => !v)}
+                    style={{ display: 'flex', alignItems: 'center', border: 'none', background: 'none', cursor: 'pointer', padding: 4 }}
+                  >
+                    <MoreDotsIcon color="#B0B8C1" />
+                  </button>
+                  {showMeatball && (
+                    <>
+                      <div
+                        onClick={() => setShowMeatball(false)}
+                        style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+                      />
+                      <div style={{
+                        position: 'absolute', bottom: 40, right: 0, zIndex: 200,
+                        background: 'rgba(253,253,254,0.89)',
+                        backdropFilter: 'blur(11px)',
+                        WebkitBackdropFilter: 'blur(11px)',
+                        borderRadius: 20,
+                        border: '1px solid rgba(253,253,255,0.75)',
+                        boxShadow: '0 16px 60px rgba(0,27,55,0.10)',
+                        minWidth: 160, padding: 4,
+                      }}>
+                        <div style={{ padding: '10px 14px 6px', fontSize: 12, fontWeight: 600, color: 'rgba(3,18,40,0.35)' }}>메뉴</div>
+                        {[
+                          { label: '신고하기', action: () => { setShowMeatball(false); setShowReport(true); } },
+                          { label: '차단하기', action: () => setShowMeatball(false) },
+                        ].map(item => (
+                          <button
+                            key={item.label}
+                            onClick={item.action}
+                            style={{
+                              display: 'flex', alignItems: 'center', width: '100%',
+                              padding: '12px 14px', borderRadius: 12,
+                              textAlign: 'left', background: 'transparent',
+                              border: 'none', cursor: 'pointer',
+                            }}
+                          >
+                            <span style={{ fontSize: 15, fontWeight: 500, color: 'rgba(3,18,40,0.70)', whiteSpace: 'nowrap' }}>
+                              {item.label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* 좋아요 pill – ReviewCard와 동일한 디자인 */}
                 <button
                   onClick={toggleLike}
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, border: 'none', background: 'none', cursor: 'pointer', padding: 2 }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    width: isLiked ? 44 : 46, height: 29, borderRadius: 13,
+                    background: isLiked ? '#3182F6' : '#FAFAFB',
+                    border: 'none', justifyContent: 'center', flexShrink: 0,
+                    transition: 'background 0.15s, width 0.15s',
+                    boxSizing: 'border-box', padding: 0, cursor: 'pointer',
+                  }}
                 >
-                  <HeartFilledSmall filled={isLiked} color={isLiked ? '#3182F6' : '#B0B8C1'} />
-                  <span style={{ fontSize: 12, color: isLiked ? '#3182F6' : '#B0B8C1', fontWeight: 600 }}>
-                    좋아요
+                  <svg width="16" height="16" viewBox="8 4.538 16 18.284" preserveAspectRatio="none"
+                    fill={isLiked ? '#CA4548' : '#697482'}>
+                    <path d="M9.3335 12.6632C9.3335 15.9052 12.0135 17.6325 13.9748 19.1792C14.6668 19.7245 15.3335 20.2385 16.0002 20.2385C16.6668 20.2385 17.3335 19.7252 18.0255 19.1785C19.9875 17.6332 22.6668 15.9052 22.6668 12.6639C22.6668 9.42254 19.0002 7.12187 16.0002 10.2392C13.0002 7.12187 9.3335 9.4212 9.3335 12.6632Z" />
+                  </svg>
+                  <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1, color: isLiked ? '#ffffff' : '#697482', letterSpacing: -0.3 }}>
+                    {likeCount}
                   </span>
                 </button>
               </div>
@@ -312,33 +377,6 @@ function PhotoDetailView({
           </div>
         </div>
       </div>
-
-      {/* ── 미트볼 메뉴 바텀시트 ── */}
-      {showMeatball && (
-        <BottomSheet isOpen onClose={() => setShowMeatball(false)}>
-          <div style={{ padding: '4px 20px 24px' }}>
-            {[
-              { label: '신고하기', icon: '🚨', color: '#FF3B30', action: () => { setShowMeatball(false); setShowReport(true); } },
-              { label: '차단하기', icon: '🚫', color: '#FF3B30', action: () => setShowMeatball(false) },
-            ].map(item => (
-              <button
-                key={item.label}
-                onClick={item.action}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  width: '100%', padding: '15px 4px',
-                  borderBottom: '1px solid #F2F4F6',
-                  textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer',
-                  borderBottomColor: '#F2F4F6',
-                }}
-              >
-                <span style={{ fontSize: 20 }}>{item.icon}</span>
-                <span style={{ fontSize: 16, color: item.color, fontWeight: 500 }}>{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </BottomSheet>
-      )}
 
       {/* ── 신고 사유 선택 바텀시트 ── */}
       {showReport && (
@@ -389,7 +427,7 @@ function PhotoDetailView({
 // ────────── 포토리뷰 전체보기 (그리드 뷰) ──────────────────────
 export default function PhotoReviewPage({
   photos,
-  cafeName,
+  cafeName: _cafeName,
   isFavorite,
   onFavoriteToggle,
   onBack,
@@ -425,13 +463,8 @@ export default function PhotoReviewPage({
           <BackIcon />
         </button>
 
-        {/* 타이틀 */}
-        <span style={{
-          flex: 1, textAlign: 'center',
-          fontSize: 17, fontWeight: 700, color: '#191F28',
-        }}>
-          {cafeName} 포토리뷰
-        </span>
+        {/* 타이틀 – detail_photo_total: 페이지명 미노출 */}
+        <span style={{ flex: 1 }} />
 
         {/* 우측: 하트 / 더보기 / 닫기 */}
         <div style={{ display: 'flex', gap: 2 }}>
@@ -450,19 +483,13 @@ export default function PhotoReviewPage({
         </div>
       </header>
 
-      {/* 사진 수 */}
-      <div style={{ padding: '10px 16px 6px', flexShrink: 0 }}>
-        <span style={{ fontSize: 13, color: '#8B95A1' }}>
-          사진 <strong style={{ color: '#191F28' }}>{photos.length}</strong>장
-        </span>
-      </div>
-
-      {/* ── 3열 그리드 ── */}
+      {/* ── 3열 그리드 (사진 n장 텍스트 제거) ── */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 2,
+          gap: 1,
+          padding: '0',
         }}>
           {photos.map((photo, i) => (
             <div

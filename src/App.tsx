@@ -109,6 +109,15 @@ function AppInner() {
           activeTab={activeTab}
           onTabChange={(tab) => { setDetailCafeId(null); setDetailScrollToReview(false); setActiveTab(tab as TabId); }}
           scrollToReview={detailScrollToReview}
+          onGoToCollection={(col) => {
+            setDetailCafeId(null);
+            setDetailScrollToReview(false);
+            if (col.id) {
+              setCollectionDetail({ id: col.id, name: col.name });
+            } else {
+              setActiveTab('collection');
+            }
+          }}
         />
       </div>
     );
@@ -137,7 +146,10 @@ function AppInner() {
 
       {showSearch ? (
         /* ── 검색 화면 (탭바 숨김) ── */
-        <SearchPage onClose={() => setShowSearch(false)} />
+        <SearchPage
+          onClose={() => setShowSearch(false)}
+          onDetailOpen={(id) => { setShowSearch(false); setDetailCafeId(id); }}
+        />
       ) : (
         <>
           {/* ── 화면 영역 ── */}

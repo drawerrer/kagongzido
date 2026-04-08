@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
+import NavBar from '../components/NavBar';
 
 // ── 타입 ─────────────────────────────────
 interface Cafe {
@@ -34,7 +35,7 @@ const GPS_PERM_KEY = 'gps_permission'; // localStorage key: 'granted' | 'denied'
 // ── 아이콘 ────────────────────────────────
 function SearchIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B0B8C1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(3,24,50,0.46)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
@@ -42,9 +43,9 @@ function SearchIcon() {
 }
 
 function FilterIcon({ active }: { active: boolean }) {
-  const color = active ? '#F2F4F6' : '#191F28';
+  const color = active ? '#fff' : '#191F28';
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill={color}>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={color}>
       <path d="M14 12v7.88c.04.3-.06.62-.29.83a.996.996 0 0 1-1.41 0l-2.01-2.01a.99.99 0 0 1-.29-.83V12h-.03L4.21 4.62a1 1 0 0 1 .17-1.4c.19-.14.4-.22.62-.22h14c.22 0 .43.08.62.22a1 1 0 0 1 .17 1.4L14.03 12z"/>
     </svg>
   );
@@ -306,10 +307,15 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   const [locSheet, setLocSheet] = useState<LocationSheetType | null>(null);
   const [gpsToast, setGpsToast] = useState(false); // GPS 신호 실패 토스트
 
-  // 카테고리 필터 적용
-  const cafes = activeChip
-    ? MOCK_CAFES.filter(c => c.tags.includes(activeChip))
-    : MOCK_CAFES;
+  // 카테고리 필터 + 정렬 적용
+  const cafes = (() => {
+    const filtered = activeChip
+      ? MOCK_CAFES.filter(c => c.tags.includes(activeChip))
+      : [...MOCK_CAFES];
+    if (sortType === '평점순') return filtered.slice().sort((a, b) => b.rating - a.rating);
+    if (sortType === '거리순') return filtered.slice().sort((a, b) => a.distance - b.distance);
+    return filtered; // 조회순: 기본 순서
+  })();
 
   // ── 최초 실행 시 위치 권한 바텀시트 노출 ──
   useEffect(() => {
@@ -437,47 +443,10 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
 
       {/* ── Navigation with Status Bar ── */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 30,
-          background: 'white',
-          borderBottom: '1px solid #F2F4F6',
-          paddingTop: 'env(safe-area-inset-top)',
-        }}
-      >
-        <div
-          style={{
-            height: 44,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0 16px',
-          }}
-        >
-          {/* 좌측: 앱 로고 + 타이틀 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: '#191F28', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                <path d="M2 19V7a2 2 0 012-2h1.5A2.5 2.5 0 018 2.5h8A2.5 2.5 0 0118.5 5H20a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2zm10-1.5a5.5 5.5 0 100-11 5.5 5.5 0 000 11zm0-2a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/>
-              </svg>
-            </div>
-            <span style={{ fontSize: 15, fontWeight: 600, color: '#191F28', letterSpacing: -0.3 }}>취향맞춤 카페지도</span>
-          </div>
-          {/* 우측: 더보기 버튼 */}
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="#B0B8C1">
-              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-            </svg>
-          </button>
-        </div>
-      </div>
+      <NavBar variant="logo" floating />
 
       {/* ── 카카오 지도 배경 ── */}
-      <div ref={mapRef} style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 44px)', bottom: 0, left: 0, right: 0, background: '#E8EAED' }}>
+      <div ref={mapRef} style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 44px + 72px)', bottom: 0, left: 0, right: 0, background: '#E8EAED' }}>
         {!import.meta.env.VITE_KAKAO_MAP_KEY && (
           /* API 키 미설정 시 안내 */
           <div
@@ -508,7 +477,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           left: 0,
           right: 0,
           zIndex: 20,
-          padding: '12px 16px',
+          padding: '14px 16px',
+          background: 'white',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -519,32 +489,30 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
               flex: 1,
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              background: 'white',
-              borderRadius: 10,
+              gap: 10,
+              background: '#F2F4F6',
+              borderRadius: 12,
               height: 44,
-              padding: '0 14px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+              padding: '0 10px',
             }}
           >
             <SearchIcon />
-            <span style={{ color: '#B0B8C1', fontSize: 14 }}>카페를 검색해보세요</span>
+            <span style={{ color: 'rgba(3,24,50,0.46)', fontSize: 17, fontWeight: 510 }}>검색어를 입력하세요.</span>
           </div>
 
           {/* 필터 버튼 */}
           <button
             onClick={() => { setFilterOpenKey(k => k + 1); setFilterOpen(true); }}
             style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
+              width: 52,
+              height: 32,
+              borderRadius: 999,
               flexShrink: 0,
-              background: filterApplied ? '#191F28' : '#F2F4F6',
+              background: filterApplied ? '#191F28' : 'rgba(7,25,76,0.05)',
               border: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
               transition: 'background 0.2s',
             }}
           >
