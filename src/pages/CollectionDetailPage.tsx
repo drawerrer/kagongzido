@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useFavorites, FavoritedStore, RecentCafe } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
+import NavBar from '../components/NavBar';
 
 const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
 
@@ -934,51 +935,13 @@ export default function CollectionDetailPage({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#fff', position: 'relative' }}>
-      {/* ── NavBar (44px) ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        height: 44, paddingRight: 8,
-        flexShrink: 0, position: 'relative',
-      }}>
-        <button
-          onClick={handleBack}
-          style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#191f28" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-
-        <div style={{ flex: 1 }} />
-
-        <div style={{ display: 'flex', alignItems: 'center', height: 34, borderRadius: 99, backgroundColor: 'rgba(0,23,51,0.02)', overflow: 'hidden' }}>
-          {/* 편집모드에는 ··· 없음 */}
-          {!isEditMode && (
-            <>
-              <button
-                onClick={() => setShowPopover(v => !v)}
-                style={{ width: 46, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="#191f28">
-                  <circle cx="4" cy="10" r="1.5" />
-                  <circle cx="10" cy="10" r="1.5" />
-                  <circle cx="16" cy="10" r="1.5" />
-                </svg>
-              </button>
-              <div style={{ width: 1, height: 16, backgroundColor: 'rgba(0,27,55,0.1)' }} />
-            </>
-          )}
-          <button
-            onClick={handleClose}
-            style={{ width: 46, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#191f28" strokeWidth="2" strokeLinecap="round">
-              <line x1="5" y1="5" x2="15" y2="15" />
-              <line x1="15" y1="5" x2="5" y2="15" />
-            </svg>
-          </button>
-        </div>
-
+      {/* ── NavBar ── */}
+      <div style={{ position: 'relative' }}>
+        <NavBar
+          onBack={handleBack}
+          onMore={() => setShowPopover(v => !v)}
+          onClose={handleClose}
+        />
         {/* 팝오버 */}
         {showPopover && (
           <Popover items={popoverItems} onClose={() => setShowPopover(false)} />

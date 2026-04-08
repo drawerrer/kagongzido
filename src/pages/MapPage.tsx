@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { openPermissionDialog } from '@apps-in-toss/web-framework';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
+import { useFavorites } from '../context/FavoritesContext';
+import NavBar from '../components/NavBar';
 
 // ── 타입 ─────────────────────────────────
 interface Cafe {
@@ -34,7 +35,7 @@ const GPS_PERM_KEY = 'gps_permission'; // localStorage key: 'granted' | 'denied'
 // ── 아이콘 ────────────────────────────────
 function SearchIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B0B8C1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(3,24,50,0.46)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
@@ -42,12 +43,10 @@ function SearchIcon() {
 }
 
 function FilterIcon({ active }: { active: boolean }) {
-  const color = active ? '#020913' : 'white';
+  const color = active ? '#fff' : '#191F28';
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="4" y1="6" x2="20" y2="6" />
-      <line x1="7" y1="12" x2="17" y2="12" />
-      <line x1="10" y1="18" x2="14" y2="18" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={color}>
+      <path d="M14 12v7.88c.04.3-.06.62-.29.83a.996.996 0 0 1-1.41 0l-2.01-2.01a.99.99 0 0 1-.29-.83V12h-.03L4.21 4.62a1 1 0 0 1 .17-1.4c.19-.14.4-.22.62-.22h14c.22 0 .43.08.62.22a1 1 0 0 1 .17 1.4L14.03 12z"/>
     </svg>
   );
 }
@@ -136,34 +135,45 @@ function SortPopup({
   );
 }
 
-// ── 카페 목록 행
-// 피그마 ListRow V2: 375×111
-//   Left+Text: 335×87 → row padding: T12 R20 B12 L20
-//   썸네일: 80×80 r=12
-//   카페명: fs=17 fw=700 lh=23 fill=#000c1e a=0.80
-//   주소: fs=13 fw=510 lh=17.6 fill=#00132b a=0.58
-//   평점·거리·리뷰: fs=13 fw=510 lh=17.6 fill=#00132b a=0.58
-//   Badge: r=9 fill=#4e5968 text=#ffffff fs=10 fw=590 lh=15
+// ── 카페 목록 행 ──────────────────────────
 function CafeRow({ cafe, onTap }: { cafe: Cafe; onTap: () => void }) {
+  const fmtDist = (m: number) => (m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`);
+  const { isFavorited, addFavorite, removeFavorite } = useFavorites();
+  const favorited = isFavorited(cafe.id);
+
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (favorited) {
+      removeFavorite(cafe.id);
+    } else {
+      addFavorite({
+        id: cafe.id,
+        name: cafe.name,
+        address: cafe.address,
+        rating: cafe.rating,
+        reviewCount: cafe.reviewCount,
+        photos: [],
+      });
+    }
+  };
+
   return (
     <div
       onClick={onTap}
       style={{
         display: 'flex',
         gap: 12,
-        padding: '12px 20px',
-        minHeight: 111,
-        alignItems: 'center',
+        padding: '12px 16px',
         borderBottom: '1px solid #F2F4F6',
         cursor: 'pointer',
       }}
     >
-      {/* 썸네일 — 피그마: 80×80 r=12 */}
+      {/* 이미지 썸네일 */}
       <div
         style={{
           width: 80,
           height: 80,
-          borderRadius: 12,
+          borderRadius: 10,
           flexShrink: 0,
           background: '#F2F4F6',
           display: 'flex',
@@ -175,105 +185,138 @@ function CafeRow({ cafe, onTap }: { cafe: Cafe; onTap: () => void }) {
         <span style={{ fontSize: 28 }}>☕</span>
       </div>
 
-      {/* [Center] Text Option — 243×87 */}
+      {/* 카페 정보 */}
       <div
         style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          gap: 2,
+          gap: 4,
           minWidth: 0,
         }}
       >
-        {/* Frame 5737: 카페명 + 주소 + 평점 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* 카페명 — 피그마: fs=17 fw=700 lh=23 fill=#000c1e a=0.80 */}
-          <p style={{
-            fontSize: 17,
-            fontWeight: 700,
-            lineHeight: '23px',
-            color: 'rgba(0,12,30,0.80)',
+        <p
+          style={{
+            fontSize: 15,
+            fontWeight: 600,
+            color: '#191F28',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-          }}>
-            {cafe.name}
-          </p>
-          {/* 주소 — 피그마: fs=13 fw=510 lh=17.6 fill=#00132b a=0.58 */}
-          <p style={{
-            fontSize: 13,
-            fontWeight: 510,
-            lineHeight: '17.6px',
-            color: 'rgba(0,19,43,0.58)',
+          }}
+        >
+          {cafe.name}
+        </p>
+        <p
+          style={{
+            fontSize: 12,
+            color: '#6B7684',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-          }}>
-            {cafe.address}
-          </p>
-          {/* 평점·리뷰수 — 피그마: fs=13 fw=510 lh=17.6 fill=#00132b a=0.58 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 13, fontWeight: 510, lineHeight: '17.6px', color: 'rgba(0,19,43,0.58)' }}>
-              ⭐ {cafe.rating}
-            </span>
-            <span style={{ fontSize: 13, fontWeight: 510, lineHeight: '17.6px', color: 'rgba(0,19,43,0.58)' }}>
-              ({cafe.reviewCount})
-            </span>
-          </div>
+          }}
+        >
+          {cafe.address}
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 12, color: '#6B7684' }}>
+            ⭐ {cafe.rating} · {fmtDist(cafe.distance)} · 리뷰 {cafe.reviewCount}
+          </span>
         </div>
-
-        {/* Badge — 피그마: r=9 fill=#4e5968 text=#ffffff fs=10 fw=590 lh=15 */}
+        {/* 배지 */}
         {cafe.tags[0] && (
-          <span style={{
-            display: 'inline-block',
-            padding: '3px 8px',
-            background: '#4e5968',
-            borderRadius: 9,
-            fontSize: 10,
-            fontWeight: 590,
-            lineHeight: '15px',
-            color: '#ffffff',
-            alignSelf: 'flex-start',
-            marginTop: 4,
-          }}>
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '2px 8px',
+              background: '#F2F4F6',
+              borderRadius: 4,
+              fontSize: 11,
+              color: '#4E5968',
+              alignSelf: 'flex-start',
+            }}
+          >
             {cafe.tags[0]}
           </span>
         )}
       </div>
+
+      {/* 하트 버튼 */}
+      <button
+        onClick={handleHeartClick}
+        style={{
+          alignSelf: 'center',
+          width: 36, height: 36,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'none', border: 'none', cursor: 'pointer',
+          flexShrink: 0,
+        }}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+            fill={favorited ? '#3182f6' : 'rgba(0,19,43,0.1)'}
+            stroke={favorited ? '#3182f6' : 'rgba(0,19,43,0.2)'}
+            strokeWidth="1"
+          />
+        </svg>
+      </button>
     </div>
   );
+}
+
+// ── MapPage 상태 스냅샷 타입 ──────────────
+export interface MapPageState {
+  activeChip: string | null;
+  sortType: SortType;
+  panelExpanded: boolean;
+  appliedFilters: FilterState;
+  filterApplied: boolean;
 }
 
 // ── MapPage (메인 화면) ───────────────────
 interface MapPageProps {
   onSearchOpen: () => void;
   onDetailOpen: (cafeId: string) => void;
+  initialState?: MapPageState;
+  onStateChange?: (state: MapPageState) => void;
 }
 
-export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
+export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onStateChange }: MapPageProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
 
-  const [activeChip, setActiveChip] = useState<string | null>(null);
-  const [sortType, setSortType] = useState<SortType>('조회순');
+  const [activeChip, setActiveChip] = useState<string | null>(initialState?.activeChip ?? null);
+  const [sortType, setSortType] = useState<SortType>(initialState?.sortType ?? '조회순');
   const [sortPopupOpen, setSortPopupOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterOpenKey, setFilterOpenKey] = useState(0); // remount key
-  const [panelExpanded, setPanelExpanded] = useState(false);
-  const [appliedFilters, setAppliedFilters] = useState<FilterState>(DEFAULT_FILTERS);
-  const [filterApplied, setFilterApplied] = useState(false); // 한 번이라도 적용했는지
+  const [panelExpanded, setPanelExpanded] = useState(initialState?.panelExpanded ?? false);
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
+  const [filterApplied, setFilterApplied] = useState(initialState?.filterApplied ?? false); // 한 번이라도 적용했는지
+
+  // 상태 변경 시 부모에 알림
+  useEffect(() => {
+    onStateChange?.({ activeChip, sortType, panelExpanded, appliedFilters, filterApplied });
+  }, [activeChip, sortType, panelExpanded, appliedFilters, filterApplied]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── 위치 권한 상태 ──────────────────────
   type GpsStatus = 'granted' | 'denied' | 'unknown';
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('unknown');
   const [locSheet, setLocSheet] = useState<LocationSheetType | null>(null);
   const [gpsToast, setGpsToast] = useState(false); // GPS 신호 실패 토스트
+  const [settingsToast, setSettingsToast] = useState(false); // 설정 안내 토스트
 
-  // 카테고리 필터 적용
-  const cafes = activeChip
-    ? MOCK_CAFES.filter(c => c.tags.includes(activeChip))
-    : MOCK_CAFES;
+  // 카테고리 필터 + 정렬 적용
+  const cafes = (() => {
+    const filtered = activeChip
+      ? MOCK_CAFES.filter(c => c.tags.includes(activeChip))
+      : [...MOCK_CAFES];
+    if (sortType === '평점순') return filtered.slice().sort((a, b) => b.rating - a.rating);
+    if (sortType === '거리순') return filtered.slice().sort((a, b) => a.distance - b.distance);
+    return filtered; // 조회순: 기본 순서
+  })();
 
   // ── 최초 실행 시 위치 권한 바텀시트 노출 ──
   useEffect(() => {
@@ -326,8 +369,10 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
   };
 
   const handleOpenSettings = () => {
-    // SDK를 통해 위치 권한 다이얼로그 재요청 (이미 거부된 경우 OS 설정 화면으로 안내)
-    openPermissionDialog({ name: 'geolocation', access: 'access' }).catch(() => {});
+    // alert() 미사용 — 토스트 메시지로 대체 (Toss 앱 내 alert 미지원)
+    setLocSheet(null);
+    setSettingsToast(true);
+    setTimeout(() => setSettingsToast(false), 3000);
   };
 
   // ── Kakao 지도 초기화 ──────────────────
@@ -400,8 +445,11 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
 
+      {/* ── Navigation with Status Bar ── */}
+      <NavBar variant="logo" floating />
+
       {/* ── 카카오 지도 배경 ── */}
-      <div ref={mapRef} style={{ position: 'absolute', inset: 0, background: '#E8EAED' }}>
+      <div ref={mapRef} style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 44px + 72px)', bottom: 0, left: 0, right: 0, background: '#E8EAED' }}>
         {!import.meta.env.VITE_KAKAO_MAP_KEY && (
           /* API 키 미설정 시 안내 */
           <div
@@ -424,65 +472,56 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
         )}
       </div>
 
-      {/* ── 상단 검색바 + 필터 버튼
-          피그마 SearchField: Container h=72 fill=#ffffff
-          Search Field: 281×44 r=12 fill=#f2f4f6
-          Placeholder: fs=17 fw=510 fill=#031832 a=0.46
-          Filter Chip: 52×32 r=999 ── */}
+      {/* ── 상단 검색바 + 필터 버튼 ── */}
       <div
         style={{
           position: 'absolute',
-          top: 0,
+          top: 'calc(env(safe-area-inset-top) + 44px)',
           left: 0,
           right: 0,
           zIndex: 20,
-          height: 72,
-          background: '#ffffff',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 16px',
-          gap: 10,
+          padding: '14px 16px',
+          background: 'white',
         }}
       >
-        {/* 검색 입력창 (탭 시 SearchPage로 이동) — 피그마: 44h r=12 fill=#f2f4f6 */}
-        <div
-          onClick={onSearchOpen}
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            background: '#f2f4f6',
-            borderRadius: 12,
-            height: 44,
-            padding: '0 14px',
-          }}
-        >
-          <SearchIcon />
-          {/* 피그마: placeholder fs=17 fw=510 fill=#031832 a=0.46 */}
-          <span style={{ color: 'rgba(3,24,50,0.46)', fontSize: 17, fontWeight: 510 }}>
-            검색어를 입력하세요.
-          </span>
-        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* 검색 입력창 (탭 시 SearchPage로 이동) */}
+          <div
+            onClick={onSearchOpen}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              background: '#F2F4F6',
+              borderRadius: 12,
+              height: 44,
+              padding: '0 10px',
+            }}
+          >
+            <SearchIcon />
+            <span style={{ color: 'rgba(3,24,50,0.46)', fontSize: 17, fontWeight: 510 }}>검색어를 입력하세요.</span>
+          </div>
 
-        {/* 필터 칩 — 피그마: 52×32 r=999
-            비활성: fill=#07194c a=0.05 / 활성: fill=#ffffff border #020913 */}
-        <button
-          onClick={() => { setFilterOpenKey(k => k + 1); setFilterOpen(true); }}
-          style={{
-            width: 52,
-            height: 32,
-            borderRadius: 9999,
-            flexShrink: 0,
-            background: filterApplied ? '#ffffff' : 'rgba(7,25,76,0.05)',
-            border: filterApplied ? '1.5px solid #020913' : 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <FilterIcon active={filterApplied} />
-        </button>
+          {/* 필터 버튼 */}
+          <button
+            onClick={() => { setFilterOpenKey(k => k + 1); setFilterOpen(true); }}
+            style={{
+              width: 52,
+              height: 32,
+              borderRadius: 999,
+              flexShrink: 0,
+              background: filterApplied ? '#191F28' : 'rgba(7,25,76,0.05)',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.2s',
+            }}
+          >
+            <FilterIcon active={filterApplied} />
+          </button>
+        </div>
       </div>
 
       {/* ── GPS (현재 위치) 버튼 ── */}
@@ -507,9 +546,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
         <GpsIcon />
       </button>
 
-      {/* ── 바텀 패널
-          피그마 Sheet: r=28 fill=#ffffff
-          Handle: 48×4 r=40 fill=#e5e8eb, Handle Area h=20 ── */}
+      {/* ── 바텀 패널 ── */}
       <div
         style={{
           position: 'absolute',
@@ -517,8 +554,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
           left: 0,
           right: 0,
           zIndex: 10,
-          background: '#ffffff',
-          borderRadius: '28px 28px 0 0',
+          background: 'white',
+          borderRadius: '16px 16px 0 0',
           height: panelExpanded ? '72vh' : `${PANEL_COLLAPSED}px`,
           transition: 'height 0.3s ease',
           display: 'flex',
@@ -526,34 +563,27 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
           boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
         }}
       >
-        {/* Handle Area — 피그마: h=20 */}
+        {/* 핸들 */}
         <div
           onClick={() => setPanelExpanded(e => !e)}
           style={{
-            height: 20,
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'center',
+            padding: '12px 0 4px',
             flexShrink: 0,
             cursor: 'pointer',
           }}
         >
-          {/* Handle — 피그마: 48×4 r=40 fill=#e5e8eb */}
-          <div style={{ width: 48, height: 4, borderRadius: 40, background: '#e5e8eb' }} />
+          <div style={{ width: 48, height: 4, borderRadius: 2, background: '#E5E8EB' }} />
         </div>
 
-        {/* 카테고리 칩
-            피그마: Chip 인스턴스 h=52 (칩 자체 h=32)
-            active : fill=#000c1e a=0.80 text=#ffffff fw=590
-            inactive: fill=#07194c a=0.05 text=rgba(3,18,40,0.70) fw=590 */}
+        {/* 카테고리 칩 */}
         <div
           style={{
             display: 'flex',
             gap: 8,
             overflowX: 'auto',
-            height: 52,
-            alignItems: 'center',
-            padding: '0 16px',
+            padding: '8px 16px',
             flexShrink: 0,
             scrollbarWidth: 'none',
           }}
@@ -568,12 +598,11 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
                 padding: '0 14px',
                 borderRadius: 9999,
                 border: 'none',
-                background: activeChip === chip
-                  ? 'rgba(0,12,30,0.80)'
-                  : 'rgba(7,25,76,0.05)',
-                color: activeChip === chip ? '#ffffff' : 'rgba(3,18,40,0.70)',
+                background: activeChip === chip ? '#191F28' : '#F2F4F6',
+                color: activeChip === chip ? 'white' : '#191F28',
                 fontSize: 13,
-                fontWeight: 590,
+                fontWeight: 600,
+                transition: 'background 0.15s',
               }}
             >
               {chip}
@@ -581,22 +610,19 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
           ))}
         </div>
 
-        {/* .primitive / Title — 피그마: h=39
-            "총 26개" fs=14 fw=400 lh=18.9 fill=#777777
-            "조회순" fs=14 fw=400 lh=18.9 fill=#777777 */}
+        {/* 총 N개 + 정렬 헤더 */}
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            height: 39,
-            padding: '0 16px',
+            padding: '4px 16px 8px',
             flexShrink: 0,
             position: 'relative',
           }}
         >
-          <span style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: '#777777' }}>
-            총 {cafes.length}개
+          <span style={{ fontSize: 14, color: '#6B7684' }}>
+            총 <strong style={{ color: '#191F28' }}>{cafes.length}</strong>개
           </span>
           <button
             onClick={() => setSortPopupOpen(o => !o)}
@@ -605,9 +631,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
               alignItems: 'center',
               gap: 4,
               fontSize: 14,
+              color: '#6B7684',
               fontWeight: 400,
-              lineHeight: '18.9px',
-              color: '#777777',
             }}
           >
             {sortType}
@@ -700,7 +725,28 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
         zIndex: 350,
         pointerEvents: 'none',
       }}>
-        📍 현재 위치를 가져오지 못했어요. 다시 시도해주세요
+        현재 위치를 가져오지 못했어요. 다시 시도해주세요
+      </div>
+
+      {/* ── 설정 안내 토스트 (alert 대체) ── */}
+      <div style={{
+        position: 'absolute',
+        bottom: `${PANEL_COLLAPSED + 20}px`,
+        left: '50%',
+        transform: `translateX(-50%) translateY(${settingsToast ? 0 : 12}px)`,
+        opacity: settingsToast ? 1 : 0,
+        transition: 'opacity 0.2s, transform 0.2s',
+        background: '#191F28',
+        color: 'white',
+        borderRadius: 8,
+        padding: '9px 16px',
+        fontSize: 13,
+        fontWeight: 500,
+        whiteSpace: 'nowrap',
+        zIndex: 350,
+        pointerEvents: 'none',
+      }}>
+        기기 설정 &gt; 앱 &gt; 브라우저 &gt; 위치에서 권한을 변경할 수 있어요
       </div>
     </div>
   );

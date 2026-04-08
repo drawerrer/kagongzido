@@ -15,6 +15,8 @@ function IcPublicToilet(){ return <svg width="18" height="18" viewBox="0 0 24 24
 function IcToilet()     { return <svg width="18" height="18" viewBox="0 0 15 15" fill="currentColor"><path d="M11 4V1c0-1-1-1-1 0v3H5V1c0-1-1-1-1 0v3H2.5c-1 0-1 1.5-.5 2.5s1.5 3 1.5 5.5c0 0 0 2 1 2H6v1h3v-1h1.5c1 0 1-2 1-2c0-2.5 1-4.5 1.5-5.5s.5-2.5-.5-2.5M7.25 9.5H5.5l3-4l-.5 3h2l-3 4"/></svg>; }
 function IcPeople()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8.35 3c1.18-.17 2.43 1.12 2.79 2.9.36 1.77-.29 3.35-1.47 3.53-1.17.18-2.43-1.11-2.8-2.89C6.5 4.77 7.17 3.19 8.35 3m7.15 0c1.19.19 1.85 1.77 1.5 3.54-.38 1.78-1.63 3.07-2.81 2.89-1.19-.18-1.84-1.76-1.47-3.53.36-1.78 1.61-3.07 2.78-2.9M3 7.6c1.14-.49 2.69.4 3.5 1.95.76 1.58.5 3.24-.63 3.73s-2.67-.39-3.46-1.96S1.9 8.08 3 7.6m18 0c1.1.48 1.38 2.15.59 3.72s-2.33 2.45-3.46 1.96-1.39-2.15-.63-3.73C18.31 8 19.86 7.11 21 7.6m-1.67 10.78c.04.94-.68 1.98-1.54 2.37-1.79.82-3.91-.88-5.9-.88s-4.13 1.77-5.89.88c-1-.49-1.69-1.79-1.56-2.87.18-1.49 1.97-2.29 3.03-3.38 1.41-1.41 2.41-4.06 4.42-4.06 2 0 3.06 2.61 4.41 4.06 1.11 1.22 2.96 2.25 3.03 3.88-.03 0-.06-.06-.11.05z"/></svg>; }
 function IcCoffee()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h2v3H5zm4 0h2v3H9zm4 0h2v3h-2zm6 7h-2V8a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3h2c1.103 0 2-.897 2-2v-5c0-1.103-.897-2-2-2m-2 7v-5h2l.002 5z"/></svg>; }
+function IcSeat()       { return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4 16v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4zm1 2h14v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-1zM7 4h10a1 1 0 0 1 1 1v5H6V5a1 1 0 0 1 1-1z"/></svg>; }
+function IcOutlet()     { return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>; }
 
 // ────────── 타입 ────────────────────────────────────────────
 type DayKey = '월' | '화' | '수' | '목' | '금' | '토' | '일';
@@ -32,6 +34,7 @@ interface ReviewItem {
   content: string;
   images?: string[];      // gradient 문자열 배열 (플레이스홀더)
   isReporter?: boolean;   // 카페 제보자 여부 → 항상 최상단
+  likeCount?: number;     // 좋아요 수
 }
 
 interface CafeDetailData {
@@ -119,6 +122,7 @@ const MOCK_DETAILS: Record<string, CafeDetailData> = {
         content: '직접 제보한 카페예요! 서울 강남 최고의 카공 카페입니다. 콘센트가 모든 자리에 있고 조용한 편이에요. 커피도 맛있고 직원분들도 친절해서 자주 올 것 같아요. 2층 창가 자리 추천드려요 :)',
         images: [PHOTO_BG[0], PHOTO_BG[1], PHOTO_BG[2]],
         isReporter: true,
+        likeCount: 12,
       },
       {
         id: 'r1',
@@ -127,6 +131,7 @@ const MOCK_DETAILS: Record<string, CafeDetailData> = {
         date: '2024.12.15',
         content: '카페 분위기가 너무 좋아요. 조용하고 집중이 잘 되는 공간이에요. 커피도 맛있고 콘센트도 충분해서 자주 방문할 것 같아요!',
         images: [PHOTO_BG[3], PHOTO_BG[4]],
+        likeCount: 5,
       },
       {
         id: 'r2',
@@ -135,6 +140,7 @@ const MOCK_DETAILS: Record<string, CafeDetailData> = {
         date: '2024.12.10',
         content: '콘센트도 충분하고 자리도 넓어서 카공하기 딱 좋아요!',
         images: [PHOTO_BG[6], PHOTO_BG[7]],
+        likeCount: 3,
       },
       {
         id: 'r3',
@@ -143,6 +149,7 @@ const MOCK_DETAILS: Record<string, CafeDetailData> = {
         date: '2024.12.08',
         content: '분위기는 좋은데 주말에는 좀 붐벼요. 평일 오전에 오시면 정말 여유롭게 공부할 수 있어요. 아메리카노 맛도 기대 이상이에요.',
         images: [PHOTO_BG[5]],
+        likeCount: 7,
       },
     ],
   },
@@ -161,12 +168,13 @@ const CAFE_NAME_MAP: Record<string, { name: string; address: string }> = {
   rc3: { name: '우모에',          address: '서울 용산구 한강대로84길 21-17 1층' },
   rc4: { name: '더 로스터리',     address: '서울 강남구 도곡로 321' },
   rc5: { name: '카페 베이커리',   address: '서울 강남구 역삼동 567' },
-  // MyPage - MOCK_REVIEWS (cafeId)
-  '1': { name: '우모에',          address: '서울 용산구 한강대로84길 21-17 1층' },
-  '2': { name: '본지르본 연희',   address: '서울 서대문구 연희로 93-10' },
-  '3': { name: '카페 온도',       address: '서울 마포구 와우산로 21' },
-  '4': { name: '모노 커피',       address: '서울 강남구 언주로 234' },
-  '5': { name: '블루보틀 강남',   address: '서울 강남구 논현로 508' },
+  // MapPage - MOCK_CAFES (cafeId)
+  '1': { name: '블루보틀 강남',      address: '서울 강남구 논현로 508' },
+  '2': { name: '스타벅스 역삼역점',  address: '서울 강남구 역삼로 123' },
+  '3': { name: '모노 커피',          address: '서울 강남구 언주로 234' },
+  '4': { name: '카페 베이커리',      address: '서울 강남구 역삼동 567' },
+  '5': { name: '브런치 팩토리',      address: '서울 강남구 선릉로 890' },
+  '6': { name: '더 로스터리',        address: '서울 강남구 도곡로 321' },
   // GuidebookPage - FEATURE_STORES
   gs1: { name: '도트커피',        address: '서울 영등포구' },
   gs2: { name: '프릳츠 커피',     address: '서울 마포구' },
@@ -214,10 +222,12 @@ function BackIcon({ color = '#191F28' }: { color?: string }) {
   );
 }
 
-function HeartIcon({ filled, color = '#6B7684' }: { filled: boolean; color?: string }) {
+function HeartIcon({ filled: _filled, color = '#181E28' }: { filled: boolean; color?: string }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    // Figma 스펙: left 5.14% right 5.13% top 12.42% bottom 9.93% → x≈1.23~22.77, y≈2.98~21.62
+    // filled solid 하트 패스 (outline 제거)
+    <svg width="22" height="22" viewBox="0 0 24 24" fill={color}>
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
     </svg>
   );
 }
@@ -283,10 +293,13 @@ function Divider() {
   return <div style={{ height: 8, background: '#F2F4F6' }} />;
 }
 
-function InfoBox({ label, value }: { label: string; value: string }) {
+function InfoBox({ label, value, icon }: { label: string; value: string; icon?: ReactNode }) {
   return (
     <div style={{ flex: 1, padding: '14px 16px' }}>
-      <p style={{ fontSize: 12, color: '#8B95A1', marginBottom: 4 }}>{label}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4, color: '#8B95A1' }}>
+        {icon}
+        <p style={{ fontSize: 12, color: '#8B95A1' }}>{label}</p>
+      </div>
       <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28' }}>{value}</p>
     </div>
   );
@@ -481,6 +494,8 @@ function PhotoMosaic({
 function ReviewCard({ review }: { review: ReviewItem }) {
   const [textExpanded, setTextExpanded] = useState(false);
   const [expandedImgIdx, setExpandedImgIdx] = useState<number | null>(null);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(review.likeCount ?? 0);
   const CONTENT_THRESHOLD = 50; // 띄어쓰기 포함 50자
   const isLong = review.content.length > CONTENT_THRESHOLD;
 
@@ -571,6 +586,40 @@ function ReviewCard({ review }: { review: ReviewItem }) {
           </button>
         )}
       </div>
+
+      {/* 우측 하단 좋아요 버튼 */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+        <button
+          onClick={() => {
+            setLiked(l => {
+              setLikeCount(c => l ? c - 1 : c + 1);
+              return !l;
+            });
+          }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            width: liked ? 44 : 46, height: 29, borderRadius: 13,
+            background: liked ? '#3182F6' : '#FAFAFB',
+            border: 'none',
+            justifyContent: 'center', flexShrink: 0,
+            transition: 'background 0.15s, width 0.15s',
+            boxSizing: 'border-box', padding: 0,
+          }}
+        >
+          {/* 하트 아이콘 — 컨테이너 16×16, 하트 자체 13.33×11.48 */}
+          <svg width="16" height="16" viewBox="8 4.538 16 18.284" preserveAspectRatio="none" fill={liked ? '#CA4548' : '#697482'}>
+            <path d="M9.3335 12.6632C9.3335 15.9052 12.0135 17.6325 13.9748 19.1792C14.6668 19.7245 15.3335 20.2385 16.0002 20.2385C16.6668 20.2385 17.3335 19.7252 18.0255 19.1785C19.9875 17.6332 22.6668 15.9052 22.6668 12.6639C22.6668 9.42254 19.0002 7.12187 16.0002 10.2392C13.0002 7.12187 9.3335 9.4212 9.3335 12.6632Z" />
+          </svg>
+          {/* 숫자: 미클릭 "0", 클릭 "1" */}
+          <span style={{
+            fontSize: 13, fontWeight: 600, lineHeight: 1,
+            color: liked ? '#ffffff' : '#697482',
+            letterSpacing: -0.3,
+          }}>
+            {likeCount}
+          </span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -613,8 +662,8 @@ function DirectionsSheet({ cafe, onClose }: { cafe: CafeDetailData; onClose: () 
   );
 }
 
-// ────────── 바텀시트: 더보기 액션 ────────────────────────────
-function MoreActionSheet({
+// ────────── 드롭다운 팝업: 더보기 액션 ──────────────────────
+function MorePopup({
   onClose, onShare, onWriteReview,
 }: {
   onClose: () => void;
@@ -622,31 +671,71 @@ function MoreActionSheet({
   onWriteReview: () => void;
 }) {
   const actions = [
-    { label: '후기 남기기', icon: '✏️', onClick: () => { onWriteReview(); onClose(); } },
-    { label: '공유하기', icon: '🔗', onClick: () => { onShare(); onClose(); } },
+    { label: '후기 남기기',       icon: '✏️', onClick: () => { onWriteReview(); onClose(); } },
+    { label: '공유하기',          icon: '🔗', onClick: () => { onShare(); onClose(); } },
     { label: '정보 수정 제안하기', icon: '📝', onClick: onClose },
   ];
 
   return (
-    <BottomSheet isOpen onClose={onClose}>
-      <div style={{ padding: '8px 20px 24px' }}>
-        {actions.map(a => (
+    <>
+      {/* 외부 탭 시 닫기 */}
+      <div
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+      />
+      {/* 팝업 본체 — Figma 245-1382 스펙
+          r=20, fill rgba(253,253,254,0.89), border rgba(253,253,255,0.75)
+          backdrop-filter blur(11px), shadow dy=16 blur=60 rgba(0,27,55,0.1) */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 52,
+          right: 16,
+          zIndex: 200,
+          background: 'rgba(253,253,254,0.89)',
+          backdropFilter: 'blur(11px)',
+          WebkitBackdropFilter: 'blur(11px)',
+          borderRadius: 20,
+          border: '1px solid rgba(253,253,255,0.75)',
+          boxShadow: '0 16px 60px rgba(0,27,55,0.10)',
+          minWidth: 180,
+          padding: '4px',
+          overflow: 'hidden',
+        }}
+      >
+        {/* 섹션 헤더: 메뉴 */}
+        <div style={{
+          padding: '10px 14px 6px',
+          fontSize: 12,
+          fontWeight: 600,
+          color: 'rgba(3,18,40,0.35)',
+          letterSpacing: 0.3,
+        }}>
+          메뉴
+        </div>
+
+        {actions.map((a) => (
           <button
             key={a.label}
             onClick={a.onClick}
             style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              width: '100%', padding: '15px 4px',
-              borderBottom: '1px solid #F2F4F6',
+              display: 'flex', alignItems: 'center',
+              width: '100%', padding: '12px 14px',
+              borderRadius: 12,
               textAlign: 'left',
+              background: 'transparent',
             }}
           >
-            <span style={{ fontSize: 20 }}>{a.icon}</span>
-            <span style={{ fontSize: 16, color: '#191F28' }}>{a.label}</span>
+            <span style={{
+              fontSize: 15,
+              fontWeight: 500,
+              color: 'rgba(3,18,40,0.7)',
+              whiteSpace: 'nowrap',
+            }}>{a.label}</span>
           </button>
         ))}
       </div>
-    </BottomSheet>
+    </>
   );
 }
 
@@ -684,6 +773,130 @@ function LoginPromptSheet({ onClose }: { onClose: () => void }) {
       </div>
     </BottomSheet>
   );
+}
+
+// ────────── 즐겨찾기 스낵바 ──────────────────────────────────
+// Figma: detail_favorite_success / detail_favorite_cancel
+// bg=#8b95a1, h=59, r=9999, 가운데 정렬, bottom=76px
+
+function FavoriteSnackbar({
+  type, dissolving, onGoToCollection, onRestore,
+}: {
+  type: 'added' | 'removed' | null;
+  dissolving: boolean;
+  onGoToCollection?: () => void;
+  onRestore?: () => void;
+}) {
+  const visible = type !== null;
+
+  if (type === 'added') {
+    // 담았어요: w=319, 파란 북마크 아이콘 24×24, 텍스트 fw=590, 보러가기 버튼
+    return (
+      <div style={{
+        position: 'fixed', bottom: 76, left: '50%',
+        transform: `translateX(-50%) translateY(${visible && !dissolving ? 0 : 12}px)`,
+        opacity: dissolving ? 0 : visible ? 1 : 0,
+        transition: dissolving ? 'opacity 0.7s ease, transform 0.7s ease' : 'opacity 0.25s, transform 0.25s',
+        width: 319, height: 59, borderRadius: 9999,
+        background: '#8b95a1',
+        display: 'flex', alignItems: 'center',
+        paddingLeft: 16, paddingRight: 16, gap: 12,
+        zIndex: 300, pointerEvents: visible ? 'auto' : 'none',
+        boxSizing: 'border-box',
+      }}>
+        {/* 왼쪽 아이콘: 24×24 초록 원 + 체크 */}
+        <div style={{
+          width: 24, height: 24, borderRadius: 9999,
+          background: '#00C471', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20,6 9,17 4,12" />
+          </svg>
+        </div>
+        {/* 텍스트 */}
+        <span style={{
+          flex: 1, fontSize: 15, fontWeight: 590, color: '#ffffff',
+          whiteSpace: 'nowrap',
+        }}>
+          카페를 모음집에 담았어요
+        </span>
+        {/* 보러가기 버튼: w=72 h=31 r=100 bg=rgba(0,25,54,0.31) */}
+        <button
+          onClick={onGoToCollection}
+          style={{
+            width: 72, height: 31, borderRadius: 100, flexShrink: 0,
+            background: 'rgba(0,25,54,0.31)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <span style={{
+            fontSize: 13, fontWeight: 590,
+            color: 'rgba(253,253,254,0.89)', whiteSpace: 'nowrap',
+          }}>
+            보러가기
+          </span>
+        </button>
+      </div>
+    );
+  }
+
+  if (type === 'removed') {
+    // 꺼냈어요: w=333, 빨간 원(#f04452) + X 아이콘, 텍스트만
+    return (
+      <div style={{
+        position: 'fixed', bottom: 76, left: '50%',
+        transform: `translateX(-50%) translateY(${visible && !dissolving ? 0 : 12}px)`,
+        opacity: dissolving ? 0 : visible ? 1 : 0,
+        transition: dissolving ? 'opacity 0.7s ease, transform 0.7s ease' : 'opacity 0.25s, transform 0.25s',
+        width: 333, height: 59, borderRadius: 9999,
+        background: '#8b95a1',
+        display: 'flex', alignItems: 'center',
+        paddingLeft: 16, paddingRight: 16, gap: 12,
+        zIndex: 300, pointerEvents: visible ? 'auto' : 'none',
+        boxSizing: 'border-box',
+      }}>
+        {/* 왼쪽 아이콘: 24×24 빨간 원(#f04452) + X */}
+        <div style={{
+          width: 24, height: 24, borderRadius: 9999,
+          background: '#f04452', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="white" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </div>
+        {/* 텍스트 */}
+        <span style={{
+          flex: 1, fontSize: 15, fontWeight: 590, color: '#ffffff',
+          whiteSpace: 'nowrap',
+        }}>
+          카페를 모음집에서 꺼냈어요
+        </span>
+        {/* 되돌리기 버튼: 보러가기와 동일 스펙 */}
+        <button
+          onClick={onRestore}
+          style={{
+            width: 72, height: 31, borderRadius: 100, flexShrink: 0,
+            background: 'rgba(0,25,54,0.31)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <span style={{
+            fontSize: 13, fontWeight: 590,
+            color: 'rgba(253,253,254,0.89)', whiteSpace: 'nowrap',
+          }}>
+            되돌리기
+          </span>
+        </button>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 // ────────── 복사 완료 토스트 ─────────────────────────────────
@@ -727,13 +940,14 @@ interface DetailPageProps {
   onTabChange?: (tabId: string) => void;
   scrollToReview?: boolean;
   openDirections?: boolean;
+  onGoToCollection?: (collection: { id: string; name: string }) => void;
 }
 
-export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections }: DetailPageProps) {
+export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, onGoToCollection }: DetailPageProps) {
   const cafe = getCafeDetail(cafeId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
-  const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed } = useFavorites();
+  const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed, collections } = useFavorites();
 
   const [scrolled, setScrolled] = useState(false);
 
@@ -775,6 +989,11 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [copyToastVisible, setCopyToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
+  const [photoOnly, setPhotoOnly] = useState(false);
+  const [favoriteSnackbar, setFavoriteSnackbar] = useState<'added' | 'removed' | null>(null);
+  const [snackbarDissolving, setSnackbarDissolving] = useState(false);
+  const snackbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dissolveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isFavorite = isFavorited(cafeId);
 
@@ -787,10 +1006,28 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     }
   };
 
+  const showFavoriteSnackbar = (type: 'added' | 'removed') => {
+    // 기존 타이머 초기화
+    if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+    if (dissolveTimerRef.current) clearTimeout(dissolveTimerRef.current);
+    // 즉시 표시
+    setSnackbarDissolving(false);
+    setFavoriteSnackbar(type);
+    // 3초 후 dissolve 시작 → 0.7s 후 완전히 제거
+    snackbarTimerRef.current = setTimeout(() => {
+      setSnackbarDissolving(true);
+      dissolveTimerRef.current = setTimeout(() => {
+        setFavoriteSnackbar(null);
+        setSnackbarDissolving(false);
+      }, 700);
+    }, 3000);
+  };
+
   const handleFavorite = () => {
     if (!isLoggedIn) { setShowLoginSheet(true); return; }
     if (isFavorite) {
       removeFavorite(cafeId);
+      showFavoriteSnackbar('removed');
     } else {
       addFavorite({
         id: cafe.id,
@@ -801,6 +1038,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         badge: cafe.amenities.noTimeLimit ? '시간 제한 없음' : undefined,
         photos: [],       // 나중에 실제 사진으로 교체
       });
+      showFavoriteSnackbar('added');
     }
   };
 
@@ -913,14 +1151,58 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               }
             />
           </button>
-          <button onClick={() => setShowMoreSheet(true)} style={iconBtnStyle(scrolled)}>
-            <MoreIcon color={scrolled ? '#6B7684' : 'white'} />
-          </button>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowMoreSheet(v => !v)} style={iconBtnStyle(scrolled)}>
+              <MoreIcon color={scrolled ? '#6B7684' : 'white'} />
+            </button>
+            {showMoreSheet && (
+              <MorePopup
+                onClose={() => setShowMoreSheet(false)}
+                onShare={handleShare}
+                onWriteReview={() => setShowWriteReview(true)}
+              />
+            )}
+          </div>
           <button onClick={onClose} style={iconBtnStyle(scrolled)}>
             <CloseIcon color={scrolled ? '#6B7684' : 'white'} />
           </button>
         </div>
       </header>
+
+      {/* ── 스크롤 시 노출되는 상단 info 고정 패널 ── */}
+      <div style={{
+        position: 'absolute', top: 60, left: 0, right: 0,
+        zIndex: 98,
+        background: 'white',
+        padding: '10px 20px 14px',
+        borderBottom: '1px solid #F2F4F6',
+        opacity: scrolled ? 1 : 0,
+        pointerEvents: scrolled ? 'auto' : 'none',
+        transform: scrolled ? 'translateY(0)' : 'translateY(-6px)',
+        transition: 'opacity 0.2s, transform 0.2s',
+      }}>
+        <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28', marginBottom: 4, lineHeight: 1.3 }}>
+          {cafe.name}
+        </p>
+        <p style={{ fontSize: 13, color: '#6B7684', marginBottom: hasHoursData ? 6 : 0, lineHeight: 1.4 }}>
+          {cafe.address}
+        </p>
+        {hasHoursData && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              fontSize: 12, fontWeight: 700, color: statusColor,
+              background: `${statusColor}18`, borderRadius: 4, padding: '2px 6px',
+            }}>
+              {statusLabel}
+            </span>
+            {todayHours && (
+              <span style={{ fontSize: 12, color: '#8B95A1' }}>
+                {todayHours.open} – {todayHours.close}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* ── 스크롤 콘텐츠 영역 ── */}
       <div
@@ -1037,9 +1319,9 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
             display: 'flex', border: '1px solid #F2F4F6',
             borderRadius: 12, overflow: 'hidden', marginBottom: 4,
           }}>
-            <InfoBox label="좌석" value={cafe.seats ?? '?'} />
+            <InfoBox label="좌석" value={cafe.seats ?? '?'} icon={<IcSeat />} />
             <div style={{ width: 1, background: '#F2F4F6' }} />
-            <InfoBox label="콘센트" value={cafe.outlets ?? '?'} />
+            <InfoBox label="콘센트" value={cafe.outlets ?? '?'} icon={<IcOutlet />} />
           </div>
 
           {/* 기타 정보 세로 나열 */}
@@ -1068,9 +1350,35 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
         {/* ── 리뷰 섹션 ── */}
         <div ref={reviewSectionRef} style={{ padding: '20px' }}>
-          <h2 style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 16 }}>
-            리뷰&nbsp;<span style={{ color: '#3182F6' }}>{cafe.reviews.length}</span>개
-          </h2>
+          {/* 헤더: "리뷰 (n)" + 포토리뷰만 모아보기 체크박스 */}
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: '#191F28', flex: 1 }}>
+              리뷰&nbsp;<span style={{ color: '#3182F6' }}>({cafe.reviews.length})</span>
+            </h2>
+            <button
+              onClick={() => setPhotoOnly(v => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'none', padding: 0,
+              }}
+            >
+              {/* 체크박스 */}
+              <div style={{
+                width: 18, height: 18, borderRadius: 4,
+                border: photoOnly ? 'none' : '1.5px solid #C9CDD2',
+                background: photoOnly ? '#3182F6' : 'white',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                {photoOnly && (
+                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                    <polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              <span style={{ fontSize: 13, color: '#4E5968', whiteSpace: 'nowrap' }}>포토리뷰만 모아보기</span>
+            </button>
+          </div>
 
           {cafe.reviews.length === 0 ? (
             <div style={{
@@ -1094,8 +1402,14 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                 />
               )}
 
-              {/* 리뷰 카드 목록 (제보자 항상 최상단) */}
-              {sortedReviews.map(review => (
+              {/* 리뷰 카드 목록 (제보자 항상 최상단, 포토리뷰 체크 시 상단 모아보기) */}
+              {(photoOnly
+                ? [
+                    ...sortedReviews.filter(r => r.images && r.images.length > 0),
+                    ...sortedReviews.filter(r => !(r.images && r.images.length > 0)),
+                  ]
+                : sortedReviews
+              ).map(review => (
                 <ReviewCard key={review.id} review={review} />
               ))}
             </>
@@ -1106,25 +1420,42 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         <div style={{ height: 88 }} />
       </div>
 
-      {/* ── 플로팅 "리뷰 남기기" 버튼 ── */}
-      <button
-        onClick={() => setShowWriteReview(true)}
-        style={{
-          position: 'absolute', bottom: 80, right: 20,
-          background: '#3182F6', color: 'white',
-          borderRadius: 24, height: 48, padding: '0 20px',
-          fontSize: 14, fontWeight: 700,
-          boxShadow: '0 4px 16px rgba(49,130,246,0.40)',
-          display: 'flex', alignItems: 'center', gap: 6,
-          zIndex: 50,
-        }}
-      >
-        <span style={{ fontSize: 16 }}>✏️</span>
-        리뷰 남기기
-      </button>
-
       {/* ── 복사 완료 토스트 ── */}
       <CopyToast visible={copyToastVisible} />
+      <FavoriteSnackbar
+        type={favoriteSnackbar}
+        dissolving={snackbarDissolving}
+        onGoToCollection={() => {
+          // 이 카페가 담긴 첫 번째 사용자 컬렉션으로 이동
+          const col = collections.find(c => c.id !== 'recent' && c.storeIds.includes(cafeId));
+          if (col && onGoToCollection) {
+            onGoToCollection({ id: col.id, name: col.name });
+          } else if (onGoToCollection) {
+            // 컬렉션이 없으면 모음집 탭으로 이동
+            onGoToCollection({ id: '', name: '' });
+          }
+          setFavoriteSnackbar(null);
+          setSnackbarDissolving(false);
+          if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+          if (dissolveTimerRef.current) clearTimeout(dissolveTimerRef.current);
+        }}
+        onRestore={() => {
+          // 카페를 다시 즐겨찾기에 추가 (새 스낵바 없이)
+          if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+          if (dissolveTimerRef.current) clearTimeout(dissolveTimerRef.current);
+          addFavorite({
+            id: cafe.id,
+            name: cafe.name,
+            address: cafe.address,
+            rating: 5,
+            reviewCount: 0,
+            badge: cafe.amenities.noTimeLimit ? '시간 제한 없음' : undefined,
+            photos: [],
+          });
+          setFavoriteSnackbar(null);
+          setSnackbarDissolving(false);
+        }}
+      />
 
       {/* ── 하단 탭 네비바 ── */}
       <nav style={{
@@ -1164,13 +1495,6 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       </nav>
 
       {/* ── 바텀시트들 ── */}
-      {showMoreSheet && (
-        <MoreActionSheet
-          onClose={() => setShowMoreSheet(false)}
-          onShare={handleShare}
-          onWriteReview={() => setShowWriteReview(true)}
-        />
-      )}
       {showDirectionsSheet && (
         <DirectionsSheet
           cafe={cafe}
