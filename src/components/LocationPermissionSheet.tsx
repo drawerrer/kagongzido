@@ -85,7 +85,7 @@ function getContent(type: LocationSheetType) {
     case 'ask':
       return {
         icon: <LocationIcon />,
-        title: '위치 권한을 허용하시겠어요?',
+        title: '위치 권한을 허용할까요?',
         desc: '주변 카페를 안내해 드리기 위해 필요해요.',
         // ask: desc fill=#6b7684
         descColor: '#6b7684',
@@ -93,7 +93,7 @@ function getContent(type: LocationSheetType) {
     case 'granted':
       return {
         icon: <CheckIcon />,
-        title: '위치 권한이 허용되었습니다',
+        title: '위치 권한이 허용됐어요',
         desc: '위치 권한을 해제하고 싶다면, [설정] > [위치권한] 에서 확인해주세요.',
         // granted: desc fill=rgba(3,18,40,0.70)
         descColor: 'rgba(3,18,40,0.70)',
@@ -101,7 +101,7 @@ function getContent(type: LocationSheetType) {
     case 'denied':
       return {
         icon: <BlockIcon />,
-        title: '위치 권한이 거부되었습니다',
+        title: '위치 권한이 거부됐어요',
         desc: '위치 권한을 설정하고 싶다면, [설정] > [위치권한] 에서 확인해주세요.',
         // denied: desc fill=rgba(3,18,40,0.70)
         descColor: 'rgba(3,18,40,0.70)',
