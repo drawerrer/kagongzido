@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { openURL } from '@apps-in-toss/web-framework';
 import BottomSheet from '../components/BottomSheet';
 import ShareSheet from '../components/ShareSheet';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
@@ -312,15 +313,14 @@ function InfoRow({
       <span style={{ fontSize: 14, color: '#8B95A1', width: 60, flexShrink: 0 }}>{label}</span>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
         {isLink && value ? (
-          <a
-            href={value}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            onClick={() => openURL(value)}
             style={{ fontSize: 14, color: '#3182F6', textDecoration: 'none',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220,
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'right' }}
           >
             {value}
-          </a>
+          </button>
         ) : (
           <span style={{ fontSize: 14, color: value ? '#191F28' : '#B0B8C1',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
@@ -328,7 +328,7 @@ function InfoRow({
           </span>
         )}
         {isLink && value && (
-          <a href={value} target="_blank" rel="noreferrer"><LinkIcon /></a>
+          <button onClick={() => openURL(value)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0 }}><LinkIcon /></button>
         )}
         {onCopy && value && (
           <button onClick={onCopy} style={{ flexShrink: 0, padding: 4 }}>
@@ -579,9 +579,9 @@ function ReviewCard({ review }: { review: ReviewItem }) {
 function DirectionsSheet({ cafe, onClose }: { cafe: CafeDetailData; onClose: () => void }) {
   const openMap = (type: 'kakao' | 'naver' | 'default') => {
     const addr = encodeURIComponent(cafe.address);
-    if (type === 'kakao') window.open(`kakaomap://search?q=${addr}`, '_blank');
-    else if (type === 'naver') window.open(`nmap://search?query=${addr}&appname=com.kagongzido`, '_blank');
-    else window.open(`https://maps.google.com/maps?q=${addr}`, '_blank');
+    if (type === 'kakao') openURL(`kakaomap://search?q=${addr}`);
+    else if (type === 'naver') openURL(`nmap://search?query=${addr}&appname=com.kagongzido`);
+    else openURL(`https://maps.google.com/maps?q=${addr}`);
     onClose();
   };
 
