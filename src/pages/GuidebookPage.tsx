@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import Snackbar from '../components/Snackbar';
 import { useFavorites } from '../context/FavoritesContext';
+import NavBar from '../components/NavBar';
 
 const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
 
@@ -51,46 +52,6 @@ const PAST_GUIDEBOOKS: MockGuidebook[] = [
   { id: 'p5', title: '집중력 가득', subtitle: '카공하기 딱 좋은 조용한 카페', count: 7, gradient: ['#4A4042', '#1A181C'], stores: FEATURE_STORES },
 ];
 
-// ─── 공통 네비게이션 바 ───────────────────────────────────────
-function NavBar({ onBack, onClose }: { onBack?: () => void; onClose?: () => void }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', height: 44, borderBottom: '1px solid rgba(0,0,0,0.06)', flexShrink: 0, backgroundColor: '#fff' }}>
-      {/* Left: 뒤로가기 + 앱 아이콘 + 앱명 */}
-      <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-        <button
-          onClick={onBack}
-          style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#191f28" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 18, height: 18, borderRadius: 5, backgroundColor: '#3182F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <span style={{ fontSize: 9, lineHeight: '1' }}>☕</span>
-          </div>
-          <span style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 15, color: '#191F28' }}>카공지도</span>
-        </div>
-      </div>
-      {/* Right: Fixed Icon Area 필 컨테이너 (TDS component/navigation~~) */}
-      <div style={{ paddingRight: 8, flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', height: 34, borderRadius: 99, backgroundColor: 'rgba(0,23,51,0.02)', overflow: 'hidden' }}>
-          <button style={{ width: 46, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer' }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="#191f28">
-              <circle cx="4" cy="10" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/>
-            </svg>
-          </button>
-          <div style={{ width: 1, height: 16, backgroundColor: 'rgba(0,27,55,0.1)', flexShrink: 0 }} />
-          <button onClick={onClose} style={{ width: 46, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer' }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#191f28" strokeWidth="2" strokeLinecap="round">
-              <line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── GuideBook/Main — 메인 큐레이션 카드 화면 ─────────────────
 function GuideBookMainView({

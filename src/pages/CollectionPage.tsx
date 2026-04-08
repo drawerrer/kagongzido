@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import BottomSheet from '../components/BottomSheet';
 import Snackbar from '../components/Snackbar';
 import { useFavorites, RecentCafe, FavoritedStore } from '../context/FavoritesContext';
+import NavBar from '../components/NavBar';
 
 // SF Pro 시스템 폰트
 const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
@@ -709,66 +710,13 @@ export default function CollectionPage({
       display: 'flex', flexDirection: 'column',
       height: '100%', backgroundColor: '#ffffff', position: 'relative',
     }}>
-      {/* ── NavBar (Figma: Top Navigation AppInToss, 44px) ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        height: 44, paddingLeft: 0, paddingRight: 8,
-        position: 'relative', flexShrink: 0,
-      }}>
-        {/* 왼쪽: 뒤로가기 + 타이틀 */}
-        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-          <button
-            onClick={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onBack ?? onGoHome)}
-            style={{
-              width: 44, height: 44, flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'none', border: 'none', cursor: 'pointer',
-            }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-              stroke="#191f28" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-          </button>
-        </div>
-
-        {/* 오른쪽: 항상 고정 표시 */}
-        <div style={{
-            display: 'flex', alignItems: 'center',
-            height: 34, borderRadius: 99,
-            backgroundColor: 'rgba(0,23,51,0.02)', overflow: 'hidden',
-          }}>
-            <button
-              onClick={() => setShowPopover(v => !v)}
-              style={{
-                width: 46, height: 34,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'none', border: 'none', cursor: 'pointer',
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="#191f28">
-                <circle cx="4" cy="10" r="1.5"/>
-                <circle cx="10" cy="10" r="1.5"/>
-                <circle cx="16" cy="10" r="1.5"/>
-              </svg>
-            </button>
-            <div style={{ width: 1, height: 16, backgroundColor: 'rgba(0,27,55,0.1)' }} />
-            <button
-              onClick={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onClose ?? onGoHome)}
-              style={{
-                width: 46, height: 34,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'none', border: 'none', cursor: 'pointer',
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-                stroke="#191f28" strokeWidth="2" strokeLinecap="round">
-                <line x1="5" y1="5" x2="15" y2="15"/>
-                <line x1="15" y1="5" x2="5" y2="15"/>
-              </svg>
-            </button>
-          </div>
-
+      {/* ── NavBar ── */}
+      <div style={{ position: 'relative' }}>
+        <NavBar
+          onBack={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onBack ?? onGoHome)}
+          onMore={() => setShowPopover(v => !v)}
+          onClose={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onClose ?? onGoHome)}
+        />
         {/* 팝오버 */}
         {showPopover && (
           <Popover

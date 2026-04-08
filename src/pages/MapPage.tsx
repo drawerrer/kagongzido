@@ -306,6 +306,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('unknown');
   const [locSheet, setLocSheet] = useState<LocationSheetType | null>(null);
   const [gpsToast, setGpsToast] = useState(false); // GPS 신호 실패 토스트
+  const [settingsToast, setSettingsToast] = useState(false); // 설정 안내 토스트
 
   // 카테고리 필터 + 정렬 적용
   const cafes = (() => {
@@ -368,8 +369,10 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   };
 
   const handleOpenSettings = () => {
-    // 네이티브 앱 설정으로 이동 (웹에서는 브라우저 설정 안내)
-    alert('기기 설정 > 앱 > 브라우저 > 위치에서 권한을 변경해주세요.');
+    // alert() 미사용 — 토스트 메시지로 대체 (Toss 앱 내 alert 미지원)
+    setLocSheet(null);
+    setSettingsToast(true);
+    setTimeout(() => setSettingsToast(false), 3000);
   };
 
   // ── Kakao 지도 초기화 ──────────────────
@@ -722,7 +725,28 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         zIndex: 350,
         pointerEvents: 'none',
       }}>
-        📍 현재 위치를 가져오지 못했어요. 다시 시도해주세요
+        현재 위치를 가져오지 못했어요. 다시 시도해주세요
+      </div>
+
+      {/* ── 설정 안내 토스트 (alert 대체) ── */}
+      <div style={{
+        position: 'absolute',
+        bottom: `${PANEL_COLLAPSED + 20}px`,
+        left: '50%',
+        transform: `translateX(-50%) translateY(${settingsToast ? 0 : 12}px)`,
+        opacity: settingsToast ? 1 : 0,
+        transition: 'opacity 0.2s, transform 0.2s',
+        background: '#191F28',
+        color: 'white',
+        borderRadius: 8,
+        padding: '9px 16px',
+        fontSize: 13,
+        fontWeight: 500,
+        whiteSpace: 'nowrap',
+        zIndex: 350,
+        pointerEvents: 'none',
+      }}>
+        기기 설정 &gt; 앱 &gt; 브라우저 &gt; 위치에서 권한을 변경할 수 있어요
       </div>
     </div>
   );
