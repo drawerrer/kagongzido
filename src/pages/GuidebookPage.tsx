@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import Snackbar from '../components/Snackbar';
+import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
 
 const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
@@ -591,6 +592,7 @@ export default function GuidebookPage({
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const dismissSnackbar = useCallback(() => setSnackbar(null), []);
   const [showPopover, setShowPopover] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
 
   const changeView = (v: GuideView) => {
     setView(v);
@@ -693,7 +695,7 @@ export default function GuidebookPage({
 
             {/* 메뉴 아이템: 공유하기 — 피그마: height=44, 17px/510, rgba(3,18,40,0.7) */}
             <button
-              onClick={() => { setShowPopover(false); }}
+              onClick={() => { setShowPopover(false); setShowShareSheet(true); }}
               style={{
                 display: 'flex', alignItems: 'center',
                 width: '100%', height: 44,
@@ -730,6 +732,12 @@ export default function GuidebookPage({
           </div>
         </>
       )}
+
+      <ShareSheet
+        isOpen={showShareSheet}
+        onClose={() => setShowShareSheet(false)}
+        shareTitle="카공지도 가이드북"
+      />
 
       {snackbar && <Snackbar message={snackbar} onDismiss={dismissSnackbar} />}
     </div>

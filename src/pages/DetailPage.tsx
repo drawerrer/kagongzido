@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import BottomSheet from '../components/BottomSheet';
+import ShareSheet from '../components/ShareSheet';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
 import WriteReviewPage from './WriteReviewPage';
 import { useFavorites } from '../context/FavoritesContext';
@@ -757,6 +758,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const [showDirectionsSheet, setShowDirectionsSheet] = useState(false);
   const [showLoginSheet, setShowLoginSheet] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
 
   // 길찾기 바텀시트 자동 열기 (가이드북 길찾기 버튼에서 진입 시)
   useEffect(() => {
@@ -797,14 +799,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     }
   };
 
-  const handleShare = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: cafe.name, text: cafe.address, url: window.location.href });
-      } else {
-        await navigator.clipboard.writeText(window.location.href);
-      }
-    } catch { /* ignore */ }
+  const handleShare = () => {
+    setShowShareSheet(true);
   };
 
   const handleCopyPhone = async () => {
@@ -1179,6 +1175,11 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       {showLoginSheet && (
         <LoginPromptSheet onClose={() => setShowLoginSheet(false)} />
       )}
+      <ShareSheet
+        isOpen={showShareSheet}
+        onClose={() => setShowShareSheet(false)}
+        shareTitle={cafe.name}
+      />
     </div>
   );
 }

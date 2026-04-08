@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import BottomSheet from '../components/BottomSheet';
 import Snackbar from '../components/Snackbar';
+import ShareSheet from '../components/ShareSheet';
 import { useFavorites, RecentCafe, FavoritedStore } from '../context/FavoritesContext';
 
 // SF Pro 시스템 폰트
@@ -396,12 +397,14 @@ function Popover({
   onEdit,
   onAddToCollection,
   onSuggestInfo,
+  onShare,
   onClose,
 }: {
   hasSavedStores: boolean;
   onEdit: () => void;
   onAddToCollection: () => void;
   onSuggestInfo: () => void;
+  onShare: () => void;
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -420,11 +423,13 @@ function Popover({
 
   const items = hasSavedStores
     ? [
+        { label: '공유하기', action: onShare },
         { label: '편집하기', action: onEdit },
         { label: '컬렉션에 추가하기', action: onAddToCollection },
         { label: '정보 수정 제안하기', action: onSuggestInfo },
       ]
     : [
+        { label: '공유하기', action: onShare },
         { label: '편집하기', action: onEdit },
         { label: '정보 수정 제안하기', action: onSuggestInfo },
       ];
@@ -568,6 +573,7 @@ export default function CollectionPage({
   const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [showPopover, setShowPopover] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<Set<string>>(new Set());
   const [deletedStores, setDeletedStores] = useState<FavoritedStore[]>([]);
   const [addedToCollectionIds, setAddedToCollectionIds] = useState<string[]>([]);
@@ -776,6 +782,7 @@ export default function CollectionPage({
             onEdit={enterEditMode}
             onAddToCollection={enterOrganizeMode}
             onSuggestInfo={() => setShowPopover(false)}
+            onShare={() => { setShowPopover(false); setShowShareSheet(true); }}
             onClose={() => setShowPopover(false)}
           />
         )}
@@ -1255,6 +1262,13 @@ export default function CollectionPage({
           }}>{renameToast}</span>
         </div>
       )}
+
+      {/* 공유 바텀시트 */}
+      <ShareSheet
+        isOpen={showShareSheet}
+        onClose={() => setShowShareSheet(false)}
+        shareTitle="카공지도 모음집"
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useFavorites, FavoritedStore, RecentCafe } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
+import ShareSheet from '../components/ShareSheet';
 
 const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
 
@@ -678,6 +679,7 @@ export default function CollectionDetailPage({
   } = useFavorites();
 
   const [showPopover, setShowPopover] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteCollectionDialog, setShowDeleteCollectionDialog] = useState(false);
@@ -770,14 +772,19 @@ export default function CollectionDetailPage({
 
   // ── 팝오버 아이템 (컨텍스트별) ──
   const popoverItems = isRecent
-    ? [{ label: '정보 수정 제안하기', action: () => {} }]
+    ? [
+        { label: '공유하기', action: () => setShowShareSheet(true) },
+        { label: '정보 수정 제안하기', action: () => {} },
+      ]
     : stores.length === 0
     ? [
+        { label: '공유하기', action: () => setShowShareSheet(true) },
         { label: '삭제하기', action: () => setShowDeleteCollectionDialog(true) },
         { label: '매장 추가하기', action: () => setShowAddStoreSheet(true) },
         { label: '정보 수정 제안하기', action: () => {} },
       ]
     : [
+        { label: '공유하기', action: () => setShowShareSheet(true) },
         { label: '편집하기', action: enterEditMode },
         { label: '컬렉션 삭제하기', action: () => setShowDeleteCollectionDialog(true) },
         { label: '매장 추가하기', action: () => setShowAddStoreSheet(true) },
@@ -1120,6 +1127,13 @@ export default function CollectionDetailPage({
           duration={3000}
         />
       )}
+
+      {/* 공유 바텀시트 */}
+      <ShareSheet
+        isOpen={showShareSheet}
+        onClose={() => setShowShareSheet(false)}
+        shareTitle={collectionName}
+      />
     </div>
   );
 }
