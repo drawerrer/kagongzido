@@ -305,6 +305,7 @@ function PhotoDetailView({
                         {[
                           { label: '신고하기', action: () => { setShowMeatball(false); setShowReport(true); } },
                           { label: '차단하기', action: () => setShowMeatball(false) },
+                          { label: '정보 수정 제안하기', action: () => setShowMeatball(false) },
                         ].map(item => (
                           <button
                             key={item.label}
