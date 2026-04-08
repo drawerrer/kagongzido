@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { share } from '@apps-in-toss/web-framework';
 import BottomSheet from './BottomSheet';
 
 const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
@@ -74,6 +75,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
   const [copied, setCopied] = useState(false);
 
   const url = shareUrl ?? window.location.href;
+  const shareMessage = `${shareTitle}\n${url}`;
 
   const handleApp = async (appId: string) => {
     switch (appId) {
@@ -95,36 +97,15 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
         }
         break;
       }
-      case 'kakaotalk': {
-        // 카카오링크 웹 공유
-        const kakaoUrl = `https://story.kakao.com/share?url=${encodeURIComponent(url)}`;
-        window.open(kakaoUrl, '_blank');
-        onClose();
-        break;
-      }
-      case 'instagram': {
-        // 링크 복사 후 인스타 실행 (인스타는 URL 직접 공유 미지원)
-        try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
-        window.open('instagram://', '_blank');
-        onClose();
-        break;
-      }
-      case 'x': {
-        const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTitle)}&url=${encodeURIComponent(url)}`;
-        window.open(tweetUrl, '_blank');
-        onClose();
-        break;
-      }
+      // 카카오톡·인스타그램·X·더보기 → SDK 네이티브 공유 시트 사용
+      // window.open()은 미니앱 WebView에서 동작하지 않으므로 SDK share() 사용
+      case 'kakaotalk':
+      case 'instagram':
+      case 'x':
       case 'more': {
         try {
-          if (navigator.share) {
-            await navigator.share({ title: shareTitle, url });
-          } else {
-            await navigator.clipboard.writeText(url);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-          }
-        } catch { /* ignore */ }
+          await share({ message: shareMessage });
+        } catch { /* 사용자 취소 등 무시 */ }
         onClose();
         break;
       }
@@ -164,7 +145,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
               {/* 아이콘 원 */}
               <div style={{
                 width: 56, height: 56, borderRadius: '50%',
-                background: app.gradientBg ?? app.bgColor,
+                background: (app as { gradientBg?: string }).gradientBg ?? app.bgColor,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
                 transition: 'opacity 0.15s',
@@ -231,7 +212,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
           </button>
         </div>
 
-        {/* 취소 버튼 */}
+        {/* 닫기 버튼 */}
         <button
           onClick={onClose}
           style={{
@@ -242,7 +223,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
             color: 'rgba(3,18,40,0.7)',
           }}
         >
-          취소
+          닫기
         </button>
       </div>
     </BottomSheet>
