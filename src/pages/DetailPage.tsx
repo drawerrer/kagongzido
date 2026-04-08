@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { openURL } from '@apps-in-toss/web-framework';
+import { openURL, appLogin } from '@apps-in-toss/web-framework';
 import BottomSheet from '../components/BottomSheet';
 import ShareSheet from '../components/ShareSheet';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
@@ -661,7 +661,12 @@ function LoginPromptSheet({ onClose }: { onClose: () => void }) {
           즐겨찾기를 사용하려면<br />로그인이 필요해요
         </p>
         <button
-          onClick={onClose}
+          onClick={async () => {
+            try {
+              await appLogin();
+              onClose();
+            } catch { /* 사용자 취소 무시 */ }
+          }}
           style={{
             width: '100%', height: 52, borderRadius: 12,
             background: '#3182F6', color: 'white',
