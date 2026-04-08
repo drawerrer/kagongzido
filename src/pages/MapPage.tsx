@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { openPermissionDialog } from '@apps-in-toss/web-framework';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
@@ -362,8 +363,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   };
 
   const handleOpenSettings = () => {
-    // 네이티브 앱 설정으로 이동 (웹에서는 브라우저 설정 안내)
-    alert('기기 설정 > 앱 > 브라우저 > 위치에서 권한을 변경해주세요.');
+    // SDK를 통해 위치 권한 다이얼로그 재요청 (이미 거부된 경우 OS 설정 화면으로 안내)
+    openPermissionDialog({ name: 'geolocation', access: 'access' }).catch(() => {});
   };
 
   // ── Kakao 지도 초기화 ──────────────────
