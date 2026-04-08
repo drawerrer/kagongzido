@@ -533,7 +533,7 @@ function ReviewEditPage({
               수정을 취소할까요?
             </p>
             <p style={{ fontSize: 14, color: '#8B95A1', lineHeight: 1.5, marginBottom: 24 }}>
-              작성하시던 내용이 사라집니다.
+              지금 나가면 작성한 내용이 사라져요
             </p>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
@@ -738,7 +738,7 @@ function WrittenReviewPage({
                   fontSize: 15, fontWeight: 600, color: '#4E5968',
                 }}
               >
-                취소
+                닫기
               </button>
               <button
                 onClick={confirmDelete}
