@@ -1,8 +1,7 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { share } from '@apps-in-toss/web-framework';
 import BottomSheet from './BottomSheet';
 
-const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
 
 interface ShareSheetProps {
   isOpen: boolean;
@@ -118,7 +117,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
 
         {/* 타이틀 */}
         <p style={{
-          fontFamily: SFPro, fontWeight: 700, fontSize: 18,
+          fontWeight: 700, fontSize: 18,
           color: '#191F28', textAlign: 'center',
           marginBottom: 20, marginTop: 4,
         }}>
@@ -168,7 +167,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
               </div>
               {/* 라벨 */}
               <span style={{
-                fontFamily: SFPro, fontWeight: 510, fontSize: 12,
+                fontWeight: 510, fontSize: 12,
                 color: app.id === 'copy' && copied ? '#00C471' : '#6B7684',
                 whiteSpace: 'nowrap',
                 transition: 'color 0.2s',
@@ -189,7 +188,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
         }}>
           {/* URL 텍스트 */}
           <span style={{
-            fontFamily: SFPro, fontWeight: 400, fontSize: 13,
+            fontWeight: 400, fontSize: 13,
             color: '#6B7684', flex: 1,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
@@ -203,7 +202,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
               borderRadius: 8,
               backgroundColor: copied ? '#00C471' : '#3182F6',
               border: 'none', cursor: 'pointer',
-              fontFamily: SFPro, fontWeight: 590, fontSize: 13,
+              fontWeight: 590, fontSize: 13,
               color: '#ffffff',
               transition: 'background-color 0.2s',
             }}
@@ -219,7 +218,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
             width: '100%', height: 52, marginTop: 12,
             borderRadius: 14, backgroundColor: 'rgba(7,25,76,0.05)',
             border: 'none', cursor: 'pointer',
-            fontFamily: SFPro, fontWeight: 590, fontSize: 17,
+            fontWeight: 590, fontSize: 17,
             color: 'rgba(3,18,40,0.7)',
           }}
         >

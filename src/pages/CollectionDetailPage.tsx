@@ -1,10 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+﻿import { useState, useRef, useEffect, useCallback } from 'react';
 import { useFavorites, FavoritedStore, RecentCafe } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import NavBar from '../components/NavBar';
 
-const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
 
 // ─── 타입 ─────────────────────────────────────────────────────
 interface CollectionStore {
@@ -53,7 +52,7 @@ function Popover({
       WebkitBackdropFilter: 'blur(20px)',
     }}>
       <div style={{ height: 30, display: 'flex', alignItems: 'center', paddingLeft: 16 }}>
-        <span style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 13, color: '#031832' }}>메뉴</span>
+        <span style={{ fontWeight: 590, fontSize: 13, color: '#031832' }}>메뉴</span>
       </div>
       {items.map((item, i) => (
         <button
@@ -63,7 +62,7 @@ function Popover({
             width: '100%', height: 44,
             display: 'flex', alignItems: 'center', paddingLeft: 16,
             background: 'none', border: 'none', cursor: 'pointer',
-            fontFamily: SFPro, fontWeight: 510, fontSize: 17,
+            fontWeight: 510, fontSize: 17,
             color: item.destructive ? '#e42939' : 'rgba(3,18,40,0.7)',
             textAlign: 'left',
           }}
@@ -83,17 +82,17 @@ function DeleteCollectionDialog({ onConfirm, onCancel }: { onConfirm: () => void
     }}>
       <div style={{ width: 311, borderRadius: 24, backgroundColor: '#ffffff', overflow: 'hidden' }}>
         <div style={{ padding: '22px 22px 0' }}>
-          <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)', lineHeight: '27px', marginBottom: 8 }}>
+          <p style={{ fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)', lineHeight: '27px', marginBottom: 8 }}>
             컬렉션을 삭제할까요?
           </p>
-          <p style={{ fontFamily: SFPro, fontWeight: 400, fontSize: 15, color: 'rgba(3,18,40,0.7)', lineHeight: '24px' }}>
+          <p style={{ fontWeight: 400, fontSize: 15, color: 'rgba(3,18,40,0.7)', lineHeight: '24px' }}>
             만들어둔 컬렉션이 사라져요.{'\n'}
             담아둔 매장은 전체 모음집에서 계속 볼 수 있어요.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, padding: '20px 16px 16px' }}>
-          <button onClick={onCancel} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}>닫기</button>
-          <button onClick={onConfirm} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(240,68,82,0.16)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: '#e42939' }}>삭제하기</button>
+          <button onClick={onCancel} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}>닫기</button>
+          <button onClick={onConfirm} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(240,68,82,0.16)', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: '#e42939' }}>삭제하기</button>
         </div>
       </div>
     </div>
@@ -110,17 +109,17 @@ function DeleteStoreDialog({ onConfirm, onCancel }: { onConfirm: () => void; onC
     }}>
       <div style={{ width: 311, borderRadius: 24, backgroundColor: '#ffffff', overflow: 'hidden' }}>
         <div style={{ padding: '22px 22px 0' }}>
-          <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)', lineHeight: '27px', marginBottom: 8 }}>
+          <p style={{ fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)', lineHeight: '27px', marginBottom: 8 }}>
             매장을 삭제할까요?
           </p>
-          <p style={{ fontFamily: SFPro, fontWeight: 400, fontSize: 15, color: 'rgba(3,18,40,0.7)', lineHeight: '24px' }}>
+          <p style={{ fontWeight: 400, fontSize: 15, color: 'rgba(3,18,40,0.7)', lineHeight: '24px' }}>
             모음집에서 매장이 사라져요.{'\n'}
             담아둔 컬렉션에서도 함께 지워져요.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, padding: '20px 16px 16px' }}>
-          <button onClick={onCancel} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}>닫기</button>
-          <button onClick={onConfirm} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(240,68,82,0.16)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: '#e42939' }}>삭제하기</button>
+          <button onClick={onCancel} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}>닫기</button>
+          <button onClick={onConfirm} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(240,68,82,0.16)', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: '#e42939' }}>삭제하기</button>
         </div>
       </div>
     </div>
@@ -150,7 +149,7 @@ function MemoSheet({ initialMemo, onApply, onClose }: { initialMemo: string; onA
           </div>
           {/* 제목 */}
           <div style={{ padding: '0 24px 16px' }}>
-            <span style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)' }}>메모</span>
+            <span style={{ fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)' }}>메모</span>
           </div>
           {/* 입력 */}
           <div style={{ padding: '0 24px 16px' }}>
@@ -161,14 +160,14 @@ function MemoSheet({ initialMemo, onApply, onClose }: { initialMemo: string; onA
                 placeholder="남기고 싶은 메모를 적을 수 있어요"
                 style={{
                   width: '100%', border: 'none', outline: 'none',
-                  fontFamily: SFPro, fontWeight: 590, fontSize: 17,
+                  fontWeight: 590, fontSize: 17,
                   color: '#191f28', backgroundColor: 'transparent',
                 } as React.CSSProperties}
                 autoFocus
               />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
-              <span style={{ fontFamily: SFPro, fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.38)' }}>{value.length}/{MAX}</span>
+              <span style={{ fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.38)' }}>{value.length}/{MAX}</span>
             </div>
           </div>
           {/* 적용하기 버튼 */}
@@ -178,7 +177,7 @@ function MemoSheet({ initialMemo, onApply, onClose }: { initialMemo: string; onA
               width: '100%', height: 56,
               backgroundColor: isActive ? '#3182f6' : 'rgba(26,122,249,0.47)',
               border: 'none', cursor: isActive ? 'pointer' : 'default',
-              fontFamily: SFPro, fontWeight: 590, fontSize: 17,
+              fontWeight: 590, fontSize: 17,
               color: '#ffffff',
             }}
           >적용하기</button>
@@ -207,7 +206,7 @@ function ToastBar({ message }: { message: string }) {
         <circle cx="9" cy="9" r="9" fill="#00C471" />
         <path d="M5.5 9l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <span style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 15, color: 'rgba(0,12,30,0.8)' }}>{message}</span>
+      <span style={{ fontWeight: 590, fontSize: 15, color: 'rgba(0,12,30,0.8)' }}>{message}</span>
     </div>
   );
 }
@@ -300,11 +299,11 @@ function AddStoreSheet({
 
         {/* 타이틀 */}
         <div style={{ padding: '4px 20px 0', flexShrink: 0 }}>
-          <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)', marginBottom: 0 }}>
+          <p style={{ fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)', marginBottom: 0 }}>
             어떤 매장을 추가할까요?
           </p>
           {hasSelection && (
-            <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 14, color: 'rgba(0,19,43,0.45)', marginTop: 4, marginBottom: 0 }}>
+            <p style={{ fontWeight: 510, fontSize: 14, color: 'rgba(0,19,43,0.45)', marginTop: 4, marginBottom: 0 }}>
               {selectedIds.size}개의 매장을 선택했어요
             </p>
           )}
@@ -319,7 +318,7 @@ function AddStoreSheet({
         >
           {availableStores.length === 0 ? (
             <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-              <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 14, color: 'rgba(0,19,43,0.45)' }}>
+              <p style={{ fontWeight: 590, fontSize: 14, color: 'rgba(0,19,43,0.45)' }}>
                 저장한 매장이 없어요
               </p>
             </div>
@@ -336,18 +335,18 @@ function AddStoreSheet({
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
                     {/* 이름·주소·별점 */}
                     <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
-                      <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)', lineHeight: '23px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)', lineHeight: '23px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {store.name}
                       </p>
-                      <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)', lineHeight: '17.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)', lineHeight: '17.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {store.address}
                       </p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <svg width="14" height="14" viewBox="0 0 16 16" fill="#FBBC04">
                           <path d="M8 1.5l1.73 3.51 3.87.56-2.8 2.73.66 3.85L8 10.07l-3.46 1.82.66-3.85-2.8-2.73 3.87-.56L8 1.5z" />
                         </svg>
-                        <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>{store.rating.toFixed(1)}</span>
-                        <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>({store.reviewCount.toLocaleString()})</span>
+                        <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>{store.rating.toFixed(1)}</span>
+                        <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>({store.reviewCount.toLocaleString()})</span>
                       </div>
                     </div>
                     {/* 체크 서클 */}
@@ -398,7 +397,7 @@ function AddStoreSheet({
                 <path d="M8 3v10M3 8h10" stroke="rgba(0,12,30,0.8)" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
             </div>
-            <span style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(0,12,30,0.8)' }}>새로운 매장 찾아보기</span>
+            <span style={{ fontWeight: 590, fontSize: 17, color: 'rgba(0,12,30,0.8)' }}>새로운 매장 찾아보기</span>
           </div>
         </div>
 
@@ -406,11 +405,11 @@ function AddStoreSheet({
         <div style={{ display: 'flex', gap: 8, padding: '12px 16px 20px', flexShrink: 0 }}>
           <button
             onClick={onClose}
-            style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}
+            style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}
           >닫기</button>
           <button
             onClick={() => hasSelection && onConfirm([...selectedIds])}
-            style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: hasSelection ? '#3182f6' : 'rgba(26,122,249,0.47)', border: 'none', cursor: hasSelection ? 'pointer' : 'default', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: '#ffffff' }}
+            style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: hasSelection ? '#3182f6' : 'rgba(26,122,249,0.47)', border: 'none', cursor: hasSelection ? 'pointer' : 'default', fontWeight: 590, fontSize: 17, color: '#ffffff' }}
           >확인</button>
         </div>
       </div>
@@ -491,21 +490,21 @@ function StoreCard({
           {/* Info + 아이콘 */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontFamily: SFPro, fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)', lineHeight: '23px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <p style={{ fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)', lineHeight: '23px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {store.name}
               </p>
-              <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)', lineHeight: '17.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <p style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)', lineHeight: '17.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {store.address}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="#FBBC04">
                   <path d="M8 1.5l1.73 3.51 3.87.56-2.8 2.73.66 3.85L8 10.07l-3.46 1.82.66-3.85-2.8-2.73 3.87-.56L8 1.5z" />
                 </svg>
-                <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>{store.rating.toFixed(1)}</span>
-                <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>({store.reviewCount.toLocaleString()})</span>
+                <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>{store.rating.toFixed(1)}</span>
+                <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>({store.reviewCount.toLocaleString()})</span>
                 {store.timeLimit && (
                   <div style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: 'rgba(0,27,55,0.1)', borderRadius: 9, padding: '3px 7px' }}>
-                    <span style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 10, color: 'rgba(3,18,40,0.7)' }}>{store.timeLimit}</span>
+                    <span style={{ fontWeight: 590, fontSize: 10, color: 'rgba(3,18,40,0.7)' }}>{store.timeLimit}</span>
                   </div>
                 )}
               </div>
@@ -575,7 +574,7 @@ function StoreCard({
                           border: 'none', cursor: 'pointer', borderRadius: 4,
                         }}
                       >
-                        <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 14, color: '#ffffff' }}>더보기</span>
+                        <span style={{ fontWeight: 510, fontSize: 14, color: '#ffffff' }}>더보기</span>
                       </button>
                     )}
                   </div>
@@ -603,13 +602,13 @@ function StoreCard({
           </svg>
           {store.memo ? (
             <span style={{
-              fontFamily: SFPro, fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.58)',
+              fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.58)',
               lineHeight: '16.2px', flex: 1,
               display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
             } as React.CSSProperties}>{store.memo}</span>
           ) : (
             <span style={{
-              fontFamily: SFPro, fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.25)',
+              fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.25)',
               lineHeight: '16.2px',
             }}>이곳을 기억하고 싶은 특별한 이유를 적어두세요</span>
           )}
@@ -628,10 +627,10 @@ function EmptyState({ onAddStore }: { onAddStore?: () => void }) {
       alignItems: 'center', justifyContent: 'center', gap: 8,
       padding: '60px 20px',
     }}>
-      <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 13, color: '#191F28', textAlign: 'center', lineHeight: '19px', marginBottom: 0 }}>
+      <p style={{ fontWeight: 590, fontSize: 13, color: '#191F28', textAlign: 'center', lineHeight: '19px', marginBottom: 0 }}>
         아직 컬렉션에 담은 매장이 없어요
       </p>
-      <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 13, color: 'rgba(0,19,43,0.45)', textAlign: 'center', lineHeight: '19px', marginBottom: 12 }}>
+      <p style={{ fontWeight: 590, fontSize: 13, color: 'rgba(0,19,43,0.45)', textAlign: 'center', lineHeight: '19px', marginBottom: 12 }}>
         저장해 둔 매장을 목적에 맞게 쏙쏙 골라 담아보세요
       </p>
       <button
@@ -641,7 +640,7 @@ function EmptyState({ onAddStore }: { onAddStore?: () => void }) {
           width: 165, height: 48, borderRadius: 14,
           backgroundColor: 'rgba(0,27,55,0.06)',
           border: 'none', cursor: 'pointer',
-          fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(0,12,30,0.8)',
+          fontWeight: 590, fontSize: 17, color: 'rgba(0,12,30,0.8)',
         }}
       >
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -950,7 +949,7 @@ export default function CollectionDetailPage({
 
       {/* ── info_2 (46px) ── */}
       <div style={{ height: 46, backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 14, color: '#000000' }}>
+        <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>
           {isEditMode ? '편집모드' : `${collectionName} (${stores.length})`}
         </span>
       </div>
@@ -959,8 +958,8 @@ export default function CollectionDetailPage({
       {stores.length === 0 && !isEditMode ? (
         isRecent ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
-            <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 13, color: '#191F28', textAlign: 'center', lineHeight: '19px', marginBottom: 4 }}>아직 최근에 본 매장이 없어요</p>
-            <p style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', textAlign: 'center', lineHeight: '19px', marginBottom: 20 }}>홈에서 카페를 탐색하면 여기에 기록돼요</p>
+            <p style={{ fontWeight: 590, fontSize: 13, color: '#191F28', textAlign: 'center', lineHeight: '19px', marginBottom: 4 }}>아직 최근에 본 매장이 없어요</p>
+            <p style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', textAlign: 'center', lineHeight: '19px', marginBottom: 20 }}>홈에서 카페를 탐색하면 여기에 기록돼요</p>
             <button
               onClick={onGoHome}
               style={{
@@ -968,7 +967,7 @@ export default function CollectionDetailPage({
                 width: 165, height: 48, borderRadius: 14,
                 backgroundColor: 'rgba(0,27,55,0.06)',
                 border: 'none', cursor: 'pointer',
-                fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(0,12,30,0.8)',
+                fontWeight: 590, fontSize: 17, color: 'rgba(0,12,30,0.8)',
               }}
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -1023,17 +1022,17 @@ export default function CollectionDetailPage({
               <div style={{ display: 'flex', gap: 8, width: '100%' }}>
                 <button
                   onClick={handleDeleteSelected}
-                  style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: 'rgba(49,130,246,0.16)', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: '#2272eb' }}
+                  style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: 'rgba(49,130,246,0.16)', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: '#2272eb' }}
                 >삭제</button>
                 <button
                   onClick={exitEditMode}
-                  style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: '#3182f6', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: '#ffffff' }}
+                  style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: '#3182f6', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: '#ffffff' }}
                 >완료</button>
               </div>
             ) : (
               <button
                 onClick={exitEditMode}
-                style={{ width: '100%', height: 56, borderRadius: 16, backgroundColor: '#f2f4f6', border: 'none', cursor: 'pointer', fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: 'rgba(0,19,43,0.58)' }}
+                style={{ width: '100%', height: 56, borderRadius: 16, backgroundColor: '#f2f4f6', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: 'rgba(0,19,43,0.58)' }}
               >완료</button>
             )}
           </div>

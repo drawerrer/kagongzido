@@ -1,10 +1,9 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+﻿import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import NavBar from '../components/NavBar';
 
-const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
 
 // ─── 타입 ─────────────────────────────────────────────────────
 interface MockStore {
@@ -89,7 +88,7 @@ function GuideBookMainView({
             <div style={{ position: 'absolute', bottom: 28, left: 24 }}>
               {/* 제목 — 28px/590, 줄바꿈 */}
               <p style={{
-                fontFamily: SFPro,
+                
                 fontWeight: 590,
                 fontSize: 28,
                 lineHeight: '33.4px',
@@ -101,7 +100,7 @@ function GuideBookMainView({
               </p>
               {/* count — 18px/400, 배경 없음 */}
               <span style={{
-                fontFamily: SFPro,
+                
                 fontWeight: 400,
                 fontSize: 18,
                 color: '#fff',
@@ -119,7 +118,7 @@ function GuideBookMainView({
           onClick={onPastPress}
           style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: '12px 16px' }}
         >
-          <span style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 18, color: '#333333' }}>지난 가이드북</span>
+          <span style={{ fontWeight: 590, fontSize: 18, color: '#333333' }}>지난 가이드북</span>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#333333" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 4 10 8 6 12"/>
           </svg>
@@ -256,12 +255,12 @@ function GuideBookDetailView({
       {/* 헤더 — 피그마: 61px, 가이드북명 14px/590 + n places 14px/400 */}
       <div style={{ height: 61, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <p style={{
-          fontFamily: SFPro, fontWeight: 590, fontSize: 14, color: '#000000',
+          fontWeight: 590, fontSize: 14, color: '#000000',
           lineHeight: '22.5px', marginBottom: 2,
         }}>
           {guidebook.title.replace('\n', ' ')}
         </p>
-        <p style={{ fontFamily: SFPro, fontWeight: 400, fontSize: 14, color: '#000000' }}>
+        <p style={{ fontWeight: 400, fontSize: 14, color: '#000000' }}>
           {guidebook.stores.length} places
         </p>
       </div>
@@ -341,7 +340,7 @@ function GuideBookDetailView({
       }}>
         {/* 주소 — 12px/510 #6b7684 */}
         <p style={{
-          fontFamily: SFPro, fontWeight: 510, fontSize: 12,
+          fontWeight: 510, fontSize: 12,
           color: '#6b7684', textAlign: 'center',
           lineHeight: '22.5px', marginBottom: 0,
         }}>
@@ -349,7 +348,7 @@ function GuideBookDetailView({
         </p>
         {/* 매장명 — 20px/590 #000 */}
         <p style={{
-          fontFamily: SFPro, fontWeight: 590, fontSize: 20,
+          fontWeight: 590, fontSize: 20,
           color: '#000000', textAlign: 'center',
           lineHeight: '22.5px', marginBottom: 12,
         }}>
@@ -362,15 +361,15 @@ function GuideBookDetailView({
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M5 2v2H3.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5H4v1l-1 5h1l.5-2.5h3L8 12h1L8 7v-1h.5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5H7V2H5zm2 3.5H5.5V4h1.5v1.5z" fill="rgba(0,0,0,0.45)"/>
             </svg>
-            <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 14, color: '#000000' }}>좌석</span>
-            <span style={{ fontFamily: SFPro, fontWeight: 400, fontSize: 14, color: '#777777' }}>{store.seats}석</span>
+            <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>좌석</span>
+            <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{store.seats}석</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M6 1v3H4l2 3H5l2 4 1-3h1l-2-3h2L6 1z" fill="rgba(0,0,0,0.45)"/>
             </svg>
-            <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 14, color: '#000000' }}>콘센트</span>
-            <span style={{ fontFamily: SFPro, fontWeight: 400, fontSize: 14, color: '#777777' }}>{store.outlet}</span>
+            <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>콘센트</span>
+            <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{store.outlet}</span>
           </div>
         </div>
 
@@ -392,7 +391,7 @@ function GuideBookDetailView({
                 backgroundColor: 'rgba(7,25,76,0.05)',
                 border: 'none',
                 cursor: 'pointer',
-                fontFamily: SFPro,
+                
                 fontWeight: 590,
                 fontSize: 13,
                 color: 'rgba(3,18,40,0.7)',
@@ -426,7 +425,7 @@ function GuideBookDetailView({
               backgroundColor: '#4e5968',
               border: 'none',
               cursor: 'pointer',
-              fontFamily: SFPro,
+              
               fontWeight: 590,
               fontSize: 17,
               color: '#fff',
@@ -477,7 +476,7 @@ function GuideBookPastView({
               <div style={{ position: 'absolute', bottom: 16, left: 16, right: 8 }}>
                 {/* 제목 — 16px/590 white */}
                 <p style={{
-                  fontFamily: SFPro,
+                  
                   fontWeight: 590,
                   fontSize: 16,
                   lineHeight: '19px',
@@ -489,7 +488,7 @@ function GuideBookPastView({
                 </p>
                 {/* count — 9px/400 white */}
                 <p style={{
-                  fontFamily: SFPro,
+                  
                   fontWeight: 400,
                   fontSize: 9,
                   color: '#fff',
@@ -623,7 +622,7 @@ export default function GuidebookPage({
             {/* 타이틀 영역 — 피그마: height=30, 13px/590, rgba(3,24,50,0.46) */}
             <div style={{ height: 30, display: 'flex', alignItems: 'center', paddingLeft: 16, paddingTop: 2 }}>
               <span style={{
-                fontFamily: SFPro,
+                
                 fontWeight: 590,
                 fontSize: 13,
                 color: 'rgba(3,24,50,0.46)',
@@ -641,7 +640,7 @@ export default function GuidebookPage({
                 width: '100%', height: 44,
                 paddingLeft: 16, paddingRight: 16,
                 background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: SFPro, fontWeight: 510, fontSize: 17,
+                fontWeight: 510, fontSize: 17,
                 color: 'rgba(3,18,40,0.7)',
                 textAlign: 'left', borderRadius: 12,
                 boxSizing: 'border-box',
@@ -658,7 +657,7 @@ export default function GuidebookPage({
                 width: '100%', height: 44,
                 paddingLeft: 16, paddingRight: 16,
                 background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: SFPro, fontWeight: 510, fontSize: 17,
+                fontWeight: 510, fontSize: 17,
                 color: 'rgba(3,18,40,0.7)',
                 textAlign: 'left', borderRadius: 12,
                 boxSizing: 'border-box',

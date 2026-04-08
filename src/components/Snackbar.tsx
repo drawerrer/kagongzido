@@ -1,6 +1,5 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 
-const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
 
 interface SnackbarProps {
   message: string;
@@ -56,7 +55,7 @@ export default function Snackbar({ message, actionLabel, onAction, onDismiss, du
         {/* 텍스트 (Figma: 15px/590, white) */}
         <span style={{
           flex: 1,
-          fontFamily: SFPro, fontWeight: 590, fontSize: 15,
+          fontWeight: 590, fontSize: 15,
           color: '#ffffff',
           whiteSpace: 'nowrap',
         }}>
@@ -77,7 +76,7 @@ export default function Snackbar({ message, actionLabel, onAction, onDismiss, du
             }}
           >
             <span style={{
-              fontFamily: SFPro, fontWeight: 590, fontSize: 13,
+              fontWeight: 590, fontSize: 13,
               color: 'rgba(255,255,255,0.89)',
             }}>
               {actionLabel}

@@ -1,7 +1,4 @@
-// SF Pro 시스템 폰트
-const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
-
-interface SegmentedControlProps {
+﻿interface SegmentedControlProps {
   tabs: string[];
   activeIndex: number;
   onChange: (index: number) => void;
@@ -25,7 +22,7 @@ export default function SegmentedControl({ tabs, activeIndex, onChange }: Segmen
           style={{
             flex: 1,
             borderRadius: 8,                                       // 피그마: 8px
-            fontFamily: SFPro,
+            
             fontSize: 15,                                          // 피그마: 15px
             fontWeight: activeIndex === i ? 590 : 510,             // 피그마: Semibold/Medium
             color: activeIndex === i
