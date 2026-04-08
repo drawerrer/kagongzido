@@ -342,15 +342,13 @@ function InfoRow({
 function AmenityBadge({ icon, label }: { icon: ReactNode; label: string }) {
   return (
     <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 6,
-      background: '#F2F4F6',
-      borderRadius: 8,
-      padding: '8px 12px',
+      width: 50, height: 50,
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      gap: 3,
     }}>
-      <span style={{ display: 'flex', alignItems: 'center', color: '#4E5968' }}>{icon}</span>
-      <span style={{ fontSize: 13, fontWeight: 500, color: '#4E5968' }}>{label}</span>
+      <span style={{ fontSize: 20 }}>{icon}</span>
+      <span style={{ fontSize: 10, fontWeight: 500, color: '#4E5968', textAlign: 'center', lineHeight: 1.2 }}>{label}</span>
     </div>
   );
 }
@@ -489,18 +487,18 @@ function ReviewCard({ review }: { review: ReviewItem }) {
       {/* 헤더: 아바타 + 닉네임 + 날짜 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
         <div style={{
-          width: 38, height: 38, borderRadius: 19,
+          width: 32, height: 32, borderRadius: 100,
           background: review.avatarColor,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: 'white' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>
             {review.author[0]}
           </span>
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#191F28' }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#000000' }}>
               {review.author}
             </span>
             {review.isReporter && (
@@ -513,7 +511,7 @@ function ReviewCard({ review }: { review: ReviewItem }) {
               </span>
             )}
           </div>
-          <span style={{ fontSize: 12, color: '#B0B8C1' }}>{review.date}</span>
+          <span style={{ fontSize: 12, color: '#777777' }}>{review.date}</span>
         </div>
       </div>
 
@@ -556,10 +554,16 @@ function ReviewCard({ review }: { review: ReviewItem }) {
 
       {/* 리뷰 텍스트 (50자 말줄임 → 더보기 탭 시 전체 펼침) */}
       <div>
-        <p style={{ fontSize: 14, color: '#4E5968', lineHeight: 1.65, marginBottom: isLong ? 4 : 0 }}>
-          {isLong && !textExpanded
-            ? review.content.slice(0, 50) + '...'
-            : review.content}
+        <p style={{
+          fontSize: 14, color: '#000000', lineHeight: 1.65, marginBottom: isLong ? 4 : 0,
+          ...(textExpanded ? {} : {
+            display: '-webkit-box' as any,
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical' as any,
+            overflow: 'hidden',
+          }),
+        }}>
+          {review.content}
         </p>
         {isLong && (
           <button
@@ -1043,12 +1047,24 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         {/* ── 편의시설 섹션 (데이터 없으면 미노출) ── */}
         {hasAmenities && (
           <>
-            <div style={{ padding: '20px' }}>
+            <div style={{ padding: '20px 16px' }}>
               <h2 style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 14 }}>편의시설</h2>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {activeAmenities.map(([key, { icon, label }]) => (
-                  <AmenityBadge key={key} icon={icon} label={label} />
-                ))}
+              {/* 피그마: 343×128 fill=#f3f3f3, 20px inner pad, 4열 그리드, 서비스 아이템 50×50 */}
+              <div style={{
+                background: '#f3f3f3',
+                borderRadius: 12,
+                padding: '10px 20px',
+              }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, 50px)',
+                  gap: '18px 34px',
+                  justifyContent: 'center',
+                }}>
+                  {activeAmenities.map(([key, { icon, label }]) => (
+                    <AmenityBadge key={key} icon={icon} label={label} />
+                  ))}
+                </div>
               </div>
             </div>
             <Divider />

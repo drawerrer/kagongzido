@@ -101,7 +101,7 @@ export default function SearchPage({ onClose }: SearchPageProps) {
             alignItems: 'center',
             gap: 8,
             background: '#F2F4F6',
-            borderRadius: 10,
+            borderRadius: 12,
             height: 44,
             padding: '0 14px',
           }}
@@ -118,8 +118,9 @@ export default function SearchPage({ onClose }: SearchPageProps) {
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              fontSize: 14,
-              color: '#191F28',
+              fontSize: 17,
+              fontWeight: 510,
+              color: 'rgba(3,24,50,0.46)',
               fontFamily: 'inherit',
             }}
           />

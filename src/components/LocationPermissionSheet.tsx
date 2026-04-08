@@ -2,8 +2,20 @@
 // SheetType별 UI:
 //   'ask'     - 최초 권한 요청 (아니요 / 허용하기)
 //   'granted' - 권한 허용 확인 (확인)
-//   'denied'  - 권한 거부 확인 (설정에서 변경하기 / 확인)
+//   'denied'  - 권한 거부 확인 (확인)
 //   'reask'   - 권한 재요청 (나중에 / 허용하기 → 설정으로)
+//
+// 피그마 수치 기준:
+//   시트 r=28, Handle 48×4 r=40 fill=#e5e8eb
+//   타이틀 fs=20 fw=700 fill=#000c1e a=0.80 (rgba(0,12,30,0.80))
+//   서브텍스트 fs=15 fw=400
+//     ask/reask: fill=#6b7684
+//     granted/denied: fill=rgba(3,18,40,0.70)
+//   버튼 h=56 r=16
+//     아니요/나중에: fill=rgba(7,25,76,0.05) text=rgba(3,18,40,0.70) fs=17 fw=590
+//     허용하기: fill=#3182f6 text=#ffffff fs=17 fw=590
+//     확인(granted/denied): fill=#2272eb text=#ffffff fs=17 fw=590
+//   딤: rgba(0,0,0,0.20)
 
 export type LocationSheetType = 'ask' | 'granted' | 'denied' | 'reask';
 
@@ -11,7 +23,7 @@ interface LocationPermissionSheetProps {
   type: LocationSheetType;
   onClose: () => void;       // 닫기 (외부 탭 / 아니요 / 나중에 / 확인)
   onAllow: () => void;       // 허용하기
-  onOpenSettings: () => void; // 설정 앱으로 이동 (denied 상태)
+  onOpenSettings: () => void; // 설정 앱으로 이동 (reask 상태에서 허용하기)
 }
 
 // ── 아이콘 ────────────────────────────────────────────────
@@ -67,32 +79,40 @@ function BlockIcon() {
   );
 }
 
-// ── 컨텐츠 설정 ───────────────────────────────────────────
+// ── 컨텐츠 설정 — 피그마 텍스트 원문 그대로 ─────────────────
 function getContent(type: LocationSheetType) {
   switch (type) {
     case 'ask':
       return {
         icon: <LocationIcon />,
         title: '위치 권한을 허용하시겠어요?',
-        desc: '현재 위치 기반으로 주변 카페를 탐색하고\n거리 정보를 제공하기 위해 위치 권한이 필요해요.',
+        desc: '주변 카페를 안내해 드리기 위해 필요해요.',
+        // ask: desc fill=#6b7684
+        descColor: '#6b7684',
       };
     case 'granted':
       return {
         icon: <CheckIcon />,
         title: '위치 권한이 허용되었습니다',
-        desc: '현재 위치 기반으로 주변 카페를 탐색할 수 있어요.\n가까운 카페부터 살펴보세요!',
+        desc: '위치 권한을 해제하고 싶다면, [설정] > [위치권한] 에서 확인해주세요.',
+        // granted: desc fill=rgba(3,18,40,0.70)
+        descColor: 'rgba(3,18,40,0.70)',
       };
     case 'denied':
       return {
         icon: <BlockIcon />,
         title: '위치 권한이 거부되었습니다',
-        desc: '위치 권한 없이도 검색으로 카페를 탐색할 수 있어요.\n지도는 기본 지역(서울 중구)으로 표시돼요.',
+        desc: '위치 권한을 설정하고 싶다면, [설정] > [위치권한] 에서 확인해주세요.',
+        // denied: desc fill=rgba(3,18,40,0.70)
+        descColor: 'rgba(3,18,40,0.70)',
       };
     case 'reask':
       return {
         icon: <LocationIcon />,
         title: '위치 권한을 허용해주세요',
-        desc: '이 기능을 사용하려면 위치 권한이 필요해요.\n설정에서 위치 권한을 허용해주세요.',
+        desc: '현재 위치 권한이 거부된 상태입니다. 길찾기를 이용하시려면, [설정] > [위치권한] 에서 \'허용\'으로 변경해주세요.',
+        // reask: desc fill=#6b7684
+        descColor: '#6b7684',
       };
   }
 }
@@ -104,117 +124,157 @@ export default function LocationPermissionSheet({
   onAllow,
   onOpenSettings,
 }: LocationPermissionSheetProps) {
-  const { icon, title, desc } = getContent(type);
+  const { icon, title, desc, descColor } = getContent(type);
+
+  // ask/reask: 2-버튼 레이아웃 (각 153.5px)
+  // granted/denied: 1-버튼 레이아웃 (확인)
+  const hasTwoButtons = type === 'ask' || type === 'reask';
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 400 }}>
-      {/* 딤 배경 — 외부 탭 시 "아니요/나중에"와 동일하게 닫힘 */}
+      {/* 딤 배경 — 피그마: rgba(0,0,0,0.20) */}
       <div
         onClick={onClose}
         style={{
           position: 'absolute', inset: 0,
-          background: 'rgba(0,0,0,0.4)',
+          background: 'rgba(0,0,0,0.20)',
         }}
       />
 
-      {/* 시트 */}
+      {/* 시트 — 피그마 ask/reask: 355×222(~267) r=28 fill=#ffffff, 10px margin 각 측 */}
       <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        background: 'white',
-        borderRadius: '20px 20px 0 0',
-        padding: '24px 24px',
-        paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
+        position: 'absolute',
+        bottom: 0,
+        left: 10,
+        right: 10,
+        background: '#ffffff',
+        borderRadius: 28,
         animation: 'locSlideUp 0.25s ease',
       }}>
-        {/* 핸들 */}
+        {/* Handle Area — 피그마: h=20 */}
         <div style={{
-          width: 36, height: 4, borderRadius: 2,
-          background: '#E5E8EB',
-          margin: '0 auto 24px',
-        }} />
-
-        {/* 아이콘 + 텍스트 */}
-        <div style={{
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', textAlign: 'center',
-          marginBottom: 28,
+          height: 20,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}>
-          {icon}
+          {/* Handle — 피그마: 48×4 r=40 fill=#e5e8eb */}
+          <div style={{
+            width: 48, height: 4, borderRadius: 40,
+            background: '#e5e8eb',
+          }} />
+        </div>
+
+        {/* Title 인스턴스 — 피그마: h=48, 텍스트 fs=20 fw=700 lh=27 fill=rgba(0,12,30,0.80) */}
+        <div style={{
+          height: 48,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 24px',
+        }}>
           <p style={{
-            fontSize: 18, fontWeight: 700, color: '#191F28',
-            marginBottom: 10, lineHeight: 1.4,
+            fontSize: 20,
+            fontWeight: 700,
+            lineHeight: '27px',
+            color: 'rgba(0,12,30,0.80)',
           }}>
             {title}
           </p>
+        </div>
+
+        {/* Sub title 인스턴스 — 피그마: h=44, 텍스트 fs=15 fw=400 lh=22.5 */}
+        <div style={{
+          minHeight: 44,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 24px',
+          paddingBottom: 8,
+        }}>
           <p style={{
-            fontSize: 14, color: '#8B95A1',
-            lineHeight: 1.6, whiteSpace: 'pre-line',
+            fontSize: 15,
+            fontWeight: 400,
+            lineHeight: '22.5px',
+            color: descColor,
           }}>
             {desc}
           </p>
         </div>
 
-        {/* 거부 상태: 설정 링크 */}
-        {type === 'denied' && (
-          <button
-            onClick={onOpenSettings}
-            style={{
-              display: 'block',
-              width: '100%',
-              textAlign: 'center',
-              fontSize: 14,
-              color: '#3182F6',
-              fontWeight: 600,
-              marginBottom: 16,
-              padding: '8px 0',
-            }}
-          >
-            설정에서 변경하기 →
-          </button>
-        )}
+        {/* 아이콘 (중앙 정렬) */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          padding: '8px 24px 0',
+        }}>
+          {icon}
+        </div>
 
-        {/* 버튼 영역 */}
-        {(type === 'ask' || type === 'reask') ? (
-          /* 2-button layout */
-          <div style={{ display: 'flex', gap: 10 }}>
+        {/* Button Area — 피그마: h=90 (버튼 34px top pad, 버튼 56px, bottom safe area)
+            버튼 가로: 각 153.5px (2개) or full width (1개) */}
+        <div style={{
+          height: 90,
+          padding: '17px 20px',
+          paddingBottom: 'max(17px, env(safe-area-inset-bottom))',
+          display: 'flex',
+          gap: 8,
+        }}>
+          {hasTwoButtons ? (
+            <>
+              {/* 아니요 / 나중에 — 피그마: fill=rgba(7,25,76,0.05) text=rgba(3,18,40,0.70) r=16 h=56 fs=17 fw=590 */}
+              <button
+                onClick={onClose}
+                style={{
+                  flex: 1,
+                  height: 56,
+                  borderRadius: 16,
+                  border: 'none',
+                  background: 'rgba(7,25,76,0.05)',
+                  fontSize: 17,
+                  fontWeight: 590,
+                  color: 'rgba(3,18,40,0.70)',
+                  cursor: 'pointer',
+                }}
+              >
+                {type === 'ask' ? '아니요' : '나중에'}
+              </button>
+              {/* 허용하기 — 피그마: fill=#3182f6 text=#ffffff r=16 h=56 fs=17 fw=590 */}
+              <button
+                onClick={type === 'reask' ? onOpenSettings : onAllow}
+                style={{
+                  flex: 1,
+                  height: 56,
+                  borderRadius: 16,
+                  border: 'none',
+                  background: '#3182F6',
+                  fontSize: 17,
+                  fontWeight: 590,
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                }}
+              >
+                허용하기
+              </button>
+            </>
+          ) : (
+            /* 확인 — 피그마: text=fill=#2272eb (텍스트 버튼 스타일), fs=17 fw=590 */
             <button
               onClick={onClose}
               style={{
-                flex: 1, height: 52, borderRadius: 12,
-                border: '1.5px solid #E5E8EB',
-                background: 'white',
-                fontSize: 16, fontWeight: 600, color: '#4E5968',
+                flex: 1,
+                height: 56,
+                borderRadius: 16,
+                border: 'none',
+                background: 'rgba(34,114,235,0.08)',
+                fontSize: 17,
+                fontWeight: 590,
+                color: '#2272eb',
                 cursor: 'pointer',
               }}
             >
-              {type === 'ask' ? '아니요' : '나중에'}
+              확인
             </button>
-            <button
-              onClick={onAllow}
-              style={{
-                flex: 2, height: 52, borderRadius: 12,
-                background: '#3182F6', border: 'none',
-                fontSize: 16, fontWeight: 700, color: 'white',
-                cursor: 'pointer',
-              }}
-            >
-              허용하기
-            </button>
-          </div>
-        ) : (
-          /* single confirm button */
-          <button
-            onClick={onClose}
-            style={{
-              width: '100%', height: 52, borderRadius: 12,
-              background: '#3182F6', border: 'none',
-              fontSize: 16, fontWeight: 700, color: 'white',
-              cursor: 'pointer',
-            }}
-          >
-            확인
-          </button>
-        )}
+          )}
+        </div>
       </div>
 
       <style>{`
