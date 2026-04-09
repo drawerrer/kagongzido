@@ -1,10 +1,9 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+﻿import { useState, useCallback, useRef, useEffect } from 'react';
 import BottomSheet from '../components/BottomSheet';
 import Snackbar from '../components/Snackbar';
+import ShareSheet from '../components/ShareSheet';
 import { useFavorites, RecentCafe, FavoritedStore } from '../context/FavoritesContext';
-
-// SF Pro 시스템 폰트
-const SFPro = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
+import NavBar from '../components/NavBar';
 
 // ─── 타입 ────────────────────────────────────────────────────
 interface Store {
@@ -77,7 +76,7 @@ function CollectionCard({
                 <path d="M12 5v14M5 12h14" stroke="#b0b8c1" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               <span style={{
-                fontFamily: SFPro, fontWeight: 590, fontSize: 12,
+                fontWeight: 590, fontSize: 12,
                 color: 'rgba(3,24,50,0.46)', lineHeight: '22.5px',
               }}>새 컬렉션</span>
             </div>
@@ -106,7 +105,7 @@ function CollectionCard({
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
                         <span style={{
-                          fontFamily: SFPro, fontWeight: 590, fontSize: 10,
+                          fontWeight: 590, fontSize: 10,
                           color: 'rgba(0,12,30,0.45)', textAlign: 'center',
                           padding: '0 3px', overflow: 'hidden',
                           display: '-webkit-box', WebkitLineClamp: 2,
@@ -162,7 +161,7 @@ function CollectionCard({
             <span
               className="collection-name-wiggle"
               style={{
-                fontFamily: SFPro, fontWeight: 590, fontSize: 15,
+                fontWeight: 590, fontSize: 15,
                 color: '#191f28', lineHeight: '22.5px',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1,
                 ['--wiggle-delay' as string]: wiggleDelay,
@@ -181,7 +180,7 @@ function CollectionCard({
           /* 일반모드: 텍스트만 */
           <div style={{ display: 'flex', alignItems: 'center', width: 121 }}>
             <span style={{
-              fontFamily: SFPro, fontWeight: 590, fontSize: 15,
+              fontWeight: 590, fontSize: 15,
               color: '#191f28', lineHeight: '22.5px',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
@@ -254,7 +253,7 @@ function StoreCard({
           {/* 이름 + 아이콘 */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
             <p style={{
-              fontFamily: SFPro, fontWeight: 700, fontSize: 17,
+              fontWeight: 700, fontSize: 17,
               lineHeight: '22.95px', color: 'rgba(0,12,30,0.8)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               flex: 1, marginRight: 8,
@@ -295,7 +294,7 @@ function StoreCard({
 
           {/* 주소 */}
           <p style={{
-            fontFamily: SFPro, fontWeight: 510, fontSize: 13,
+            fontWeight: 510, fontSize: 13,
             lineHeight: '17.55px', color: 'rgba(0,19,43,0.58)',
             marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{store.address}</p>
@@ -306,16 +305,16 @@ function StoreCard({
               <svg width="16" height="16" viewBox="0 0 16 16" fill="#FFB800">
                 <path d="M8 1.5l1.647 3.337 3.682.535-2.664 2.597.629 3.666L8 9.75l-3.294 1.885.629-3.666L2.671 5.372l3.682-.535L8 1.5z"/>
               </svg>
-              <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
+              <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
                 {store.rating}
               </span>
-              <span style={{ fontFamily: SFPro, fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
+              <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
                 ({store.reviewCount.toLocaleString()})
               </span>
             </div>
             {store.badge && (
               <span style={{
-                fontFamily: SFPro, fontWeight: 590, fontSize: 10, lineHeight: '15px',
+                fontWeight: 590, fontSize: 10, lineHeight: '15px',
                 color: 'rgba(3,18,40,0.7)',
                 backgroundColor: 'rgba(0,27,55,0.1)',
                 borderRadius: 9, padding: '3px 7px',
@@ -346,7 +345,7 @@ function StoreCard({
                           border: 'none', cursor: 'pointer', borderRadius: 4,
                         }}
                       >
-                        <span style={{ fontFamily: '-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif', fontWeight: 510, fontSize: 14, color: '#ffffff', lineHeight: '25.5px' }}>더보기</span>
+                        <span style={{ fontWeight: 510, fontSize: 14, color: '#ffffff', lineHeight: '25.5px' }}>더보기</span>
                       </button>
                     )}
                   </div>
@@ -367,10 +366,10 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', paddingTop: 52, paddingBottom: 48,
     }}>
-      <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 13, lineHeight: '22.5px', color: '#4e5968', marginBottom: 2 }}>
+      <p style={{ fontWeight: 590, fontSize: 13, lineHeight: '22.5px', color: '#4e5968', marginBottom: 2 }}>
         아직 저장한 매장이 없어요
       </p>
-      <p style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 13, lineHeight: '22.5px', color: '#4e5968', textAlign: 'center', marginBottom: 24 }}>
+      <p style={{ fontWeight: 590, fontSize: 13, lineHeight: '22.5px', color: '#4e5968', textAlign: 'center', marginBottom: 24 }}>
         방문하고 싶은 매장을 편하게 관리하세요
       </p>
       <button
@@ -382,7 +381,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
       >
-        <span style={{ fontFamily: SFPro, fontWeight: 590, fontSize: 17, color: '#2365cf' }}>
+        <span style={{ fontWeight: 590, fontSize: 17, color: '#2365cf' }}>
           매장 추가하기
         </span>
       </button>
@@ -396,12 +395,14 @@ function Popover({
   onEdit,
   onAddToCollection,
   onSuggestInfo,
+  onShare,
   onClose,
 }: {
   hasSavedStores: boolean;
   onEdit: () => void;
   onAddToCollection: () => void;
   onSuggestInfo: () => void;
+  onShare: () => void;
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -422,10 +423,12 @@ function Popover({
     ? [
         { label: '편집하기', action: onEdit },
         { label: '컬렉션에 추가하기', action: onAddToCollection },
+        { label: '공유하기', action: onShare },
         { label: '정보 수정 제안하기', action: onSuggestInfo },
       ]
     : [
         { label: '편집하기', action: onEdit },
+        { label: '공유하기', action: onShare },
         { label: '정보 수정 제안하기', action: onSuggestInfo },
       ];
 
@@ -448,7 +451,7 @@ function Popover({
         paddingLeft: 16,
       }}>
         <span style={{
-          fontFamily: SFPro, fontWeight: 590, fontSize: 13,
+          fontWeight: 590, fontSize: 13,
           color: '#031832',
         }}>메뉴</span>
       </div>
@@ -461,7 +464,7 @@ function Popover({
             width: '100%', height: 44,
             display: 'flex', alignItems: 'center',
             paddingLeft: 16,
-            fontFamily: SFPro, fontSize: 17, fontWeight: 510,
+            fontSize: 17, fontWeight: 510,
             color: '#031228',
             background: 'none', border: 'none',
             cursor: 'pointer', textAlign: 'left',
@@ -568,6 +571,7 @@ export default function CollectionPage({
   const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [showPopover, setShowPopover] = useState(false);
+  const [showShareSheet, setShowShareSheet] = useState(false);
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<Set<string>>(new Set());
   const [deletedStores, setDeletedStores] = useState<FavoritedStore[]>([]);
   const [addedToCollectionIds, setAddedToCollectionIds] = useState<string[]>([]);
@@ -709,66 +713,13 @@ export default function CollectionPage({
       display: 'flex', flexDirection: 'column',
       height: '100%', backgroundColor: '#ffffff', position: 'relative',
     }}>
-      {/* ── NavBar (Figma: Top Navigation AppInToss, 44px) ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        height: 44, paddingLeft: 0, paddingRight: 8,
-        position: 'relative', flexShrink: 0,
-      }}>
-        {/* 왼쪽: 뒤로가기 + 타이틀 */}
-        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-          <button
-            onClick={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onBack ?? onGoHome)}
-            style={{
-              width: 44, height: 44, flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'none', border: 'none', cursor: 'pointer',
-            }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-              stroke="#191f28" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-          </button>
-        </div>
-
-        {/* 오른쪽: 항상 고정 표시 */}
-        <div style={{
-            display: 'flex', alignItems: 'center',
-            height: 34, borderRadius: 99,
-            backgroundColor: 'rgba(0,23,51,0.02)', overflow: 'hidden',
-          }}>
-            <button
-              onClick={() => setShowPopover(v => !v)}
-              style={{
-                width: 46, height: 34,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'none', border: 'none', cursor: 'pointer',
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="#191f28">
-                <circle cx="4" cy="10" r="1.5"/>
-                <circle cx="10" cy="10" r="1.5"/>
-                <circle cx="16" cy="10" r="1.5"/>
-              </svg>
-            </button>
-            <div style={{ width: 1, height: 16, backgroundColor: 'rgba(0,27,55,0.1)' }} />
-            <button
-              onClick={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onClose ?? onGoHome)}
-              style={{
-                width: 46, height: 34,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'none', border: 'none', cursor: 'pointer',
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-                stroke="#191f28" strokeWidth="2" strokeLinecap="round">
-                <line x1="5" y1="5" x2="15" y2="15"/>
-                <line x1="15" y1="5" x2="5" y2="15"/>
-              </svg>
-            </button>
-          </div>
-
+      {/* ── NavBar ── */}
+      <div style={{ position: 'relative' }}>
+        <NavBar
+          onBack={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onBack ?? onGoHome)}
+          onMore={() => setShowPopover(v => !v)}
+          onClose={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onClose ?? onGoHome)}
+        />
         {/* 팝오버 */}
         {showPopover && (
           <Popover
@@ -776,6 +727,7 @@ export default function CollectionPage({
             onEdit={enterEditMode}
             onAddToCollection={enterOrganizeMode}
             onSuggestInfo={() => setShowPopover(false)}
+            onShare={() => { setShowPopover(false); setShowShareSheet(true); }}
             onClose={() => setShowPopover(false)}
           />
         )}
@@ -788,7 +740,7 @@ export default function CollectionPage({
         flexShrink: 0,
       }}>
         <span style={{
-          fontFamily: SFPro, fontWeight: 510, fontSize: 14,
+          fontWeight: 510, fontSize: 14,
           color: '#000000', lineHeight: '25.5px',
         }}>{isEditMode ? '편집모드' : isOrganizeMode ? '컬렉션 선택' : '모음집'}</span>
       </div>
@@ -845,7 +797,7 @@ export default function CollectionPage({
             paddingLeft: 20, paddingRight: 20,
           }}>
             <h2 style={{
-              fontFamily: SFPro, fontWeight: 700, fontSize: 17,
+              fontWeight: 700, fontSize: 17,
               lineHeight: '21.25px', color: 'rgba(0,12,30,0.8)',
               margin: 0,
             }}>저장한 매장 ({orderedStores.length})</h2>
@@ -905,14 +857,14 @@ export default function CollectionPage({
                 {/* 삭제 — rgba(49,130,246,0.16) bg, #2272eb text */}
                 <button onClick={deleteSelected} style={{
                   flex: 1, height: 56, borderRadius: 16,
-                  fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+                  fontSize: 17, fontWeight: 590,
                   backgroundColor: 'rgba(49,130,246,0.16)', color: '#2272eb',
                   border: 'none', cursor: 'pointer',
                 }}>삭제</button>
                 {/* 완료 — #3182f6 bg */}
                 <button onClick={exitEditMode} style={{
                   flex: 1, height: 56, borderRadius: 16,
-                  fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+                  fontSize: 17, fontWeight: 590,
                   backgroundColor: '#3182f6', color: '#ffffff',
                   border: 'none', cursor: 'pointer',
                 }}>완료</button>
@@ -921,7 +873,7 @@ export default function CollectionPage({
               /* 완료 단일 — #f2f4f6 bg */
               <button onClick={exitEditMode} style={{
                 flex: 1, height: 56, borderRadius: 16,
-                fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+                fontSize: 17, fontWeight: 590,
                 backgroundColor: '#f2f4f6', color: 'rgba(0,19,43,0.58)',
                 border: 'none', cursor: 'pointer',
               }}>완료</button>
@@ -944,14 +896,14 @@ export default function CollectionPage({
                 {/* 취소 — 오거나이즈 모드 종료 */}
                 <button onClick={exitOrganizeMode} style={{
                   flex: 1, height: 56, borderRadius: 16,
-                  fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+                  fontSize: 17, fontWeight: 590,
                   backgroundColor: 'rgba(49,130,246,0.16)', color: '#2272eb',
                   border: 'none', cursor: 'pointer',
                 }}>취소</button>
                 {/* 완료 — 목적지 컬렉션 선택 바텀시트 호출 */}
                 <button onClick={() => setBottomSheet('select-collection')} style={{
                   flex: 1, height: 56, borderRadius: 16,
-                  fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+                  fontSize: 17, fontWeight: 590,
                   backgroundColor: '#3182f6', color: '#ffffff',
                   border: 'none', cursor: 'pointer',
                 }}>완료</button>
@@ -960,7 +912,7 @@ export default function CollectionPage({
               /* 완료 — Disabled: 선택 없을 때 인터랙션 비활성화 */
               <button disabled style={{
                 flex: 1, height: 56, borderRadius: 16,
-                fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+                fontSize: 17, fontWeight: 590,
                 backgroundColor: '#f2f4f6', color: 'rgba(0,19,43,0.38)',
                 border: 'none', cursor: 'not-allowed', opacity: 1,
               }}>완료</button>
@@ -983,7 +935,7 @@ export default function CollectionPage({
         {/* 타이틀 - 24px 좌우 패딩 */}
         <div style={{ padding: '21px 24px 0' }}>
           <p style={{
-            fontFamily: SFPro, fontWeight: 700, fontSize: 20,
+            fontWeight: 700, fontSize: 20,
             color: 'rgba(0,12,30,0.8)', marginBottom: 0,
             lineHeight: '27px',
           }}>컬렉션명</p>
@@ -1001,7 +953,7 @@ export default function CollectionPage({
               style={{
                 width: '100%', padding: '4px 0 8px',
                 border: 'none', outline: 'none',
-                fontFamily: SFPro, fontWeight: 590, fontSize: 22,
+                fontWeight: 590, fontSize: 22,
                 color: '#191F28', backgroundColor: 'transparent',
                 boxSizing: 'border-box',
               }}
@@ -1014,7 +966,7 @@ export default function CollectionPage({
           disabled={!newCollectionName.trim()}
           style={{
             width: '100%', height: 56,
-            fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+            fontSize: 17, fontWeight: 590,
             backgroundColor: newCollectionName.trim() ? '#3182F6' : 'rgba(26,122,249,0.47)',
             color: '#ffffff',
             border: 'none', cursor: newCollectionName.trim() ? 'pointer' : 'default',
@@ -1031,7 +983,7 @@ export default function CollectionPage({
         {/* 타이틀: 기존 컬렉션명 */}
         <div style={{ padding: '21px 24px 0' }}>
           <p style={{
-            fontFamily: SFPro, fontWeight: 700, fontSize: 20,
+            fontWeight: 700, fontSize: 20,
             color: 'rgba(0,12,30,0.8)', lineHeight: '27px', marginBottom: 0,
           }}>{renameTargetName}</p>
         </div>
@@ -1048,7 +1000,7 @@ export default function CollectionPage({
               style={{
                 width: '100%', padding: '4px 0 8px',
                 border: 'none', outline: 'none',
-                fontFamily: SFPro, fontWeight: 590, fontSize: 22,
+                fontWeight: 590, fontSize: 22,
                 color: '#191F28', backgroundColor: 'transparent',
                 boxSizing: 'border-box',
               }}
@@ -1061,7 +1013,7 @@ export default function CollectionPage({
           disabled={!renameValue.trim()}
           style={{
             width: '100%', height: 56,
-            fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+            fontSize: 17, fontWeight: 590,
             backgroundColor: renameValue.trim() ? '#3182F6' : 'rgba(26,122,249,0.47)',
             color: '#ffffff',
             border: 'none', cursor: renameValue.trim() ? 'pointer' : 'default',
@@ -1078,9 +1030,14 @@ export default function CollectionPage({
         {/* 타이틀 */}
         <div style={{ padding: '8px 24px 0' }}>
           <p style={{
-            fontFamily: SFPro, fontWeight: 700, fontSize: 20,
+            fontWeight: 700, fontSize: 20,
             color: 'rgba(0,12,30,0.8)', lineHeight: '27px', marginBottom: 0,
           }}>어디로 컬렉션을 추가할까요?</p>
+          {selectedCollectionIds.size > 0 && (
+            <p style={{ fontWeight: 510, fontSize: 14, color: 'rgba(0,19,43,0.45)', marginTop: 4, marginBottom: 0 }}>
+              {selectedCollectionIds.size}개의 컬렉션을 선택했어요
+            </p>
+          )}
         </div>
 
         {/* 새 컬렉션 추가 행 (62px) */}
@@ -1104,7 +1061,7 @@ export default function CollectionPage({
             </svg>
           </div>
           <span style={{
-            fontFamily: SFPro, fontWeight: 700, fontSize: 17,
+            fontWeight: 700, fontSize: 17,
             color: 'rgba(0,12,30,0.8)',
           }}>새 컬렉션 추가</span>
         </button>
@@ -1141,7 +1098,7 @@ export default function CollectionPage({
                 </div>
               </div>
               <span style={{
-                fontFamily: SFPro, fontWeight: 700, fontSize: 17,
+                fontWeight: 700, fontSize: 17,
                 color: 'rgba(0,12,30,0.8)',
               }}>{col.name}</span>
             </div>
@@ -1169,7 +1126,7 @@ export default function CollectionPage({
             onClick={() => { setBottomSheet(null); setSelectedCollectionIds(new Set()); }}
             style={{
               flex: 1, height: 56, borderRadius: 16,
-              fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+              fontSize: 17, fontWeight: 590,
               backgroundColor: 'rgba(7,25,76,0.05)',
               color: 'rgba(3,18,40,0.7)',
               border: 'none', cursor: 'pointer',
@@ -1192,7 +1149,7 @@ export default function CollectionPage({
             }}
             style={{
               flex: 1, height: 56, borderRadius: 16,
-              fontFamily: SFPro, fontSize: 17, fontWeight: 590,
+              fontSize: 17, fontWeight: 590,
               backgroundColor: selectedCollectionIds.size > 0 ? '#3182F6' : 'rgba(26,122,249,0.47)',
               color: '#ffffff',
               border: 'none', cursor: selectedCollectionIds.size > 0 ? 'pointer' : 'default',
@@ -1245,11 +1202,18 @@ export default function CollectionPage({
           zIndex: 200, whiteSpace: 'nowrap', pointerEvents: 'none',
         }}>
           <span style={{
-            fontFamily: SFPro, fontWeight: 590, fontSize: 15,
+            fontWeight: 590, fontSize: 15,
             color: 'rgba(0,12,30,0.8)', lineHeight: '22.5px',
           }}>{renameToast}</span>
         </div>
       )}
+
+      {/* 공유 바텀시트 */}
+      <ShareSheet
+        isOpen={showShareSheet}
+        onClose={() => setShowShareSheet(false)}
+        shareTitle="카공지도 모음집"
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import MapPage, { type MapPageState } from './pages/MapPage';
+import MapPage from './pages/MapPage';
 import SearchPage from './pages/SearchPage';
 import CollectionPage from './pages/CollectionPage';
 import CollectionDetailPage from './pages/CollectionDetailPage';
@@ -69,10 +69,10 @@ function AppInner() {
   const [deletedCollectionData, setDeletedCollectionData] = useState<{ id: string; name: string; storeIds: string[] } | null>(null);
   const { isFavorited, addFavorite, removeFavorite, favorites } = useFavorites();
   const [myPageSubPage, setMyPageSubPage] = useState<string | null>(null);
-  const [mapState, setMapState] = useState<MapPageState | null>(null);
   const [guidebookView, setGuidebookView] = useState<string | null>(null);
   const [guidebookStoreIndex, setGuidebookStoreIndex] = useState(0);
   const [detailScrollToReview, setDetailScrollToReview] = useState(false);
+  const [detailOpenDirections, setDetailOpenDirections] = useState(false);
 
   // 포토리뷰 전체보기
   if (photoReview) {
@@ -104,11 +104,21 @@ function AppInner() {
       <div style={{ height: '100%' }}>
         <DetailPage
           cafeId={detailCafeId}
-          onBack={() => { setDetailCafeId(null); setDetailScrollToReview(false); }}
-          onClose={() => { setDetailCafeId(null); setDetailScrollToReview(false); }}
+          onBack={() => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
+          onClose={() => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
           activeTab={activeTab}
-          onTabChange={(tab) => { setDetailCafeId(null); setDetailScrollToReview(false); setActiveTab(tab as TabId); }}
+          onTabChange={(tab) => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); setActiveTab(tab as TabId); }}
           scrollToReview={detailScrollToReview}
+          openDirections={detailOpenDirections}
+          onGoToCollection={(col) => {
+            setDetailCafeId(null);
+            setDetailScrollToReview(false);
+            if (col.id) {
+              setCollectionDetail({ id: col.id, name: col.name });
+            } else {
+              setActiveTab('collection');
+            }
+          }}
         />
       </div>
     );
@@ -137,7 +147,10 @@ function AppInner() {
 
       {showSearch ? (
         /* ── 검색 화면 (탭바 숨김) ── */
-        <SearchPage onClose={() => setShowSearch(false)} />
+        <SearchPage
+          onClose={() => setShowSearch(false)}
+          onDetailOpen={(id) => { setShowSearch(false); setDetailCafeId(id); }}
+        />
       ) : (
         <>
           {/* ── 화면 영역 ── */}
@@ -146,14 +159,13 @@ function AppInner() {
               <MapPage
                 onSearchOpen={() => setShowSearch(true)}
                 onDetailOpen={(id) => setDetailCafeId(id)}
-                initialState={mapState ?? undefined}
-                onStateChange={(s) => setMapState(s)}
               />
             )}
             {activeTab === 'guidebook'  && (
               <GuidebookPage
                 onDetailOpen={(id) => setDetailCafeId(id)}
                 onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
+                onDirectionsOpen={(id) => { setDetailCafeId(id); setDetailOpenDirections(true); }}
                 onBack={() => setActiveTab('home')}
                 onClose={() => setActiveTab('home')}
                 initialView={(guidebookView as any) ?? 'main'}
