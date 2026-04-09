@@ -4,6 +4,7 @@ import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites, RecentCafe, FavoritedStore } from '../context/FavoritesContext';
 import NavBar from '../components/NavBar';
+import { BottomCTA, CTAButton, Button } from '@toss/tds-mobile';
 
 // ─── 타입 ────────────────────────────────────────────────────
 interface Store {
@@ -845,80 +846,32 @@ export default function CollectionPage({
 
       {/* ── 편집 모드 Bottom CTA ── */}
       {isEditMode && (
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
-          <div style={{ height: 36, background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, #ffffff 100%)' }} />
-          <div style={{
-            height: 76, backgroundColor: '#ffffff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            paddingLeft: 20, paddingRight: 20, gap: 8,
-          }}>
-            {hasSelection ? (
-              <>
-                {/* 삭제 — rgba(49,130,246,0.16) bg, #2272eb text */}
-                <button onClick={deleteSelected} style={{
-                  flex: 1, height: 56, borderRadius: 16,
-                  fontSize: 17, fontWeight: 590,
-                  backgroundColor: 'rgba(49,130,246,0.16)', color: '#2272eb',
-                  border: 'none', cursor: 'pointer',
-                }}>삭제</button>
-                {/* 완료 — #3182f6 bg */}
-                <button onClick={exitEditMode} style={{
-                  flex: 1, height: 56, borderRadius: 16,
-                  fontSize: 17, fontWeight: 590,
-                  backgroundColor: '#3182f6', color: '#ffffff',
-                  border: 'none', cursor: 'pointer',
-                }}>완료</button>
-              </>
-            ) : (
-              /* 완료 단일 — #f2f4f6 bg */
-              <button onClick={exitEditMode} style={{
-                flex: 1, height: 56, borderRadius: 16,
-                fontSize: 17, fontWeight: 590,
-                backgroundColor: '#f2f4f6', color: 'rgba(0,19,43,0.58)',
-                border: 'none', cursor: 'pointer',
-              }}>완료</button>
-            )}
-          </div>
-        </div>
+        hasSelection ? (
+          <BottomCTA.Double
+            fixed
+            leftButton={<CTAButton color="dark" variant="weak" onClick={deleteSelected}>삭제</CTAButton>}
+            rightButton={<CTAButton onClick={exitEditMode}>완료</CTAButton>}
+          />
+        ) : (
+          <BottomCTA.Single fixed>
+            <CTAButton color="dark" variant="weak" onClick={exitEditMode}>완료</CTAButton>
+          </BottomCTA.Single>
+        )
       )}
 
       {/* ── 컬렉션 선택 모드 Bottom CTA (Figma: Organize_Default/Selected) ── */}
       {isOrganizeMode && (
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
-          <div style={{ height: 36, background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, #ffffff 100%)' }} />
-          <div style={{
-            height: 76, backgroundColor: '#ffffff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            paddingLeft: 20, paddingRight: 20, gap: 8,
-          }}>
-            {hasSelection ? (
-              <>
-                {/* 취소 — 오거나이즈 모드 종료 */}
-                <button onClick={exitOrganizeMode} style={{
-                  flex: 1, height: 56, borderRadius: 16,
-                  fontSize: 17, fontWeight: 590,
-                  backgroundColor: 'rgba(49,130,246,0.16)', color: '#2272eb',
-                  border: 'none', cursor: 'pointer',
-                }}>취소</button>
-                {/* 완료 — 목적지 컬렉션 선택 바텀시트 호출 */}
-                <button onClick={() => setBottomSheet('select-collection')} style={{
-                  flex: 1, height: 56, borderRadius: 16,
-                  fontSize: 17, fontWeight: 590,
-                  backgroundColor: '#3182f6', color: '#ffffff',
-                  border: 'none', cursor: 'pointer',
-                }}>완료</button>
-              </>
-            ) : (
-              /* 완료 — Disabled: 선택 없을 때 인터랙션 비활성화 */
-              <button disabled style={{
-                flex: 1, height: 56, borderRadius: 16,
-                fontSize: 17, fontWeight: 590,
-                backgroundColor: '#f2f4f6', color: 'rgba(0,19,43,0.38)',
-                border: 'none', cursor: 'not-allowed', opacity: 1,
-              }}>완료</button>
-            )}
-          </div>
-        </div>
+        hasSelection ? (
+          <BottomCTA.Double
+            fixed
+            leftButton={<CTAButton color="dark" variant="weak" onClick={exitOrganizeMode}>취소</CTAButton>}
+            rightButton={<CTAButton onClick={() => setBottomSheet('select-collection')}>완료</CTAButton>}
+          />
+        ) : (
+          <BottomCTA.Single fixed>
+            <CTAButton disabled>완료</CTAButton>
+          </BottomCTA.Single>
+        )
       )}
 
       {/* ─────────── BottomSheet: 새 컬렉션 생성 ─────────── */}
@@ -961,17 +914,7 @@ export default function CollectionPage({
           </div>
         </div>
         {/* 버튼 — 전체 너비 */}
-        <button
-          onClick={createCollection}
-          disabled={!newCollectionName.trim()}
-          style={{
-            width: '100%', height: 56,
-            fontSize: 17, fontWeight: 590,
-            backgroundColor: newCollectionName.trim() ? '#3182F6' : 'rgba(26,122,249,0.47)',
-            color: '#ffffff',
-            border: 'none', cursor: newCollectionName.trim() ? 'pointer' : 'default',
-          }}
-        >적용하기</button>
+        <Button color="primary" size="xlarge" style={{ width: '100%' }} onClick={createCollection} disabled={!newCollectionName.trim()}>적용하기</Button>
       </BottomSheet>
 
       {/* ─────────── BottomSheet: 컬렉션명 변경 ─────────── */}
@@ -1008,17 +951,7 @@ export default function CollectionPage({
           </div>
         </div>
         {/* 버튼 */}
-        <button
-          onClick={applyRename}
-          disabled={!renameValue.trim()}
-          style={{
-            width: '100%', height: 56,
-            fontSize: 17, fontWeight: 590,
-            backgroundColor: renameValue.trim() ? '#3182F6' : 'rgba(26,122,249,0.47)',
-            color: '#ffffff',
-            border: 'none', cursor: renameValue.trim() ? 'pointer' : 'default',
-          }}
-        >적용하기</button>
+        <Button color="primary" size="xlarge" style={{ width: '100%' }} onClick={applyRename} disabled={!renameValue.trim()}>적용하기</Button>
       </BottomSheet>
 
       {/* ─────────── BottomSheet: 컬렉션 선택 ─────────── */}
@@ -1121,18 +1054,10 @@ export default function CollectionPage({
         ))}
 
         {/* 버튼 영역 (Figma: 20px 좌우 패딩, 8px gap, 각 h56 cornerRadius16) */}
-        <div style={{ padding: '16px 20px', display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => { setBottomSheet(null); setSelectedCollectionIds(new Set()); }}
-            style={{
-              flex: 1, height: 56, borderRadius: 16,
-              fontSize: 17, fontWeight: 590,
-              backgroundColor: 'rgba(7,25,76,0.05)',
-              color: 'rgba(3,18,40,0.7)',
-              border: 'none', cursor: 'pointer',
-            }}
-          >닫기</button>
-          <button
+        <BottomCTA.Double
+          leftButton={<CTAButton color="dark" variant="weak" onClick={() => { setBottomSheet(null); setSelectedCollectionIds(new Set()); }}>닫기</CTAButton>}
+          rightButton={<CTAButton
+            disabled={selectedCollectionIds.size === 0}
             onClick={() => {
               if (selectedCollectionIds.size === 0) return;
               // 선택된 모든 컬렉션에 매장 추가
@@ -1147,15 +1072,8 @@ export default function CollectionPage({
               if (isOrganizeMode) exitOrganizeMode();
               else exitEditMode();
             }}
-            style={{
-              flex: 1, height: 56, borderRadius: 16,
-              fontSize: 17, fontWeight: 590,
-              backgroundColor: selectedCollectionIds.size > 0 ? '#3182F6' : 'rgba(26,122,249,0.47)',
-              color: '#ffffff',
-              border: 'none', cursor: selectedCollectionIds.size > 0 ? 'pointer' : 'default',
-            }}
-          >확인</button>
-        </div>
+          >확인</CTAButton>}
+        />
       </BottomSheet>
 
       {/* ── 스낵바 ── */}

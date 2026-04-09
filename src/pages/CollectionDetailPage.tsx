@@ -3,6 +3,7 @@ import { useFavorites, FavoritedStore, RecentCafe } from '../context/FavoritesCo
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import NavBar from '../components/NavBar';
+import { ConfirmDialog, BottomCTA, CTAButton, Button } from '@toss/tds-mobile';
 
 
 // ─── 타입 ─────────────────────────────────────────────────────
@@ -75,54 +76,28 @@ function Popover({
 // ─── 컬렉션 삭제 다이얼로그 ───────────────────────────────────
 function DeleteCollectionDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
-    <div style={{
-      position: 'absolute', inset: 0, zIndex: 200,
-      backgroundColor: 'rgba(0,0,0,0.2)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div style={{ width: 311, borderRadius: 24, backgroundColor: '#ffffff', overflow: 'hidden' }}>
-        <div style={{ padding: '22px 22px 0' }}>
-          <p style={{ fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)', lineHeight: '27px', marginBottom: 8 }}>
-            컬렉션을 삭제할까요?
-          </p>
-          <p style={{ fontWeight: 400, fontSize: 15, color: 'rgba(3,18,40,0.7)', lineHeight: '24px' }}>
-            만들어둔 컬렉션이 사라져요.{'\n'}
-            담아둔 매장은 전체 모음집에서 계속 볼 수 있어요.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8, padding: '20px 16px 16px' }}>
-          <button onClick={onCancel} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}>닫기</button>
-          <button onClick={onConfirm} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(240,68,82,0.16)', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: '#e42939' }}>삭제하기</button>
-        </div>
-      </div>
-    </div>
+    <ConfirmDialog
+      open={true}
+      title={<ConfirmDialog.Title>컬렉션을 삭제할까요?</ConfirmDialog.Title>}
+      description={<ConfirmDialog.Description>만들어둔 컬렉션이 사라져요.{'\n'}담아둔 매장은 전체 모음집에서 계속 볼 수 있어요.</ConfirmDialog.Description>}
+      cancelButton={<ConfirmDialog.CancelButton onClick={onCancel}>닫기</ConfirmDialog.CancelButton>}
+      confirmButton={<ConfirmDialog.ConfirmButton color="danger" variant="fill" onClick={onConfirm}>삭제하기</ConfirmDialog.ConfirmButton>}
+      onClose={onCancel}
+    />
   );
 }
 
 // ─── 매장 삭제 다이얼로그 ─────────────────────────────────────
 function DeleteStoreDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
-    <div style={{
-      position: 'absolute', inset: 0, zIndex: 200,
-      backgroundColor: 'rgba(0,0,0,0.2)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div style={{ width: 311, borderRadius: 24, backgroundColor: '#ffffff', overflow: 'hidden' }}>
-        <div style={{ padding: '22px 22px 0' }}>
-          <p style={{ fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)', lineHeight: '27px', marginBottom: 8 }}>
-            매장을 삭제할까요?
-          </p>
-          <p style={{ fontWeight: 400, fontSize: 15, color: 'rgba(3,18,40,0.7)', lineHeight: '24px' }}>
-            모음집에서 매장이 사라져요.{'\n'}
-            담아둔 컬렉션에서도 함께 지워져요.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8, padding: '20px 16px 16px' }}>
-          <button onClick={onCancel} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}>닫기</button>
-          <button onClick={onConfirm} style={{ flex: 1, height: 48, borderRadius: 14, background: 'rgba(240,68,82,0.16)', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: '#e42939' }}>삭제하기</button>
-        </div>
-      </div>
-    </div>
+    <ConfirmDialog
+      open={true}
+      title={<ConfirmDialog.Title>매장을 삭제할까요?</ConfirmDialog.Title>}
+      description={<ConfirmDialog.Description>모음집에서 매장이 사라져요.{'\n'}담아둔 컬렉션에서도 함께 지워져요.</ConfirmDialog.Description>}
+      cancelButton={<ConfirmDialog.CancelButton onClick={onCancel}>닫기</ConfirmDialog.CancelButton>}
+      confirmButton={<ConfirmDialog.ConfirmButton color="danger" variant="fill" onClick={onConfirm}>삭제하기</ConfirmDialog.ConfirmButton>}
+      onClose={onCancel}
+    />
   );
 }
 
@@ -171,16 +146,7 @@ function MemoSheet({ initialMemo, onApply, onClose }: { initialMemo: string; onA
             </div>
           </div>
           {/* 적용하기 버튼 */}
-          <button
-            onClick={() => isActive && onApply(value)}
-            style={{
-              width: '100%', height: 56,
-              backgroundColor: isActive ? '#3182f6' : 'rgba(26,122,249,0.47)',
-              border: 'none', cursor: isActive ? 'pointer' : 'default',
-              fontWeight: 590, fontSize: 17,
-              color: '#ffffff',
-            }}
-          >적용하기</button>
+          <Button color="primary" size="xlarge" style={{ width: '100%' }} onClick={() => isActive && onApply(value)} disabled={!isActive}>적용하기</Button>
         </div>
       </div>
     </div>
@@ -402,15 +368,11 @@ function AddStoreSheet({
         </div>
 
         {/* 하단 버튼 */}
-        <div style={{ display: 'flex', gap: 8, padding: '12px 16px 20px', flexShrink: 0 }}>
-          <button
-            onClick={onClose}
-            style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: 'rgba(7,25,76,0.05)', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: 'rgba(3,18,40,0.7)' }}
-          >닫기</button>
-          <button
-            onClick={() => hasSelection && onConfirm([...selectedIds])}
-            style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: hasSelection ? '#3182f6' : 'rgba(26,122,249,0.47)', border: 'none', cursor: hasSelection ? 'pointer' : 'default', fontWeight: 590, fontSize: 17, color: '#ffffff' }}
-          >확인</button>
+        <div style={{ flexShrink: 0 }}>
+          <BottomCTA.Double
+            leftButton={<CTAButton color="dark" variant="weak" onClick={onClose}>닫기</CTAButton>}
+            rightButton={<CTAButton onClick={() => hasSelection && onConfirm([...selectedIds])} disabled={!hasSelection}>확인</CTAButton>}
+          />
         </div>
       </div>
     </div>
@@ -1015,28 +977,17 @@ export default function CollectionDetailPage({
 
       {/* ── 편집모드 하단 CTA ── */}
       {isEditMode && (
-        <div style={{ flexShrink: 0, position: 'relative' }}>
-          <div style={{ height: 36, background: 'linear-gradient(to bottom, transparent, #ffffff)', pointerEvents: 'none' }} />
-          <div style={{ height: 76, backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', padding: '0 20px' }}>
-            {selectedIds.size > 0 ? (
-              <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                <button
-                  onClick={handleDeleteSelected}
-                  style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: 'rgba(49,130,246,0.16)', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: '#2272eb' }}
-                >삭제</button>
-                <button
-                  onClick={exitEditMode}
-                  style={{ flex: 1, height: 56, borderRadius: 16, backgroundColor: '#3182f6', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: '#ffffff' }}
-                >완료</button>
-              </div>
-            ) : (
-              <button
-                onClick={exitEditMode}
-                style={{ width: '100%', height: 56, borderRadius: 16, backgroundColor: '#f2f4f6', border: 'none', cursor: 'pointer', fontWeight: 590, fontSize: 17, color: 'rgba(0,19,43,0.58)' }}
-              >완료</button>
-            )}
-          </div>
-        </div>
+        selectedIds.size > 0 ? (
+          <BottomCTA.Double
+            fixed
+            leftButton={<CTAButton color="dark" variant="weak" onClick={handleDeleteSelected}>삭제</CTAButton>}
+            rightButton={<CTAButton onClick={exitEditMode}>완료</CTAButton>}
+          />
+        ) : (
+          <BottomCTA.Single fixed>
+            <CTAButton color="dark" variant="weak" onClick={exitEditMode}>완료</CTAButton>
+          </BottomCTA.Single>
+        )
       )}
 
       {/* ── 오버레이 레이어들 ── */}
