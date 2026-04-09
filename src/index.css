@@ -77,6 +77,13 @@ button {
   border: none;
   background: none;
   font-family: inherit;
+  outline: none; /* 클릭 시 브라우저 기본 포커스 링 제거 (Safari 오렌지 프레임 방지) */
+}
+
+/* 키보드 탐색 시에만 포커스 표시 (접근성 유지) */
+button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* 컬렉션 이름 편집 가능 암시 — iOS 아이콘 흔들림 */
