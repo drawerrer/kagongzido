@@ -3,6 +3,7 @@ import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import NavBar from '../components/NavBar';
+import { BottomCTA, CTAButton } from '@toss/tds-mobile';
 
 
 // ─── 타입 ─────────────────────────────────────────────────────
@@ -404,37 +405,9 @@ function GuideBookDetailView({
       </div>
 
       {/* 하단 CTA — 피그마: 그라디언트 페이드 36px + 흰 컨테이너 76px */}
-      <div style={{ flexShrink: 0 }}>
-        {/* 그라디언트 페이드 — rgba(255,255,255,0) → #ffffff */}
-        <div style={{
-          height: 36,
-          background: 'linear-gradient(to bottom, rgba(255,255,255,0), #ffffff)',
-        }} />
-        {/* 흰색 컨테이너 + 버튼 */}
-        <div style={{
-          backgroundColor: '#ffffff',
-          padding: '0 20px',
-          paddingBottom: 'calc(20px + env(safe-area-inset-bottom))',
-        }}>
-          <button
-            onClick={() => onDetailOpen?.(store.id)}
-            style={{
-              width: '100%',
-              height: 56,
-              borderRadius: 16,
-              backgroundColor: '#4e5968',
-              border: 'none',
-              cursor: 'pointer',
-              
-              fontWeight: 590,
-              fontSize: 17,
-              color: '#fff',
-            }}
-          >
-            자세히보기
-          </button>
-        </div>
-      </div>
+      <BottomCTA.Single fixed>
+        <CTAButton onClick={() => onDetailOpen?.(store.id)}>자세히보기</CTAButton>
+      </BottomCTA.Single>
     </div>
   );
 }
