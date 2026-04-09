@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { getCurrentLocation, Accuracy } from '@apps-in-toss/web-framework';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
@@ -30,7 +31,7 @@ const MOCK_CAFES: Cafe[] = [
 ];
 
 const PANEL_COLLAPSED = 264;
-const GPS_PERM_KEY = 'gps_permission'; // localStorage key: 'granted' | 'denied' | null(최초)
+// GPS 권한 상태는 SDK getCurrentLocation.getPermission() 으로 관리
 
 // ── 아이콘 ────────────────────────────────
 function SearchIcon() {
@@ -306,7 +307,6 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('unknown');
   const [locSheet, setLocSheet] = useState<LocationSheetType | null>(null);
   const [gpsToast, setGpsToast] = useState(false); // GPS 신호 실패 토스트
-  const [settingsToast, setSettingsToast] = useState(false); // 설정 안내 토스트
 
   // 카테고리 필터 + 정렬 적용
   const cafes = (() => {
@@ -318,61 +318,55 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
     return filtered; // 조회순: 기본 순서
   })();
 
-  // ── 최초 실행 시 위치 권한 바텀시트 노출 ──
+  // ── 최초 실행 시 SDK 위치 권한 상태 확인 ──
   useEffect(() => {
-    const stored = localStorage.getItem(GPS_PERM_KEY);
-    if (stored === 'granted') {
-      setGpsStatus('granted');
-    } else if (stored === 'denied') {
-      setGpsStatus('denied');
-    } else {
-      // 최초 실행: ask 시트 노출
-      setLocSheet('ask');
-    }
+    getCurrentLocation.getPermission()
+      .then(status => {
+        if (status === 'allowed') {
+          setGpsStatus('granted');
+        } else if (status === 'denied') {
+          setGpsStatus('denied');
+        } else {
+          // notDetermined: 최초 실행 → ask 시트 노출
+          setLocSheet('ask');
+        }
+      })
+      .catch(() => setLocSheet('ask'));
   }, []);
 
   // ── 위치 권한 핸들러 ──────────────────────
-  const handleAllowLocation = () => {
-    if (!navigator.geolocation) {
-      localStorage.setItem(GPS_PERM_KEY, 'denied');
+  const handleAllowLocation = async () => {
+    try {
+      const loc = await getCurrentLocation({ accuracy: Accuracy.Balanced });
+      setGpsStatus('granted');
+      setLocSheet('granted');
+      if (mapInstanceRef.current && window.kakao?.maps) {
+        const userPos = new window.kakao.maps.LatLng(
+          loc.coords.latitude,
+          loc.coords.longitude,
+        );
+        mapInstanceRef.current.setCenter(userPos);
+      }
+    } catch {
       setGpsStatus('denied');
       setLocSheet('denied');
-      return;
     }
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        localStorage.setItem(GPS_PERM_KEY, 'granted');
-        setGpsStatus('granted');
-        setLocSheet('granted');
-        // 카카오 지도 인스턴스가 있으면 위치 이동
-        if (mapInstanceRef.current && window.kakao?.maps) {
-          const userPos = new window.kakao.maps.LatLng(
-            pos.coords.latitude,
-            pos.coords.longitude,
-          );
-          mapInstanceRef.current.setCenter(userPos);
-        }
-      },
-      () => {
-        localStorage.setItem(GPS_PERM_KEY, 'denied');
-        setGpsStatus('denied');
-        setLocSheet('denied');
-      },
-      { timeout: 10000 },
-    );
   };
 
   const handleDenyLocation = () => {
-    localStorage.setItem(GPS_PERM_KEY, 'denied');
     setGpsStatus('denied');
     setLocSheet('denied');
   };
 
-  const handleOpenSettings = () => {
-    // alert() 미사용 — 토스트 메시지로 대체 (Toss 앱 내 alert 미지원)
+  const handleOpenSettings = async () => {
     setLocSheet(null);
-    setSettingsToast(true);
-    setTimeout(() => setSettingsToast(false), 3000);
+    // SDK openPermissionDialog: 기기 설정 앱으로 이동 후 결과 반환
+    const newStatus = await getCurrentLocation.openPermissionDialog();
+    if (newStatus === 'allowed') {
+      setGpsStatus('granted');
+    } else {
+      setGpsStatus('denied');
+    }
   };
 
   // ── Kakao 지도 초기화 ──────────────────
@@ -395,19 +389,16 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         });
         mapInstanceRef.current = map;
 
-        // 현재 위치로 이동
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            pos => {
-              const userPos = new window.kakao.maps.LatLng(
-                pos.coords.latitude,
-                pos.coords.longitude,
-              );
-              map.setCenter(userPos);
-            },
-            () => {}, // 거부 시 무시
-          );
-        }
+        // 현재 위치로 이동 (SDK)
+        getCurrentLocation({ accuracy: Accuracy.Balanced })
+          .then(loc => {
+            const userPos = new window.kakao.maps.LatLng(
+              loc.coords.latitude,
+              loc.coords.longitude,
+            );
+            map.setCenter(userPos);
+          })
+          .catch(() => {}); // 권한 미허용 시 기본 위치 유지
       });
     };
 
@@ -416,28 +407,26 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
     };
   }, []);
 
-  // ── 현재 위치로 돌아가기 ───────────────
-  const goToCurrentLocation = () => {
+  // ── 현재 위치로 돌아가기 (SDK) ─────────
+  const goToCurrentLocation = async () => {
     // 권한 거부 상태 → 재요청 시트 노출
     if (gpsStatus === 'denied') {
       setLocSheet('reask');
       return;
     }
-    if (!navigator.geolocation || !mapInstanceRef.current) return;
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const userPos = new window.kakao.maps.LatLng(
-          pos.coords.latitude,
-          pos.coords.longitude,
-        );
-        mapInstanceRef.current?.setCenter(userPos);
-      },
-      () => {
-        // GPS 신호 수신 실패 토스트
-        setGpsToast(true);
-        setTimeout(() => setGpsToast(false), 2500);
-      },
-    );
+    if (!mapInstanceRef.current) return;
+    try {
+      const loc = await getCurrentLocation({ accuracy: Accuracy.Balanced });
+      const userPos = new window.kakao.maps.LatLng(
+        loc.coords.latitude,
+        loc.coords.longitude,
+      );
+      mapInstanceRef.current.setCenter(userPos);
+    } catch {
+      // GPS 신호 수신 실패 토스트
+      setGpsToast(true);
+      setTimeout(() => setGpsToast(false), 2500);
+    }
   };
 
   const panelBottomValue = panelExpanded ? 'calc(72vh + 12px)' : `${PANEL_COLLAPSED + 12}px`;
@@ -689,21 +678,13 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         <LocationPermissionSheet
           type={locSheet}
           onClose={() => {
-            // ask/reask에서 외부 탭 or 아니요/나중에 → denied 처리
+            // ask에서 아니요/외부 탭 → denied 처리
+            // denied/granted/reask에서 확인/나중에 → 시트 닫기
             if (locSheet === 'ask') handleDenyLocation();
             else setLocSheet(null);
           }}
-          onAllow={() => {
-            if (locSheet === 'ask') {
-              handleAllowLocation();
-            } else if (locSheet === 'reask') {
-              handleOpenSettings();
-              setLocSheet(null);
-            }
-          }}
-          onOpenSettings={() => {
-            handleOpenSettings();
-          }}
+          onAllow={handleAllowLocation}       // ask 상태에서만 호출
+          onOpenSettings={handleOpenSettings} // denied / reask 상태에서 호출 → SDK openPermissionDialog
         />
       )}
 
@@ -728,26 +709,6 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         현재 위치를 가져오지 못했어요. 다시 시도해주세요
       </div>
 
-      {/* ── 설정 안내 토스트 (alert 대체) ── */}
-      <div style={{
-        position: 'absolute',
-        bottom: `${PANEL_COLLAPSED + 20}px`,
-        left: '50%',
-        transform: `translateX(-50%) translateY(${settingsToast ? 0 : 12}px)`,
-        opacity: settingsToast ? 1 : 0,
-        transition: 'opacity 0.2s, transform 0.2s',
-        background: '#191F28',
-        color: 'white',
-        borderRadius: 8,
-        padding: '9px 16px',
-        fontSize: 13,
-        fontWeight: 500,
-        whiteSpace: 'nowrap',
-        zIndex: 350,
-        pointerEvents: 'none',
-      }}>
-        기기 설정 &gt; 앱 &gt; 브라우저 &gt; 위치에서 권한을 변경할 수 있어요
-      </div>
     </div>
   );
 }

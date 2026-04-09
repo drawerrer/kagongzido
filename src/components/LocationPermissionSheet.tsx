@@ -2,7 +2,7 @@
 // SheetType별 UI:
 //   'ask'     - 최초 권한 요청 (아니요 / 허용하기)
 //   'granted' - 권한 허용 확인 (확인)
-//   'denied'  - 권한 거부 확인 (확인)
+//   'denied'  - 권한 거부 확인 (설정에서 변경하기 / 확인)
 //   'reask'   - 권한 재요청 (나중에 / 허용하기 → 설정으로)
 //
 // 피그마 수치 기준:
@@ -22,8 +22,8 @@ export type LocationSheetType = 'ask' | 'granted' | 'denied' | 'reask';
 interface LocationPermissionSheetProps {
   type: LocationSheetType;
   onClose: () => void;       // 닫기 (외부 탭 / 아니요 / 나중에 / 확인)
-  onAllow: () => void;       // 허용하기
-  onOpenSettings: () => void; // 설정 앱으로 이동 (reask 상태에서 허용하기)
+  onAllow: () => void;       // 허용하기 (ask 상태)
+  onOpenSettings: () => void; // 설정 앱으로 이동 (denied / reask 상태)
 }
 
 // ── 아이콘 ────────────────────────────────────────────────
@@ -86,7 +86,7 @@ function getContent(type: LocationSheetType) {
       return {
         icon: <LocationIcon />,
         title: '위치 권한을 허용할까요?',
-        desc: '주변 카페를 안내해 드리기 위해 필요해요.',
+        desc: '현재 위치 기반으로 주변 카페를 탐색하고\n거리 정보를 제공하기 위해 위치 권한이 필요해요.',
         // ask: desc fill=#6b7684
         descColor: '#6b7684',
       };
@@ -94,7 +94,7 @@ function getContent(type: LocationSheetType) {
       return {
         icon: <CheckIcon />,
         title: '위치 권한이 허용됐어요',
-        desc: '위치 권한을 해제하고 싶다면, [설정] > [위치권한] 에서 확인해주세요.',
+        desc: '현재 위치 기반으로 주변 카페를 탐색할 수 있어요.\n가까운 카페부터 살펴보세요!',
         // granted: desc fill=rgba(3,18,40,0.70)
         descColor: 'rgba(3,18,40,0.70)',
       };
@@ -102,7 +102,7 @@ function getContent(type: LocationSheetType) {
       return {
         icon: <BlockIcon />,
         title: '위치 권한이 거부됐어요',
-        desc: '위치 권한을 설정하고 싶다면, [설정] > [위치권한] 에서 확인해주세요.',
+        desc: '위치 권한 없이도 검색으로 카페를 탐색할 수 있어요.\n지도는 기본 지역(서울 중구)으로 표시돼요.',
         // denied: desc fill=rgba(3,18,40,0.70)
         descColor: 'rgba(3,18,40,0.70)',
       };
@@ -126,9 +126,9 @@ export default function LocationPermissionSheet({
 }: LocationPermissionSheetProps) {
   const { icon, title, desc, descColor } = getContent(type);
 
-  // ask/reask: 2-버튼 레이아웃 (각 153.5px)
-  // granted/denied: 1-버튼 레이아웃 (확인)
-  const hasTwoButtons = type === 'ask' || type === 'reask';
+  // ask/denied/reask: 2-버튼 레이아웃
+  // granted: 1-버튼 레이아웃 (확인)
+  const hasTwoButtons = type === 'ask' || type === 'denied' || type === 'reask';
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 400 }}>
@@ -218,57 +218,95 @@ export default function LocationPermissionSheet({
           display: 'flex',
           gap: 8,
         }}>
-          {hasTwoButtons ? (
+          {type === 'ask' && (
             <>
-              {/* 아니요 / 나중에 — 피그마: fill=rgba(7,25,76,0.05) text=rgba(3,18,40,0.70) r=16 h=56 fs=17 fw=590 */}
+              {/* 아니요 */}
               <button
                 onClick={onClose}
                 style={{
-                  flex: 1,
-                  height: 56,
-                  borderRadius: 16,
-                  border: 'none',
-                  background: 'rgba(7,25,76,0.05)',
-                  fontSize: 17,
-                  fontWeight: 590,
-                  color: 'rgba(3,18,40,0.70)',
-                  cursor: 'pointer',
+                  flex: 1, height: 56, borderRadius: 16, border: 'none',
+                  background: 'rgba(7,25,76,0.05)', fontSize: 17,
+                  fontWeight: 590, color: 'rgba(3,18,40,0.70)', cursor: 'pointer',
                 }}
               >
-                {type === 'ask' ? '아니요' : '나중에'}
+                아니요
               </button>
-              {/* 허용하기 — 피그마: fill=#3182f6 text=#ffffff r=16 h=56 fs=17 fw=590 */}
+              {/* 허용하기 */}
               <button
-                onClick={type === 'reask' ? onOpenSettings : onAllow}
+                onClick={onAllow}
                 style={{
-                  flex: 1,
-                  height: 56,
-                  borderRadius: 16,
-                  border: 'none',
-                  background: '#3182F6',
-                  fontSize: 17,
-                  fontWeight: 590,
-                  color: '#ffffff',
-                  cursor: 'pointer',
+                  flex: 1, height: 56, borderRadius: 16, border: 'none',
+                  background: '#3182F6', fontSize: 17,
+                  fontWeight: 590, color: '#ffffff', cursor: 'pointer',
                 }}
               >
                 허용하기
               </button>
             </>
-          ) : (
-            /* 확인 — 피그마: text=fill=#2272eb (텍스트 버튼 스타일), fs=17 fw=590 */
+          )}
+
+          {type === 'denied' && (
+            <>
+              {/* 설정에서 변경하기 — SDK openPermissionDialog() 호출 */}
+              <button
+                onClick={onOpenSettings}
+                style={{
+                  flex: 1, height: 56, borderRadius: 16, border: 'none',
+                  background: 'rgba(7,25,76,0.05)', fontSize: 17,
+                  fontWeight: 590, color: 'rgba(3,18,40,0.70)', cursor: 'pointer',
+                }}
+              >
+                설정에서 변경하기
+              </button>
+              {/* 확인 */}
+              <button
+                onClick={onClose}
+                style={{
+                  flex: 1, height: 56, borderRadius: 16, border: 'none',
+                  background: 'rgba(34,114,235,0.08)', fontSize: 17,
+                  fontWeight: 590, color: '#2272eb', cursor: 'pointer',
+                }}
+              >
+                확인
+              </button>
+            </>
+          )}
+
+          {type === 'reask' && (
+            <>
+              {/* 나중에 */}
+              <button
+                onClick={onClose}
+                style={{
+                  flex: 1, height: 56, borderRadius: 16, border: 'none',
+                  background: 'rgba(7,25,76,0.05)', fontSize: 17,
+                  fontWeight: 590, color: 'rgba(3,18,40,0.70)', cursor: 'pointer',
+                }}
+              >
+                나중에
+              </button>
+              {/* 허용하기 → 설정으로 */}
+              <button
+                onClick={onOpenSettings}
+                style={{
+                  flex: 1, height: 56, borderRadius: 16, border: 'none',
+                  background: '#3182F6', fontSize: 17,
+                  fontWeight: 590, color: '#ffffff', cursor: 'pointer',
+                }}
+              >
+                허용하기
+              </button>
+            </>
+          )}
+
+          {type === 'granted' && (
+            /* 확인 — 피그마: fill=rgba(34,114,235,0.08) text=#2272eb */
             <button
               onClick={onClose}
               style={{
-                flex: 1,
-                height: 56,
-                borderRadius: 16,
-                border: 'none',
-                background: 'rgba(34,114,235,0.08)',
-                fontSize: 17,
-                fontWeight: 590,
-                color: '#2272eb',
-                cursor: 'pointer',
+                flex: 1, height: 56, borderRadius: 16, border: 'none',
+                background: 'rgba(34,114,235,0.08)', fontSize: 17,
+                fontWeight: 590, color: '#2272eb', cursor: 'pointer',
               }}
             >
               확인
