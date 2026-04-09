@@ -318,7 +318,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
     return filtered; // 조회순: 기본 순서
   })();
 
-  // ── 최초 실행 시 SDK 위치 권한 상태 확인 ──
+  // ── 앱 실행 시 SDK 위치 권한 상태만 조회 (시트 자동 노출 없음) ──
   useEffect(() => {
     getCurrentLocation.getPermission()
       .then(status => {
@@ -326,12 +326,10 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           setGpsStatus('granted');
         } else if (status === 'denied') {
           setGpsStatus('denied');
-        } else {
-          // notDetermined: 최초 실행 → ask 시트 노출
-          setLocSheet('ask');
         }
+        // notDetermined: 상태만 unknown 유지, 시트는 GPS 버튼 탭 시 노출
       })
-      .catch(() => setLocSheet('ask'));
+      .catch(() => {}); // 조회 실패 시 unknown 유지
   }, []);
 
   // ── 위치 권한 핸들러 ──────────────────────
@@ -409,6 +407,11 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
 
   // ── 현재 위치로 돌아가기 (SDK) ─────────
   const goToCurrentLocation = async () => {
+    // 최초(unknown) → ask 시트로 최초 1회 권한 요청
+    if (gpsStatus === 'unknown') {
+      setLocSheet('ask');
+      return;
+    }
     // 권한 거부 상태 → 재요청 시트 노출
     if (gpsStatus === 'denied') {
       setLocSheet('reask');
