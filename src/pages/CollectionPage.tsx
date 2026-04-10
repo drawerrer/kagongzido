@@ -2,7 +2,7 @@
 import BottomSheet from '../components/BottomSheet';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
-import { useFavorites, RecentCafe, FavoritedStore } from '../context/FavoritesContext';
+import { useFavorites, FavoritedStore } from '../context/FavoritesContext';
 import NavBar from '../components/NavBar';
 import { BottomCTA, CTAButton, Button } from '@toss/tds-mobile';
 
@@ -31,7 +31,7 @@ function CollectionCard({
   onPress,
   onRename,
   onHandlePointerDown,
-  recentItems = [],
+  previewPhotos = [],
 }: {
   label: string;
   isNew?: boolean;
@@ -42,7 +42,7 @@ function CollectionCard({
   onPress?: () => void;
   onRename?: () => void;
   onHandlePointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
-  recentItems?: RecentCafe[];
+  previewPhotos?: string[];
 }) {
   return (
     <div style={{
@@ -91,28 +91,15 @@ function CollectionCard({
               width: 121, height: 121,
             }}>
               {[0, 1, 2, 3].map((i) => {
-                const item = recentItems[i];
+                const photo = previewPhotos[i];
                 return (
                   <div key={i} style={{
-                    backgroundColor: item ? '#C8D6E5' : '#E8EDF4',
+                    backgroundColor: '#E8EDF4',
                     overflow: 'hidden',
                   }}>
-                    {item?.photo ? (
-                      <img src={item.photo} alt={item.name}
+                    {photo ? (
+                      <img src={photo} alt=""
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : item ? (
-                      <div style={{
-                        width: '100%', height: '100%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <span style={{
-                          fontWeight: 590, fontSize: 10,
-                          color: 'rgba(0,12,30,0.45)', textAlign: 'center',
-                          padding: '0 3px', overflow: 'hidden',
-                          display: '-webkit-box', WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical' as const,
-                        }}>{item.name}</span>
-                      </div>
                     ) : null}
                   </div>
                 );
@@ -741,7 +728,13 @@ export default function CollectionPage({
                 isDragging={isEditMode && colDragIndex === index}
                 isDragOver={isEditMode && colDragOverIndex === index && colDragIndex !== index}
                 wiggleDelay={index * 80}
-                recentItems={col.id === 'recent' ? recentlyViewed : []}
+                previewPhotos={
+                  col.id === 'recent'
+                    ? recentlyViewed.slice(0, 4).map(r => r.photo).filter(Boolean)
+                    : col.storeIds.slice(0, 4)
+                        .map(id => favorites.find(f => f.id === id)?.photos?.[0])
+                        .filter((p): p is string => !!p)
+                }
                 onRename={() => openRename(col.id)}
                 onPress={!isEditMode ? () => onCollectionOpen?.(col.id, col.name) : undefined}
                 onHandlePointerDown={isEditMode && col.id !== 'recent'
