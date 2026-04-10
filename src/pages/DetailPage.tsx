@@ -1163,59 +1163,47 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         {/* ── 우측 버튼 그룹 */}
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
 
-          {/* 하트 pill: 44×34 rx=17 */}
+          {/* 하트 pill: 44×34 r=99 + blur */}
           <button
             onClick={handleFavorite}
             aria-label={isFavorite ? '저장됨' : '저장하기'}
             style={{
-              width: 44, height: 34, borderRadius: 17, flexShrink: 0,
+              width: 44, height: 34, borderRadius: 99, flexShrink: 0,
               background: 'rgba(0,23,51,0.02)',
+              backdropFilter: scrolled ? undefined : 'blur(20px)',
+              WebkitBackdropFilter: scrolled ? undefined : 'blur(20px)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
             <HeartIcon filled={isFavorite} color={isFavorite ? '#252525' : (scrolled ? '#697482' : '#F9FAFB')} />
           </button>
 
-          {/* 더보기 pill — 스크롤 전: 48×34 단독 / 스크롤 후: More+Close 93×34 합체 pill */}
+          {/* 더보기/닫기 pill — 양쪽 모두 93×34 합체 pill, 스크롤 전은 blur+흰 아이콘 추가 */}
           <div style={{ position: 'relative' }}>
-            {scrolled ? (
-              /* 스크롤 후: More | divider | Close 합쳐진 pill */
-              <div style={{
-                width: 93, height: 34, borderRadius: 17,
-                background: 'rgba(0,23,51,0.02)',
-                display: 'flex', alignItems: 'center', overflow: 'hidden',
-              }}>
-                <button
-                  onClick={() => setShowMoreSheet(v => !v)}
-                  aria-label="더보기"
-                  style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}
-                >
-                  <MoreIcon color="#697482" />
-                </button>
-                {/* Figma 구분선: 1×16 rgba(0,27,55,0.1) */}
-                <div style={{ width: 1, height: 16, background: 'rgba(0,27,55,0.1)', flexShrink: 0 }} />
-                <button
-                  onClick={onClose}
-                  aria-label="닫기"
-                  style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}
-                >
-                  <CloseIcon color="rgba(0,19,43,0.58)" />
-                </button>
-              </div>
-            ) : (
-              /* 스크롤 전: More 단독 pill 48×34 */
+            <div style={{
+              width: 93, height: 34, borderRadius: 99,
+              background: 'rgba(0,23,51,0.02)',
+              backdropFilter: scrolled ? undefined : 'blur(20px)',
+              WebkitBackdropFilter: scrolled ? undefined : 'blur(20px)',
+              display: 'flex', alignItems: 'center', overflow: 'hidden',
+            }}>
               <button
                 onClick={() => setShowMoreSheet(v => !v)}
                 aria-label="더보기"
-                style={{
-                  width: 48, height: 34, borderRadius: 17, flexShrink: 0,
-                  background: 'rgba(0,23,51,0.02)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
+                style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}
               >
-                <MoreIcon color="#F9FAFB" />
+                <MoreIcon color={scrolled ? '#697482' : '#F9FAFB'} />
               </button>
-            )}
+              {/* 구분선: 1×16 rgba(0,27,55,0.1) */}
+              <div style={{ width: 1, height: 16, background: 'rgba(0,27,55,0.1)', flexShrink: 0 }} />
+              <button
+                onClick={onClose}
+                aria-label="닫기"
+                style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}
+              >
+                <CloseIcon color={scrolled ? 'rgba(0,19,43,0.58)' : '#F9FAFB'} />
+              </button>
+            </div>
             {showMoreSheet && (
               <MorePopup
                 onClose={() => setShowMoreSheet(false)}
