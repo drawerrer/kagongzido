@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { openURL, appLogin } from '@apps-in-toss/web-framework';
+import { IconButton } from '@toss/tds-mobile';
 import BottomSheet from '../components/BottomSheet';
 import ShareSheet from '../components/ShareSheet';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
@@ -274,18 +275,33 @@ function LinkIcon() {
   );
 }
 
-// ────────── 공통 스타일 ──────────────────────────────────────
-const iconBtnStyle = (scrolled: boolean): React.CSSProperties => ({
+// ────────── TDS IconButton SVG 헬퍼 ─────────────────────────
+/** SVG 문자열 → data URL (IconButton src 전달용) */
+const svgUrl = (svg: string) =>
+  `data:image/svg+xml,${encodeURIComponent(svg)}`;
+
+const NS = 'xmlns="http://www.w3.org/2000/svg"';
+const navIcons = {
+  back: (color: string) => svgUrl(
+    `<svg ${NS} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`
+  ),
+  heart: (color: string) => svgUrl(
+    `<svg ${NS} width="22" height="22" viewBox="0 0 24 24" fill="${color}"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
+  ),
+  more: (color: string) => svgUrl(
+    `<svg ${NS} width="22" height="22" viewBox="0 0 24 24" fill="${color}"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>`
+  ),
+  close: (color: string) => svgUrl(
+    `<svg ${NS} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
+  ),
+};
+
+/** TDS IconButton 공통 스타일 — 원형 36px, 스크롤 전후 배경 전환 */
+const navBtnStyle = (scrolled: boolean): React.CSSProperties => ({
   width: 36,
   height: 36,
   borderRadius: 18,
-  background: scrolled ? 'transparent' : 'rgba(0,0,0,0.28)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
   flexShrink: 0,
-  border: 'none',
-  cursor: 'pointer',
 });
 
 // ────────── 서브 컴포넌트 ────────────────────────────────────
@@ -1130,10 +1146,16 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           transition: 'background 0.2s, border-bottom 0.2s',
         }}
       >
-        {/* 뒤로가기 */}
-        <button onClick={onBack} style={iconBtnStyle(scrolled)}>
-          <BackIcon color={scrolled ? '#191F28' : 'white'} />
-        </button>
+        {/* 뒤로가기 — TDS IconButton */}
+        <IconButton
+          src={navIcons.back(scrolled ? '#191F28' : 'white')}
+          aria-label="뒤로가기"
+          bgColor={scrolled ? 'transparent' : 'rgba(0,0,0,0.28)'}
+          variant="clear"
+          iconSize={22}
+          style={navBtnStyle(scrolled)}
+          onClick={onBack}
+        />
 
         {/* 스크롤 시 카페명 노출 */}
         <div style={{ flex: 1, textAlign: 'center',
@@ -1143,22 +1165,27 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           </span>
         </div>
 
-        {/* 우측 버튼: 하트 / 더보기 / 닫기 */}
+        {/* 우측 버튼: 하트 / 더보기 / 닫기 — TDS IconButton */}
         <div style={{ display: 'flex', gap: 4 }}>
-          <button onClick={handleFavorite} style={iconBtnStyle(scrolled)}>
-            <HeartIcon
-              filled={isFavorite}
-              color={
-                scrolled
-                  ? (isFavorite ? '#252525' : '#6B7684')
-                  : (isFavorite ? '#252525' : 'white')
-              }
-            />
-          </button>
+          <IconButton
+            src={navIcons.heart(isFavorite ? '#252525' : (scrolled ? '#6B7684' : 'white'))}
+            aria-label={isFavorite ? '저장됨' : '저장하기'}
+            bgColor={scrolled ? 'transparent' : 'rgba(0,0,0,0.28)'}
+            variant="clear"
+            iconSize={22}
+            style={navBtnStyle(scrolled)}
+            onClick={handleFavorite}
+          />
           <div style={{ position: 'relative' }}>
-            <button onClick={() => setShowMoreSheet(v => !v)} style={iconBtnStyle(scrolled)}>
-              <MoreIcon color={scrolled ? '#6B7684' : 'white'} />
-            </button>
+            <IconButton
+              src={navIcons.more(scrolled ? '#6B7684' : 'white')}
+              aria-label="더보기"
+              bgColor={scrolled ? 'transparent' : 'rgba(0,0,0,0.28)'}
+              variant="clear"
+              iconSize={22}
+              style={navBtnStyle(scrolled)}
+              onClick={() => setShowMoreSheet(v => !v)}
+            />
             {showMoreSheet && (
               <MorePopup
                 onClose={() => setShowMoreSheet(false)}
@@ -1167,9 +1194,15 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               />
             )}
           </div>
-          <button onClick={onClose} style={iconBtnStyle(scrolled)}>
-            <CloseIcon color={scrolled ? '#6B7684' : 'white'} />
-          </button>
+          <IconButton
+            src={navIcons.close(scrolled ? '#6B7684' : 'white')}
+            aria-label="닫기"
+            bgColor={scrolled ? 'transparent' : 'rgba(0,0,0,0.28)'}
+            variant="clear"
+            iconSize={20}
+            style={navBtnStyle(scrolled)}
+            onClick={onClose}
+          />
         </div>
       </header>
 
