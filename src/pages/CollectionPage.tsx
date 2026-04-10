@@ -153,6 +153,8 @@ function CollectionCard({
         isEditMode && label !== '최근' ? (
           /* 편집모드: 텍스트+연필 전체 터치 가능 */
           <button
+            type="button"
+            aria-label={`${label} 이름 변경`}
             onClick={onRename}
             style={{
               display: 'flex', alignItems: 'center', gap: 4, width: 121,
@@ -282,8 +284,10 @@ function StoreCard({
               </div>
             ) : !isEditMode ? (
               <button
+                type="button"
+                aria-label="즐겨찾기 해제"
                 onClick={(e) => { e.stopPropagation(); onRemoveFavorite?.(); }}
-                style={{ width: 20, height: 20, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                style={{ width: 20, height: 20, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 0 }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
@@ -373,19 +377,9 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       <p style={{ fontWeight: 590, fontSize: 13, lineHeight: '22.5px', color: '#4e5968', textAlign: 'center', marginBottom: 24 }}>
         방문하고 싶은 매장을 편하게 관리하세요
       </p>
-      <button
-        onClick={onAdd}
-        style={{
-          width: 165, height: 48, borderRadius: 14,
-          backgroundColor: 'rgba(222,222,255,0.19)',
-          border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        <span style={{ fontWeight: 590, fontSize: 17, color: '#2365cf' }}>
-          매장 추가하기
-        </span>
-      </button>
+      <Button color="primary" variant="weak" size="large" style={{ width: '100%' }} onClick={onAdd}>
+        매장 추가하기
+      </Button>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import NavBar from '../components/NavBar';
-import { BottomCTA, CTAButton } from '@toss/tds-mobile';
+import { BottomCTA, CTAButton, Button, TextButton } from '@toss/tds-mobile';
 
 
 // ─── 타입 ─────────────────────────────────────────────────────
@@ -115,15 +115,12 @@ function GuideBookMainView({
 
       {/* 지난 가이드북 링크 — 피그마: 20px 아래, 가운데 정렬, 18px/590 #333333 */}
       <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
-        <button
-          onClick={onPastPress}
-          style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: '12px 16px' }}
-        >
-          <span style={{ fontWeight: 590, fontSize: 18, color: '#333333' }}>지난 가이드북</span>
+        <TextButton size="medium" onClick={onPastPress}>
+          지난 가이드북
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#333333" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 4 10 8 6 12"/>
           </svg>
-        </button>
+        </TextButton>
       </div>
     </div>
   );
@@ -377,29 +374,20 @@ function GuideBookDetailView({
         {/* 퀵 액션 버튼 — 피그마: radius=8, height=32, bg rgba(7,25,76,0.05), 13px/590 */}
         <div style={{ display: 'flex', gap: 8 }}>
           {(['길찾기', '리뷰보기', '저장하기'] as const).map((label) => (
-            <button
+            <Button
               key={label}
+              color="light"
+              variant="weak"
+              size="small"
               onClick={() => {
                 if (label === '저장하기') onSave(store);
                 else if (label === '리뷰보기') onDetailOpenToReview?.(store.id);
                 else if (label === '길찾기') onDirectionsOpen?.(store.id);
                 else onDetailOpen?.(store.id);
               }}
-              style={{
-                height: 32,
-                padding: '0 14px',
-                borderRadius: 8,
-                backgroundColor: 'rgba(7,25,76,0.05)',
-                border: 'none',
-                cursor: 'pointer',
-                
-                fontWeight: 590,
-                fontSize: 13,
-                color: 'rgba(3,18,40,0.7)',
-              }}
             >
               {label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

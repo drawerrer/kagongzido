@@ -7,7 +7,7 @@ const rootEl = document.getElementById('root');
 if (rootEl) {
   const root = ReactDOM.createRoot(rootEl);
   root.render(
-    <TDSMobileAITProvider>
+    <TDSMobileAITProvider brandPrimaryColor="#252525">
       <App />
     </TDSMobileAITProvider>
   );

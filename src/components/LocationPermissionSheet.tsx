@@ -128,7 +128,6 @@ export default function LocationPermissionSheet({
 
   // ask/denied/reask: 2-버튼 레이아웃
   // granted: 1-버튼 레이아웃 (확인)
-  const hasTwoButtons = type === 'ask' || type === 'denied' || type === 'reask';
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 400 }}>

@@ -425,8 +425,11 @@ function StoreCard({
         {/* 체크박스 (편집모드) */}
         {isEditMode && (
           <button
+            type="button"
+            aria-label={isSelected ? '선택 해제' : '선택'}
+            aria-pressed={isSelected}
             onClick={() => onToggleSelect(store.id)}
-            style={{ width: 24, height: 24, flexShrink: 0, marginRight: 10, marginTop: 2, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            style={{ width: 24, height: 24, flexShrink: 0, marginRight: 10, marginTop: 2, background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 0 }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               {isSelected ? (
@@ -489,8 +492,11 @@ function StoreCard({
               </div>
             ) : (
               <button
+                type="button"
+                aria-label={heartFilled ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+                aria-pressed={heartFilled}
                 onClick={(e) => { e.stopPropagation(); onHeartTap?.(store.id); }}
-                style={{ width: 20, height: 20, flexShrink: 0, marginLeft: 12, marginTop: 2, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                style={{ width: 20, height: 20, flexShrink: 0, marginLeft: 12, marginTop: 2, background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 0 }}
               >
                 {heartFilled ? (
                   /* 채워진 하트 (파란색) */
@@ -595,21 +601,9 @@ function EmptyState({ onAddStore }: { onAddStore?: () => void }) {
       <p style={{ fontWeight: 590, fontSize: 13, color: 'rgba(0,19,43,0.45)', textAlign: 'center', lineHeight: '19px', marginBottom: 12 }}>
         저장해 둔 매장을 목적에 맞게 쏙쏙 골라 담아보세요
       </p>
-      <button
-        onClick={onAddStore}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          width: 165, height: 48, borderRadius: 14,
-          backgroundColor: 'rgba(0,27,55,0.06)',
-          border: 'none', cursor: 'pointer',
-          fontWeight: 590, fontSize: 17, color: 'rgba(0,12,30,0.8)',
-        }}
-      >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M10 4v12M4 10h12" stroke="rgba(0,12,30,0.8)" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
+      <Button color="primary" variant="fill" size="large" style={{ width: '100%' }} onClick={onAddStore}>
         매장 추가하기
-      </button>
+      </Button>
     </div>
   );
 }
@@ -922,21 +916,9 @@ export default function CollectionDetailPage({
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
             <p style={{ fontWeight: 590, fontSize: 13, color: '#191F28', textAlign: 'center', lineHeight: '19px', marginBottom: 4 }}>아직 최근에 본 매장이 없어요</p>
             <p style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', textAlign: 'center', lineHeight: '19px', marginBottom: 20 }}>홈에서 카페를 탐색하면 여기에 기록돼요</p>
-            <button
-              onClick={onGoHome}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                width: 165, height: 48, borderRadius: 14,
-                backgroundColor: 'rgba(0,27,55,0.06)',
-                border: 'none', cursor: 'pointer',
-                fontWeight: 590, fontSize: 17, color: 'rgba(0,12,30,0.8)',
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10 4v12M4 10h12" stroke="rgba(0,12,30,0.8)" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
+            <Button color="primary" variant="fill" size="large" style={{ width: '100%' }} onClick={onGoHome}>
               매장 보러가기
-            </button>
+            </Button>
           </div>
         ) : (
           <EmptyState onAddStore={() => setShowAddStoreSheet(true)} />
