@@ -859,7 +859,7 @@ export default function CollectionPage({
               value={newCollectionName}
               onChange={e => setNewCollectionName(e.target.value)}
               placeholder="노트북 열기 좋은 곳, 딥워크 존 등"
-              maxLength={20}
+              maxLength={10}
               autoFocus
               style={{
                 width: '100%', padding: '4px 0 8px',
@@ -896,7 +896,7 @@ export default function CollectionPage({
               value={renameValue}
               onChange={e => setRenameValue(e.target.value)}
               placeholder="컬렉션명"
-              maxLength={20}
+              maxLength={10}
               autoFocus
               style={{
                 width: '100%', padding: '4px 0 8px',
