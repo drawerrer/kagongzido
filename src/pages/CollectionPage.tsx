@@ -706,7 +706,7 @@ export default function CollectionPage({
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
-      height: '100%', backgroundColor: '#ffffff', position: 'relative',
+      height: '100%', backgroundColor: '#F3F3F3', position: 'relative',
     }}>
       {/* ── NavBar ── */}
       <div style={{ position: 'relative' }}>
@@ -730,7 +730,7 @@ export default function CollectionPage({
 
       {/* ── info_2 bar (Figma: 46px, Medium 510 14px centered) ── */}
       <div style={{
-        height: 46, backgroundColor: '#ffffff',
+        height: 46, backgroundColor: '#F3F3F3',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
       }}>

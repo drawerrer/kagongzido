@@ -30,12 +30,12 @@ export default function NavBar({
         left: 0,
         right: 0,
         zIndex: 30,
-        backgroundColor: '#fff',
+        backgroundColor: '#F3F3F3',
         // Figma: borderBottom 없음 (흰 배경이 search bar 영역까지 이어짐)
         paddingTop: 'env(safe-area-inset-top)',
       }
     : {
-        backgroundColor: '#fff',
+        backgroundColor: '#F3F3F3',
         borderBottom: noBorder ? 'none' : '1px solid rgba(0,0,0,0.06)',
         flexShrink: 0,
         paddingTop: 'env(safe-area-inset-top)',

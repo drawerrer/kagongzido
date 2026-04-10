@@ -889,7 +889,7 @@ export default function CollectionDetailPage({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#fff', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
       {/* ── NavBar ── */}
       <div style={{ position: 'relative' }}>
         <NavBar
@@ -904,7 +904,7 @@ export default function CollectionDetailPage({
       </div>
 
       {/* ── info_2 (46px) ── */}
-      <div style={{ height: 46, backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <div style={{ height: 46, backgroundColor: '#F3F3F3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>
           {isEditMode ? '편집모드' : `${collectionName} (${stores.length})`}
         </span>
