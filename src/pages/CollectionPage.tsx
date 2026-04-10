@@ -64,7 +64,7 @@ function CollectionCard({
           width: 121, height: 121,
           border: isNew ? '1px dashed #c5c5c5' : 'none',
           borderRadius: 4, overflow: 'hidden',
-          backgroundColor: '#ffffff', position: 'relative',
+          backgroundColor: '#F3F3F3', position: 'relative',
         }}>
           {isNew ? (
             /* 새 컬렉션 */
