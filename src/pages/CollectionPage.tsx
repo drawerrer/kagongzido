@@ -386,16 +386,10 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 
 // ─── 팝오버 메뉴 ─────────────────────────────────────────────
 function Popover({
-  hasSavedStores,
-  onEdit,
-  onAddToCollection,
   onSuggestInfo,
   onShare,
   onClose,
 }: {
-  hasSavedStores: boolean;
-  onEdit: () => void;
-  onAddToCollection: () => void;
   onSuggestInfo: () => void;
   onShare: () => void;
   onClose: () => void;
@@ -414,18 +408,10 @@ function Popover({
     };
   }, [onClose]);
 
-  const items = hasSavedStores
-    ? [
-        { label: '편집하기', action: onEdit },
-        { label: '컬렉션에 추가하기', action: onAddToCollection },
-        { label: '공유하기', action: onShare },
-        { label: '정보 수정 제안하기', action: onSuggestInfo },
-      ]
-    : [
-        { label: '편집하기', action: onEdit },
-        { label: '공유하기', action: onShare },
-        { label: '정보 수정 제안하기', action: onSuggestInfo },
-      ];
+  const items = [
+    { label: '공유하기', action: onShare },
+    { label: '정보 수정 제안하기', action: onSuggestInfo },
+  ];
 
   return (
     <div ref={ref} style={{
@@ -629,18 +615,6 @@ export default function CollectionPage({
     setDragOverIndex(-1);
   }, [dragIndex, dragOverIndex, reorderFavorites]);
 
-  const enterEditMode = () => {
-    setIsEditMode(true);
-    setSelectedStoreIds(new Set());
-    setShowPopover(false);
-  };
-
-  // 삭제하기 / 컬렉션에 추가하기: 컬렉션 선택 모드(Organize) 진입
-  const enterOrganizeMode = () => {
-    setIsOrganizeMode(true);
-    setSelectedStoreIds(new Set());
-    setShowPopover(false);
-  };
 
   const exitOrganizeMode = () => {
     setIsOrganizeMode(false);
@@ -718,9 +692,6 @@ export default function CollectionPage({
         {/* 팝오버 */}
         {showPopover && (
           <Popover
-            hasSavedStores={!isEmpty}
-            onEdit={enterEditMode}
-            onAddToCollection={enterOrganizeMode}
             onSuggestInfo={() => setShowPopover(false)}
             onShare={() => { setShowPopover(false); setShowShareSheet(true); }}
             onClose={() => setShowPopover(false)}
