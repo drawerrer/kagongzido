@@ -726,13 +726,8 @@ export default function CollectionDetailPage({
     setDragOverIndex(-1);
   }, [dragIndex, dragOverIndex, updateCollection, collectionId]);
 
-  // ── 팝오버 아이템 (컨텍스트별) ──
-  const popoverItems = isRecent
-    ? [
-        { label: '공유하기', action: () => setShowShareSheet(true) },
-        { label: '정보 수정 제안하기', action: () => {} },
-      ]
-    : stores.length === 0
+  // ── 팝오버 아이템 (유저 컬렉션 전용) ──
+  const popoverItems = stores.length === 0
     ? [
         { label: '삭제하기', action: () => setShowDeleteCollectionDialog(true) },
         { label: '매장 추가하기', action: () => setShowAddStoreSheet(true) },
@@ -894,7 +889,7 @@ export default function CollectionDetailPage({
       <div style={{ position: 'relative' }}>
         <NavBar
           onBack={handleBack}
-          onMore={() => setShowPopover(v => !v)}
+          onMore={isRecent ? undefined : () => setShowPopover(v => !v)}
           onClose={handleClose}
         />
         {/* 팝오버 */}
