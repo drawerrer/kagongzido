@@ -94,7 +94,7 @@ export default function NavBar({
                   whiteSpace: 'nowrap',
                 }}
               >
-                취향맞춤 카페지도
+                카페인덱스
               </span>
             </div>
           ) : (

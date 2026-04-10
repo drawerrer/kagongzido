@@ -318,8 +318,8 @@ function AddStoreSheet({
                     {/* 체크 서클 */}
                     <div style={{
                       width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                      border: `2px solid ${isSelected ? '#3182f6' : 'rgba(0,19,43,0.2)'}`,
-                      backgroundColor: isSelected ? '#3182f6' : 'transparent',
+                      border: `2px solid ${isSelected ? '#252525' : 'rgba(0,19,43,0.2)'}`,
+                      backgroundColor: isSelected ? '#252525' : 'transparent',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
@@ -417,7 +417,7 @@ function StoreCard({
       style={{
         cursor: isEditMode ? 'pointer' : 'default',
         opacity: isDragging ? 0.4 : 1,
-        borderTop: isDragOver ? '2px solid #3182F6' : '2px solid transparent',
+        borderTop: isDragOver ? '2px solid #252525' : '2px solid transparent',
         transition: 'opacity 0.15s',
       }}
     >
@@ -431,7 +431,7 @@ function StoreCard({
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               {isSelected ? (
                 <>
-                  <circle cx="12" cy="12" r="12" fill="#3182F6" />
+                  <circle cx="12" cy="12" r="12" fill="#252525" />
                   <path d="M7 12l3.5 3.5L17 8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </>
               ) : (
@@ -496,7 +496,7 @@ function StoreCard({
                   /* 채워진 하트 (파란색) */
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                      fill="#3182f6" stroke="#3182f6" strokeWidth="0.5" />
+                      fill="#252525" stroke="#252525" strokeWidth="0.5" />
                   </svg>
                 ) : (
                   /* 빈 하트 (회색) */

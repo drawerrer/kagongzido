@@ -70,7 +70,7 @@ const SHARE_APPS = [
   },
 ];
 
-export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도', shareUrl }: ShareSheetProps) {
+export default function ShareSheet({ isOpen, onClose, shareTitle = '카페인덱스', shareUrl }: ShareSheetProps) {
   const [copied, setCopied] = useState(false);
 
   const url = shareUrl ?? window.location.href;
@@ -182,7 +182,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
           marginTop: 20,
-          backgroundColor: '#F9FAFB',
+          backgroundColor: '#F3F3F3',
           borderRadius: 12, padding: '10px 14px',
           border: '1px solid #E5E8EB',
         }}>
@@ -200,7 +200,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
             style={{
               flexShrink: 0, height: 32, padding: '0 12px',
               borderRadius: 8,
-              backgroundColor: copied ? '#00C471' : '#3182F6',
+              backgroundColor: copied ? '#00C471' : '#252525',
               border: 'none', cursor: 'pointer',
               fontWeight: 590, fontSize: 13,
               color: '#ffffff',

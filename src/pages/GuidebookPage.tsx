@@ -648,7 +648,7 @@ export default function GuidebookPage({
       <ShareSheet
         isOpen={showShareSheet}
         onClose={() => setShowShareSheet(false)}
-        shareTitle="카공지도 가이드북"
+        shareTitle="카페인덱스 가이드북"
       />
 
       {snackbar && <Snackbar message={snackbar} onDismiss={dismissSnackbar} />}

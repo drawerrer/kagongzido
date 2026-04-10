@@ -233,7 +233,7 @@ function MenuRow({
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         width: '100%', padding: '18px 0',
-        borderBottom: '1px solid #F9FAFB',
+        borderBottom: '1px solid #F3F3F3',
         cursor: onTap ? 'pointer' : 'default',
       }}
     >
@@ -398,7 +398,7 @@ function ReviewEditPage({
                 onClick={() => setShowPhotoSheet(true)}
                 style={{
                   width: 80, height: 80, borderRadius: 8, flexShrink: 0,
-                  border: '1.5px dashed #C9CDD2', background: '#F9FAFB',
+                  border: '1.5px dashed #C9CDD2', background: '#F3F3F3',
                   display: 'flex', flexDirection: 'column',
                   alignItems: 'center', justifyContent: 'center', gap: 4,
                 }}
@@ -429,7 +429,7 @@ function ReviewEditPage({
                 resize: 'none', outline: 'none', fontFamily: 'inherit',
                 boxSizing: 'border-box',
               }}
-              onFocus={e => { (e.target.parentElement as HTMLElement).style.borderColor = '#3182F6'; }}
+              onFocus={e => { (e.target.parentElement as HTMLElement).style.borderColor = '#252525'; }}
               onBlur={e => { (e.target.parentElement as HTMLElement).style.borderColor = '#E5E8EB'; }}
             />
             <div style={{ textAlign: 'right', fontSize: 12, color: '#B0B8C1' }}>
@@ -450,7 +450,7 @@ function ReviewEditPage({
           onClick={handleCancel}
           style={{
             flex: 1, height: 52, borderRadius: 12,
-            background: '#EBF3FE', color: '#3182F6',
+            background: '#EBEBEB', color: '#252525',
             fontSize: 16, fontWeight: 600,
           }}
         >
@@ -460,7 +460,7 @@ function ReviewEditPage({
           onClick={handleSave}
           style={{
             flex: 1, height: 52, borderRadius: 12,
-            background: '#3182F6', color: 'white',
+            background: '#252525', color: 'white',
             fontSize: 16, fontWeight: 700,
           }}
         >

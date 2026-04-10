@@ -101,7 +101,7 @@ function Checkbox({ checked, onToggle }: { checked: boolean; onToggle: () => voi
         height: 20,
         borderRadius: 5,
         border: checked ? 'none' : '1.5px solid #D1D6DB',
-        background: checked ? '#3182F6' : 'white',
+        background: checked ? '#252525' : 'white',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -237,7 +237,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
 
           {/* 가격대 섹션
               피그마: 타이틀 "가격대 (핫아메리카노 1잔 기준)" fs=14 fw=400 fill=#000c1e a=0.80
-              슬라이더 트랙: r=2.5 h=5 fill=#e5e8eb / 활성트랙: fill=#3182f6
+              슬라이더 트랙: r=2.5 h=5 fill=#e5e8eb / 활성트랙: fill=#252525
               Knob: 26×26 r=9999 fill=#ffffff stroke=#001d3a a=0.18
               값 라벨 (5,000 / 15,000): fs=14 fw=400 fill=#000c1e a=0.80 */}
           <div style={{ padding: '0 0 8px' }}>
@@ -260,7 +260,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
               {filters.priceMax.toLocaleString()}원
             </p>
 
-            {/* 슬라이더 래퍼 — 피그마: 트랙 h=5 r=2.5 fill=#e5e8eb, 활성 fill=#3182f6 */}
+            {/* 슬라이더 래퍼 — 피그마: 트랙 h=5 r=2.5 fill=#e5e8eb, 활성 fill=#252525 */}
             <div style={{ position: 'relative', margin: '0 0 8px' }}>
               <div style={{
                 position: 'absolute',
@@ -279,7 +279,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
                 width: `${sliderPct}%`,
                 height: 5,
                 borderRadius: 2.5,
-                background: '#3182F6',
+                background: '#252525',
                 transform: 'translateY(-50%)',
               }} />
               <input
@@ -345,7 +345,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
 
         {/* ── 하단 고정: 적용하기 버튼
             피그마: Button Area h=90, 버튼 pad-top=34px
-            버튼: h=56 r=16 fill=#3182f6 fs=17 fw=590 fill=#ffffff ── */}
+            버튼: h=56 r=16 fill=#252525 fs=17 fw=590 fill=#ffffff ── */}
         <div
           style={{
             height: 90,
@@ -359,7 +359,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
               width: '100%',
               height: 56,
               borderRadius: 16,
-              background: '#3182F6',
+              background: '#252525',
               color: '#ffffff',
               fontSize: 17,
               fontWeight: 590,

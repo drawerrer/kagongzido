@@ -117,7 +117,7 @@ const MOCK_DETAILS: Record<string, CafeDetailData> = {
       {
         id: 'r_reporter',
         author: '카공러버',
-        avatarColor: '#3182F6',
+        avatarColor: '#252525',
         date: '2024.11.20',
         content: '직접 제보한 카페예요! 서울 강남 최고의 카공 카페입니다. 콘센트가 모든 자리에 있고 조용한 편이에요. 커피도 맛있고 직원분들도 친절해서 자주 올 것 같아요. 2층 창가 자리 추천드려요 :)',
         images: [PHOTO_BG[0], PHOTO_BG[1], PHOTO_BG[2]],
@@ -259,7 +259,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 
 function CopyIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3182F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#252525" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </svg>
   );
@@ -267,7 +267,7 @@ function CopyIcon() {
 
 function LinkIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3182F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#252525" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
       <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
     </svg>
@@ -321,14 +321,14 @@ function InfoRow({
       justifyContent: 'space-between',
       alignItems: 'center',
       padding: '10px 0',
-      borderBottom: '1px solid #F9FAFB',
+      borderBottom: '1px solid #F3F3F3',
     }}>
       <span style={{ fontSize: 14, color: '#8B95A1', width: 60, flexShrink: 0 }}>{label}</span>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
         {isLink && value ? (
           <button
             onClick={() => openURL(value)}
-            style={{ fontSize: 14, color: '#3182F6', textDecoration: 'none',
+            style={{ fontSize: 14, color: '#252525', textDecoration: 'none',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220,
               background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'right' }}
           >
@@ -463,7 +463,7 @@ function PhotoMosaic({
               {expandedIdx === i && !isLastSlot && (
                 <div style={{
                   position: 'absolute', inset: 0,
-                  boxShadow: 'inset 0 0 0 3px #3182F6',
+                  boxShadow: 'inset 0 0 0 3px #252525',
                 }} />
               )}
               {/* 마지막 슬롯 더보기 오버레이 */}
@@ -519,8 +519,8 @@ function ReviewCard({ review }: { review: ReviewItem }) {
             </span>
             {review.isReporter && (
               <span style={{
-                fontSize: 10, fontWeight: 700, color: '#3182F6',
-                background: '#EBF3FE', borderRadius: 4, padding: '2px 6px',
+                fontSize: 10, fontWeight: 700, color: '#252525',
+                background: '#EBEBEB', borderRadius: 4, padding: '2px 6px',
                 lineHeight: 1.4,
               }}>
                 카페 제보자
@@ -603,7 +603,7 @@ function ReviewCard({ review }: { review: ReviewItem }) {
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             width: liked ? 44 : 46, height: 29, borderRadius: 13,
-            background: liked ? '#3182F6' : '#FAFAFB',
+            background: liked ? '#252525' : '#FAFAFB',
             border: 'none',
             justifyContent: 'center', flexShrink: 0,
             transition: 'background 0.15s, width 0.15s',
@@ -633,7 +633,7 @@ function DirectionsSheet({ cafe, onClose }: { cafe: CafeDetailData; onClose: () 
   const openMap = (type: 'kakao' | 'naver' | 'default') => {
     const addr = encodeURIComponent(cafe.address);
     if (type === 'kakao') openURL(`kakaomap://search?q=${addr}`);
-    else if (type === 'naver') openURL(`nmap://search?query=${addr}&appname=com.kagongzido`);
+    else if (type === 'naver') openURL(`nmap://search?query=${addr}&appname=com.cafeindex`);
     else openURL(`https://maps.google.com/maps?q=${addr}`);
     onClose();
   };
@@ -762,7 +762,7 @@ function LoginPromptSheet({ onClose }: { onClose: () => void }) {
           }}
           style={{
             width: '100%', height: 52, borderRadius: 12,
-            background: '#3182F6', color: 'white',
+            background: '#252525', color: 'white',
             fontSize: 16, fontWeight: 700,
           }}
         >
@@ -1150,8 +1150,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               filled={isFavorite}
               color={
                 scrolled
-                  ? (isFavorite ? '#3182F6' : '#6B7684')
-                  : (isFavorite ? '#3182F6' : 'white')
+                  ? (isFavorite ? '#252525' : '#6B7684')
+                  : (isFavorite ? '#252525' : 'white')
               }
             />
           </button>
@@ -1218,7 +1218,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         <div style={{ height: 260, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
           <div style={{
             height: '100%',
-            background: 'linear-gradient(160deg, #6B7684 0%, #4E5968 40%, #3182F6 100%)',
+            background: 'linear-gradient(160deg, #6B7684 0%, #4E5968 40%, #252525 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <span style={{ fontSize: 72, opacity: 0.5 }}>☕</span>
@@ -1247,7 +1247,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               style={{
                 flexShrink: 0, height: 34, padding: '0 14px', marginLeft: 10,
                 borderRadius: 8, border: '1px solid #E5E8EB',
-                fontSize: 13, fontWeight: 600, color: '#3182F6', background: 'white',
+                fontSize: 13, fontWeight: 600, color: '#252525', background: 'white',
               }}
             >
               길 안내
@@ -1288,7 +1288,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           {/* 영업시간 전체 펼침 */}
           {hoursExpanded && (
             <div style={{
-              background: '#F9FAFB', borderRadius: 12,
+              background: '#F3F3F3', borderRadius: 12,
               padding: '12px 16px', marginBottom: 16,
             }}>
               {DAY_ORDER.map(day => {
@@ -1301,7 +1301,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                     padding: '5px 0',
                     fontSize: 14,
                     fontWeight: isToday ? 700 : 400,
-                    color: isToday ? '#3182F6' : '#4E5968',
+                    color: isToday ? '#252525' : '#4E5968',
                   }}>
                     <span>{day}요일</span>
                     <span>{isHoliday ? '휴무' : `${(h as BusinessHour).open} - ${(h as BusinessHour).close}`}</span>
@@ -1369,7 +1369,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           {/* 헤더: "리뷰 (n)" + 포토리뷰만 모아보기 체크박스 */}
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
             <h2 style={{ fontSize: 17, fontWeight: 700, color: '#191F28', flex: 1 }}>
-              리뷰&nbsp;<span style={{ color: '#3182F6' }}>({cafe.reviews.length})</span>
+              리뷰&nbsp;<span style={{ color: '#252525' }}>({cafe.reviews.length})</span>
             </h2>
             <button
               onClick={() => setPhotoOnly(v => !v)}
@@ -1382,7 +1382,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               <div style={{
                 width: 18, height: 18, borderRadius: 4,
                 border: photoOnly ? 'none' : '1.5px solid #C9CDD2',
-                background: photoOnly ? '#3182F6' : 'white',
+                background: photoOnly ? '#252525' : 'white',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}>
@@ -1493,7 +1493,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               flexDirection: 'column',
               alignItems: 'center',
               gap: 2,
-              color: activeTab === tab.id ? '#3182F6' : '#B0B8C1',
+              color: activeTab === tab.id ? '#252525' : '#B0B8C1',
               fontSize: 11,
               fontWeight: activeTab === tab.id ? 600 : 400,
               transition: 'color 0.15s',

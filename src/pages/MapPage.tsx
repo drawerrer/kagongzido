@@ -54,7 +54,7 @@ function FilterIcon({ active }: { active: boolean }) {
 
 function GpsIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3182F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#252525" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" />
       <line x1="12" y1="2" x2="12" y2="6" />
       <line x1="12" y1="18" x2="12" y2="22" />
@@ -124,7 +124,7 @@ function SortPopup({
               padding: '12px 16px',
               fontSize: 17,
               fontWeight: opt === current ? 600 : 400,
-              color: opt === current ? '#3182F6' : '#191F28',
+              color: opt === current ? '#252525' : '#191F28',
               background: 'transparent',
             }}
           >
@@ -257,8 +257,8 @@ function CafeRow({ cafe, onTap }: { cafe: Cafe; onTap: () => void }) {
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <path
             d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-            fill={favorited ? '#3182f6' : 'rgba(0,19,43,0.1)'}
-            stroke={favorited ? '#3182f6' : 'rgba(0,19,43,0.2)'}
+            fill={favorited ? '#252525' : 'rgba(0,19,43,0.1)'}
+            stroke={favorited ? '#252525' : 'rgba(0,19,43,0.2)'}
             strokeWidth="1"
           />
         </svg>

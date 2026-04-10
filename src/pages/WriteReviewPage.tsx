@@ -139,12 +139,12 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
         {/* 체크 아이콘 */}
         <div style={{
           width: 72, height: 72, borderRadius: 36,
-          background: '#EBF3FE',
+          background: '#EBEBEB',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           marginBottom: 4,
         }}>
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-            <path d="M9 18.5L15 24.5L27 12" stroke="#3182F6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M9 18.5L15 24.5L27 12" stroke="#252525" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
         <p style={{ fontSize: 20, fontWeight: 700, color: '#191F28', textAlign: 'center' }}>
@@ -158,7 +158,7 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
           style={{
             marginTop: 16,
             width: '100%', height: 52, borderRadius: 12,
-            background: '#3182F6', color: 'white',
+            background: '#252525', color: 'white',
             fontSize: 16, fontWeight: 700,
           }}
         >
@@ -200,7 +200,7 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
           style={{
             marginTop: 16,
             width: '100%', height: 52, borderRadius: 12,
-            background: '#3182F6', color: 'white',
+            background: '#252525', color: 'white',
             fontSize: 16, fontWeight: 700,
           }}
         >
@@ -351,9 +351,9 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
                         flex: 1,
                         height: 40,
                         borderRadius: 20,
-                        border: isSelected ? '1.5px solid #3182F6' : '1.5px solid #E5E8EB',
-                        background: isSelected ? '#EBF3FE' : 'white',
-                        color: isSelected ? '#3182F6' : '#6B7684',
+                        border: isSelected ? '1.5px solid #252525' : '1.5px solid #E5E8EB',
+                        background: isSelected ? '#EBEBEB' : 'white',
+                        color: isSelected ? '#252525' : '#6B7684',
                         fontSize: 14,
                         fontWeight: isSelected ? 700 : 400,
                         transition: 'all 0.15s',
@@ -369,7 +369,7 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
         </div>
 
         {/* ── 구분선 ── */}
-        <div style={{ height: 8, background: '#F9FAFB', margin: '8px 0' }} />
+        <div style={{ height: 8, background: '#F3F3F3', margin: '8px 0' }} />
 
         {/* ── 사진 첨부 섹션 ── */}
         <div style={{ padding: '20px 20px 0' }}>
@@ -390,7 +390,7 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
                 style={{
                   width: 80, height: 80, borderRadius: 10, flexShrink: 0,
                   border: '1.5px dashed #C9CDD2',
-                  background: '#F9FAFB',
+                  background: '#F3F3F3',
                   display: 'flex', flexDirection: 'column',
                   alignItems: 'center', justifyContent: 'center', gap: 4,
                 }}
@@ -433,13 +433,13 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
         </div>
 
         {/* ── 구분선 ── */}
-        <div style={{ height: 8, background: '#F9FAFB', margin: '20px 0 0' }} />
+        <div style={{ height: 8, background: '#F3F3F3', margin: '20px 0 0' }} />
 
         {/* ── 텍스트 입력 섹션 ── */}
         <div style={{ padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28' }}>리뷰 작성</p>
-            <span style={{ fontSize: 13, color: text.length >= 10 ? '#3182F6' : '#B0B8C1' }}>
+            <span style={{ fontSize: 13, color: text.length >= 10 ? '#252525' : '#B0B8C1' }}>
               {text.length}/200
             </span>
           </div>
@@ -466,7 +466,7 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
               background: '#FAFBFC',
               transition: 'border-color 0.15s',
             }}
-            onFocus={e => { e.target.style.borderColor = '#3182F6'; e.target.style.background = 'white'; }}
+            onFocus={e => { e.target.style.borderColor = '#252525'; e.target.style.background = 'white'; }}
             onBlur={e => { e.target.style.borderColor = '#E5E8EB'; e.target.style.background = '#FAFBFC'; }}
           />
 
@@ -491,7 +491,7 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
           disabled={!canSubmit}
           style={{
             width: '100%', height: 52, borderRadius: 12,
-            background: canSubmit ? '#3182F6' : '#E5E8EB',
+            background: canSubmit ? '#252525' : '#E5E8EB',
             color: canSubmit ? 'white' : '#B0B8C1',
             fontSize: 16, fontWeight: 700,
             transition: 'background 0.15s, color 0.15s',
@@ -531,7 +531,7 @@ function Spinner() {
     <div style={{
       width: 48, height: 48,
       border: '4px solid #E5E8EB',
-      borderTop: '4px solid #3182F6',
+      borderTop: '4px solid #252525',
       borderRadius: '50%',
       animation: 'spin 0.8s linear infinite',
     }}>

@@ -6,9 +6,9 @@
 
 :root {
   /* 컬러 토큰 */
-  --color-primary: #3182F6;
-  --color-primary-light: #EBF3FE;
-  --color-background: #F9FAFB;
+  --color-primary: #252525;
+  --color-primary-light: #EBEBEB;
+  --color-background: #F3F3F3;
   --color-surface: #FFFFFF;
   --color-text-primary: #191F28;
   --color-text-secondary: #6B7684;

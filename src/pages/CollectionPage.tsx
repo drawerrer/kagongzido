@@ -48,7 +48,7 @@ function CollectionCard({
     <div style={{
       display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0,
       opacity: isDragging ? 0.4 : isEditMode ? 0.7 : 1,
-      borderLeft: isDragOver ? '2px solid #3182F6' : '2px solid transparent',
+      borderLeft: isDragOver ? '2px solid #252525' : '2px solid transparent',
       transition: 'opacity 0.15s',
     }}>
       <button
@@ -222,7 +222,7 @@ function StoreCard({
     <div
       onClick={isEditMode ? onSelect : onPress}
       style={{
-        borderTop: isDragOver ? '2px solid #3182F6' : 'none',
+        borderTop: isDragOver ? '2px solid #252525' : 'none',
         cursor: 'pointer',
         paddingTop: 20, paddingBottom: 20,
         opacity: isDragging ? 0.4 : (isEditMode && !isSelected ? 0.7 : 1),
@@ -236,8 +236,8 @@ function StoreCard({
           <div style={{
             width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
             marginRight: 10, marginTop: 1,
-            backgroundColor: isSelected ? '#3182F6' : 'transparent',
-            border: `2px solid ${isSelected ? '#3182F6' : 'rgba(0,19,43,0.2)'}`,
+            backgroundColor: isSelected ? '#252525' : 'transparent',
+            border: `2px solid ${isSelected ? '#252525' : 'rgba(0,19,43,0.2)'}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             {isSelected && (
@@ -287,7 +287,7 @@ function StoreCard({
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                    fill="#3182f6" stroke="#3182f6" strokeWidth="0.5"/>
+                    fill="#252525" stroke="#252525" strokeWidth="0.5"/>
                 </svg>
               </button>
             ) : null}
@@ -875,7 +875,7 @@ export default function CollectionPage({
       )}
 
       {/* ─────────── BottomSheet: 새 컬렉션 생성 ─────────── */}
-      {/* Figma: 컬렉션명 Bold 20px / 입력 Semibold 22px #8b95a1 / 버튼 355×56 #3182f6 */}
+      {/* Figma: 컬렉션명 Bold 20px / 입력 Semibold 22px #8b95a1 / 버튼 355×56 #252525 */}
       <BottomSheet
         isOpen={bottomSheet === 'create'}
         onClose={() => {
@@ -918,7 +918,7 @@ export default function CollectionPage({
       </BottomSheet>
 
       {/* ─────────── BottomSheet: 컬렉션명 변경 ─────────── */}
-      {/* Figma: 기존 컬렉션명 Bold 20px / 입력 Semibold 22px #8b95a1 / 버튼 전체너비 #3182f6 */}
+      {/* Figma: 기존 컬렉션명 Bold 20px / 입력 Semibold 22px #8b95a1 / 버튼 전체너비 #252525 */}
       <BottomSheet
         isOpen={bottomSheet === 'rename'}
         onClose={() => { setBottomSheet(null); setRenameTargetId(null); setRenameValue(''); }}
@@ -990,7 +990,7 @@ export default function CollectionPage({
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 3v10M3 8h10" stroke="#3182f6" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M8 3v10M3 8h10" stroke="#252525" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </div>
           <span style={{
@@ -1038,8 +1038,8 @@ export default function CollectionPage({
             {/* 체크 서클 */}
             <div style={{
               width: 24, height: 24, borderRadius: '50%',
-              border: `2px solid ${selectedCollectionIds.has(col.id) ? '#3182f6' : 'rgba(0,19,43,0.2)'}`,
-              backgroundColor: selectedCollectionIds.has(col.id) ? '#3182f6' : 'transparent',
+              border: `2px solid ${selectedCollectionIds.has(col.id) ? '#252525' : 'rgba(0,19,43,0.2)'}`,
+              backgroundColor: selectedCollectionIds.has(col.id) ? '#252525' : 'transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
@@ -1130,7 +1130,7 @@ export default function CollectionPage({
       <ShareSheet
         isOpen={showShareSheet}
         onClose={() => setShowShareSheet(false)}
-        shareTitle="카공지도 모음집"
+        shareTitle="카페인덱스 모음집"
       />
     </div>
   );

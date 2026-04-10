@@ -267,8 +267,8 @@ function PhotoDetailView({
                 </span>
                 {photo.isReporter && (
                   <span style={{
-                    fontSize: 10, fontWeight: 700, color: '#3182F6',
-                    background: '#EBF3FE', borderRadius: 4, padding: '2px 6px',
+                    fontSize: 10, fontWeight: 700, color: '#252525',
+                    background: '#EBEBEB', borderRadius: 4, padding: '2px 6px',
                     flexShrink: 0,
                   }}>
                     카페 제보자
@@ -333,7 +333,7 @@ function PhotoDetailView({
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     width: isLiked ? 44 : 46, height: 29, borderRadius: 13,
-                    background: isLiked ? '#3182F6' : '#FAFAFB',
+                    background: isLiked ? '#252525' : '#FAFAFB',
                     border: 'none', justifyContent: 'center', flexShrink: 0,
                     transition: 'background 0.15s, width 0.15s',
                     boxSizing: 'border-box', padding: 0, cursor: 'pointer',
@@ -472,7 +472,7 @@ export default function PhotoReviewPage({
           <button onClick={onFavoriteToggle} style={hdrBtn}>
             <HeartIcon
               filled={isFavorite}
-              color={isFavorite ? '#3182F6' : '#6B7684'}
+              color={isFavorite ? '#252525' : '#6B7684'}
             />
           </button>
           <button style={hdrBtn}>
@@ -520,7 +520,7 @@ export default function PhotoReviewPage({
               {i === 0 && photo.isReporter && (
                 <div style={{
                   position: 'absolute', top: 6, left: 6,
-                  background: '#3182F6', borderRadius: 4,
+                  background: '#252525', borderRadius: 4,
                   padding: '2px 6px', fontSize: 9, fontWeight: 700, color: 'white',
                 }}>
                   제보

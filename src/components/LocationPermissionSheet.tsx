@@ -13,7 +13,7 @@
 //     granted/denied: fill=rgba(3,18,40,0.70)
 //   버튼 h=56 r=16
 //     아니요/나중에: fill=rgba(7,25,76,0.05) text=rgba(3,18,40,0.70) fs=17 fw=590
-//     허용하기: fill=#3182f6 text=#ffffff fs=17 fw=590
+//     허용하기: fill=#252525 text=#ffffff fs=17 fw=590
 //     확인(granted/denied): fill=#2272eb text=#ffffff fs=17 fw=590
 //   딤: rgba(0,0,0,0.20)
 
@@ -31,17 +31,17 @@ function LocationIcon() {
   return (
     <div style={{
       width: 64, height: 64, borderRadius: 32,
-      background: '#EBF3FE',
+      background: '#EBEBEB',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       marginBottom: 16,
     }}>
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <circle cx="16" cy="16" r="5" fill="#3182F6" />
-        <circle cx="16" cy="16" r="9" stroke="#3182F6" strokeWidth="2" fill="none" />
-        <line x1="16" y1="2" x2="16" y2="7" stroke="#3182F6" strokeWidth="2" strokeLinecap="round" />
-        <line x1="16" y1="25" x2="16" y2="30" stroke="#3182F6" strokeWidth="2" strokeLinecap="round" />
-        <line x1="2" y1="16" x2="7" y2="16" stroke="#3182F6" strokeWidth="2" strokeLinecap="round" />
-        <line x1="25" y1="16" x2="30" y2="16" stroke="#3182F6" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="16" cy="16" r="5" fill="#252525" />
+        <circle cx="16" cy="16" r="9" stroke="#252525" strokeWidth="2" fill="none" />
+        <line x1="16" y1="2" x2="16" y2="7" stroke="#252525" strokeWidth="2" strokeLinecap="round" />
+        <line x1="16" y1="25" x2="16" y2="30" stroke="#252525" strokeWidth="2" strokeLinecap="round" />
+        <line x1="2" y1="16" x2="7" y2="16" stroke="#252525" strokeWidth="2" strokeLinecap="round" />
+        <line x1="25" y1="16" x2="30" y2="16" stroke="#252525" strokeWidth="2" strokeLinecap="round" />
       </svg>
     </div>
   );
@@ -236,7 +236,7 @@ export default function LocationPermissionSheet({
                 onClick={onAllow}
                 style={{
                   flex: 1, height: 56, borderRadius: 16, border: 'none',
-                  background: '#3182F6', fontSize: 17,
+                  background: '#252525', fontSize: 17,
                   fontWeight: 590, color: '#ffffff', cursor: 'pointer',
                 }}
               >
@@ -290,7 +290,7 @@ export default function LocationPermissionSheet({
                 onClick={onOpenSettings}
                 style={{
                   flex: 1, height: 56, borderRadius: 16, border: 'none',
-                  background: '#3182F6', fontSize: 17,
+                  background: '#252525', fontSize: 17,
                   fontWeight: 590, color: '#ffffff', cursor: 'pointer',
                 }}
               >
