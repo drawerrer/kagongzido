@@ -1146,46 +1146,76 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           transition: 'background 0.2s, border-bottom 0.2s',
         }}
       >
-        {/* 뒤로가기 — TDS IconButton */}
-        <IconButton
-          src={navIcons.back(scrolled ? '#191F28' : 'white')}
-          aria-label="뒤로가기"
-          bgColor={scrolled ? 'transparent' : 'rgba(0,0,0,0.28)'}
-          variant="clear"
-          iconSize={22}
-          style={navBtnStyle(scrolled)}
+        {/* ── 뒤로가기: 배경 없이 아이콘만 — Figma 스펙 */}
+        <button
           onClick={onBack}
-        />
+          aria-label="뒤로가기"
+          style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+        >
+          <BackIcon color={scrolled ? '#191F28' : '#F9FAFB'} />
+        </button>
 
-        {/* 스크롤 시 카페명 노출 */}
-        <div style={{ flex: 1, textAlign: 'center',
-          opacity: scrolled ? 1 : 0, transition: 'opacity 0.2s' }}>
-          <span style={{ fontSize: 17, fontWeight: 700, color: '#191F28' }}>
-            {cafe.name}
-          </span>
+        {/* ── 스크롤 시 카페명 노출 */}
+        <div style={{ flex: 1, textAlign: 'center', opacity: scrolled ? 1 : 0, transition: 'opacity 0.2s' }}>
+          <span style={{ fontSize: 17, fontWeight: 700, color: '#191F28' }}>{cafe.name}</span>
         </div>
 
-        {/* 우측 버튼: 하트 / 더보기 / 닫기 — TDS IconButton */}
-        <div style={{ display: 'flex', gap: 4 }}>
-          <IconButton
-            src={navIcons.heart(isFavorite ? '#252525' : (scrolled ? '#6B7684' : 'white'))}
-            aria-label={isFavorite ? '저장됨' : '저장하기'}
-            bgColor={scrolled ? 'transparent' : 'rgba(0,0,0,0.28)'}
-            variant="clear"
-            iconSize={22}
-            style={navBtnStyle(scrolled)}
+        {/* ── 우측 버튼 그룹 */}
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+
+          {/* 하트 pill: 44×34 rx=17 */}
+          <button
             onClick={handleFavorite}
-          />
+            aria-label={isFavorite ? '저장됨' : '저장하기'}
+            style={{
+              width: 44, height: 34, borderRadius: 17, flexShrink: 0,
+              background: 'rgba(0,23,51,0.02)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <HeartIcon filled={isFavorite} color={isFavorite ? '#252525' : (scrolled ? '#697482' : '#F9FAFB')} />
+          </button>
+
+          {/* 더보기 pill — 스크롤 전: 48×34 단독 / 스크롤 후: More+Close 93×34 합체 pill */}
           <div style={{ position: 'relative' }}>
-            <IconButton
-              src={navIcons.more(scrolled ? '#6B7684' : 'white')}
-              aria-label="더보기"
-              bgColor={scrolled ? 'transparent' : 'rgba(0,0,0,0.28)'}
-              variant="clear"
-              iconSize={22}
-              style={navBtnStyle(scrolled)}
-              onClick={() => setShowMoreSheet(v => !v)}
-            />
+            {scrolled ? (
+              /* 스크롤 후: More | divider | Close 합쳐진 pill */
+              <div style={{
+                width: 93, height: 34, borderRadius: 17,
+                background: 'rgba(0,23,51,0.02)',
+                display: 'flex', alignItems: 'center', overflow: 'hidden',
+              }}>
+                <button
+                  onClick={() => setShowMoreSheet(v => !v)}
+                  aria-label="더보기"
+                  style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}
+                >
+                  <MoreIcon color="#697482" />
+                </button>
+                {/* Figma 구분선: 1×16 rgba(0,27,55,0.1) */}
+                <div style={{ width: 1, height: 16, background: 'rgba(0,27,55,0.1)', flexShrink: 0 }} />
+                <button
+                  onClick={onClose}
+                  aria-label="닫기"
+                  style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}
+                >
+                  <CloseIcon color="rgba(0,19,43,0.58)" />
+                </button>
+              </div>
+            ) : (
+              /* 스크롤 전: More 단독 pill 48×34 */
+              <button
+                onClick={() => setShowMoreSheet(v => !v)}
+                aria-label="더보기"
+                style={{
+                  width: 48, height: 34, borderRadius: 17, flexShrink: 0,
+                  background: 'rgba(0,23,51,0.02)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <MoreIcon color="#F9FAFB" />
+              </button>
+            )}
             {showMoreSheet && (
               <MorePopup
                 onClose={() => setShowMoreSheet(false)}
@@ -1194,15 +1224,6 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               />
             )}
           </div>
-          <IconButton
-            src={navIcons.close(scrolled ? '#6B7684' : 'white')}
-            aria-label="닫기"
-            bgColor={scrolled ? 'transparent' : 'rgba(0,0,0,0.28)'}
-            variant="clear"
-            iconSize={20}
-            style={navBtnStyle(scrolled)}
-            onClick={onClose}
-          />
         </div>
       </header>
 
