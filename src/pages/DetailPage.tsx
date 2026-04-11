@@ -644,42 +644,12 @@ function ReviewCard({ review }: { review: ReviewItem }) {
   );
 }
 
-// ────────── 바텀시트: 지도 선택 ──────────────────────────────
-function DirectionsSheet({ cafe, onClose }: { cafe: CafeDetailData; onClose: () => void }) {
-  const openMap = (type: 'kakao' | 'naver' | 'default') => {
-    const addr = encodeURIComponent(cafe.address);
-    if (type === 'kakao') openURL(`kakaomap://search?q=${addr}`);
-    else if (type === 'naver') openURL(`nmap://search?query=${addr}&appname=com.cafeindex`);
-    else openURL(`https://maps.google.com/maps?q=${addr}`);
-    onClose();
-  };
-
-  return (
-    <BottomSheet isOpen onClose={onClose}>
-      <div style={{ padding: '8px 20px 24px' }}>
-        <p style={{ fontSize: 16, fontWeight: 700, color: '#191F28', marginBottom: 16 }}>길 안내 앱 선택</p>
-        {[
-          { key: 'kakao' as const, label: '카카오맵', emoji: '🗺️' },
-          { key: 'naver' as const, label: '네이버 지도', emoji: '🧭' },
-          { key: 'default' as const, label: '기본 지도', emoji: '📍' },
-        ].map(item => (
-          <button
-            key={item.key}
-            onClick={() => openMap(item.key)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              width: '100%', padding: '14px 4px',
-              borderBottom: '1px solid #F2F4F6',
-              textAlign: 'left',
-            }}
-          >
-            <span style={{ fontSize: 24 }}>{item.emoji}</span>
-            <span style={{ fontSize: 16, color: '#191F28' }}>{item.label}</span>
-          </button>
-        ))}
-      </div>
-    </BottomSheet>
-  );
+// ────────── 카카오맵 웹 URL 생성 ─────────────────────────────
+// SDK 규정: 앱 딥링크(kakaomap://) 사용 금지 → 타사 웹사이트 URL(https://)만 허용
+// openURL()로 카카오맵 웹에서 장소 검색 결과를 열어요.
+function openKakaoMapWeb(cafe: CafeDetailData) {
+  const query = encodeURIComponent(`${cafe.name} ${cafe.address}`);
+  openURL(`https://map.kakao.com/link/search/${query}`);
 }
 
 // ────────── 드롭다운 팝업: 더보기 액션 ──────────────────────
@@ -995,14 +965,13 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [isLoggedIn] = useState(true); // mock: 로그인 상태 (Supabase 연동 전 임시)
 
   const [showMoreSheet, setShowMoreSheet] = useState(false);
-  const [showDirectionsSheet, setShowDirectionsSheet] = useState(false);
   const [showLoginSheet, setShowLoginSheet] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
 
-  // 길찾기 바텀시트 자동 열기 (가이드북 길찾기 버튼에서 진입 시)
+  // 가이드북 길찾기 버튼에서 진입 시 카카오맵 웹 바로 열기
   useEffect(() => {
     if (openDirections) {
-      setTimeout(() => setShowDirectionsSheet(true), 150);
+      setTimeout(() => openKakaoMapWeb(cafe), 150);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1285,7 +1254,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               {cafe.address}
             </p>
             <button
-              onClick={() => setShowDirectionsSheet(true)}
+              onClick={() => openKakaoMapWeb(cafe)}
               style={{
                 flexShrink: 0, height: 34, padding: '0 14px', marginLeft: 10,
                 borderRadius: 8, border: '1px solid #E5E8EB',
@@ -1553,12 +1522,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       </nav>
 
       {/* ── 바텀시트들 ── */}
-      {showDirectionsSheet && (
-        <DirectionsSheet
-          cafe={cafe}
-          onClose={() => setShowDirectionsSheet(false)}
-        />
-      )}
+
       {showLoginSheet && (
         <LoginPromptSheet onClose={() => setShowLoginSheet(false)} />
       )}
