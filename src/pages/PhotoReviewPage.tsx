@@ -196,46 +196,37 @@ function PhotoDetailView({
         </span>
       </div>
 
-      {/* ── 사진 영역 ── */}
+      {/* ── 사진 영역 — 좌우패딩 16px, 상하패딩 20px, hug ── */}
       <div
-        style={{ flex: 1, minHeight: 0, background: 'white', overflow: 'hidden' }}
+        style={{ flexShrink: 0, background: 'white', padding: '20px 16px' }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <div style={{ padding: '20px 16px 0 16px' }}>
-          {/* 정사각형 사진 — 16px 좌우 패딩, rx=4 */}
+        {/* 버튼 + 사진 일렬 배치 (flex row) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* 좌 탐색 화살표 */}
+          <button
+            onClick={goPrev}
+            disabled={idx === 0}
+            style={{
+              width: 36, height: 36, borderRadius: 18, flexShrink: 0,
+              background: idx === 0 ? 'transparent' : 'rgba(0,0,0,0.35)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: 'none', cursor: idx === 0 ? 'default' : 'pointer',
+              visibility: idx === 0 ? 'hidden' : 'visible',
+            }}
+          >
+            <BackIcon color="white" />
+          </button>
+
+          {/* 정사각형 사진 — rx=4 */}
           <div style={{
-            width: '100%', aspectRatio: '1 / 1',
+            flex: 1, aspectRatio: '1 / 1',
             background: photo.bg, borderRadius: 4,
             position: 'relative', overflow: 'hidden',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <span style={{ fontSize: 90, opacity: 0.08 }}>☕</span>
-
-            {/* 좌 탐색 화살표 */}
-            {idx > 0 && (
-              <button onClick={goPrev} style={{
-                position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-                width: 36, height: 36, borderRadius: 18,
-                background: 'rgba(0,0,0,0.35)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: 'none', cursor: 'pointer',
-              }}>
-                <BackIcon color="white" />
-              </button>
-            )}
-            {/* 우 탐색 화살표 */}
-            {idx < photos.length - 1 && (
-              <button onClick={goNext} style={{
-                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                width: 36, height: 36, borderRadius: 18,
-                background: 'rgba(0,0,0,0.35)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: 'none', cursor: 'pointer', rotate: '180deg',
-              }}>
-                <BackIcon color="white" />
-              </button>
-            )}
 
             {/* 점 인디케이터 — 7×7 원형, white/4F4F4F */}
             <div style={{
@@ -254,6 +245,22 @@ function PhotoDetailView({
               })}
             </div>
           </div>
+
+          {/* 우 탐색 화살표 */}
+          <button
+            onClick={goNext}
+            disabled={idx === photos.length - 1}
+            style={{
+              width: 36, height: 36, borderRadius: 18, flexShrink: 0,
+              background: idx === photos.length - 1 ? 'transparent' : 'rgba(0,0,0,0.35)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: 'none', cursor: idx === photos.length - 1 ? 'default' : 'pointer',
+              visibility: idx === photos.length - 1 ? 'hidden' : 'visible',
+              rotate: '180deg',
+            }}
+          >
+            <BackIcon color="white" />
+          </button>
         </div>
       </div>
 
