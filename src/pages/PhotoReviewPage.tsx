@@ -223,14 +223,15 @@ function PhotoDetailView({
               <BackIcon color="white" />
             </button>
           )}
-          {/* 우 탐색 화살표 */}
+          {/* 우 탐색 화살표 — rotate를 transform에 합쳐 translateY 방향 보존 */}
           {idx < photos.length - 1 && (
             <button onClick={goNext} style={{
-              position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+              position: 'absolute', right: 10, top: '50%',
+              transform: 'translateY(-50%) rotate(180deg)',
               width: 36, height: 36, borderRadius: 18,
               background: 'rgba(0,0,0,0.35)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: 'none', cursor: 'pointer', rotate: '180deg',
+              border: 'none', cursor: 'pointer',
             }}>
               <BackIcon color="white" />
             </button>
