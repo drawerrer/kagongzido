@@ -3,7 +3,7 @@ import { useFavorites, FavoritedStore, RecentCafe } from '../context/FavoritesCo
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import NavBar from '../components/NavBar';
-import { ConfirmDialog, BottomCTA, CTAButton, Button } from '@toss/tds-mobile';
+import { ConfirmDialog, BottomCTA, CTAButton, Button, Toast } from '@toss/tds-mobile';
 
 
 // ─── 타입 ─────────────────────────────────────────────────────
@@ -154,28 +154,6 @@ function MemoSheet({ initialMemo, onApply, onClose }: { initialMemo: string; onA
 }
 
 // ─── 토스트 ────────────────────────────────────────────────────
-function ToastBar({ message }: { message: string }) {
-  return (
-    <div style={{
-      position: 'absolute', top: 60, left: '50%', transform: 'translateX(-50%)',
-      zIndex: 300,
-      backgroundColor: '#ffffff',
-      borderRadius: 9999,
-      padding: '12px 20px',
-      display: 'flex', alignItems: 'center', gap: 8,
-      boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-      whiteSpace: 'nowrap',
-      pointerEvents: 'none',
-    }}>
-      {/* 초록색 체크 아이콘 */}
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <circle cx="9" cy="9" r="9" fill="#00C471" />
-        <path d="M5.5 9l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <span style={{ fontWeight: 590, fontSize: 15, color: 'rgba(0,12,30,0.8)' }}>{message}</span>
-    </div>
-  );
-}
 
 // ─── 매장 추가 바텀시트 ─────────────────────────────────────────
 function AddStoreSheet({
@@ -726,13 +704,8 @@ export default function CollectionDetailPage({
     setDragOverIndex(-1);
   }, [dragIndex, dragOverIndex, updateCollection, collectionId]);
 
-  // ── 팝오버 아이템 (컨텍스트별) ──
-  const popoverItems = isRecent
-    ? [
-        { label: '공유하기', action: () => setShowShareSheet(true) },
-        { label: '정보 수정 제안하기', action: () => {} },
-      ]
-    : stores.length === 0
+  // ── 팝오버 아이템 (유저 컬렉션 전용) ──
+  const popoverItems = stores.length === 0
     ? [
         { label: '삭제하기', action: () => setShowDeleteCollectionDialog(true) },
         { label: '매장 추가하기', action: () => setShowAddStoreSheet(true) },
@@ -820,7 +793,7 @@ export default function CollectionDetailPage({
         const store = stores.find(s => s.id === storeId);
         if (store) {
           addFavorite({ id: store.id, name: store.name, address: store.address, rating: store.rating, reviewCount: store.reviewCount, photos: store.photos });
-          showSnackbar('모음집에 저장했어요', '보기');
+          showSnackbar('모음집에 저장했어요', '보러가기', onBack);
         }
       }
     } else {
@@ -889,12 +862,12 @@ export default function CollectionDetailPage({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#fff', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
       {/* ── NavBar ── */}
       <div style={{ position: 'relative' }}>
         <NavBar
           onBack={handleBack}
-          onMore={() => setShowPopover(v => !v)}
+          onMore={isRecent ? undefined : () => setShowPopover(v => !v)}
           onClose={handleClose}
         />
         {/* 팝오버 */}
@@ -904,7 +877,7 @@ export default function CollectionDetailPage({
       </div>
 
       {/* ── info_2 (46px) ── */}
-      <div style={{ height: 46, backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <div style={{ height: 46, backgroundColor: '#F3F3F3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>
           {isEditMode ? '편집모드' : `${collectionName} (${stores.length})`}
         </span>
@@ -1009,8 +982,14 @@ export default function CollectionDetailPage({
         />
       )}
 
-      {/* 토스트 (메모/추가 후) */}
-      {toast && <ToastBar message={toast} />}
+      {/* 토스트 (메모/추가 후) — TDS Toast */}
+      <Toast
+        open={!!toast}
+        position="top"
+        text={toast ?? ''}
+        duration={2500}
+        onClose={() => setToast(null)}
+      />
 
       {/* 스낵바 */}
       {snackbar && (

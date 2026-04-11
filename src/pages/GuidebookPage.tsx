@@ -65,7 +65,7 @@ function GuideBookMainView({
   onPastPress: () => void;
 }) {
   return (
-    <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#fff' }}>
+    <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#F3F3F3' }}>
       {/* 메인 큐레이션 카드 — 피그마: padding 75px top, 30px horizontal */}
       <div style={{ paddingTop: 75, paddingLeft: 30, paddingRight: 30 }}>
         <button
@@ -410,7 +410,7 @@ function GuideBookPastView({
   onCardPress: (g: MockGuidebook) => void;
 }) {
   return (
-    <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#fff' }}>
+    <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#F3F3F3' }}>
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
@@ -523,7 +523,7 @@ export default function GuidebookPage({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#fff', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
       <NavBar
         onBack={handleBack}
         onClose={onClose ?? onBack}

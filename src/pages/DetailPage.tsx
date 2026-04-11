@@ -43,6 +43,7 @@ interface CafeDetailData {
   name: string;
   address: string;
   distance?: number;
+  photos?: string[];
   hours: Partial<Record<DayKey, BusinessHour | null>>;
   regularHoliday: DayKey[];
   seats?: string;
@@ -91,6 +92,12 @@ const MOCK_DETAILS: Record<string, CafeDetailData> = {
     name: '무모아',
     address: '서울 강남구 논현로 508',
     distance: 20,
+    photos: [
+      'https://picsum.photos/seed/cafe-a/300/300',
+      'https://picsum.photos/seed/cafe-b/300/300',
+      'https://picsum.photos/seed/cafe-c/300/300',
+      'https://picsum.photos/seed/cafe-d/300/300',
+    ],
     hours: {
       월: { open: '09:00', close: '22:00' },
       화: { open: '09:00', close: '22:00' },
@@ -946,7 +953,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     addRecentlyViewed({
       id: cafe.id,
       name: cafe.name,
-      photo: '', // 나중에 실제 사진 URL로 교체
+      photo: cafe.photos?.[0] ?? '',
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1025,7 +1032,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         rating: 5,        // 나중에 Supabase 연동 시 실제 값으로 교체
         reviewCount: 0,   // 나중에 Supabase 연동 시 실제 값으로 교체
         badge: cafe.amenities.noTimeLimit ? '시간 제한 없음' : undefined,
-        photos: [],       // 나중에 실제 사진으로 교체
+        photos: cafe.photos ?? [],
       });
       showFavoriteSnackbar('added');
     }
@@ -1477,7 +1484,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
             rating: 5,
             reviewCount: 0,
             badge: cafe.amenities.noTimeLimit ? '시간 제한 없음' : undefined,
-            photos: [],
+            photos: cafe.photos ?? [],
           });
           setFavoriteSnackbar(null);
           setSnackbarDissolving(false);
