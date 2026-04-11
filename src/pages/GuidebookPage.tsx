@@ -4,6 +4,23 @@ import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import NavBar from '../components/NavBar';
 import { BottomCTA, CTAButton, Button, TextButton } from '@toss/tds-mobile';
+import { openURL } from '@apps-in-toss/web-framework';
+
+// ─── 아이콘 ────────────────────────────────────────────────────
+function IcSeat() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M4 16v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4zm1 2h14v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-1zM7 4h10a1 1 0 0 1 1 1v5H6V5a1 1 0 0 1 1-1z"/>
+    </svg>
+  );
+}
+function IcOutlet() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+    </svg>
+  );
+}
 
 
 // ─── 타입 ─────────────────────────────────────────────────────
@@ -141,11 +158,15 @@ const CARD_GAP = 20;
 const CAROUSEL_PADDING = (375 - CARD_W) / 2; // 57px — 중앙 카드 화면 정중앙
 const ITEM_W = CARD_W + CARD_GAP;
 
+function openKakaoMapWeb(store: MockStore) {
+  const query = encodeURIComponent(`${store.name} ${store.district}`);
+  openURL(`https://map.kakao.com/link/search/${query}`);
+}
+
 function GuideBookDetailView({
   guidebook,
   onDetailOpen,
   onDetailOpenToReview,
-  onDirectionsOpen,
   onSave,
   initialStoreIndex,
   onStoreIndexChange,
@@ -153,7 +174,6 @@ function GuideBookDetailView({
   guidebook: MockGuidebook;
   onDetailOpen?: (id: string) => void;
   onDetailOpenToReview?: (id: string) => void;
-  onDirectionsOpen?: (id: string) => void;
   onSave: (store: MockStore) => void;
   initialStoreIndex?: number;
   onStoreIndexChange?: (index: number) => void;
@@ -167,6 +187,7 @@ function GuideBookDetailView({
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRepositioning = useRef(false);
+  const isFirstMount = useRef(true);
 
   // 마우스 드래그 (데스크탑 테스트용)
   const isDragging = useRef(false);
@@ -205,8 +226,12 @@ function GuideBookDetailView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 가이드북 바뀔 때 초기화
+  // 가이드북 바뀔 때 초기화 (최초 마운트는 건너뜀 — initialStoreIndex 유지)
   useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
     setAbsIndex(stores.length);
     if (scrollRef.current) {
       scrollRef.current.scrollLeft = stores.length * ITEM_W;
@@ -355,17 +380,13 @@ function GuideBookDetailView({
 
         {/* 정보 행 — 좌석/콘센트 — 14px, 라벨 510 #000, 값 400 #777 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M5 2v2H3.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5H4v1l-1 5h1l.5-2.5h3L8 12h1L8 7v-1h.5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5H7V2H5zm2 3.5H5.5V4h1.5v1.5z" fill="rgba(0,0,0,0.45)"/>
-            </svg>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(0,0,0,0.45)' }}>
+            <IcSeat />
             <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>좌석</span>
             <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{store.seats}석</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M6 1v3H4l2 3H5l2 4 1-3h1l-2-3h2L6 1z" fill="rgba(0,0,0,0.45)"/>
-            </svg>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(0,0,0,0.45)' }}>
+            <IcOutlet />
             <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>콘센트</span>
             <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{store.outlet}</span>
           </div>
@@ -382,7 +403,7 @@ function GuideBookDetailView({
               onClick={() => {
                 if (label === '저장하기') onSave(store);
                 else if (label === '리뷰보기') onDetailOpenToReview?.(store.id);
-                else if (label === '길찾기') onDirectionsOpen?.(store.id);
+                else if (label === '길찾기') openKakaoMapWeb(store);
                 else onDetailOpen?.(store.id);
               }}
             >
@@ -469,7 +490,6 @@ function GuideBookPastView({
 export default function GuidebookPage({
   onDetailOpen,
   onDetailOpenToReview,
-  onDirectionsOpen,
   onBack,
   onClose,
   initialView,
@@ -479,7 +499,6 @@ export default function GuidebookPage({
 }: {
   onDetailOpen?: (id: string) => void;
   onDetailOpenToReview?: (id: string) => void;
-  onDirectionsOpen?: (id: string) => void;
   onBack?: () => void;
   onClose?: () => void;
   initialView?: GuideView;
@@ -542,7 +561,6 @@ export default function GuidebookPage({
           guidebook={activeGuidebook}
           onDetailOpen={onDetailOpen}
           onDetailOpenToReview={onDetailOpenToReview}
-          onDirectionsOpen={onDirectionsOpen}
           onSave={handleSave}
           initialStoreIndex={initialStoreIndex}
           onStoreIndexChange={onStoreIndexChange}

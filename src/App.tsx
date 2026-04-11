@@ -165,7 +165,6 @@ function AppInner() {
               <GuidebookPage
                 onDetailOpen={(id) => setDetailCafeId(id)}
                 onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
-                onDirectionsOpen={(id) => { setDetailCafeId(id); setDetailOpenDirections(true); }}
                 onBack={() => setActiveTab('home')}
                 onClose={() => setActiveTab('home')}
                 initialView={(guidebookView as any) ?? 'main'}
