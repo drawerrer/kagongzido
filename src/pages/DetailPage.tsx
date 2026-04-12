@@ -1108,7 +1108,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   }
 
   return (
-    <div style={{ position: 'relative', height: '100%', overflow: 'hidden', background: 'white' }}>
+    <div style={{ position: 'relative', height: '100%', overflow: 'hidden', background: '#f3f3f3' }}>
 
       {/* ── 헤더 (스크롤 시 흰 배경으로 전환) ── */}
       <header
