@@ -646,7 +646,9 @@ export default function CollectionDetailPage({
   const activeCollection = collections.find(c => c.id === activeTab);
   const allTabs = [
     { id: 'recent', name: '최근' },
-    ...collections.map(c => ({ id: c.id, name: c.name })),
+    ...collections
+      .filter(c => c.id !== 'recent')
+      .map(c => ({ id: c.id, name: c.name })),
   ];
 
   // 드래그 중이 아닐 때 collection storeIds와 동기화
