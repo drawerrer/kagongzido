@@ -1,7 +1,7 @@
 import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
-  appName: 'kagongzido',
+  appName: 'cafeindex',
   web: {
     host: 'localhost',
     port: 3000,
@@ -13,8 +13,8 @@ export default defineConfig({
   permissions: ['geolocation'],
   outdir: 'dist',
   brand: {
-    displayName: '카공지도',
-    primaryColor: '#3182F6',
+    displayName: '카페인덱스',
+    primaryColor: '#252525',
   },
   webViewProps: {
     type: 'partner',

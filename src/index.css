@@ -6,9 +6,9 @@
 
 :root {
   /* 컬러 토큰 */
-  --color-primary: #3182F6;
-  --color-primary-light: #EBF3FE;
-  --color-background: #F9FAFB;
+  --color-primary: #252525;
+  --color-primary-light: #EBEBEB;
+  --color-background: #F3F3F3;
   --color-surface: #FFFFFF;
   --color-text-primary: #191F28;
   --color-text-secondary: #6B7684;
@@ -77,4 +77,27 @@ button {
   border: none;
   background: none;
   font-family: inherit;
+  outline: none; /* 클릭 시 브라우저 기본 포커스 링 제거 (Safari 오렌지 프레임 방지) */
+}
+
+/* 키보드 탐색 시에만 포커스 표시 (접근성 유지) */
+button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* 컬렉션 이름 편집 가능 암시 — iOS 아이콘 흔들림 */
+@keyframes collection-name-wiggle {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-1.2deg); }
+  50%  { transform: rotate(1.2deg); }
+  75%  { transform: rotate(-0.8deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.collection-name-wiggle {
+  display: inline-block;
+  animation: collection-name-wiggle 0.4s ease-in-out infinite;
+  animation-delay: calc(var(--wiggle-delay, 0) * 1ms);
+  transform-origin: center bottom;
 }
