@@ -473,7 +473,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           right: 0,
           zIndex: 20,
           padding: '14px 16px',
-          background: 'white',
+          background: '#f3f3f3',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -485,7 +485,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              background: '#f3f3f3',
+              background: '#F2F4F6',
               borderRadius: 12,
               height: 44,
               padding: '0 10px',
