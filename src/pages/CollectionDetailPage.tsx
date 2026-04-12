@@ -1191,7 +1191,7 @@ export default function CollectionDetailPage({
           style={{
             width: '100%', height: 56, display: 'flex', alignItems: 'center',
             paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
-            fontWeight: 700, fontSize: 17, color: '#e42939',
+            fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)',
           }}
         >삭제</button>
       </BottomSheet>
