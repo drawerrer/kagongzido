@@ -571,18 +571,44 @@ function EmptyState({ onAddStore }: { onAddStore?: () => void }) {
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: 8,
-      padding: '60px 20px',
+      alignItems: 'center', paddingTop: 52,
     }}>
-      <p style={{ fontWeight: 590, fontSize: 13, color: '#191F28', textAlign: 'center', lineHeight: '19px', marginBottom: 0 }}>
+      <p style={{
+        fontWeight: 590, fontSize: 13, color: '#4e5968',
+        textAlign: 'center', lineHeight: '22.5px', margin: 0,
+      }}>
         아직 컬렉션에 담은 매장이 없어요
       </p>
-      <p style={{ fontWeight: 590, fontSize: 13, color: 'rgba(0,19,43,0.45)', textAlign: 'center', lineHeight: '19px', marginBottom: 12 }}>
+      <p style={{
+        fontWeight: 590, fontSize: 13, color: '#4e5968',
+        textAlign: 'center', lineHeight: '22.5px', margin: 0,
+      }}>
         저장해 둔 매장을 목적에 맞게 쏙쏙 골라 담아보세요
       </p>
-      <Button color="primary" variant="fill" size="large" style={{ width: '100%' }} onClick={onAddStore}>
-        매장 추가하기
-      </Button>
+      <button
+        onClick={onAddStore}
+        style={{
+          marginTop: 52,
+          width: 165, height: 48,
+          borderRadius: 14,
+          backgroundColor: 'rgba(211,211,223,0.19)',
+          border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center',
+          padding: '0 16px',
+          gap: 10,
+          flexShrink: 0,
+        }}
+      >
+        <span style={{
+          flex: 1,
+          fontWeight: 590, fontSize: 17, color: '#252525',
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+        }}>매장 추가하기</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+          <path d="M12 5v14M5 12h14" stroke="#3182f6" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      </button>
     </div>
   );
 }
