@@ -1006,43 +1006,58 @@ export default function CollectionDetailPage({
       </div>
 
       {/* ── 탭 칩 (가로 스크롤) ── */}
+      <style>{`
+        @keyframes chip-wiggle {
+          0%, 100% { transform: rotate(0deg); }
+          25%       { transform: rotate(-2deg); }
+          75%       { transform: rotate(2deg); }
+        }
+      `}</style>
       <div style={{
         display: 'flex', gap: 8, padding: '10px 16px',
         overflowX: 'auto', scrollbarWidth: 'none', flexShrink: 0,
       }}>
-        {allTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onPointerDown={() => handleTabPointerDown(tab.id)}
-            onPointerUp={handleTabPointerUp}
-            onPointerCancel={handleTabPointerUp}
-            onClick={() => { if (!isEditMode) setActiveTab(tab.id); }}
-            style={{
-              height: 32,
-              padding: '0 10px',
-              borderRadius: 8,
-              border: 'none',
-              cursor: isEditMode ? 'default' : 'pointer',
-              backgroundColor: activeTab === tab.id ? '#252525' : 'rgba(46,46,46,0.08)',
-              color: activeTab === tab.id ? '#ffffff' : 'rgba(0,0,0,0.7)',
-              fontWeight: 590,
-              fontSize: 13,
-              lineHeight: '16px',
-              flexShrink: 0,
-              whiteSpace: 'nowrap',
-              pointerEvents: isEditMode ? 'none' : 'auto',
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}
-          >
-            {tab.name}
-            {isEditMode && activeTab !== tab.id && (
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
-                <path d="M8.5 1.5a1.121 1.121 0 0 1 1.586 0 1.121 1.121 0 0 1 0 1.586L3.75 9.422 1.5 10l.578-2.25L8.5 1.5Z"
-                  stroke="rgba(0,0,0,0.5)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-          </button>
-        ))}
+        {allTabs.map((tab) => {
+          const isCustom = tab.id !== 'recent';
+          const showPencil = isEditMode && isCustom;
+          const wiggle = isEditMode && isCustom;
+          return (
+            <button
+              key={tab.id}
+              onPointerDown={() => handleTabPointerDown(tab.id)}
+              onPointerUp={handleTabPointerUp}
+              onPointerCancel={handleTabPointerUp}
+              onClick={() => { if (!isEditMode) setActiveTab(tab.id); }}
+              style={{
+                height: 32,
+                padding: '0 10px',
+                borderRadius: 8,
+                border: 'none',
+                cursor: isEditMode ? 'default' : 'pointer',
+                backgroundColor: activeTab === tab.id ? '#252525' : 'rgba(46,46,46,0.08)',
+                color: activeTab === tab.id ? '#ffffff' : 'rgba(0,0,0,0.7)',
+                fontWeight: 590,
+                fontSize: 13,
+                lineHeight: '16px',
+                flexShrink: 0,
+                whiteSpace: 'nowrap',
+                pointerEvents: isEditMode ? 'none' : 'auto',
+                display: 'flex', alignItems: 'center', gap: 4,
+                animation: wiggle ? 'chip-wiggle 0.45s ease-in-out infinite' : 'none',
+                transformOrigin: 'center bottom',
+              }}
+            >
+              {tab.name}
+              {showPencil && (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+                  <path d="M8.5 1.5a1.121 1.121 0 0 1 1.586 0 1.121 1.121 0 0 1 0 1.586L3.75 9.422 1.5 10l.578-2.25L8.5 1.5Z"
+                    stroke={activeTab === tab.id ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)'}
+                    strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── 편집 모드 — 매장 추가하기 행 ── */}
