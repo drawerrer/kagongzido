@@ -974,7 +974,7 @@ export default function CollectionDetailPage({
               borderRadius: 8,
               border: 'none',
               cursor: isEditMode ? 'default' : 'pointer',
-              backgroundColor: activeTab === tab.id ? '#252525' : 'transparent',
+              backgroundColor: activeTab === tab.id ? '#252525' : 'rgba(46,46,46,0.08)',
               color: activeTab === tab.id ? '#ffffff' : 'rgba(0,0,0,0.7)',
               fontWeight: 590,
               fontSize: 13,
