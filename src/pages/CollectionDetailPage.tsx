@@ -3,8 +3,7 @@ import { useFavorites, FavoritedStore, RecentCafe } from '../context/FavoritesCo
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import NavBar from '../components/NavBar';
-import BottomSheet from '../components/BottomSheet';
-import { ConfirmDialog, BottomCTA, CTAButton, Button, Toast } from '@toss/tds-mobile';
+import { BottomSheet, ConfirmDialog, BottomCTA, CTAButton, Button, Toast } from '@toss/tds-mobile';
 
 
 // ─── 타입 ─────────────────────────────────────────────────────
@@ -1169,64 +1168,63 @@ export default function CollectionDetailPage({
       )}
 
       {/* 탭 관리 바텀시트 (롱프레스) */}
-      {tabManageTargetId && (
-        <BottomSheet isOpen={true} onClose={() => setTabManageTargetId(null)}>
-          <div style={{ padding: '16px 20px 8px', borderBottom: '1px solid rgba(0,0,0,0.06)', marginBottom: 4 }}>
-            <span style={{ fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)' }}>
-              {collections.find(c => c.id === tabManageTargetId)?.name}
-            </span>
-          </div>
-          <button
-            onClick={() => {
-              const col = collections.find(c => c.id === tabManageTargetId);
-              setRenameValue(col?.name ?? '');
-              setRenameTabId(tabManageTargetId);
-              setTabManageTargetId(null);
-            }}
-            style={{
-              width: '100%', height: 56, display: 'flex', alignItems: 'center',
-              paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
-              fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)',
-            }}
-          >편집</button>
-          <button
-            onClick={() => handleTabDelete(tabManageTargetId)}
-            style={{
-              width: '100%', height: 56, display: 'flex', alignItems: 'center',
-              paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
-              fontWeight: 700, fontSize: 17, color: '#e42939',
-            }}
-          >삭제</button>
-        </BottomSheet>
-      )}
+      <BottomSheet
+        open={!!tabManageTargetId}
+        header={<BottomSheet.Header>{collections.find(c => c.id === tabManageTargetId)?.name}</BottomSheet.Header>}
+        onClose={() => setTabManageTargetId(null)}
+      >
+        <button
+          onClick={() => {
+            const col = collections.find(c => c.id === tabManageTargetId);
+            setRenameValue(col?.name ?? '');
+            setRenameTabId(tabManageTargetId);
+            setTabManageTargetId(null);
+          }}
+          style={{
+            width: '100%', height: 56, display: 'flex', alignItems: 'center',
+            paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
+            fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)',
+          }}
+        >편집</button>
+        <button
+          onClick={() => tabManageTargetId && handleTabDelete(tabManageTargetId)}
+          style={{
+            width: '100%', height: 56, display: 'flex', alignItems: 'center',
+            paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
+            fontWeight: 700, fontSize: 17, color: '#e42939',
+          }}
+        >삭제</button>
+      </BottomSheet>
 
       {/* 컬렉션 이름 변경 바텀시트 */}
-      {renameTabId && (
-        <BottomSheet isOpen={true} onClose={() => { setRenameTabId(null); setRenameValue(''); }}>
-          <div style={{ padding: '20px 20px 16px' }}>
-            <p style={{ fontWeight: 700, fontSize: 17, color: '#191F28', marginBottom: 16 }}>컬렉션 이름 변경</p>
-            <input
-              autoFocus
-              value={renameValue}
-              onChange={e => setRenameValue(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleTabRenameConfirm(); }}
-              maxLength={20}
-              placeholder="컬렉션 이름"
-              style={{
-                width: '100%', height: 48, borderRadius: 10,
-                border: '1px solid rgba(0,0,0,0.12)',
-                padding: '0 14px', fontSize: 17, outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-          <BottomCTA.Single fixed={false}>
-            <CTAButton onClick={handleTabRenameConfirm} disabled={!renameValue.trim()}>
-              변경하기
-            </CTAButton>
-          </BottomCTA.Single>
-        </BottomSheet>
-      )}
+      <BottomSheet
+        open={!!renameTabId}
+        header={<BottomSheet.Header>컬렉션 이름 변경</BottomSheet.Header>}
+        onClose={() => { setRenameTabId(null); setRenameValue(''); }}
+        hasTextField
+      >
+        <div style={{ padding: '8px 20px 16px' }}>
+          <input
+            autoFocus
+            value={renameValue}
+            onChange={e => setRenameValue(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleTabRenameConfirm(); }}
+            maxLength={20}
+            placeholder="컬렉션 이름"
+            style={{
+              width: '100%', height: 48, borderRadius: 10,
+              border: '1px solid rgba(0,0,0,0.12)',
+              padding: '0 14px', fontSize: 17, outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+        <BottomCTA.Single fixed={false}>
+          <CTAButton onClick={handleTabRenameConfirm} disabled={!renameValue.trim()}>
+            변경하기
+          </CTAButton>
+        </BottomCTA.Single>
+      </BottomSheet>
 
       {/* 토스트 (메모/추가 후) — TDS Toast */}
       <Toast
