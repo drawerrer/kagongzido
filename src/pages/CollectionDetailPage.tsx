@@ -461,7 +461,7 @@ function StoreCard({
                 style={{ width: 24, height: 24, flexShrink: 0, marginLeft: 8, marginTop: 2, cursor: 'grab', touchAction: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <g fill="rgba(0,19,43,0.3)" fillRule="evenodd" clipRule="evenodd">
+                  <g fill="rgba(0,29,58,0.18)" fillRule="evenodd" clipRule="evenodd">
                     <path d="M10.293 7.707a1 1 0 0 1 0-1.414l3-3a1 1 0 1 1 1.414 1.414l-3 3a1 1 0 0 1-1.414 0"/>
                     <path d="M17.707 7.707a1 1 0 0 1-1.414 0l-3-3a1 1 0 0 1 1.414-1.414l3 3a1 1 0 0 1 0 1.414"/>
                     <path d="M14 5a1 1 0 0 1 1 1v8a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1m-4.293 7.293a1 1 0 0 1 0 1.414l-3 3a1 1 0 0 1-1.414-1.414l3-3a1 1 0 0 1 1.414 0"/>
@@ -1030,7 +1030,7 @@ export default function CollectionDetailPage({
               lineHeight: '16px',
               flexShrink: 0,
               whiteSpace: 'nowrap',
-              opacity: isEditMode ? 0.5 : 1,
+              pointerEvents: isEditMode ? 'none' : 'auto',
             }}
           >
             {tab.name}
