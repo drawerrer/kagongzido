@@ -1,10 +1,9 @@
 ﻿import { useState, useCallback, useRef, useEffect } from 'react';
-import BottomSheet from '../components/BottomSheet';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites, FavoritedStore } from '../context/FavoritesContext';
 import NavBar from '../components/NavBar';
-import { BottomCTA, CTAButton, Button } from '@toss/tds-mobile';
+import { BottomSheet, BottomCTA, CTAButton, Button } from '@toss/tds-mobile';
 
 // ─── 타입 ────────────────────────────────────────────────────
 interface Store {
@@ -854,26 +853,17 @@ export default function CollectionPage({
       )}
 
       {/* ─────────── BottomSheet: 새 컬렉션 생성 ─────────── */}
-      {/* Figma: 컬렉션명 Bold 20px / 입력 Semibold 22px #8b95a1 / 버튼 355×56 #252525 */}
       <BottomSheet
-        isOpen={bottomSheet === 'create'}
+        open={bottomSheet === 'create'}
+        header={<BottomSheet.Header>컬렉션명</BottomSheet.Header>}
         onClose={() => {
           setNewCollectionName('');
-          // 오거나이즈 모드에서 뒤로가면 select-collection 시트로 복귀
           setBottomSheet(isOrganizeMode ? 'select-collection' : null);
         }}
+        hasTextField
       >
         <style>{`.bs-input::placeholder { color: #8b95a1; }`}</style>
-        {/* 타이틀 - 24px 좌우 패딩 */}
-        <div style={{ padding: '21px 24px 0' }}>
-          <p style={{
-            fontWeight: 700, fontSize: 20,
-            color: 'rgba(0,12,30,0.8)', marginBottom: 0,
-            lineHeight: '27px',
-          }}>컬렉션명</p>
-        </div>
-        {/* 입력 컨테이너 */}
-        <div style={{ padding: '46px 24px 14px' }}>
+        <div style={{ padding: '16px 24px 14px' }}>
           <div style={{ borderBottom: '1px solid #f2f4f6' }}>
             <input
               className="bs-input"
@@ -892,26 +882,17 @@ export default function CollectionPage({
             />
           </div>
         </div>
-        {/* 버튼 — 전체 너비 */}
         <Button color="primary" size="xlarge" style={{ width: '100%' }} onClick={createCollection} disabled={!newCollectionName.trim()}>적용하기</Button>
-        <div style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} />
       </BottomSheet>
 
       {/* ─────────── BottomSheet: 컬렉션명 변경 ─────────── */}
-      {/* Figma: 기존 컬렉션명 Bold 20px / 입력 Semibold 22px #8b95a1 / 버튼 전체너비 #252525 */}
       <BottomSheet
-        isOpen={bottomSheet === 'rename'}
+        open={bottomSheet === 'rename'}
+        header={<BottomSheet.Header>{renameTargetName}</BottomSheet.Header>}
         onClose={() => { setBottomSheet(null); setRenameTargetId(null); setRenameValue(''); }}
+        hasTextField
       >
-        {/* 타이틀: 기존 컬렉션명 */}
-        <div style={{ padding: '21px 24px 0' }}>
-          <p style={{
-            fontWeight: 700, fontSize: 20,
-            color: 'rgba(0,12,30,0.8)', lineHeight: '27px', marginBottom: 0,
-          }}>{renameTargetName}</p>
-        </div>
-        {/* 입력 */}
-        <div style={{ padding: '46px 24px 14px' }}>
+        <div style={{ padding: '16px 24px 14px' }}>
           <div style={{ borderBottom: '1px solid #f2f4f6' }}>
             <input
               className="bs-input"
@@ -930,29 +911,18 @@ export default function CollectionPage({
             />
           </div>
         </div>
-        {/* 버튼 */}
         <Button color="primary" size="xlarge" style={{ width: '100%' }} onClick={applyRename} disabled={!renameValue.trim()}>적용하기</Button>
-        <div style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} />
       </BottomSheet>
 
       {/* ─────────── BottomSheet: 컬렉션 선택 ─────────── */}
-      {/* Figma: 타이틀 Bold 20px / 행 62px / 버튼 반반(8px gap) h56 cornerRadius16 */}
       <BottomSheet
-        isOpen={bottomSheet === 'select-collection'}
+        open={bottomSheet === 'select-collection'}
+        header={<BottomSheet.Header>어디로 컬렉션을 추가할까요?</BottomSheet.Header>}
+        headerDescription={selectedCollectionIds.size > 0
+          ? <BottomSheet.HeaderDescription>{selectedCollectionIds.size}개의 컬렉션을 선택했어요</BottomSheet.HeaderDescription>
+          : undefined}
         onClose={() => { setBottomSheet(null); setSelectedCollectionIds(new Set()); }}
       >
-        {/* 타이틀 */}
-        <div style={{ padding: '8px 24px 0' }}>
-          <p style={{
-            fontWeight: 700, fontSize: 20,
-            color: 'rgba(0,12,30,0.8)', lineHeight: '27px', marginBottom: 0,
-          }}>어디로 컬렉션을 추가할까요?</p>
-          {selectedCollectionIds.size > 0 && (
-            <p style={{ fontWeight: 510, fontSize: 14, color: 'rgba(0,19,43,0.45)', marginTop: 4, marginBottom: 0 }}>
-              {selectedCollectionIds.size}개의 컬렉션을 선택했어요
-            </p>
-          )}
-        </div>
 
         {/* 새 컬렉션 추가 행 (62px) */}
         <button
