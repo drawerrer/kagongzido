@@ -886,36 +886,73 @@ export default function CollectionDetailPage({
       </div>
 
       {/* ── info_2 (46px) ── */}
-      <div style={{ height: 46, backgroundColor: '#F3F3F3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>
+      <div style={{ height: 46, backgroundColor: '#F3F3F3', display: 'flex', alignItems: 'center', position: 'relative', flexShrink: 0 }}>
+        <span style={{ flex: 1, textAlign: 'center', fontWeight: 510, fontSize: 14, color: '#000000' }}>
           {isEditMode ? '편집모드' : `${collectionName} (${stores.length})`}
         </span>
+        {/* 편집 버튼 — 일반 모드 & 사용자 컬렉션 전용 */}
+        {!isEditMode && !isRecent && (
+          <button
+            onClick={enterEditMode}
+            style={{
+              position: 'absolute', right: 16,
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontWeight: 510, fontSize: 13,
+              color: 'rgba(0,19,43,0.55)',
+              padding: '4px 0',
+            }}
+          >
+            편집
+          </button>
+        )}
       </div>
 
       {/* ── 탭 칩 (최근 / 사용자 생성) ── */}
-      {!isEditMode && (
-        <div style={{ display: 'flex', gap: 8, padding: '10px 16px', flexShrink: 0 }}>
-          {(['recent', 'custom'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                height: 32,
-                padding: '0 12px',
-                borderRadius: 9999,
-                border: 'none',
-                cursor: 'pointer',
-                backgroundColor: activeTab === tab ? '#252525' : 'rgba(0,0,0,0.06)',
-                color: activeTab === tab ? '#ffffff' : 'rgba(0,0,0,0.6)',
-                fontWeight: 590,
-                fontSize: 13,
-                lineHeight: '16px',
-              }}
-            >
-              {tab === 'recent' ? '최근' : '사용자 생성'}
-            </button>
-          ))}
-        </div>
+      <div style={{ display: 'flex', gap: 8, padding: '10px 16px', flexShrink: 0 }}>
+        {(['recent', 'custom'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => { if (!isEditMode) setActiveTab(tab); }}
+            style={{
+              height: 32,
+              padding: '0 12px',
+              borderRadius: 9999,
+              border: 'none',
+              cursor: isEditMode ? 'default' : 'pointer',
+              backgroundColor: activeTab === tab ? '#252525' : 'rgba(0,0,0,0.06)',
+              color: activeTab === tab ? '#ffffff' : 'rgba(0,0,0,0.6)',
+              fontWeight: 590,
+              fontSize: 13,
+              lineHeight: '16px',
+              opacity: isEditMode ? 0.5 : 1,
+            }}
+          >
+            {tab === 'recent' ? '최근' : '사용자 생성'}
+          </button>
+        ))}
+      </div>
+
+      {/* ── 편집 모드 — 매장 추가하기 행 ── */}
+      {isEditMode && !isRecent && (
+        <button
+          onClick={() => setShowAddStoreSheet(true)}
+          style={{
+            height: 64, width: '100%', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            background: 'none', border: 'none', cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)' }}>매장 추가하기</span>
+          <div style={{
+            width: 24, height: 24, borderRadius: '50%',
+            backgroundColor: '#E5E5E5',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 2v10M2 7h10" stroke="#3182f6" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+        </button>
       )}
 
       {/* ── Body ── */}
