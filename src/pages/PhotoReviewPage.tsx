@@ -142,30 +142,31 @@ function PhotoDetailView({
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
 
-      {/* ── 네비바 ── */}
+      {/* ── 네비바 (DetailPage 동일 스펙) ── */}
       <div style={{
-        height: 50, display: 'flex', alignItems: 'center',
-        padding: '0 16px', flexShrink: 0, background: 'white',
+        display: 'flex', alignItems: 'center',
+        padding: '12px 16px', flexShrink: 0, background: 'white',
+        borderBottom: '1px solid #F2F4F6',
       }}>
         <button onClick={onBack} style={hdrBtn}>
           <BackIcon />
         </button>
         <div style={{ flex: 1 }} />
-        {/* 하트 pill: 44×34, r=17 */}
+        {/* 하트 pill: 44×34, r=99 */}
         <button
           onClick={onFavoriteToggle}
           style={{
-            width: 44, height: 34, borderRadius: 17, flexShrink: 0,
+            width: 44, height: 34, borderRadius: 99, flexShrink: 0,
             background: 'rgba(0,23,51,0.02)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: 'none', cursor: 'pointer', marginRight: 8,
+            border: 'none', cursor: 'pointer', marginRight: 4,
           }}
         >
-          <HeartIcon filled={!!isFavorite} color={isFavorite ? '#252525' : '#191F28'} />
+          <HeartIcon filled={!!isFavorite} color={isFavorite ? '#252525' : '#697482'} />
         </button>
-        {/* More+Close pill: 93×34, r=17, 구분선 포함 */}
+        {/* More+Close pill: 93×34, r=99, 구분선 포함 */}
         <div style={{
-          width: 93, height: 34, borderRadius: 17, flexShrink: 0,
+          width: 93, height: 34, borderRadius: 99, flexShrink: 0,
           background: 'rgba(0,23,51,0.02)',
           display: 'flex', alignItems: 'center', overflow: 'hidden',
         }}>
@@ -173,14 +174,14 @@ function PhotoDetailView({
             onClick={() => setShowMeatball(v => !v)}
             style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'pointer' }}
           >
-            <MoreDotsIcon color="#191F28" />
+            <MoreDotsIcon color="#697482" />
           </button>
           <div style={{ width: 1, height: 16, background: 'rgba(0,27,55,0.1)', flexShrink: 0 }} />
           <button
             onClick={onBack}
             style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'pointer' }}
           >
-            <CloseIcon color="#191F28" />
+            <CloseIcon color="rgba(0,19,43,0.58)" />
           </button>
         </div>
       </div>
@@ -473,20 +474,37 @@ export default function PhotoReviewPage({
 
         <span style={{ flex: 1 }} />
 
-        {/* 우측: 하트 / 더보기 / 닫기 */}
-        <div style={{ display: 'flex', gap: 2 }}>
-          <button onClick={onFavoriteToggle} style={hdrBtn}>
-            <HeartIcon
-              filled={isFavorite}
-              color={isFavorite ? '#252525' : '#6B7684'}
-            />
+        {/* 우측: 하트 pill + More+Close pill (DetailPage 동일 스펙) */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          {/* 하트 pill: 44×34, r=99 */}
+          <button
+            onClick={onFavoriteToggle}
+            style={{
+              width: 44, height: 34, borderRadius: 99, flexShrink: 0,
+              background: 'rgba(0,23,51,0.02)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: 'none', cursor: 'pointer',
+            }}
+          >
+            <HeartIcon filled={isFavorite} color={isFavorite ? '#252525' : '#697482'} />
           </button>
-          <button style={hdrBtn}>
-            <MoreDotsIcon />
-          </button>
-          <button onClick={onClose} style={hdrBtn}>
-            <CloseIcon />
-          </button>
+          {/* More+Close pill: 93×34, r=99, 구분선 포함 */}
+          <div style={{
+            width: 93, height: 34, borderRadius: 99, flexShrink: 0,
+            background: 'rgba(0,23,51,0.02)',
+            display: 'flex', alignItems: 'center', overflow: 'hidden',
+          }}>
+            <button style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'pointer' }}>
+              <MoreDotsIcon color="#697482" />
+            </button>
+            <div style={{ width: 1, height: 16, background: 'rgba(0,27,55,0.1)', flexShrink: 0 }} />
+            <button
+              onClick={onClose}
+              style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'pointer' }}
+            >
+              <CloseIcon color="rgba(0,19,43,0.58)" />
+            </button>
+          </div>
         </div>
       </header>
 
