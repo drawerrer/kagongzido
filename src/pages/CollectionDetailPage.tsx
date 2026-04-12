@@ -408,7 +408,7 @@ function StoreCard({
             type="button"
             aria-label={isSelected ? '선택 해제' : '선택'}
             aria-pressed={isSelected}
-            onClick={() => onToggleSelect(store.id)}
+            onClick={(e) => { e.stopPropagation(); onToggleSelect(store.id); }}
             style={{ width: 24, height: 24, flexShrink: 0, marginRight: 10, marginTop: 2, background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 0 }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -533,8 +533,8 @@ function StoreCard({
         </div>
       </div>
 
-      {/* 메모 영역 (최근 탭에서는 숨김) */}
-      {showMemo && (
+      {/* 메모 영역 (최근 탭·편집모드에서는 숨김) */}
+      {showMemo && !isEditMode && (
         <div
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
@@ -562,7 +562,7 @@ function StoreCard({
           )}
         </div>
       )}
-      {!showMemo && <div style={{ paddingBottom: 20 }} />}
+      {(!showMemo || isEditMode) && <div style={{ paddingBottom: 20 }} />}
     </div>
   );
 }
