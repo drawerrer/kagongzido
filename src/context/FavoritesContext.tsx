@@ -24,6 +24,7 @@ export interface Collection {
   name: string;
   memo?: string;
   storeIds: string[]; // 이 컬렉션에 속한 매장 ID 목록
+  memos?: Record<string, string>; // storeId → 메모 텍스트
 }
 
 const DEFAULT_COLLECTIONS: Collection[] = [
@@ -42,10 +43,13 @@ interface FavoritesContextType {
   addRecentlyViewed: (cafe: RecentCafe) => void;
   // 컬렉션 목록 (화면 이동해도 유지)
   collections: Collection[];
-  addCollection: (col: Omit<Collection, 'id' | 'storeIds'>) => void;
+  addCollection: (col: Omit<Collection, 'id' | 'storeIds'>) => string; // 생성된 컬렉션 id 반환
   updateCollection: (id: string, updates: Partial<Omit<Collection, 'id'>>) => void;
   removeCollection: (id: string) => void;
   addStoresToCollection: (collectionId: string, storeIds: string[]) => void;
+  removeStoresFromCollection: (collectionId: string, storeIds: string[]) => void;
+  updateCollectionMemo: (collectionId: string, storeId: string, memo: string) => void;
+  reorderCollections: (newOrder: Collection[]) => void;
 }
 
 // ─── Context 생성 ─────────────────────────────────────────────
@@ -77,14 +81,16 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // 컬렉션 추가 ('recent'는 항상 첫 번째 고정)
+  // 컬렉션 추가 ('recent'는 항상 첫 번째 고정) — 생성된 id 반환
   const addCollection = useCallback((col: Omit<Collection, 'id' | 'storeIds'>) => {
-    const newCol: Collection = { id: Date.now().toString(), storeIds: [], ...col };
+    const newId = Date.now().toString();
+    const newCol: Collection = { id: newId, storeIds: [], ...col };
     setCollections(prev => {
       const recent = prev.find(c => c.id === 'recent')!;
       const rest = prev.filter(c => c.id !== 'recent');
       return [recent, newCol, ...rest];
     });
+    return newId;
   }, []);
 
   // 컬렉션 수정
@@ -112,11 +118,36 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     setCollections(prev => prev.filter(c => c.id !== id));
   }, []);
 
+  // 컬렉션에서 매장 제거
+  const removeStoresFromCollection = useCallback((collectionId: string, storeIds: string[]) => {
+    const idSet = new Set(storeIds);
+    setCollections(prev => prev.map(c =>
+      c.id === collectionId
+        ? { ...c, storeIds: c.storeIds.filter(id => !idSet.has(id)) }
+        : c
+    ));
+  }, []);
+
+  // 컬렉션 내 특정 매장의 메모 저장
+  const updateCollectionMemo = useCallback((collectionId: string, storeId: string, memo: string) => {
+    setCollections(prev => prev.map(c =>
+      c.id === collectionId
+        ? { ...c, memos: { ...(c.memos ?? {}), [storeId]: memo } }
+        : c
+    ));
+  }, []);
+
+  const reorderCollections = useCallback((newOrder: Collection[]) => {
+    setCollections([...newOrder]);
+  }, []);
+
   return (
     <FavoritesContext.Provider value={{
       favorites, isFavorited, addFavorite, removeFavorite, reorderFavorites,
       recentlyViewed, addRecentlyViewed,
-      collections, addCollection, updateCollection, removeCollection, addStoresToCollection,
+      collections, addCollection, updateCollection, removeCollection,
+      addStoresToCollection, removeStoresFromCollection, updateCollectionMemo,
+      reorderCollections,
     }}>
       {children}
     </FavoritesContext.Provider>

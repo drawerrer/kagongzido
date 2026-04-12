@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import FilterModal from '../components/FilterModal';
+import { getCurrentLocation, Accuracy } from '@apps-in-toss/web-framework';
+import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
+import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
+import { useFavorites } from '../context/FavoritesContext';
+import NavBar from '../components/NavBar';
 
 // ── 타입 ─────────────────────────────────
 interface Cafe {
@@ -27,30 +31,30 @@ const MOCK_CAFES: Cafe[] = [
 ];
 
 const PANEL_COLLAPSED = 264;
+// GPS 권한 상태는 SDK getCurrentLocation.getPermission() 으로 관리
 
 // ── 아이콘 ────────────────────────────────
 function SearchIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B0B8C1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(3,24,50,0.46)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   );
 }
 
-function FilterIcon() {
+function FilterIcon({ active }: { active: boolean }) {
+  const color = active ? '#fff' : '#191F28';
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="4" y1="6" x2="20" y2="6" />
-      <line x1="7" y1="12" x2="17" y2="12" />
-      <line x1="10" y1="18" x2="14" y2="18" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={color}>
+      <path d="M14 12v7.88c.04.3-.06.62-.29.83a.996.996 0 0 1-1.41 0l-2.01-2.01a.99.99 0 0 1-.29-.83V12h-.03L4.21 4.62a1 1 0 0 1 .17-1.4c.19-.14.4-.22.62-.22h14c.22 0 .43.08.62.22a1 1 0 0 1 .17 1.4L14.03 12z"/>
     </svg>
   );
 }
 
 function GpsIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3182F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#252525" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" />
       <line x1="12" y1="2" x2="12" y2="6" />
       <line x1="12" y1="18" x2="12" y2="22" />
@@ -120,7 +124,7 @@ function SortPopup({
               padding: '12px 16px',
               fontSize: 17,
               fontWeight: opt === current ? 600 : 400,
-              color: opt === current ? '#3182F6' : '#191F28',
+              color: opt === current ? '#252525' : '#191F28',
               background: 'transparent',
             }}
           >
@@ -135,6 +139,24 @@ function SortPopup({
 // ── 카페 목록 행 ──────────────────────────
 function CafeRow({ cafe, onTap }: { cafe: Cafe; onTap: () => void }) {
   const fmtDist = (m: number) => (m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`);
+  const { isFavorited, addFavorite, removeFavorite } = useFavorites();
+  const favorited = isFavorited(cafe.id);
+
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (favorited) {
+      removeFavorite(cafe.id);
+    } else {
+      addFavorite({
+        id: cafe.id,
+        name: cafe.name,
+        address: cafe.address,
+        rating: cafe.rating,
+        reviewCount: cafe.reviewCount,
+        photos: [],
+      });
+    }
+  };
 
   return (
     <div
@@ -220,30 +242,128 @@ function CafeRow({ cafe, onTap }: { cafe: Cafe; onTap: () => void }) {
           </span>
         )}
       </div>
+
+      {/* 하트 버튼 */}
+      <button
+        onClick={handleHeartClick}
+        style={{
+          alignSelf: 'center',
+          width: 36, height: 36,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'none', border: 'none', cursor: 'pointer',
+          flexShrink: 0,
+        }}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+            fill={favorited ? '#252525' : 'rgba(0,19,43,0.1)'}
+          />
+        </svg>
+      </button>
     </div>
   );
+}
+
+// ── MapPage 상태 스냅샷 타입 ──────────────
+export interface MapPageState {
+  activeChip: string | null;
+  sortType: SortType;
+  panelExpanded: boolean;
+  appliedFilters: FilterState;
+  filterApplied: boolean;
 }
 
 // ── MapPage (메인 화면) ───────────────────
 interface MapPageProps {
   onSearchOpen: () => void;
   onDetailOpen: (cafeId: string) => void;
+  initialState?: MapPageState;
+  onStateChange?: (state: MapPageState) => void;
 }
 
-export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
+export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onStateChange }: MapPageProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
 
-  const [activeChip, setActiveChip] = useState<string | null>(null);
-  const [sortType, setSortType] = useState<SortType>('조회순');
+  const [activeChip, setActiveChip] = useState<string | null>(initialState?.activeChip ?? null);
+  const [sortType, setSortType] = useState<SortType>(initialState?.sortType ?? '조회순');
   const [sortPopupOpen, setSortPopupOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [panelExpanded, setPanelExpanded] = useState(false);
+  const [filterOpenKey, setFilterOpenKey] = useState(0); // remount key
+  const [panelExpanded, setPanelExpanded] = useState(initialState?.panelExpanded ?? false);
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
+  const [filterApplied, setFilterApplied] = useState(initialState?.filterApplied ?? false); // 한 번이라도 적용했는지
 
-  // 카테고리 필터 적용
-  const cafes = activeChip
-    ? MOCK_CAFES.filter(c => c.tags.includes(activeChip))
-    : MOCK_CAFES;
+  // 상태 변경 시 부모에 알림
+  useEffect(() => {
+    onStateChange?.({ activeChip, sortType, panelExpanded, appliedFilters, filterApplied });
+  }, [activeChip, sortType, panelExpanded, appliedFilters, filterApplied]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── 위치 권한 상태 ──────────────────────
+  type GpsStatus = 'granted' | 'denied' | 'unknown';
+  const [gpsStatus, setGpsStatus] = useState<GpsStatus>('unknown');
+  const [locSheet, setLocSheet] = useState<LocationSheetType | null>(null);
+  const [gpsToast, setGpsToast] = useState(false); // GPS 신호 실패 토스트
+
+  // 카테고리 필터 + 정렬 적용
+  const cafes = (() => {
+    const filtered = activeChip
+      ? MOCK_CAFES.filter(c => c.tags.includes(activeChip))
+      : [...MOCK_CAFES];
+    if (sortType === '평점순') return filtered.slice().sort((a, b) => b.rating - a.rating);
+    if (sortType === '거리순') return filtered.slice().sort((a, b) => a.distance - b.distance);
+    return filtered; // 조회순: 기본 순서
+  })();
+
+  // ── 앱 실행 시 SDK 위치 권한 상태만 조회 (시트 자동 노출 없음) ──
+  useEffect(() => {
+    getCurrentLocation.getPermission()
+      .then(status => {
+        if (status === 'allowed') {
+          setGpsStatus('granted');
+        } else if (status === 'denied') {
+          setGpsStatus('denied');
+        }
+        // notDetermined: 상태만 unknown 유지, 시트는 GPS 버튼 탭 시 노출
+      })
+      .catch(() => {}); // 조회 실패 시 unknown 유지
+  }, []);
+
+  // ── 위치 권한 핸들러 ──────────────────────
+  const handleAllowLocation = async () => {
+    try {
+      const loc = await getCurrentLocation({ accuracy: Accuracy.Balanced });
+      setGpsStatus('granted');
+      setLocSheet('granted');
+      if (mapInstanceRef.current && window.kakao?.maps) {
+        const userPos = new window.kakao.maps.LatLng(
+          loc.coords.latitude,
+          loc.coords.longitude,
+        );
+        mapInstanceRef.current.setCenter(userPos);
+      }
+    } catch {
+      setGpsStatus('denied');
+      setLocSheet('denied');
+    }
+  };
+
+  const handleDenyLocation = () => {
+    setGpsStatus('denied');
+    setLocSheet('denied');
+  };
+
+  const handleOpenSettings = async () => {
+    setLocSheet(null);
+    // SDK openPermissionDialog: 기기 설정 앱으로 이동 후 결과 반환
+    const newStatus = await getCurrentLocation.openPermissionDialog();
+    if (newStatus === 'allowed') {
+      setGpsStatus('granted');
+    } else {
+      setGpsStatus('denied');
+    }
+  };
 
   // ── Kakao 지도 초기화 ──────────────────
   useEffect(() => {
@@ -265,19 +385,16 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
         });
         mapInstanceRef.current = map;
 
-        // 현재 위치로 이동
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            pos => {
-              const userPos = new window.kakao.maps.LatLng(
-                pos.coords.latitude,
-                pos.coords.longitude,
-              );
-              map.setCenter(userPos);
-            },
-            () => {}, // 거부 시 무시
-          );
-        }
+        // 현재 위치로 이동 (SDK)
+        getCurrentLocation({ accuracy: Accuracy.Balanced })
+          .then(loc => {
+            const userPos = new window.kakao.maps.LatLng(
+              loc.coords.latitude,
+              loc.coords.longitude,
+            );
+            map.setCenter(userPos);
+          })
+          .catch(() => {}); // 권한 미허용 시 기본 위치 유지
       });
     };
 
@@ -286,16 +403,31 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
     };
   }, []);
 
-  // ── 현재 위치로 돌아가기 ───────────────
-  const goToCurrentLocation = () => {
-    if (!navigator.geolocation || !mapInstanceRef.current) return;
-    navigator.geolocation.getCurrentPosition(pos => {
+  // ── 현재 위치로 돌아가기 (SDK) ─────────
+  const goToCurrentLocation = async () => {
+    // 최초(unknown) → ask 시트로 최초 1회 권한 요청
+    if (gpsStatus === 'unknown') {
+      setLocSheet('ask');
+      return;
+    }
+    // 권한 거부 상태 → 재요청 시트 노출
+    if (gpsStatus === 'denied') {
+      setLocSheet('reask');
+      return;
+    }
+    if (!mapInstanceRef.current) return;
+    try {
+      const loc = await getCurrentLocation({ accuracy: Accuracy.Balanced });
       const userPos = new window.kakao.maps.LatLng(
-        pos.coords.latitude,
-        pos.coords.longitude,
+        loc.coords.latitude,
+        loc.coords.longitude,
       );
-      mapInstanceRef.current?.setCenter(userPos);
-    });
+      mapInstanceRef.current.setCenter(userPos);
+    } catch {
+      // GPS 신호 수신 실패 토스트
+      setGpsToast(true);
+      setTimeout(() => setGpsToast(false), 2500);
+    }
   };
 
   const panelBottomValue = panelExpanded ? 'calc(72vh + 12px)' : `${PANEL_COLLAPSED + 12}px`;
@@ -303,8 +435,11 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
 
+      {/* ── Navigation with Status Bar ── */}
+      <NavBar variant="logo" floating />
+
       {/* ── 카카오 지도 배경 ── */}
-      <div ref={mapRef} style={{ position: 'absolute', inset: 0, background: '#E8EAED' }}>
+      <div ref={mapRef} style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 44px + 72px)', bottom: 0, left: 0, right: 0, background: '#E8EAED' }}>
         {!import.meta.env.VITE_KAKAO_MAP_KEY && (
           /* API 키 미설정 시 안내 */
           <div
@@ -331,11 +466,12 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
       <div
         style={{
           position: 'absolute',
-          top: 0,
+          top: 'calc(env(safe-area-inset-top) + 44px)',
           left: 0,
           right: 0,
           zIndex: 20,
-          padding: '12px 16px',
+          padding: '14px 16px',
+          background: '#f3f3f3',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -346,34 +482,34 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
               flex: 1,
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              background: 'white',
-              borderRadius: 10,
+              gap: 10,
+              background: '#F2F4F6',
+              borderRadius: 12,
               height: 44,
-              padding: '0 14px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+              padding: '0 10px',
             }}
           >
             <SearchIcon />
-            <span style={{ color: '#B0B8C1', fontSize: 14 }}>카페를 검색해보세요</span>
+            <span style={{ color: 'rgba(3,24,50,0.46)', fontSize: 17, fontWeight: 510 }}>검색어를 입력하세요.</span>
           </div>
 
           {/* 필터 버튼 */}
           <button
-            onClick={() => setFilterOpen(true)}
+            onClick={() => { setFilterOpenKey(k => k + 1); setFilterOpen(true); }}
             style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
+              width: 52,
+              height: 32,
+              borderRadius: 999,
               flexShrink: 0,
-              background: '#4E5968',
+              background: filterApplied ? '#191F28' : 'rgba(7,25,76,0.05)',
+              border: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              transition: 'background 0.2s',
             }}
           >
-            <FilterIcon />
+            <FilterIcon active={filterApplied} />
           </button>
         </div>
       </div>
@@ -408,7 +544,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
           left: 0,
           right: 0,
           zIndex: 10,
-          background: 'white',
+          background: '#f3f3f3',
           borderRadius: '16px 16px 0 0',
           height: panelExpanded ? '72vh' : `${PANEL_COLLAPSED}px`,
           transition: 'height 0.3s ease',
@@ -452,8 +588,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
                 padding: '0 14px',
                 borderRadius: 9999,
                 border: 'none',
-                background: activeChip === chip ? '#191F28' : '#4E5968',
-                color: 'white',
+                background: activeChip === chip ? '#191F28' : '#F2F4F6',
+                color: activeChip === chip ? 'white' : '#191F28',
                 fontSize: 13,
                 fontWeight: 600,
                 transition: 'background 0.15s',
@@ -526,7 +662,54 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
       </div>
 
       {/* ── 필터 모달 ── */}
-      <FilterModal isOpen={filterOpen} onClose={() => setFilterOpen(false)} />
+      <FilterModal
+        key={filterOpenKey}
+        isOpen={filterOpen}
+        initialFilters={appliedFilters}
+        onClose={() => setFilterOpen(false)}
+        onApply={(f) => {
+          setAppliedFilters(f);
+          setFilterApplied(true);
+          setFilterOpen(false);
+        }}
+      />
+
+      {/* ── 위치 권한 바텀시트 ── */}
+      {locSheet && (
+        <LocationPermissionSheet
+          type={locSheet}
+          onClose={() => {
+            // ask에서 아니요/외부 탭 → denied 처리
+            // denied/granted/reask에서 확인/나중에 → 시트 닫기
+            if (locSheet === 'ask') handleDenyLocation();
+            else setLocSheet(null);
+          }}
+          onAllow={handleAllowLocation}       // ask 상태에서만 호출
+          onOpenSettings={handleOpenSettings} // denied / reask 상태에서 호출 → SDK openPermissionDialog
+        />
+      )}
+
+      {/* ── GPS 실패 토스트 ── */}
+      <div style={{
+        position: 'absolute',
+        bottom: `${PANEL_COLLAPSED + 20}px`,
+        left: '50%',
+        transform: `translateX(-50%) translateY(${gpsToast ? 0 : 12}px)`,
+        opacity: gpsToast ? 1 : 0,
+        transition: 'opacity 0.2s, transform 0.2s',
+        background: '#191F28',
+        color: 'white',
+        borderRadius: 8,
+        padding: '9px 16px',
+        fontSize: 13,
+        fontWeight: 500,
+        whiteSpace: 'nowrap',
+        zIndex: 350,
+        pointerEvents: 'none',
+      }}>
+        현재 위치를 가져오지 못했어요. 다시 시도해주세요
+      </div>
+
     </div>
   );
 }
