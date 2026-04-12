@@ -1195,7 +1195,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       <div style={{
         position: 'absolute', top: 60, left: 0, right: 0,
         zIndex: 98,
-        background: 'white',
+        background: '#f3f3f3',
         padding: '10px 20px 14px',
         borderBottom: '1px solid #F2F4F6',
         opacity: scrolled ? 1 : 0,
