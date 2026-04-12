@@ -1019,7 +1019,7 @@ export default function CollectionDetailPage({
             onClick={() => { if (!isEditMode) setActiveTab(tab.id); }}
             style={{
               height: 32,
-              padding: '0 14px',
+              padding: '0 10px',
               borderRadius: 8,
               border: 'none',
               cursor: isEditMode ? 'default' : 'pointer',
@@ -1031,9 +1031,16 @@ export default function CollectionDetailPage({
               flexShrink: 0,
               whiteSpace: 'nowrap',
               pointerEvents: isEditMode ? 'none' : 'auto',
+              display: 'flex', alignItems: 'center', gap: 4,
             }}
           >
             {tab.name}
+            {isEditMode && activeTab !== tab.id && (
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M8.5 1.5a1.121 1.121 0 0 1 1.586 0 1.121 1.121 0 0 1 0 1.586L3.75 9.422 1.5 10l.578-2.25L8.5 1.5Z"
+                  stroke="rgba(0,0,0,0.5)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
           </button>
         ))}
       </div>
