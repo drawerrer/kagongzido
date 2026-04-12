@@ -358,15 +358,36 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', paddingTop: 52, paddingBottom: 48,
     }}>
-      <p style={{ fontWeight: 590, fontSize: 13, lineHeight: '22.5px', color: '#4e5968', marginBottom: 2 }}>
+      <p style={{ fontWeight: 590, fontSize: 13, lineHeight: '22.5px', color: '#4e5968', margin: 0, textAlign: 'center' }}>
         아직 저장한 매장이 없어요
       </p>
-      <p style={{ fontWeight: 590, fontSize: 13, lineHeight: '22.5px', color: '#4e5968', textAlign: 'center', marginBottom: 24 }}>
+      <p style={{ fontWeight: 590, fontSize: 13, lineHeight: '22.5px', color: '#4e5968', margin: 0, textAlign: 'center' }}>
         방문하고 싶은 매장을 편하게 관리하세요
       </p>
-      <Button color="primary" variant="weak" size="large" style={{ width: '100%' }} onClick={onAdd}>
-        매장 추가하기
-      </Button>
+      <button
+        onClick={onAdd}
+        style={{
+          marginTop: 52,
+          width: 165, height: 48,
+          borderRadius: 14,
+          backgroundColor: 'rgba(211,211,223,0.19)',
+          border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center',
+          padding: '0 16px',
+          gap: 10,
+          flexShrink: 0,
+        }}
+      >
+        <span style={{
+          flex: 1,
+          fontWeight: 590, fontSize: 17, color: '#252525',
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+        }}>매장 추가하기</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+          <path d="M12 5v14M5 12h14" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      </button>
     </div>
   );
 }

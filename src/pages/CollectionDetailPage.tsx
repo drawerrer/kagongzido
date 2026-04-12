@@ -567,7 +567,19 @@ function StoreCard({
 }
 
 // ─── 빈 상태 ──────────────────────────────────────────────────
-function EmptyState({ onAddStore }: { onAddStore?: () => void }) {
+function EmptyState({
+  title,
+  subtitle,
+  buttonLabel,
+  buttonIcon,
+  onButtonClick,
+}: {
+  title: string;
+  subtitle: string;
+  buttonLabel: string;
+  buttonIcon: React.ReactNode;
+  onButtonClick?: () => void;
+}) {
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
@@ -577,16 +589,16 @@ function EmptyState({ onAddStore }: { onAddStore?: () => void }) {
         fontWeight: 590, fontSize: 13, color: '#4e5968',
         textAlign: 'center', lineHeight: '22.5px', margin: 0,
       }}>
-        아직 컬렉션에 담은 매장이 없어요
+        {title}
       </p>
       <p style={{
         fontWeight: 590, fontSize: 13, color: '#4e5968',
         textAlign: 'center', lineHeight: '22.5px', margin: 0,
       }}>
-        저장해 둔 매장을 목적에 맞게 쏙쏙 골라 담아보세요
+        {subtitle}
       </p>
       <button
-        onClick={onAddStore}
+        onClick={onButtonClick}
         style={{
           marginTop: 52,
           width: 165, height: 48,
@@ -604,14 +616,24 @@ function EmptyState({ onAddStore }: { onAddStore?: () => void }) {
           fontWeight: 590, fontSize: 17, color: '#252525',
           textAlign: 'center',
           whiteSpace: 'nowrap',
-        }}>매장 추가하기</span>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-          <path d="M12 5v14M5 12h14" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
+        }}>{buttonLabel}</span>
+        {buttonIcon}
       </button>
     </div>
   );
 }
+
+const IconPlus = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+    <path d="M12 5v14M5 12h14" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+const IconArrow = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+    <path d="M5 12h14M13 6l6 6-6 6" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 
 // ─── 메인 페이지 ──────────────────────────────────────────────
 export default function CollectionDetailPage({
@@ -1041,15 +1063,21 @@ export default function CollectionDetailPage({
       {/* ── Body ── */}
       {stores.length === 0 && !isEditMode ? (
         isActiveRecent ? (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
-            <p style={{ fontWeight: 590, fontSize: 13, color: '#191F28', textAlign: 'center', lineHeight: '19px', marginBottom: 4 }}>아직 최근에 본 매장이 없어요</p>
-            <p style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', textAlign: 'center', lineHeight: '19px', marginBottom: 20 }}>홈에서 카페를 탐색하면 여기에 기록돼요</p>
-            <Button color="primary" variant="fill" size="large" style={{ width: '100%' }} onClick={onGoHome}>
-              매장 보러가기
-            </Button>
-          </div>
+          <EmptyState
+            title="아직 최근에 본 매장이 없어요"
+            subtitle="홈에서 카페를 탐색하면 여기에 기록돼요"
+            buttonLabel="매장 보러가기"
+            buttonIcon={<IconArrow />}
+            onButtonClick={onGoHome}
+          />
         ) : (
-          <EmptyState onAddStore={() => setShowAddStoreSheet(true)} />
+          <EmptyState
+            title="아직 컬렉션에 담은 매장이 없어요"
+            subtitle="저장해 둔 매장을 목적에 맞게 쏙쏙 골라 담아보세요"
+            buttonLabel="매장 추가하기"
+            buttonIcon={<IconPlus />}
+            onButtonClick={() => setShowAddStoreSheet(true)}
+          />
         )
       ) : (
         <div
