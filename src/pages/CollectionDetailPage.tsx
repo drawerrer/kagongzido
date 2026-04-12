@@ -636,6 +636,11 @@ export default function CollectionDetailPage({
   const isRecent = collectionId === 'recent';
   const collection = collections.find(c => c.id === collectionId);
 
+  // ── 탭 칩 상태 (최근 | 사용자 생성) ──
+  const [activeTab, setActiveTab] = useState<'recent' | 'custom'>(
+    collectionId === 'recent' ? 'recent' : 'custom'
+  );
+
   // 드래그 중이 아닐 때 collection storeIds와 동기화
   useEffect(() => {
     if (!isRecent && dragIndex === -1) {
@@ -643,7 +648,14 @@ export default function CollectionDetailPage({
     }
   }, [collection?.storeIds, dragIndex, isRecent]);
 
-  const stores: CollectionStore[] = isRecent
+  // 탭에 따른 소스 스토어
+  const customSourceStores: FavoritedStore[] = isRecent
+    ? [...favorites]
+    : orderedStoreIds
+        .map((id) => favorites.find((f: FavoritedStore) => f.id === id))
+        .filter((f): f is FavoritedStore => !!f);
+
+  const stores: CollectionStore[] = activeTab === 'recent'
     ? recentlyViewed.map((r: RecentCafe) => ({
         id: r.id,
         name: r.name,
@@ -654,19 +666,16 @@ export default function CollectionDetailPage({
         photos: r.photo ? [r.photo] : [],
         memo: '',
       }))
-    : orderedStoreIds
-        .map((id) => favorites.find((f: FavoritedStore) => f.id === id))
-        .filter((f): f is FavoritedStore => !!f)
-        .map((f: FavoritedStore) => ({
-          id: f.id,
-          name: f.name,
-          address: f.address,
-          rating: f.rating,
-          reviewCount: f.reviewCount,
-          timeLimit: '',
-          photos: f.photos ?? [],
-          memo: collection?.memos?.[f.id] ?? '',
-        }));
+    : customSourceStores.map((f: FavoritedStore) => ({
+        id: f.id,
+        name: f.name,
+        address: f.address,
+        rating: f.rating,
+        reviewCount: f.reviewCount,
+        timeLimit: '',
+        photos: f.photos ?? [],
+        memo: collection?.memos?.[f.id] ?? '',
+      }));
 
 
   const onHandlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>, index: number) => {
@@ -883,9 +892,35 @@ export default function CollectionDetailPage({
         </span>
       </div>
 
+      {/* ── 탭 칩 (최근 / 사용자 생성) ── */}
+      {!isEditMode && (
+        <div style={{ display: 'flex', gap: 8, padding: '10px 16px', flexShrink: 0 }}>
+          {(['recent', 'custom'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                height: 32,
+                padding: '0 12px',
+                borderRadius: 9999,
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: activeTab === tab ? '#252525' : 'rgba(0,0,0,0.06)',
+                color: activeTab === tab ? '#ffffff' : 'rgba(0,0,0,0.6)',
+                fontWeight: 590,
+                fontSize: 13,
+                lineHeight: '16px',
+              }}
+            >
+              {tab === 'recent' ? '최근' : '사용자 생성'}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ── Body ── */}
       {stores.length === 0 && !isEditMode ? (
-        isRecent ? (
+        activeTab === 'recent' ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
             <p style={{ fontWeight: 590, fontSize: 13, color: '#191F28', textAlign: 'center', lineHeight: '19px', marginBottom: 4 }}>아직 최근에 본 매장이 없어요</p>
             <p style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', textAlign: 'center', lineHeight: '19px', marginBottom: 20 }}>홈에서 카페를 탐색하면 여기에 기록돼요</p>
@@ -914,8 +949,8 @@ export default function CollectionDetailPage({
                 store={store}
                 isEditMode={isEditMode}
                 isSelected={selectedIds.has(store.id)}
-                heartFilled={isRecent ? isFavorited(store.id) : true}
-                showMemo={!isRecent}
+                heartFilled={activeTab === 'recent' ? isFavorited(store.id) : true}
+                showMemo={activeTab !== 'recent'}
                 isDragging={isEditMode && dragIndex === index}
                 isDragOver={isEditMode && dragOverIndex === index && dragIndex !== index}
                 onToggleSelect={toggleSelect}
