@@ -242,10 +242,10 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
               값 라벨 (5,000 / 15,000): fs=14 fw=400 fill=#000c1e a=0.80 */}
           <div style={{ padding: '0 0 8px' }}>
             <div style={{ height: 40, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)' }}>
+              <h3 style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)', margin: 0 }}>
                 가격대
               </h3>
-              <span style={{ fontSize: 14, fontWeight: 400, color: 'rgba(0,12,30,0.80)' }}>
+              <span style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)' }}>
                 (핫아메리카노 1잔 기준)
               </span>
             </div>
