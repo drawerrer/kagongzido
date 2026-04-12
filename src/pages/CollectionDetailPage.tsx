@@ -971,7 +971,7 @@ export default function CollectionDetailPage({
             style={{
               height: 32,
               padding: '0 14px',
-              borderRadius: 9999,
+              borderRadius: 8,
               border: 'none',
               cursor: isEditMode ? 'default' : 'pointer',
               backgroundColor: activeTab === tab.id ? '#252525' : 'transparent',
