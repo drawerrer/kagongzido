@@ -1146,9 +1146,15 @@ export default function CollectionDetailPage({
             rightButton={<CTAButton onClick={exitEditMode}>완료</CTAButton>}
           />
         ) : (
-          <BottomCTA.Single fixed>
+          <div style={{
+            position: 'fixed', bottom: 0, left: 0, right: 0,
+            padding: '12px 20px',
+            paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+            background: '#fff',
+            zIndex: 1000,
+          }}>
             <CTAButton color="dark" variant="weak" onClick={exitEditMode}>완료</CTAButton>
-          </BottomCTA.Single>
+          </div>
         )
       )}
 
@@ -1197,10 +1203,10 @@ export default function CollectionDetailPage({
       >
         <button
           onClick={() => {
-            const col = collections.find(c => c.id === tabManageTargetId);
-            setRenameValue(col?.name ?? '');
-            setRenameTabId(tabManageTargetId);
+            const targetId = tabManageTargetId!;
             setTabManageTargetId(null);
+            setActiveTab(targetId);
+            enterEditMode();
           }}
           style={{
             width: '100%', height: 56, display: 'flex', alignItems: 'center',
