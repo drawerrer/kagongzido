@@ -1077,7 +1077,7 @@ export default function CollectionDetailPage({
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 2v10M2 7h10" stroke="#3182f6" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M7 2v10M2 7h10" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </div>
         </button>
