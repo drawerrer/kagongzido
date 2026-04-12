@@ -3,6 +3,7 @@ import { useFavorites, FavoritedStore, RecentCafe } from '../context/FavoritesCo
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import NavBar from '../components/NavBar';
+import BottomSheet from '../components/BottomSheet';
 import { ConfirmDialog, BottomCTA, CTAButton, Button, Toast } from '@toss/tds-mobile';
 
 
@@ -633,29 +634,29 @@ export default function CollectionDetailPage({
   const storeListRef = useRef<HTMLDivElement>(null);
   const itemRefsArr = useRef<(HTMLDivElement | null)[]>([]);
 
-  const isRecent = collectionId === 'recent';
-  const collection = collections.find(c => c.id === collectionId);
+  const [activeTab, setActiveTab] = useState<string>(collectionId);
+  const [tabManageTargetId, setTabManageTargetId] = useState<string | null>(null);
+  const [renameTabId, setRenameTabId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── 탭 칩 상태 (최근 | 사용자 생성) ──
-  const [activeTab, setActiveTab] = useState<'recent' | 'custom'>(
-    collectionId === 'recent' ? 'recent' : 'custom'
-  );
+  const isRecent = collectionId === 'recent';
+  const isActiveRecent = activeTab === 'recent';
+
+  const activeCollection = collections.find(c => c.id === activeTab);
+  const allTabs = [
+    { id: 'recent', name: '최근' },
+    ...collections.map(c => ({ id: c.id, name: c.name })),
+  ];
 
   // 드래그 중이 아닐 때 collection storeIds와 동기화
   useEffect(() => {
-    if (!isRecent && dragIndex === -1) {
-      setOrderedStoreIds(collection?.storeIds ?? []);
+    if (!isActiveRecent && dragIndex === -1) {
+      setOrderedStoreIds(activeCollection?.storeIds ?? []);
     }
-  }, [collection?.storeIds, dragIndex, isRecent]);
+  }, [activeCollection?.storeIds, dragIndex, isActiveRecent]);
 
-  // 탭에 따른 소스 스토어
-  const customSourceStores: FavoritedStore[] = isRecent
-    ? [...favorites]
-    : orderedStoreIds
-        .map((id) => favorites.find((f: FavoritedStore) => f.id === id))
-        .filter((f): f is FavoritedStore => !!f);
-
-  const stores: CollectionStore[] = activeTab === 'recent'
+  const stores: CollectionStore[] = isActiveRecent
     ? recentlyViewed.map((r: RecentCafe) => ({
         id: r.id,
         name: r.name,
@@ -666,16 +667,19 @@ export default function CollectionDetailPage({
         photos: r.photo ? [r.photo] : [],
         memo: '',
       }))
-    : customSourceStores.map((f: FavoritedStore) => ({
-        id: f.id,
-        name: f.name,
-        address: f.address,
-        rating: f.rating,
-        reviewCount: f.reviewCount,
-        timeLimit: '',
-        photos: f.photos ?? [],
-        memo: collection?.memos?.[f.id] ?? '',
-      }));
+    : orderedStoreIds
+        .map((id) => favorites.find((f: FavoritedStore) => f.id === id))
+        .filter((f): f is FavoritedStore => !!f)
+        .map((f: FavoritedStore) => ({
+          id: f.id,
+          name: f.name,
+          address: f.address,
+          rating: f.rating,
+          reviewCount: f.reviewCount,
+          timeLimit: '',
+          photos: f.photos ?? [],
+          memo: activeCollection?.memos?.[f.id] ?? '',
+        }));
 
 
   const onHandlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>, index: number) => {
@@ -705,13 +709,13 @@ export default function CollectionDetailPage({
         const arr = [...prev];
         const [moved] = arr.splice(dragIndex, 1);
         arr.splice(dragOverIndex, 0, moved);
-        updateCollection(collectionId, { storeIds: arr });
+        updateCollection(activeTab, { storeIds: arr });
         return arr;
       });
     }
     setDragIndex(-1);
     setDragOverIndex(-1);
-  }, [dragIndex, dragOverIndex, updateCollection, collectionId]);
+  }, [dragIndex, dragOverIndex, updateCollection, activeTab]);
 
   // ── 팝오버 아이템 (유저 컬렉션 전용) ──
   const popoverItems = stores.length === 0
@@ -753,7 +757,7 @@ export default function CollectionDetailPage({
   // ── 선택 매장 삭제 ──
   const handleDeleteSelected = () => {
     const deletedIds = [...selectedIds];
-    removeStoresFromCollection(collectionId, deletedIds);
+    removeStoresFromCollection(activeTab, deletedIds);
     exitEditMode();
 
     if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
@@ -761,7 +765,7 @@ export default function CollectionDetailPage({
       msg: `${deletedIds.length}개의 매장을 삭제했어요`,
       actionLabel: '되돌리기',
       undoFn: () => {
-        addStoresToCollection(collectionId, deletedIds);
+        addStoresToCollection(activeTab, deletedIds);
         setSnackbar(null);
       },
     });
@@ -782,7 +786,7 @@ export default function CollectionDetailPage({
 
   // ── 매장 하트 탭 ──
   const handleHeartTap = (storeId: string) => {
-    if (isRecent) {
+    if (isActiveRecent) {
       if (isFavorited(storeId)) {
         // 최근 탭: 다이얼로그 없이 바로 삭제 + 스낵바
         const favStore = favorites.find(f => f.id === storeId);
@@ -832,15 +836,15 @@ export default function CollectionDetailPage({
 
   // ── 매장 추가 확인 ──
   const handleAddStoreConfirm = (selectedStoreIds: string[]) => {
-    addStoresToCollection(collectionId, selectedStoreIds);
+    addStoresToCollection(activeTab, selectedStoreIds);
     setShowAddStoreSheet(false);
     showToast('매장을 추가했어요');
   };
 
   // ── 메모 저장 ──
   const handleApplyMemo = (memo: string) => {
-    if (!memoTargetId || isRecent) return;
-    updateCollectionMemo(collectionId, memoTargetId, memo);
+    if (!memoTargetId || isActiveRecent) return;
+    updateCollectionMemo(activeTab, memoTargetId, memo);
     setMemoTargetId(null);
     showToast('메모를 저장했어요');
   };
@@ -858,7 +862,50 @@ export default function CollectionDetailPage({
     toastTimerRef.current = setTimeout(() => setToast(null), 2500);
   }
 
-  const currentMemo = memoTargetId ? (collection?.memos?.[memoTargetId] ?? '') : '';
+  // ── 탭 롱프레스 ──
+  const handleTabPointerDown = (tabId: string) => {
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = null;
+      if (navigator.vibrate) navigator.vibrate(50);
+      if (tabId === 'recent') {
+        showToast('기본 폴더는 수정하거나 삭제할 수 없어요');
+      } else {
+        setTabManageTargetId(tabId);
+      }
+    }, 500);
+  };
+
+  const handleTabPointerUp = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  // ── 탭(컬렉션) 삭제 ──
+  const handleTabDelete = (tabId: string) => {
+    const col = collections.find(c => c.id === tabId);
+    removeCollection(tabId);
+    setTabManageTargetId(null);
+    // 삭제된 탭이 현재 활성 탭이면 '최근'으로 이동
+    if (activeTab === tabId) {
+      setActiveTab('recent');
+    }
+    if (tabId === collectionId && onCollectionDeleted) {
+      onCollectionDeleted({ id: tabId, name: col?.name ?? '', storeIds: col?.storeIds ?? [] });
+    }
+  };
+
+  // ── 탭(컬렉션) 이름 변경 ──
+  const handleTabRenameConfirm = () => {
+    if (!renameTabId || !renameValue.trim()) return;
+    updateCollection(renameTabId, { name: renameValue.trim() });
+    setRenameTabId(null);
+    setRenameValue('');
+    showToast('컬렉션 이름을 변경했어요');
+  };
+
+  const currentMemo = memoTargetId ? (activeCollection?.memos?.[memoTargetId] ?? '') : '';
 
   const handleBack = () => {
     if (isEditMode) { exitEditMode(); return; }
@@ -891,7 +938,7 @@ export default function CollectionDetailPage({
           {isEditMode ? '편집모드' : `${collectionName} (${stores.length})`}
         </span>
         {/* 편집 버튼 — 일반 모드 & 사용자 컬렉션 전용 */}
-        {!isEditMode && !isRecent && (
+        {!isEditMode && !isActiveRecent && (
           <button
             onClick={enterEditMode}
             style={{
@@ -907,33 +954,41 @@ export default function CollectionDetailPage({
         )}
       </div>
 
-      {/* ── 탭 칩 (최근 / 사용자 생성) ── */}
-      <div style={{ display: 'flex', gap: 8, padding: '10px 16px', flexShrink: 0 }}>
-        {(['recent', 'custom'] as const).map((tab) => (
+      {/* ── 탭 칩 (가로 스크롤) ── */}
+      <div style={{
+        display: 'flex', gap: 8, padding: '10px 16px',
+        overflowX: 'auto', scrollbarWidth: 'none', flexShrink: 0,
+      }}>
+        {allTabs.map((tab) => (
           <button
-            key={tab}
-            onClick={() => { if (!isEditMode) setActiveTab(tab); }}
+            key={tab.id}
+            onPointerDown={() => handleTabPointerDown(tab.id)}
+            onPointerUp={handleTabPointerUp}
+            onPointerCancel={handleTabPointerUp}
+            onClick={() => { if (!isEditMode) setActiveTab(tab.id); }}
             style={{
               height: 32,
-              padding: '0 12px',
+              padding: '0 14px',
               borderRadius: 9999,
               border: 'none',
               cursor: isEditMode ? 'default' : 'pointer',
-              backgroundColor: activeTab === tab ? '#252525' : 'rgba(0,0,0,0.06)',
-              color: activeTab === tab ? '#ffffff' : 'rgba(0,0,0,0.6)',
+              backgroundColor: activeTab === tab.id ? '#252525' : 'transparent',
+              color: activeTab === tab.id ? '#ffffff' : 'rgba(0,0,0,0.7)',
               fontWeight: 590,
               fontSize: 13,
               lineHeight: '16px',
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
               opacity: isEditMode ? 0.5 : 1,
             }}
           >
-            {tab === 'recent' ? '최근' : '사용자 생성'}
+            {tab.name}
           </button>
         ))}
       </div>
 
       {/* ── 편집 모드 — 매장 추가하기 행 ── */}
-      {isEditMode && !isRecent && (
+      {isEditMode && !isActiveRecent && (
         <button
           onClick={() => setShowAddStoreSheet(true)}
           style={{
@@ -957,7 +1012,7 @@ export default function CollectionDetailPage({
 
       {/* ── Body ── */}
       {stores.length === 0 && !isEditMode ? (
-        activeTab === 'recent' ? (
+        isActiveRecent ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
             <p style={{ fontWeight: 590, fontSize: 13, color: '#191F28', textAlign: 'center', lineHeight: '19px', marginBottom: 4 }}>아직 최근에 본 매장이 없어요</p>
             <p style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.45)', textAlign: 'center', lineHeight: '19px', marginBottom: 20 }}>홈에서 카페를 탐색하면 여기에 기록돼요</p>
@@ -986,8 +1041,8 @@ export default function CollectionDetailPage({
                 store={store}
                 isEditMode={isEditMode}
                 isSelected={selectedIds.has(store.id)}
-                heartFilled={activeTab === 'recent' ? isFavorited(store.id) : true}
-                showMemo={activeTab !== 'recent'}
+                heartFilled={isActiveRecent ? isFavorited(store.id) : true}
+                showMemo={!isActiveRecent}
                 isDragging={isEditMode && dragIndex === index}
                 isDragOver={isEditMode && dragOverIndex === index && dragIndex !== index}
                 onToggleSelect={toggleSelect}
@@ -995,7 +1050,7 @@ export default function CollectionDetailPage({
                 onDetailOpen={onDetailOpen}
                 onHeartTap={handleHeartTap}
                 onPhotoMore={() => onPhotoMore?.(store.id, store.photos, store.name)}
-                onHandleDrag={isEditMode && !isRecent ? (e) => onHandlePointerDown(e, index) : undefined}
+                onHandleDrag={isEditMode && !isActiveRecent ? (e) => onHandlePointerDown(e, index) : undefined}
               />
             </div>
           ))}
@@ -1052,6 +1107,66 @@ export default function CollectionDetailPage({
           onClose={() => setShowAddStoreSheet(false)}
           onGoHome={() => { setShowAddStoreSheet(false); onGoHome?.(); }}
         />
+      )}
+
+      {/* 탭 관리 바텀시트 (롱프레스) */}
+      {tabManageTargetId && (
+        <BottomSheet isOpen={true} onClose={() => setTabManageTargetId(null)}>
+          <div style={{ padding: '16px 20px 8px', borderBottom: '1px solid rgba(0,0,0,0.06)', marginBottom: 4 }}>
+            <span style={{ fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)' }}>
+              {collections.find(c => c.id === tabManageTargetId)?.name}
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              const col = collections.find(c => c.id === tabManageTargetId);
+              setRenameValue(col?.name ?? '');
+              setRenameTabId(tabManageTargetId);
+              setTabManageTargetId(null);
+            }}
+            style={{
+              width: '100%', height: 56, display: 'flex', alignItems: 'center',
+              paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
+              fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)',
+            }}
+          >편집</button>
+          <button
+            onClick={() => handleTabDelete(tabManageTargetId)}
+            style={{
+              width: '100%', height: 56, display: 'flex', alignItems: 'center',
+              paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
+              fontWeight: 700, fontSize: 17, color: '#e42939',
+            }}
+          >삭제</button>
+        </BottomSheet>
+      )}
+
+      {/* 컬렉션 이름 변경 바텀시트 */}
+      {renameTabId && (
+        <BottomSheet isOpen={true} onClose={() => { setRenameTabId(null); setRenameValue(''); }}>
+          <div style={{ padding: '20px 20px 16px' }}>
+            <p style={{ fontWeight: 700, fontSize: 17, color: '#191F28', marginBottom: 16 }}>컬렉션 이름 변경</p>
+            <input
+              autoFocus
+              value={renameValue}
+              onChange={e => setRenameValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleTabRenameConfirm(); }}
+              maxLength={20}
+              placeholder="컬렉션 이름"
+              style={{
+                width: '100%', height: 48, borderRadius: 10,
+                border: '1px solid rgba(0,0,0,0.12)',
+                padding: '0 14px', fontSize: 17, outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          <BottomCTA.Single fixed={false}>
+            <CTAButton onClick={handleTabRenameConfirm} disabled={!renameValue.trim()}>
+              변경하기
+            </CTAButton>
+          </BottomCTA.Single>
+        </BottomSheet>
       )}
 
       {/* 토스트 (메모/추가 후) — TDS Toast */}
