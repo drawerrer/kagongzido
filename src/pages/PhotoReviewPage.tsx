@@ -187,7 +187,7 @@ function PhotoDetailView({
       {/* ── info_2: 포토리뷰 페이지명 ── */}
       <div style={{
         height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, background: 'white',
+        flexShrink: 0, background: '#f3f3f3',
         borderBottom: '1px solid #F2F4F6',
       }}>
         <span style={{ fontSize: 14, fontWeight: 600, color: '#191F28', letterSpacing: -0.2 }}>
@@ -197,7 +197,7 @@ function PhotoDetailView({
 
       {/* ── 사진 영역 — 패딩 10px, hug ── */}
       <div
-        style={{ flexShrink: 0, background: 'white', padding: 10, display: 'flex', justifyContent: 'center' }}
+        style={{ flexShrink: 0, background: '#f3f3f3', padding: 10, display: 'flex', justifyContent: 'center' }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -257,7 +257,7 @@ function PhotoDetailView({
 
       {/* ── 리뷰 카드 ── */}
       <div style={{
-        background: 'white', padding: '20px 20px 24px',
+        background: '#f3f3f3', padding: '20px 20px 24px',
         flexShrink: 0, borderTop: '1px solid #F2F4F6',
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
