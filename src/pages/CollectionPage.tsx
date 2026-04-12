@@ -894,6 +894,7 @@ export default function CollectionPage({
         </div>
         {/* 버튼 — 전체 너비 */}
         <Button color="primary" size="xlarge" style={{ width: '100%' }} onClick={createCollection} disabled={!newCollectionName.trim()}>적용하기</Button>
+        <div style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} />
       </BottomSheet>
 
       {/* ─────────── BottomSheet: 컬렉션명 변경 ─────────── */}
@@ -931,6 +932,7 @@ export default function CollectionPage({
         </div>
         {/* 버튼 */}
         <Button color="primary" size="xlarge" style={{ width: '100%' }} onClick={applyRename} disabled={!renameValue.trim()}>적용하기</Button>
+        <div style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} />
       </BottomSheet>
 
       {/* ─────────── BottomSheet: 컬렉션 선택 ─────────── */}

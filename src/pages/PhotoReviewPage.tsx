@@ -387,7 +387,7 @@ function PhotoDetailView({
       {/* ── 신고 사유 선택 바텀시트 ── */}
       {showReport && (
         <BottomSheet isOpen onClose={() => setShowReport(false)}>
-          <div style={{ padding: '4px 20px 24px' }}>
+          <div style={{ padding: '4px 20px 0', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
             <p style={{ fontSize: 16, fontWeight: 700, color: '#191F28', marginBottom: 12 }}>
               신고 사유를 선택해주세요
             </p>

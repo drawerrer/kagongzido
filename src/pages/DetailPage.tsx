@@ -740,7 +740,7 @@ function MorePopup({
 function LoginPromptSheet({ onClose }: { onClose: () => void }) {
   return (
     <BottomSheet isOpen onClose={onClose}>
-      <div style={{ padding: '8px 20px 32px', textAlign: 'center' }}>
+      <div style={{ padding: '8px 20px 0', paddingBottom: 'max(32px, env(safe-area-inset-bottom))', textAlign: 'center' }}>
         <div style={{ fontSize: 44, marginBottom: 12 }}>💙</div>
         <p style={{ fontSize: 18, fontWeight: 700, color: '#191F28', marginBottom: 8 }}>로그인이 필요해요</p>
         <p style={{ fontSize: 14, color: '#6B7684', marginBottom: 24, lineHeight: 1.5 }}>

@@ -113,7 +113,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카페인덱
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose}>
-      <div style={{ padding: '0 20px 28px' }}>
+      <div style={{ padding: '0 20px 0', paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }}>
 
         {/* 타이틀 */}
         <p style={{
