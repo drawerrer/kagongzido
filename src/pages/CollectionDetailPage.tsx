@@ -606,7 +606,7 @@ function EmptyState({ onAddStore }: { onAddStore?: () => void }) {
           whiteSpace: 'nowrap',
         }}>매장 추가하기</span>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-          <path d="M12 5v14M5 12h14" stroke="#3182f6" strokeWidth="2" strokeLinecap="round"/>
+          <path d="M12 5v14M5 12h14" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round"/>
         </svg>
       </button>
     </div>
