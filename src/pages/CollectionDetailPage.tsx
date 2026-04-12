@@ -934,13 +934,13 @@ export default function CollectionDetailPage({
         )}
       </div>
 
-      {/* ── info_2 (46px) ── */}
+      {/* ── info_2 (46px) — 항상 "컬렉션명 + 편집" 고정 ── */}
       <div style={{ height: 46, backgroundColor: '#F3F3F3', display: 'flex', alignItems: 'center', position: 'relative', flexShrink: 0 }}>
         <span style={{ flex: 1, textAlign: 'center', fontWeight: 510, fontSize: 14, color: '#000000' }}>
-          {isEditMode ? '편집모드' : `${collectionName} (${stores.length})`}
+          {isEditMode ? '편집모드' : `${allTabs.find(t => t.id === activeTab)?.name ?? collectionName} (${stores.length})`}
         </span>
-        {/* 편집 버튼 — 일반 모드 & 사용자 컬렉션 전용 */}
-        {!isEditMode && !isActiveRecent && (
+        {/* 편집 버튼 — 일반 모드 항상 고정 노출 */}
+        {!isEditMode && (
           <button
             onClick={enterEditMode}
             style={{
