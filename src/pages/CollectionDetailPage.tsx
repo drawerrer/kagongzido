@@ -364,6 +364,7 @@ function StoreCard({
   isEditMode,
   isSelected,
   heartFilled,
+  showHeart = true,
   showMemo = true,
   isDragging = false,
   isDragOver = false,
@@ -378,6 +379,7 @@ function StoreCard({
   isEditMode: boolean;
   isSelected: boolean;
   heartFilled: boolean;
+  showHeart?: boolean;
   showMemo?: boolean;
   isDragging?: boolean;
   isDragOver?: boolean;
@@ -453,7 +455,7 @@ function StoreCard({
                 )}
               </div>
             </div>
-            {/* 편집모드: 순서 핸들 / 기본: 하트 */}
+            {/* 편집모드: 순서 핸들 / 기본: 하트(최근 탭만) */}
             {isEditMode ? (
               <div
                 onPointerDown={onHandleDrag}
@@ -469,7 +471,7 @@ function StoreCard({
                   </g>
                 </svg>
               </div>
-            ) : (
+            ) : showHeart ? (
               <button
                 type="button"
                 aria-label={heartFilled ? '즐겨찾기 해제' : '즐겨찾기 추가'}
@@ -491,7 +493,7 @@ function StoreCard({
                   </svg>
                 )}
               </button>
-            )}
+            ) : null}
           </div>
 
           {/* 이미지 10장 — 가로 스크롤 */}
@@ -1097,7 +1099,8 @@ export default function CollectionDetailPage({
                 store={store}
                 isEditMode={isEditMode}
                 isSelected={selectedIds.has(store.id)}
-                heartFilled={isActiveRecent ? isFavorited(store.id) : true}
+                heartFilled={isFavorited(store.id)}
+                showHeart={isActiveRecent}
                 showMemo={!isActiveRecent}
                 isDragging={isEditMode && dragIndex === index}
                 isDragOver={isEditMode && dragOverIndex === index && dragIndex !== index}
