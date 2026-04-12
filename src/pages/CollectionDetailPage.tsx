@@ -1194,6 +1194,7 @@ export default function CollectionDetailPage({
             fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)',
           }}
         >삭제</button>
+        <div style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} />
       </BottomSheet>
 
       {/* 컬렉션 이름 변경 바텀시트 */}
