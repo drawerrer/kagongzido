@@ -1117,7 +1117,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           zIndex: 100,
           display: 'flex', alignItems: 'center',
           padding: '12px 16px',
-          background: scrolled ? 'white' : 'transparent',
+          background: scrolled ? '#f3f3f3' : 'transparent',
           borderBottom: scrolled ? '1px solid #F2F4F6' : 'none',
           transition: 'background 0.2s, border-bottom 0.2s',
         }}
@@ -1131,10 +1131,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           <BackIcon color={scrolled ? '#191F28' : '#F9FAFB'} />
         </button>
 
-        {/* ── 스크롤 시 카페명 노출 */}
-        <div style={{ flex: 1, textAlign: 'center', opacity: scrolled ? 1 : 0, transition: 'opacity 0.2s' }}>
-          <span style={{ fontSize: 17, fontWeight: 700, color: '#191F28' }}>{cafe.name}</span>
-        </div>
+        <div style={{ flex: 1 }} />
 
         {/* ── 우측 버튼 그룹 */}
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>

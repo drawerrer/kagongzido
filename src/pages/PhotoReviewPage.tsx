@@ -138,12 +138,12 @@ function PhotoDetailView({
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
 
       {/* ── 네비바 (DetailPage 동일 스펙) ── */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        padding: '12px 16px', flexShrink: 0, background: 'white',
+        padding: '12px 16px', flexShrink: 0, background: '#f3f3f3',
         borderBottom: '1px solid #F2F4F6',
       }}>
         <button onClick={onBack} style={hdrBtn}>
@@ -455,7 +455,7 @@ export default function PhotoReviewPage({
 
   // 그리드 뷰
   return (
-    <div style={{ height: '100%', background: 'white', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100%', background: '#f3f3f3', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── 헤더 ── */}
       <header style={{
@@ -463,7 +463,7 @@ export default function PhotoReviewPage({
         padding: '12px 16px',
         borderBottom: '1px solid #F2F4F6',
         flexShrink: 0,
-        background: 'white',
+        background: '#f3f3f3',
       }}>
         {/* 뒤로가기 */}
         <button onClick={onBack} style={hdrBtn}>
