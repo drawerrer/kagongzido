@@ -138,7 +138,11 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const reorderCollections = useCallback((newOrder: Collection[]) => {
-    setCollections([...newOrder]);
+    setCollections(prev => {
+      const recent = prev.find(c => c.id === 'recent');
+      const rest = newOrder.filter(c => c.id !== 'recent');
+      return recent ? [recent, ...rest] : rest;
+    });
   }, []);
 
   return (
