@@ -1,14 +1,7 @@
 // ── 공통 상단 네비게이션 바 ───────────────────────────────────
-// Figma 스펙: node 245-3626
 
 import { useState } from 'react';
-import { IconButton, Menu } from '@toss/tds-mobile';
-
-const ICONS = {
-  back:  'https://static.toss.im/icons/svg/icon-chevron-left-bold-mono.svg',
-  more:  'https://static.toss.im/icons/svg/icon-ellipsis-horizontal-bold-mono.svg',
-  close: 'https://static.toss.im/icons/svg/icon-close-bold-mono.svg',
-};
+import { Menu } from '@toss/tds-mobile';
 
 interface NavBarProps {
   variant?: 'back' | 'logo';
@@ -34,8 +27,7 @@ export default function NavBar({
 
   const containerStyle: React.CSSProperties = floating
     ? {
-        position: 'absolute',
-        top: 0, left: 0, right: 0,
+        position: 'absolute', top: 0, left: 0, right: 0,
         zIndex: 30,
         backgroundColor: '#F3F3F3',
         paddingTop: 'env(safe-area-inset-top)',
@@ -47,15 +39,30 @@ export default function NavBar({
         paddingTop: 'env(safe-area-inset-top)',
       };
 
+  const btnStyle: React.CSSProperties = {
+    width: 44, height: 44,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+    flexShrink: 0,
+  };
+
   const showMore = !!moreMenuDropdown || !!onMore;
+
+  const moreButton = (
+    <button style={btnStyle} onClick={moreMenuDropdown ? undefined : onMore} aria-label="더보기">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#191f28">
+        <circle cx="5"  cy="12" r="1.8"/>
+        <circle cx="12" cy="12" r="1.8"/>
+        <circle cx="19" cy="12" r="1.8"/>
+      </svg>
+    </button>
+  );
 
   return (
     <div style={containerStyle}>
       <div style={{
         display: 'flex', alignItems: 'center',
-        height: 44,
-        paddingLeft: 0,
-        paddingRight: 6,
+        height: 44, paddingLeft: 0, paddingRight: 6,
       }}>
         {/* ── 좌측 ── */}
         <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
@@ -74,20 +81,18 @@ export default function NavBar({
               </span>
             </div>
           ) : (
-            /* ── 뒤로가기 (TDS IconButton) ── */
-            <IconButton
-              variant="clear"
-              src={ICONS.back}
-              aria-label="뒤로가기"
-              onClick={onBack}
-              iconSize={24}
-              color="#191f28"
-            />
+            /* ── 뒤로가기 ── */
+            <button style={btnStyle} onClick={onBack} aria-label="뒤로가기">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="#191f28" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
           )}
         </div>
 
-        {/* ── 우측 버튼 영역 (pill 제거, 버튼 나열) ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {/* ── 우측 버튼 (pill 없이 독립 배치) ── */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           {showMore && (
             moreMenuDropdown ? (
               <Menu.Trigger
@@ -97,33 +102,17 @@ export default function NavBar({
                 placement="bottom-end"
                 dropdown={moreMenuDropdown}
               >
-                <IconButton
-                  variant="clear"
-                  src={ICONS.more}
-                  aria-label="더보기"
-                  iconSize={24}
-                  color="#191f28"
-                />
+                {moreButton}
               </Menu.Trigger>
-            ) : (
-              <IconButton
-                variant="clear"
-                src={ICONS.more}
-                aria-label="더보기"
-                onClick={onMore}
-                iconSize={24}
-                color="#191f28"
-              />
-            )
+            ) : moreButton
           )}
-          <IconButton
-            variant="clear"
-            src={ICONS.close}
-            aria-label="닫기"
-            onClick={onClose}
-            iconSize={24}
-            color="#191f28"
-          />
+          <button style={btnStyle} onClick={onClose} aria-label="닫기">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="#191f28" strokeWidth="2" strokeLinecap="round">
+              <line x1="6" y1="6" x2="18" y2="18"/>
+              <line x1="18" y1="6" x2="6" y2="18"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
