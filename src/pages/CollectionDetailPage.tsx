@@ -1360,7 +1360,7 @@ export default function CollectionDetailPage({
       {/* 매장 추가 바텀시트 */}
       {showAddStoreSheet && (
         <AddStoreSheet
-          availableStores={favorites}
+          availableStores={favorites.filter(f => !activeCollection?.storeIds.includes(f.id))}
           onConfirm={handleAddStoreConfirm}
           onClose={() => setShowAddStoreSheet(false)}
           onGoHome={() => { setShowAddStoreSheet(false); onGoHome?.(); }}
