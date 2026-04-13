@@ -1,5 +1,16 @@
-import { useState } from 'react';
-import type { ReactNode } from 'react';
+import { useState, Component } from 'react';
+import type { ReactNode, ErrorInfo } from 'react';
+
+// ── 페이지 단위 에러바운더리 ─────────────────────────────────
+class PageErrorBoundary extends Component<{ children: ReactNode; fallback?: ReactNode }, { error: Error | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error('[PageErrorBoundary]', error, info); }
+  render() {
+    if (this.state.error) return this.props.fallback ?? null;
+    return this.props.children;
+  }
+}
 import MapPage from './pages/MapPage';
 import SearchPage from './pages/SearchPage';
 import CollectionPage from './pages/CollectionPage';
@@ -162,28 +173,32 @@ function AppInner() {
               />
             )}
             {activeTab === 'guidebook'  && (
-              <GuidebookPage
-                onDetailOpen={(id) => setDetailCafeId(id)}
-                onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
-                onBack={() => setActiveTab('home')}
-                onClose={() => setActiveTab('home')}
-                initialView={(guidebookView as any) ?? 'main'}
-                onViewChange={(v) => setGuidebookView(v)}
-                initialStoreIndex={guidebookStoreIndex}
-                onStoreIndexChange={(i) => setGuidebookStoreIndex(i)}
-              />
+              <PageErrorBoundary>
+                <GuidebookPage
+                  onDetailOpen={(id) => setDetailCafeId(id)}
+                  onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
+                  onBack={() => setActiveTab('home')}
+                  onClose={() => setActiveTab('home')}
+                  initialView={(guidebookView as any) ?? 'main'}
+                  onViewChange={(v) => setGuidebookView(v)}
+                  initialStoreIndex={guidebookStoreIndex}
+                  onStoreIndexChange={(i) => setGuidebookStoreIndex(i)}
+                />
+              </PageErrorBoundary>
             )}
             {activeTab === 'collection' && (
-              <CollectionPage
-                onDetailOpen={(id) => setDetailCafeId(id)}
-                onCollectionOpen={(id, name) => setCollectionDetail({ id, name })}
-                onGoHome={() => setActiveTab('home')}
-                onBack={() => setActiveTab('home')}
-                onClose={() => setActiveTab('home')}
-                onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
-                deletedCollection={deletedCollectionData}
-                onClearDeletedCollection={() => setDeletedCollectionData(null)}
-              />
+              <PageErrorBoundary>
+                <CollectionPage
+                  onDetailOpen={(id) => setDetailCafeId(id)}
+                  onCollectionOpen={(id, name) => setCollectionDetail({ id, name })}
+                  onGoHome={() => setActiveTab('home')}
+                  onBack={() => setActiveTab('home')}
+                  onClose={() => setActiveTab('home')}
+                  onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
+                  deletedCollection={deletedCollectionData}
+                  onClearDeletedCollection={() => setDeletedCollectionData(null)}
+                />
+              </PageErrorBoundary>
             )}
             {activeTab === 'mypage'     && (
               <MyPage

@@ -2,8 +2,9 @@
 import { useFavorites, FavoritedStore, RecentCafe } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
-import NavBar from '../components/NavBar';
 import { BottomSheet, ConfirmDialog, BottomCTA, CTAButton, Button, Toast } from '@toss/tds-mobile';
+import { graniteEvent } from '@apps-in-toss/web-framework';
+import NavBar from '../components/NavBar';
 
 
 // ─── 타입 ─────────────────────────────────────────────────────
@@ -1028,24 +1029,35 @@ export default function CollectionDetailPage({
 
   const currentMemo = memoTargetId ? (activeCollection?.memos?.[memoTargetId] ?? '') : '';
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (isEditMode) { exitEditMode(); return; }
     onBack?.();
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode]);
 
   const handleClose = () => {
     if (isEditMode) { exitEditMode(); return; }
     (onClose ?? onBack)?.();
   };
 
+  // SDK 네이티브 백 이벤트 등록 (Toss 앱 외부 환경에서는 무시)
+  useEffect(() => {
+    try {
+      const unsubscribe = graniteEvent.addEventListener('backEvent', {
+        onEvent: handleBack,
+        onError: (err) => console.error(err),
+      });
+      return unsubscribe;
+    } catch {
+      return undefined;
+    }
+  }, [handleBack]);
+
+  const isTossApp = !!(window as any).ReactNativeWebView;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
-      {/* ── NavBar ── */}
-      <NavBar
-        onBack={handleBack}
-        onClose={handleClose}
-      />
-
+      {!isTossApp && <NavBar onBack={handleBack} onClose={handleClose} />}
       {/* ── info_2 (46px) — 항상 "컬렉션명 + 편집" 고정 ── */}
       <div style={{ height: 46, backgroundColor: '#F3F3F3', display: 'flex', alignItems: 'center', position: 'relative', flexShrink: 0 }}>
         <span style={{ flex: 1, textAlign: 'center', fontWeight: 510, fontSize: 14, color: '#000000' }}>

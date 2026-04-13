@@ -2,9 +2,9 @@
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
-import NavBar from '../components/NavBar';
 import { BottomCTA, CTAButton, Button, TextButton } from '@toss/tds-mobile';
-import { openURL } from '@apps-in-toss/web-framework';
+import { openURL, graniteEvent } from '@apps-in-toss/web-framework';
+import NavBar from '../components/NavBar';
 
 // ─── 아이콘 ────────────────────────────────────────────────────
 function IcSeat() {
@@ -518,13 +518,27 @@ export default function GuidebookPage({
     onViewChange?.(v);
   };
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (view !== 'main') {
       changeView('main');
     } else {
       onBack?.();
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
+
+  // SDK 네이티브 백 이벤트 등록 (Toss 앱 외부 환경에서는 무시)
+  useEffect(() => {
+    try {
+      const unsubscribe = graniteEvent.addEventListener('backEvent', {
+        onEvent: handleBack,
+        onError: (err) => console.error(err),
+      });
+      return unsubscribe;
+    } catch {
+      return undefined;
+    }
+  }, [handleBack]);
 
   const handleSave = (store: MockStore) => {
     if (!isFavorited(store.id)) {
@@ -540,13 +554,11 @@ export default function GuidebookPage({
     setSnackbar('모음집에 담았어요');
   };
 
+  const isTossApp = !!(window as any).ReactNativeWebView;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
-      <NavBar
-        onBack={handleBack}
-        onClose={onClose ?? onBack}
-      />
-
+      {!isTossApp && <NavBar onBack={handleBack} onClose={onClose ?? onBack} />}
       {view === 'main' && (
         <GuideBookMainView
           guidebook={FEATURED}

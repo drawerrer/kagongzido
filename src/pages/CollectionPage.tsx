@@ -2,8 +2,9 @@
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites, FavoritedStore } from '../context/FavoritesContext';
-import NavBar from '../components/NavBar';
 import { BottomSheet, BottomCTA, CTAButton, Button } from '@toss/tds-mobile';
+import { graniteEvent } from '@apps-in-toss/web-framework';
+import NavBar from '../components/NavBar';
 
 // ─── 타입 ────────────────────────────────────────────────────
 interface Store {
@@ -630,17 +631,34 @@ export default function CollectionPage({
   // 현재 rename 대상 컬렉션 이름
   const renameTargetName = collections.find(c => c.id === renameTargetId)?.name ?? '';
 
+  // SDK 네이티브 백 이벤트 등록 (Toss 앱 외부 환경에서는 무시)
+  useEffect(() => {
+    const handleBack = () => {
+      if (isEditMode) { exitEditMode(); return; }
+      if (isOrganizeMode) { exitOrganizeMode(); return; }
+      if (onBack) { onBack(); return; }
+      onGoHome?.();
+    };
+    try {
+      const unsubscribe = graniteEvent.addEventListener('backEvent', {
+        onEvent: handleBack,
+        onError: (err) => console.error(err),
+      });
+      return unsubscribe;
+    } catch {
+      return undefined;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, isOrganizeMode]);
+
+  const isTossApp = !!(window as any).ReactNativeWebView;
+
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
       height: '100%', backgroundColor: '#F3F3F3', position: 'relative',
     }}>
-      {/* ── NavBar ── */}
-      <NavBar
-        onBack={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onBack ?? onGoHome)}
-        onClose={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onClose ?? onGoHome)}
-      />
-
+      {!isTossApp && <NavBar onBack={onBack} onClose={onClose} />}
       {/* ── info_2 bar (Figma: 46px, Medium 510 14px centered) ── */}
       <div style={{
         height: 46, backgroundColor: '#F3F3F3',
