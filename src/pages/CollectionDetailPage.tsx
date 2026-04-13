@@ -1398,11 +1398,15 @@ export default function CollectionDetailPage({
             }}
           />
         </div>
-        <BottomCTA.Single fixed={false}>
-          <CTAButton onClick={handleTabRenameConfirm} disabled={!renameValue.trim()}>
-            변경하기
-          </CTAButton>
-        </BottomCTA.Single>
+        <Button
+          color="primary"
+          size="xlarge"
+          style={{ width: '100%' }}
+          onClick={handleTabRenameConfirm}
+          disabled={!renameValue.trim()}
+        >
+          변경하기
+        </Button>
       </BottomSheet>
 
       {/* 토스트 (메모/추가 후) — TDS Toast */}
