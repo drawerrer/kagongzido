@@ -3,7 +3,14 @@
 //
 // variant='back'  (default): 좌측 < 뒤로가기 버튼
 // variant='logo'           : 좌측 로고 pill + 앱 이름 (MapPage 전용)
-// floating=true            : position:absolute (MapPage처럼 지도 위에 뜨는 경우)
+
+import { IconButton } from '@toss/tds-mobile';
+
+const ICONS = {
+  back:  'https://static.toss.im/icons/svg/icon-chevron-left-bold-mono.svg',
+  more:  'https://static.toss.im/icons/svg/icon-ellipsis-horizontal-bold-mono.svg',
+  close: 'https://static.toss.im/icons/svg/icon-close-bold-mono.svg',
+};
 
 interface NavBarProps {
   variant?: 'back' | 'logo';
@@ -24,14 +31,12 @@ export default function NavBar({
 }: NavBarProps) {
   const containerStyle: React.CSSProperties = floating
     ? {
-        // floating: MapPage 전용 — 지도 위에 absolute로 올라감
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
         zIndex: 30,
         backgroundColor: '#F3F3F3',
-        // Figma: borderBottom 없음 (흰 배경이 search bar 영역까지 이어짐)
         paddingTop: 'env(safe-area-inset-top)',
       }
     : {
@@ -50,15 +55,13 @@ export default function NavBar({
           alignItems: 'center',
           height: 44,
           paddingLeft: 0,
-          paddingRight: 10, // Figma: Fixed Icon Area 우측 10px 여백
+          paddingRight: 10,
         }}
       >
         {/* ── 좌측 ── */}
         <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
           {variant === 'logo' ? (
             // ── 로고 pill (MapPage) ──────────────────────────────
-            // Figma: Title Area 161×34, fill rgba(0,23,51,0.02), r=99
-            //        Logo 18×18 r=6, Name 15px w590 #191f28, gap=6
             <div
               style={{
                 display: 'flex',
@@ -67,7 +70,6 @@ export default function NavBar({
                 marginLeft: 29,
               }}
             >
-              {/* 로고 아이콘 — Figma: 18×18, r=6, bg #191F28 */}
               <div
                 style={{
                   width: 18,
@@ -84,7 +86,6 @@ export default function NavBar({
                   <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                 </svg>
               </div>
-              {/* 앱 이름 — Figma: SF Pro 15px w590 #191f28 */}
               <span
                 style={{
                   fontSize: 15,
@@ -98,33 +99,20 @@ export default function NavBar({
               </span>
             </div>
           ) : (
-            // ── 뒤로가기 버튼 ───────────────────────────────────
-            // Figma: Back Button 44×44
-            <button
+            // ── 뒤로가기 버튼 (TDS IconButton) ──────────────────
+            <IconButton
+              variant="clear"
+              src={ICONS.back}
+              aria-label="뒤로가기"
               onClick={onBack}
-              style={{
-                width: 44,
-                height: 44,
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="#191f28" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6"/>
-              </svg>
-            </button>
+              iconSize={24}
+              color="#191f28"
+              style={{ width: 44, height: 44 } as React.CSSProperties}
+            />
           )}
         </div>
 
-        {/* ── 우측 pill: ··· | X ─────────────────────────────────
-            Figma: Fixed Icon Area 93×34, fill rgba(0,23,51,0.02), r=99
-                   Icon Button More 44×44 | Divider 1×16 rgba(0,27,55,0.1) | Icon Button Close 44×44 */}
+        {/* ── 우측 pill: ··· | X ───────────────────────────────── */}
         <div
           style={{
             display: 'flex',
@@ -135,48 +123,28 @@ export default function NavBar({
             overflow: 'hidden',
           }}
         >
-          {/* ··· 더보기 */}
-          <button
+          {/* ··· 더보기 (TDS IconButton) */}
+          <IconButton
+            variant="clear"
+            src={ICONS.more}
+            aria-label="더보기"
             onClick={onMore}
-            style={{
-              width: 46,
-              height: 34,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="#191f28">
-              <circle cx="4" cy="10" r="1.5"/>
-              <circle cx="10" cy="10" r="1.5"/>
-              <circle cx="16" cy="10" r="1.5"/>
-            </svg>
-          </button>
-          {/* 구분선 — Figma: 1×16, rgba(0,27,55,0.1) */}
+            iconSize={20}
+            color="#191f28"
+            style={{ width: 46, height: 34, borderRadius: 0 } as React.CSSProperties}
+          />
+          {/* 구분선 */}
           <div style={{ width: 1, height: 16, backgroundColor: 'rgba(0,27,55,0.1)', flexShrink: 0 }} />
-          {/* X 닫기 */}
-          <button
+          {/* X 닫기 (TDS IconButton) */}
+          <IconButton
+            variant="clear"
+            src={ICONS.close}
+            aria-label="닫기"
             onClick={onClose}
-            style={{
-              width: 46,
-              height: 34,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-              stroke="#191f28" strokeWidth="2" strokeLinecap="round">
-              <line x1="5" y1="5" x2="15" y2="15"/>
-              <line x1="15" y1="5" x2="5" y2="15"/>
-            </svg>
-          </button>
+            iconSize={20}
+            color="#191f28"
+            style={{ width: 46, height: 34, borderRadius: 0 } as React.CSSProperties}
+          />
         </div>
       </div>
     </div>
