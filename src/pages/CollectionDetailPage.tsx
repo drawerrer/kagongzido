@@ -283,14 +283,13 @@ function AddStoreSheet({
           ) : (
             availableStores.map(store => {
               const isSelected = selectedIds.has(store.id);
-              const placeholderColors = ['#D4C4B0', '#C4B4A0', '#B4A490', '#A49480'];
               return (
                 <div
                   key={store.id}
                   onClick={() => toggle(store.id)}
-                  style={{ padding: '16px 16px 0', cursor: 'pointer' }}
+                  style={{ padding: '20px 16px 0', cursor: 'pointer' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
                     {/* 이름·주소·별점 */}
                     <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
                       <p style={{ fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)', lineHeight: '23px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -300,7 +299,7 @@ function AddStoreSheet({
                         {store.address}
                       </p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="#FBBC04">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="#FBBC04">
                           <path d="M8 1.5l1.73 3.51 3.87.56-2.8 2.73.66 3.85L8 10.07l-3.46 1.82.66-3.85-2.8-2.73 3.87-.56L8 1.5z" />
                         </svg>
                         <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>{store.rating.toFixed(1)}</span>
@@ -308,30 +307,54 @@ function AddStoreSheet({
                       </div>
                     </div>
                     {/* 체크 서클 */}
-                    <div style={{
-                      width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                      border: `2px solid ${isSelected ? '#252525' : 'rgba(0,19,43,0.2)'}`,
-                      backgroundColor: isSelected ? '#252525' : 'transparent',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-                        <path d="M1 4l3.5 3.5L11 1" stroke={isSelected ? '#fff' : 'rgba(0,19,43,0.2)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    <div style={{ flexShrink: 0 }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        {isSelected ? (
+                          <>
+                            <circle cx="12" cy="12" r="12" fill="#252525" />
+                            <path d="M7 12l3.5 3.5L17 8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </>
+                        ) : (
+                          <>
+                            <circle cx="12" cy="12" r="11" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
+                            <path d="M7 12l3.5 3.5L17 8" stroke="rgba(0,0,0,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </>
+                        )}
                       </svg>
                     </div>
                   </div>
-                  {/* 사진 4장 */}
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-                    {Array.from({ length: 4 }, (_, idx) => (
-                      <div key={idx} style={{
-                        flex: 1, aspectRatio: '1', borderRadius: 4, overflow: 'hidden',
-                        backgroundColor: store.photos[idx] ? undefined : placeholderColors[idx % 4],
-                      }}>
-                        {store.photos[idx] && (
-                          <img src={store.photos[idx]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        )}
-                      </div>
-                    ))}
+                  {/* 사진 10장 — 가로 스크롤 */}
+                  <div
+                    style={{ overflowX: 'auto', scrollbarWidth: 'none' }}
+                    onWheel={(e) => { e.preventDefault(); (e.currentTarget as HTMLDivElement).scrollLeft += e.deltaY; }}
+                  >
+                    <div style={{ display: 'flex', gap: 8, width: 'max-content' }}>
+                      {Array.from({ length: 10 }, (_, idx) => {
+                        const isLast = idx === 9;
+                        return (
+                          <div key={idx} style={{
+                            position: 'relative', width: 80, height: 80, borderRadius: 4, flexShrink: 0, overflow: 'hidden',
+                            backgroundColor: store.photos[idx] ? undefined : ['#D4C4B0','#C4B4A0','#B4A490','#A49480'][idx % 4],
+                          }}>
+                            {store.photos[idx] && (
+                              <img src={store.photos[idx]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            )}
+                            {isLast && (
+                              <div style={{
+                                position: 'absolute', inset: 0,
+                                backgroundColor: 'rgba(0,0,0,0.6)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                borderRadius: 4,
+                              }}>
+                                <span style={{ fontWeight: 510, fontSize: 14, color: '#ffffff' }}>더보기</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
+                  <div style={{ paddingBottom: 16 }} />
                 </div>
               );
             })
@@ -519,10 +542,15 @@ function StoreCard({
                 const isLast = idx === 9;
                 const showOverlay = isLast && !isEditMode;
                 return (
-                  <div key={idx} style={{
-                    position: 'relative', width: 80, height: 80, borderRadius: 4, flexShrink: 0, overflow: 'hidden',
-                    backgroundColor: store.photos[idx] ? undefined : placeholderColors[idx % 4],
-                  }}>
+                  <div
+                    key={idx}
+                    onClick={!isLast && !isEditMode ? (e) => { e.stopPropagation(); onDetailOpen?.(store.id); } : undefined}
+                    style={{
+                      position: 'relative', width: 80, height: 80, borderRadius: 4, flexShrink: 0, overflow: 'hidden',
+                      backgroundColor: store.photos[idx] ? undefined : placeholderColors[idx % 4],
+                      cursor: !isLast && !isEditMode ? 'pointer' : 'default',
+                    }}
+                  >
                     {store.photos[idx] && (
                       <img src={store.photos[idx]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     )}

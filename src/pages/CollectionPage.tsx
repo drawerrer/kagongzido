@@ -210,9 +210,9 @@ function StoreCard({
     <div
       onClick={isEditMode ? onSelect : onPress}
       style={{
-        borderTop: isDragOver ? '2px solid #252525' : 'none',
+        border: isDragOver ? '2px solid #252525' : '2px solid transparent',
         cursor: 'pointer',
-        paddingTop: 20, paddingBottom: 20,
+        paddingTop: 20,
         opacity: isDragging ? 0.4 : (isEditMode && !isSelected ? 0.7 : 1),
         transition: 'opacity 0.15s',
         userSelect: 'none',
@@ -221,26 +221,37 @@ function StoreCard({
       <div style={{ display: 'flex', alignItems: 'flex-start', paddingLeft: 16, paddingRight: 16 }}>
         {/* 편집 모드 체크박스 (Figma: 24×24) */}
         {isEditMode && (
-          <div style={{
-            width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-            marginRight: 10, marginTop: 1,
-            backgroundColor: isSelected ? '#252525' : 'transparent',
-            border: `2px solid ${isSelected ? '#252525' : 'rgba(0,19,43,0.2)'}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            {isSelected && (
-              <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-                <path d="M1 4l3.5 3.5L11 1" stroke="#fff" strokeWidth="1.8"
-                  strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-          </div>
+          <button
+            type="button"
+            aria-label={isSelected ? '선택 해제' : '선택'}
+            aria-pressed={isSelected}
+            onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
+            style={{
+              width: 24, height: 24, flexShrink: 0,
+              marginRight: 10, marginTop: 1,
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 0,
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              {isSelected ? (
+                <>
+                  <circle cx="12" cy="12" r="12" fill="#252525" />
+                  <path d="M7 12l3.5 3.5L17 8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </>
+              ) : (
+                <>
+                  <circle cx="12" cy="12" r="11" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
+                  <path d="M7 12l3.5 3.5L17 8" stroke="rgba(0,0,0,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </>
+              )}
+            </svg>
+          </button>
         )}
 
         {/* 텍스트 콘텐츠 */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* 이름 + 아이콘 */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 2 }}>
             <p style={{
               fontWeight: 700, fontSize: 17,
               lineHeight: '22.95px', color: 'rgba(0,12,30,0.8)',
@@ -259,7 +270,7 @@ function StoreCard({
                 }}
               >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <g fill="rgba(0,19,43,0.3)" fillRule="evenodd" clipRule="evenodd">
+                  <g fill="rgba(0,29,58,0.18)" fillRule="evenodd" clipRule="evenodd">
                     <path d="M10.293 7.707a1 1 0 0 1 0-1.414l3-3a1 1 0 1 1 1.414 1.414l-3 3a1 1 0 0 1-1.414 0"/>
                     <path d="M17.707 7.707a1 1 0 0 1-1.414 0l-3-3a1 1 0 0 1 1.414-1.414l3 3a1 1 0 0 1 0 1.414"/>
                     <path d="M14 5a1 1 0 0 1 1 1v8a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1m-4.293 7.293a1 1 0 0 1 0 1.414l-3 3a1 1 0 0 1-1.414-1.414l3-3a1 1 0 0 1 1.414 0"/>
@@ -287,13 +298,13 @@ function StoreCard({
           <p style={{
             fontWeight: 510, fontSize: 13,
             lineHeight: '17.55px', color: 'rgba(0,19,43,0.58)',
-            marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{store.address}</p>
 
           {/* 별점 + 뱃지 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="#FFB800">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="#FBBC04">
                 <path d="M8 1.5l1.647 3.337 3.682.535-2.664 2.597.629 3.666L8 9.75l-3.294 1.885.629-3.666L2.671 5.372l3.682-.535L8 1.5z"/>
               </svg>
               <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
@@ -324,7 +335,14 @@ function StoreCard({
                 const isLast = i === 9;
                 const showOverlay = isLast && !isEditMode;
                 return (
-                  <div key={i} style={{ position: 'relative', width: 80, height: 80, borderRadius: 4, backgroundColor: '#E8EDF4', flexShrink: 0, overflow: 'hidden' }}>
+                  <div
+                    key={i}
+                    onClick={!isLast && !isEditMode ? (e) => { e.stopPropagation(); onPress?.(); } : undefined}
+                    style={{
+                      position: 'relative', width: 80, height: 80, borderRadius: 4, backgroundColor: '#E8EDF4', flexShrink: 0, overflow: 'hidden',
+                      cursor: !isLast && !isEditMode ? 'pointer' : 'default',
+                    }}
+                  >
                     {photo && <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                     {showOverlay && (
                       <button
@@ -346,6 +364,7 @@ function StoreCard({
           </div>
         </div>
       </div>
+      <div style={{ paddingBottom: 20 }} />
     </div>
   );
 }
