@@ -686,6 +686,7 @@ export default function CollectionDetailPage({
 
   const [activeTab, setActiveTab] = useState<string>(collectionId);
   const [tabManageTargetId, setTabManageTargetId] = useState<string | null>(null);
+  const [deleteTabTargetId, setDeleteTabTargetId] = useState<string | null>(null);
   const [renameTabId, setRenameTabId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1338,7 +1339,11 @@ export default function CollectionDetailPage({
           }}
         >편집</button>
         <button
-          onClick={() => tabManageTargetId && handleTabDelete(tabManageTargetId)}
+          onClick={() => {
+            const id = tabManageTargetId;
+            setTabManageTargetId(null);
+            setTimeout(() => setDeleteTabTargetId(id), 200);
+          }}
           style={{
             width: '100%', height: 56, display: 'flex', alignItems: 'center',
             paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
@@ -1347,6 +1352,33 @@ export default function CollectionDetailPage({
         >삭제</button>
         <div style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} />
       </BottomSheet>
+
+      {/* 탭 삭제 확인 다이얼로그 */}
+      <ConfirmDialog
+        open={!!deleteTabTargetId}
+        onClose={() => setDeleteTabTargetId(null)}
+        title={<ConfirmDialog.Title>컬렉션을 삭제할까요?</ConfirmDialog.Title>}
+        description={
+          <ConfirmDialog.Description>
+            만들어둔 컬렉션이 사라져요.{'\n'}담아둔 매장은 전체 모음집에서 계속 볼 수 있어요.
+          </ConfirmDialog.Description>
+        }
+        cancelButton={
+          <ConfirmDialog.CancelButton onClick={() => setDeleteTabTargetId(null)}>
+            닫기
+          </ConfirmDialog.CancelButton>
+        }
+        confirmButton={
+          <ConfirmDialog.ConfirmButton
+            onClick={() => {
+              if (deleteTabTargetId) handleTabDelete(deleteTabTargetId);
+              setDeleteTabTargetId(null);
+            }}
+          >
+            삭제
+          </ConfirmDialog.ConfirmButton>
+        }
+      />
 
       {/* 컬렉션 이름 변경 바텀시트 */}
       <BottomSheet
