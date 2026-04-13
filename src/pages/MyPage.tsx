@@ -276,7 +276,7 @@ function ReportedCafePage({
   onDetailOpen?: (id: string) => void;
 }) {
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
       <SubHeader title="제보한 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <CafeGrid cafes={MOCK_REPORTED} onDetailOpen={onDetailOpen} />
@@ -299,7 +299,7 @@ function RecentCafePage({
   onDetailOpen?: (id: string) => void;
 }) {
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
       <SubHeader title="최근 본 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <CafeGrid cafes={MOCK_RECENT} onDetailOpen={onDetailOpen} />
@@ -347,7 +347,7 @@ function ReviewEditPage({
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white', position: 'relative' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative' }}>
       <SubHeader title="수정하기" onBack={handleCancel} onMore={() => {}} onClose={onClose} />
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 88 }}>
@@ -589,7 +589,7 @@ function WrittenReviewPage({
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white', position: 'relative' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative' }}>
       <SubHeader title="작성한 리뷰" onBack={onBack} onMore={() => {}} onClose={onClose} />
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -804,7 +804,7 @@ export default function MyPage({
   return (
     <div style={{
       height: '100%', display: 'flex', flexDirection: 'column',
-      background: 'white', position: 'relative', overflow: 'hidden',
+      background: '#f3f3f3', position: 'relative', overflow: 'hidden',
     }}>
       {/* 상단 헤더 */}
       <NavBar onBack={handleClose} onMore={handleMoreAction} onClose={handleClose} />
