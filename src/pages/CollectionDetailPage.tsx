@@ -81,7 +81,7 @@ function DeleteCollectionDialog({ onConfirm, onCancel }: { onConfirm: () => void
       title={<ConfirmDialog.Title>컬렉션을 삭제할까요?</ConfirmDialog.Title>}
       description={<ConfirmDialog.Description>만들어둔 컬렉션이 사라져요.{'\n'}담아둔 매장은 전체 모음집에서 계속 볼 수 있어요.</ConfirmDialog.Description>}
       cancelButton={<ConfirmDialog.CancelButton onClick={onCancel}>닫기</ConfirmDialog.CancelButton>}
-      confirmButton={<ConfirmDialog.ConfirmButton color="danger" variant="fill" onClick={onConfirm}>삭제하기</ConfirmDialog.ConfirmButton>}
+      confirmButton={<ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={onConfirm}>삭제하기</ConfirmDialog.ConfirmButton>}
       onClose={onCancel}
     />
   );
@@ -95,7 +95,7 @@ function DeleteTabDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCan
       title={<ConfirmDialog.Title>컬렉션을 삭제할까요?</ConfirmDialog.Title>}
       description={<ConfirmDialog.Description>만들어둔 컬렉션이 사라져요.{'\n'}담아둔 매장은 전체 모음집에서 계속 볼 수 있어요.</ConfirmDialog.Description>}
       cancelButton={<ConfirmDialog.CancelButton onClick={onCancel}>닫기</ConfirmDialog.CancelButton>}
-      confirmButton={<ConfirmDialog.ConfirmButton color="danger" variant="fill" onClick={onConfirm}>삭제하기</ConfirmDialog.ConfirmButton>}
+      confirmButton={<ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={onConfirm}>삭제하기</ConfirmDialog.ConfirmButton>}
       onClose={onCancel}
     />
   );
@@ -109,7 +109,7 @@ function DeleteStoreDialog({ onConfirm, onCancel }: { onConfirm: () => void; onC
       title={<ConfirmDialog.Title>매장을 삭제할까요?</ConfirmDialog.Title>}
       description={<ConfirmDialog.Description>모음집에서 매장이 사라져요.{'\n'}담아둔 컬렉션에서도 함께 지워져요.</ConfirmDialog.Description>}
       cancelButton={<ConfirmDialog.CancelButton onClick={onCancel}>닫기</ConfirmDialog.CancelButton>}
-      confirmButton={<ConfirmDialog.ConfirmButton color="danger" variant="fill" onClick={onConfirm}>삭제하기</ConfirmDialog.ConfirmButton>}
+      confirmButton={<ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={onConfirm}>삭제하기</ConfirmDialog.ConfirmButton>}
       onClose={onCancel}
     />
   );
