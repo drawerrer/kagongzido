@@ -293,7 +293,13 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   const [filterOpenKey, setFilterOpenKey] = useState(0); // remount key
   const [panelExpanded, setPanelExpanded] = useState(initialState?.panelExpanded ?? false);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
-  const [filterApplied, setFilterApplied] = useState(initialState?.filterApplied ?? false); // 한 번이라도 적용했는지
+
+  // 설정값이 DEFAULT와 다르면 true (아이콘 검정), 동일하면 false (아이콘 회색)
+  const filterApplied =
+    appliedFilters.openNow !== DEFAULT_FILTERS.openNow ||
+    appliedFilters.moods.length > 0 ||
+    appliedFilters.priceMax !== DEFAULT_FILTERS.priceMax ||
+    appliedFilters.options.length > 0;
 
   // 상태 변경 시 부모에 알림
   useEffect(() => {
@@ -669,7 +675,6 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         onClose={() => setFilterOpen(false)}
         onApply={(f) => {
           setAppliedFilters(f);
-          setFilterApplied(true);
           setFilterOpen(false);
         }}
       />
