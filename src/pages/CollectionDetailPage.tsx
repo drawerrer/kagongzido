@@ -660,6 +660,7 @@ export default function CollectionDetailPage({
     recentlyViewed, favorites, collections,
     removeCollection, removeFavorite, addFavorite, isFavorited,
     addStoresToCollection, removeStoresFromCollection, updateCollectionMemo, updateCollection,
+    reorderCollections,
   } = useFavorites();
 
   const [showPopover, setShowPopover] = useState(false);
@@ -688,6 +689,14 @@ export default function CollectionDetailPage({
   const [renameTabId, setRenameTabId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── 칩 드래그 상태 ──
+  const [chipDragId, setChipDragId] = useState<string | null>(null);
+  const [chipDragOrderState, setChipDragOrderState] = useState<string[]>([]);
+  const chipDragOrderRef = useRef<string[]>([]);
+  const chipLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chipDragPointerIdRef = useRef<number>(-1);
+  const chipContainerRef = useRef<HTMLDivElement>(null);
 
   const isRecent = collectionId === 'recent';
   const isActiveRecent = activeTab === 'recent';
@@ -913,25 +922,114 @@ export default function CollectionDetailPage({
     toastTimerRef.current = setTimeout(() => setToast(null), 2500);
   }
 
-  // ── 탭 롱프레스 ──
-  const handleTabPointerDown = (tabId: string) => {
-    longPressTimerRef.current = setTimeout(() => {
-      longPressTimerRef.current = null;
-      if (navigator.vibrate) navigator.vibrate(50);
-      if (tabId === 'recent') {
-        showToast('기본 폴더는 수정하거나 삭제할 수 없어요');
-      } else {
-        setTabManageTargetId(tabId);
-      }
-    }, 500);
+  // ── 칩 이름 변경 시트 열기 ──
+  const openRenameTab = (tabId: string) => {
+    const col = collections.find(c => c.id === tabId);
+    setRenameValue(col?.name ?? '');
+    setRenameTabId(tabId);
   };
 
-  const handleTabPointerUp = () => {
+  // ── 칩 포인터 이벤트 (일반 모드: 탭 관리 시트 / 편집 모드: 드래그) ──
+  const handleChipPointerDown = (tabId: string, e: React.PointerEvent) => {
+    if (isEditMode) {
+      chipDragPointerIdRef.current = e.pointerId;
+      chipLongPressTimerRef.current = setTimeout(() => {
+        chipLongPressTimerRef.current = null;
+        if (tabId === 'recent') {
+          showToast('기본 폴더는 수정하거나 삭제할 수 없어요');
+          return;
+        }
+        if (navigator.vibrate) navigator.vibrate(50);
+        const initialOrder = allTabs.map(t => t.id);
+        chipDragOrderRef.current = initialOrder;
+        setChipDragOrderState(initialOrder);
+        setChipDragId(tabId);
+      }, 500);
+    } else {
+      longPressTimerRef.current = setTimeout(() => {
+        longPressTimerRef.current = null;
+        if (navigator.vibrate) navigator.vibrate(50);
+        if (tabId === 'recent') {
+          showToast('기본 폴더는 수정하거나 삭제할 수 없어요');
+        } else {
+          setTabManageTargetId(tabId);
+        }
+      }, 500);
+    }
+  };
+
+  const handleChipPointerUp = () => {
+    if (chipLongPressTimerRef.current) {
+      clearTimeout(chipLongPressTimerRef.current);
+      chipLongPressTimerRef.current = null;
+    }
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
   };
+
+  // ── 칩 드래그 전역 이벤트 ──
+  useEffect(() => {
+    if (!chipDragId) return;
+
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerId !== chipDragPointerIdRef.current) return;
+      const container = chipContainerRef.current;
+      if (!container) return;
+
+      const chipEls = Array.from(container.querySelectorAll('[data-chip-id]')) as HTMLElement[];
+      const pointerX = e.clientX;
+
+      // 드래그 중인 칩과 최근 탭 제외한 나머지 칩의 중심 위치 수집
+      const positions: { id: string; center: number }[] = [];
+      for (const el of chipEls) {
+        const id = el.getAttribute('data-chip-id');
+        if (id && id !== 'recent' && id !== chipDragId) {
+          const rect = el.getBoundingClientRect();
+          positions.push({ id, center: rect.left + rect.width / 2 });
+        }
+      }
+
+      // 포인터 위치 기반으로 삽입 위치 결정
+      let insertAfterIndex = -1;
+      for (let i = 0; i < positions.length; i++) {
+        if (pointerX > positions[i].center) insertAfterIndex = i;
+        else break;
+      }
+
+      const others = positions.map(p => p.id);
+      others.splice(insertAfterIndex + 1, 0, chipDragId);
+      const newOrder = ['recent', ...others];
+
+      chipDragOrderRef.current = newOrder;
+      setChipDragOrderState(newOrder);
+    };
+
+    const onUp = (e: PointerEvent) => {
+      if (e.pointerId !== chipDragPointerIdRef.current) return;
+
+      const finalOrder = chipDragOrderRef.current.filter(id => id !== 'recent');
+      const newCollectionOrder = finalOrder
+        .map(id => collections.find(c => c.id === id))
+        .filter((c): c is NonNullable<typeof c> => Boolean(c));
+      if (newCollectionOrder.length === collections.filter(c => c.id !== 'recent').length) {
+        reorderCollections(newCollectionOrder);
+      }
+      setChipDragId(null);
+      setChipDragOrderState([]);
+      chipDragOrderRef.current = [];
+    };
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
+    return () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
+    };
+  }, [chipDragId, collections, reorderCollections]);
 
   // ── 탭(컬렉션) 삭제 ──
   const handleTabDelete = (tabId: string) => {
@@ -1013,27 +1111,33 @@ export default function CollectionDetailPage({
           75%       { transform: rotate(2deg); }
         }
       `}</style>
-      <div style={{
-        display: 'flex', gap: 8, padding: '10px 16px',
-        overflowX: 'auto', scrollbarWidth: 'none', flexShrink: 0,
-      }}>
-        {allTabs.map((tab) => {
+      <div
+        ref={chipContainerRef}
+        style={{
+          display: 'flex', gap: 8, padding: '10px 16px',
+          overflowX: 'auto', scrollbarWidth: 'none', flexShrink: 0,
+        }}
+      >
+        {(isEditMode && chipDragOrderState.length > 0
+          ? chipDragOrderState.map(id => allTabs.find(t => t.id === id)!).filter(Boolean)
+          : allTabs
+        ).map((tab) => {
           const isCustom = tab.id !== 'recent';
           const showPencil = isEditMode && isCustom;
-          const wiggle = isEditMode && isCustom;
+          const isDragging = chipDragId === tab.id;
+          const wiggle = isEditMode && isCustom && !isDragging;
           return (
-            <button
+            <div
               key={tab.id}
-              onPointerDown={() => handleTabPointerDown(tab.id)}
-              onPointerUp={handleTabPointerUp}
-              onPointerCancel={handleTabPointerUp}
-              onClick={() => { if (!isEditMode) setActiveTab(tab.id); }}
+              data-chip-id={tab.id}
+              onPointerDown={(e) => handleChipPointerDown(tab.id, e)}
+              onPointerUp={handleChipPointerUp}
+              onPointerCancel={handleChipPointerUp}
+              onClick={() => setActiveTab(tab.id)}
               style={{
                 height: 32,
-                padding: '0 10px',
+                padding: showPencil ? '0 2px 0 10px' : '0 10px',
                 borderRadius: 8,
-                border: 'none',
-                cursor: isEditMode ? 'default' : 'pointer',
                 backgroundColor: activeTab === tab.id ? '#252525' : 'rgba(46,46,46,0.08)',
                 color: activeTab === tab.id ? '#ffffff' : 'rgba(0,0,0,0.7)',
                 fontWeight: 590,
@@ -1041,21 +1145,40 @@ export default function CollectionDetailPage({
                 lineHeight: '16px',
                 flexShrink: 0,
                 whiteSpace: 'nowrap',
-                pointerEvents: isEditMode ? 'none' : 'auto',
                 display: 'flex', alignItems: 'center', gap: 4,
+                cursor: 'pointer',
+                userSelect: 'none',
+                touchAction: 'none',
+                position: 'relative',
+                zIndex: isDragging ? 10 : 1,
                 animation: wiggle ? 'chip-wiggle 0.45s ease-in-out infinite' : 'none',
                 transformOrigin: 'center bottom',
+                transform: isDragging ? 'scale(1.06) translateY(-5px)' : 'none',
+                boxShadow: isDragging ? '0 8px 20px rgba(0,0,0,0.18)' : 'none',
+                transition: isDragging ? 'none' : 'transform 0.15s, box-shadow 0.15s',
               }}
             >
-              {tab.name}
+              <span style={{ pointerEvents: 'none' }}>{tab.name}</span>
               {showPencil && (
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
-                  <path d="M8.5 1.5a1.121 1.121 0 0 1 1.586 0 1.121 1.121 0 0 1 0 1.586L3.75 9.422 1.5 10l.578-2.25L8.5 1.5Z"
-                    stroke={activeTab === tab.id ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)'}
-                    strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); openRenameTab(tab.id); }}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    padding: '8px 7px',
+                    margin: '-8px -2px -8px 0',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+                    <path d="M8.5 1.5a1.121 1.121 0 0 1 1.586 0 1.121 1.121 0 0 1 0 1.586L3.75 9.422 1.5 10l.578-2.25L8.5 1.5Z"
+                      stroke={activeTab === tab.id ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)'}
+                      strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
