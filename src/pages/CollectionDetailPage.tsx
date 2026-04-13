@@ -19,59 +19,6 @@ interface CollectionStore {
 }
 
 // ─── 팝오버 메뉴 ──────────────────────────────────────────────
-function Popover({
-  items,
-  onClose,
-}: {
-  items: { label: string; action: () => void; destructive?: boolean }[];
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent | TouchEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('touchstart', handler);
-    return () => {
-      document.removeEventListener('mousedown', handler);
-      document.removeEventListener('touchstart', handler);
-    };
-  }, [onClose]);
-
-  return (
-    <div ref={ref} style={{
-      position: 'absolute', top: 49, right: 10, zIndex: 100,
-      width: 180,
-      backgroundColor: 'rgba(253,253,254,0.89)',
-      border: '1px solid rgba(253,253,255,0.75)',
-      borderRadius: 20,
-      boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
-      overflow: 'hidden',
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
-    }}>
-      <div style={{ height: 30, display: 'flex', alignItems: 'center', paddingLeft: 16 }}>
-        <span style={{ fontWeight: 590, fontSize: 13, color: '#031832' }}>메뉴</span>
-      </div>
-      {items.map((item, i) => (
-        <button
-          key={i}
-          onClick={() => { item.action(); onClose(); }}
-          style={{
-            width: '100%', height: 44,
-            display: 'flex', alignItems: 'center', paddingLeft: 16,
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontWeight: 510, fontSize: 17,
-            color: item.destructive ? '#e42939' : 'rgba(3,18,40,0.7)',
-            textAlign: 'left',
-          }}
-        >{item.label}</button>
-      ))}
-    </div>
-  );
-}
 
 // ─── 컬렉션 삭제 다이얼로그 ───────────────────────────────────
 function DeleteCollectionDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
@@ -705,7 +652,6 @@ export default function CollectionDetailPage({
     reorderCollections,
   } = useFavorites();
 
-  const [showPopover, setShowPopover] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -741,7 +687,6 @@ export default function CollectionDetailPage({
   const chipDragPointerIdRef = useRef<number>(-1);
   const chipContainerRef = useRef<HTMLDivElement>(null);
 
-  const isRecent = collectionId === 'recent';
   const isActiveRecent = activeTab === 'recent';
 
   const activeCollection = collections.find(c => c.id === activeTab);
@@ -820,27 +765,11 @@ export default function CollectionDetailPage({
     setDragOverIndex(-1);
   }, [dragIndex, dragOverIndex, updateCollection, activeTab]);
 
-  // ── 팝오버 아이템 (유저 컬렉션 전용) ──
-  const popoverItems = stores.length === 0
-    ? [
-        { label: '삭제하기', action: () => setShowDeleteCollectionDialog(true) },
-        { label: '매장 추가하기', action: () => setShowAddStoreSheet(true) },
-        { label: '공유하기', action: () => setShowShareSheet(true) },
-        { label: '정보 수정 제안하기', action: () => {} },
-      ]
-    : [
-        { label: '편집하기', action: enterEditMode },
-        { label: '컬렉션 삭제하기', action: () => setShowDeleteCollectionDialog(true) },
-        { label: '매장 추가하기', action: () => setShowAddStoreSheet(true) },
-        { label: '공유하기', action: () => setShowShareSheet(true) },
-        { label: '정보 수정 제안하기', action: () => {} },
-      ];
 
   // ── 편집모드 ──
   function enterEditMode() {
     setIsEditMode(true);
     setSelectedIds(new Set());
-    setShowPopover(false);
   }
 
   const exitEditMode = () => {
@@ -1112,17 +1041,10 @@ export default function CollectionDetailPage({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
       {/* ── NavBar ── */}
-      <div style={{ position: 'relative' }}>
-        <NavBar
-          onBack={handleBack}
-          onMore={isRecent ? undefined : () => setShowPopover(v => !v)}
-          onClose={handleClose}
-        />
-        {/* 팝오버 */}
-        {showPopover && (
-          <Popover items={popoverItems} onClose={() => setShowPopover(false)} />
-        )}
-      </div>
+      <NavBar
+        onBack={handleBack}
+        onClose={handleClose}
+      />
 
       {/* ── info_2 (46px) — 항상 "컬렉션명 + 편집" 고정 ── */}
       <div style={{ height: 46, backgroundColor: '#F3F3F3', display: 'flex', alignItems: 'center', position: 'relative', flexShrink: 0 }}>
@@ -1278,7 +1200,6 @@ export default function CollectionDetailPage({
         <div
           ref={storeListRef}
           style={{ flex: 1, overflowY: 'auto' }}
-          onScroll={() => showPopover && setShowPopover(false)}
           onPointerMove={isEditMode ? onListPointerMove : undefined}
           onPointerUp={isEditMode ? onListPointerUp : undefined}
           onPointerCancel={isEditMode ? onListPointerUp : undefined}

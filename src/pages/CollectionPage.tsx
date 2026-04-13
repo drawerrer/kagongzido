@@ -410,78 +410,6 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-// ─── 팝오버 메뉴 ─────────────────────────────────────────────
-function Popover({
-  onSuggestInfo,
-  onShare,
-  onClose,
-}: {
-  onSuggestInfo: () => void;
-  onShare: () => void;
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent | TouchEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('touchstart', handler);
-    return () => {
-      document.removeEventListener('mousedown', handler);
-      document.removeEventListener('touchstart', handler);
-    };
-  }, [onClose]);
-
-  const items = [
-    { label: '공유하기', action: onShare },
-    { label: '정보 수정 제안하기', action: onSuggestInfo },
-  ];
-
-  return (
-    <div ref={ref} style={{
-      position: 'absolute', top: 49, right: 10, zIndex: 100,
-      width: 180,
-      backgroundColor: 'rgba(253,253,254,0.89)',
-      border: '1px solid rgba(253,253,255,0.75)',
-      borderRadius: 20,
-      boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
-      overflow: 'hidden',
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
-    }}>
-      {/* 타이틀 "메뉴" — Figma: 13px/590/#031832, height 30px */}
-      <div style={{
-        height: 30,
-        display: 'flex', alignItems: 'center',
-        paddingLeft: 16,
-      }}>
-        <span style={{
-          fontWeight: 590, fontSize: 13,
-          color: '#031832',
-        }}>메뉴</span>
-      </div>
-      {/* 메뉴 항목 — Figma: 17px/510/#031228, height 44px */}
-      {items.map((item, i) => (
-        <button
-          key={i}
-          onClick={() => { item.action(); onClose(); }}
-          style={{
-            width: '100%', height: 44,
-            display: 'flex', alignItems: 'center',
-            paddingLeft: 16,
-            fontSize: 17, fontWeight: 510,
-            color: '#031228',
-            background: 'none', border: 'none',
-            cursor: 'pointer', textAlign: 'left',
-            borderRadius: 12,
-          }}
-        >{item.label}</button>
-      ))}
-    </div>
-  );
-}
 
 // ─── 메인 페이지 ──────────────────────────────────────────────
 export default function CollectionPage({
@@ -577,7 +505,6 @@ export default function CollectionPage({
   const [newCollectionName, setNewCollectionName] = useState('');
   const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
-  const [showPopover, setShowPopover] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<Set<string>>(new Set());
   const [deletedStores, setDeletedStores] = useState<FavoritedStore[]>([]);
@@ -709,21 +636,10 @@ export default function CollectionPage({
       height: '100%', backgroundColor: '#F3F3F3', position: 'relative',
     }}>
       {/* ── NavBar ── */}
-      <div style={{ position: 'relative' }}>
-        <NavBar
-          onBack={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onBack ?? onGoHome)}
-          onMore={() => setShowPopover(v => !v)}
-          onClose={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onClose ?? onGoHome)}
-        />
-        {/* 팝오버 */}
-        {showPopover && (
-          <Popover
-            onSuggestInfo={() => setShowPopover(false)}
-            onShare={() => { setShowPopover(false); setShowShareSheet(true); }}
-            onClose={() => setShowPopover(false)}
-          />
-        )}
-      </div>
+      <NavBar
+        onBack={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onBack ?? onGoHome)}
+        onClose={isEditMode ? exitEditMode : isOrganizeMode ? exitOrganizeMode : (onClose ?? onGoHome)}
+      />
 
       {/* ── info_2 bar (Figma: 46px, Medium 510 14px centered) ── */}
       <div style={{
@@ -740,7 +656,6 @@ export default function CollectionPage({
       {/* ── 스크롤 본문 ── */}
       <div
         style={{ flex: 1, overflowY: 'auto' }}
-        onScroll={() => showPopover && setShowPopover(false)}
       >
 
         {/* 컬렉션 카드 가로 스크롤 — 오거나이즈 모드에서 숨김 */}
