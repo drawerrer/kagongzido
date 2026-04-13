@@ -31,6 +31,7 @@ interface MockStore {
   seats: number;
   outlet: '충분' | '보통' | '적음';
   gradient: [string, string];
+  photos: string[]; // CSS background 값 (mock)
 }
 
 interface MockGuidebook {
@@ -43,13 +44,23 @@ interface MockGuidebook {
 
 type GuideView = 'main' | 'detail' | 'past';
 
+// 목 이미지: 그라디언트 색상 기반으로 10장 생성
+function mkPhotos(c1: string, c2: string): string[] {
+  const angles = [160, 200, 140, 180, 220, 150, 170, 190, 135, 165];
+  return angles.map((a, i) =>
+    i % 2 === 0
+      ? `linear-gradient(${a}deg, ${c1}, ${c2})`
+      : `linear-gradient(${a}deg, ${c2}, ${c1})`
+  );
+}
+
 // ─── 목 데이터 ────────────────────────────────────────────────
 const FEATURE_STORES: MockStore[] = [
-  { id: 'gs1', district: '서울 영등포구', name: '도트커피', seats: 15, outlet: '충분', gradient: ['#C4A882', '#7A5A3C'] },
-  { id: 'gs2', district: '서울 마포구', name: '프릳츠 커피', seats: 20, outlet: '보통', gradient: ['#A89276', '#5E4030'] },
-  { id: 'gs3', district: '서울 성동구', name: '어니언', seats: 30, outlet: '충분', gradient: ['#9B8B7A', '#4A3A2C'] },
-  { id: 'gs4', district: '서울 강남구', name: '오르에르', seats: 25, outlet: '충분', gradient: ['#C8B8A2', '#6E5E4C'] },
-  { id: 'gs5', district: '경기 성남시', name: '스탠딩커피', seats: 10, outlet: '적음', gradient: ['#B0A090', '#5A4A3C'] },
+  { id: 'gs1', district: '서울 영등포구', name: '도트커피', seats: 15, outlet: '충분', gradient: ['#C4A882', '#7A5A3C'], photos: mkPhotos('#C4A882', '#7A5A3C') },
+  { id: 'gs2', district: '서울 마포구', name: '프릳츠 커피', seats: 20, outlet: '보통', gradient: ['#A89276', '#5E4030'], photos: mkPhotos('#A89276', '#5E4030') },
+  { id: 'gs3', district: '서울 성동구', name: '어니언', seats: 30, outlet: '충분', gradient: ['#9B8B7A', '#4A3A2C'], photos: mkPhotos('#9B8B7A', '#4A3A2C') },
+  { id: 'gs4', district: '서울 강남구', name: '오르에르', seats: 25, outlet: '충분', gradient: ['#C8B8A2', '#6E5E4C'], photos: mkPhotos('#C8B8A2', '#6E5E4C') },
+  { id: 'gs5', district: '경기 성남시', name: '스탠딩커피', seats: 10, outlet: '적음', gradient: ['#B0A090', '#5A4A3C'], photos: mkPhotos('#B0A090', '#5A4A3C') },
 ];
 
 const FEATURED: MockGuidebook = {
@@ -184,6 +195,7 @@ function GuideBookDetailView({
   const loopedStores = useMemo(() => [...stores, ...stores, ...stores], [stores]);
 
   const [absIndex, setAbsIndex] = useState(stores.length + (initialStoreIndex ?? 0));
+  const [photoIndex, setPhotoIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRepositioning = useRef(false);
@@ -268,6 +280,7 @@ function GuideBookDetailView({
 
   useEffect(() => {
     onStoreIndexChange?.(currentStoreIndex);
+    setPhotoIndex(0);
   }, [currentStoreIndex, onStoreIndexChange]);
 
   const store = stores[currentStoreIndex];
@@ -290,7 +303,7 @@ function GuideBookDetailView({
 
       {/* 수평 무한 캐러셀 — 피그마: 413px 영역, 중앙 크게·좌우 작게 */}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-        <style>{`.guide-carousel::-webkit-scrollbar { display: none; }`}</style>
+        <style>{`.guide-carousel::-webkit-scrollbar { display: none; } .card-img-scroll::-webkit-scrollbar { display: none; }`}</style>
         <div
           ref={scrollRef}
           className="guide-carousel"
@@ -330,16 +343,71 @@ function GuideBookDetailView({
                   transition: 'height 0.25s ease',
                 }}
               >
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 33%, rgba(23,20,20,0.56) 100%)' }} />
+                {/* 내부 이미지 가로 스크롤 */}
+                <div
+                  className="card-img-scroll"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    display: 'flex',
+                    scrollSnapType: 'x mandatory',
+                    scrollbarWidth: 'none',
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onScroll={isActive ? (e) => {
+                    const el = e.currentTarget;
+                    const idx = Math.round(el.scrollLeft / el.clientWidth);
+                    setPhotoIndex(idx);
+                  } : undefined}
+                >
+                  {s.photos.map((photo, pi) => {
+                    const isLastPhoto = pi === s.photos.length - 1;
+                    return (
+                      <div
+                        key={pi}
+                        style={{
+                          width: CARD_W,
+                          height: '100%',
+                          flexShrink: 0,
+                          scrollSnapAlign: 'start',
+                          background: photo,
+                          position: 'relative',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isLastPhoto) onDetailOpen?.(s.id);
+                          else onDetailOpenToReview?.(s.id);
+                        }}
+                      >
+                        {isLastPhoto && (
+                          <div style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'rgba(0,0,0,0.52)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}>
+                            <span style={{ color: 'white', fontSize: 18, fontWeight: 590 }}>+{s.photos.length - 1}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* 그라디언트 오버레이 */}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(23,20,20,0.56) 100%)', pointerEvents: 'none' }} />
                 {/* 페이지네이션 점 — 피그마: 6×6, active #6b7684, inactive #d9d9d9 */}
                 {isActive && (
-                  <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5 }}>
-                    {stores.map((_, di) => (
+                  <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5, pointerEvents: 'none' }}>
+                    {s.photos.map((_, di) => (
                       <div key={di} style={{
                         width: 6,
                         height: 6,
                         borderRadius: 99,
-                        backgroundColor: di === currentStoreIndex ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.35)',
+                        backgroundColor: di === photoIndex ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.35)',
                         transition: 'background-color 0.25s ease',
                       }} />
                     ))}
