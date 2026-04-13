@@ -71,14 +71,10 @@ function Chip({
         gap: icon ? 4 : 0,
         height: 32,
         padding: icon ? '0 12px' : '0 14px',
-        borderRadius: 9999,
-        border: selected
-          ? 'none'
-          : '1px solid rgba(0,23,51,0.02)',
-        background: selected
-          ? 'rgba(0,12,30,0.80)'
-          : 'rgba(7,25,76,0.05)',
-        color: selected ? '#ffffff' : 'rgba(3,18,40,0.70)',
+        borderRadius: 8,
+        border: 'none',
+        background: selected ? '#252525' : 'rgba(46,46,46,0.08)',
+        color: selected ? '#ffffff' : 'rgba(0,0,0,0.7)',
         fontSize,
         fontWeight: 590,
         flexShrink: 0,
@@ -159,14 +155,14 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
         style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.20)' }}
       />
 
-      {/* 시트 — 피그마: r=28, fill=#ffffff */}
+      {/* 시트 */}
       <div
         style={{
           position: 'absolute',
           bottom: 0,
           left: 10,
           right: 10,
-          background: '#ffffff',
+          background: '#f3f3f3',
           borderRadius: 28,
           maxHeight: '92vh',
           display: 'flex',
@@ -347,7 +343,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
           style={{
             height: 90,
             padding: '34px 20px 0',
-            background: '#ffffff',
+            background: '#f3f3f3',
             display: 'flex',
             gap: 10,
           }}
