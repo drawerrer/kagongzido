@@ -192,7 +192,6 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
           {/* 지금 영업중인 카페만 보기
               피그마: fs=14 fw=400 lh=18.9 fill=#777777, Title instance h=39 */}
           <div
-            onClick={() => setFilters(f => ({ ...f, openNow: !f.openNow }))}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -343,20 +342,37 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
           <div style={{ height: 16 }} />
         </div>
 
-        {/* ── 하단 고정: 적용하기 버튼
-            피그마: Button Area h=90, 버튼 pad-top=34px
-            버튼: h=56 r=16 fill=#252525 fs=17 fw=590 fill=#ffffff ── */}
+        {/* ── 하단 고정: 초기화 + 적용하기 버튼 ── */}
         <div
           style={{
             height: 90,
             padding: '34px 20px 0',
             background: '#ffffff',
+            display: 'flex',
+            gap: 10,
           }}
         >
           <button
+            onClick={() => setFilters(DEFAULT_FILTERS)}
+            style={{
+              width: 88,
+              height: 56,
+              borderRadius: 16,
+              background: 'rgba(0,12,30,0.05)',
+              color: 'rgba(0,12,30,0.6)',
+              fontSize: 17,
+              fontWeight: 590,
+              cursor: 'pointer',
+              border: 'none',
+              flexShrink: 0,
+            }}
+          >
+            초기화
+          </button>
+          <button
             onClick={handleApply}
             style={{
-              width: '100%',
+              flex: 1,
               height: 56,
               borderRadius: 16,
               background: '#252525',
