@@ -87,6 +87,20 @@ function DeleteCollectionDialog({ onConfirm, onCancel }: { onConfirm: () => void
   );
 }
 
+// ─── 탭(컬렉션) 삭제 다이얼로그 ──────────────────────────────
+function DeleteTabDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <ConfirmDialog
+      open={true}
+      title={<ConfirmDialog.Title>컬렉션을 삭제할까요?</ConfirmDialog.Title>}
+      description={<ConfirmDialog.Description>만들어둔 컬렉션이 사라져요.{'\n'}담아둔 매장은 전체 모음집에서 계속 볼 수 있어요.</ConfirmDialog.Description>}
+      cancelButton={<ConfirmDialog.CancelButton onClick={onCancel}>닫기</ConfirmDialog.CancelButton>}
+      confirmButton={<ConfirmDialog.ConfirmButton color="danger" variant="fill" onClick={onConfirm}>삭제하기</ConfirmDialog.ConfirmButton>}
+      onClose={onCancel}
+    />
+  );
+}
+
 // ─── 매장 삭제 다이얼로그 ─────────────────────────────────────
 function DeleteStoreDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
@@ -1354,31 +1368,12 @@ export default function CollectionDetailPage({
       </BottomSheet>
 
       {/* 탭 삭제 확인 다이얼로그 */}
-      <ConfirmDialog
-        open={!!deleteTabTargetId}
-        onClose={() => setDeleteTabTargetId(null)}
-        title={<ConfirmDialog.Title>컬렉션을 삭제할까요?</ConfirmDialog.Title>}
-        description={
-          <ConfirmDialog.Description>
-            만들어둔 컬렉션이 사라져요.{'\n'}담아둔 매장은 전체 모음집에서 계속 볼 수 있어요.
-          </ConfirmDialog.Description>
-        }
-        cancelButton={
-          <ConfirmDialog.CancelButton onClick={() => setDeleteTabTargetId(null)}>
-            닫기
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton
-            onClick={() => {
-              if (deleteTabTargetId) handleTabDelete(deleteTabTargetId);
-              setDeleteTabTargetId(null);
-            }}
-          >
-            삭제
-          </ConfirmDialog.ConfirmButton>
-        }
-      />
+      {deleteTabTargetId && (
+        <DeleteTabDialog
+          onConfirm={() => { handleTabDelete(deleteTabTargetId); setDeleteTabTargetId(null); }}
+          onCancel={() => setDeleteTabTargetId(null)}
+        />
+      )}
 
       {/* 컬렉션 이름 변경 바텀시트 */}
       <BottomSheet
