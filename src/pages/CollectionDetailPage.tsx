@@ -1174,8 +1174,8 @@ export default function CollectionDetailPage({
                 zIndex: isDragging ? 10 : 1,
                 animation: wiggle ? 'chip-wiggle 0.45s ease-in-out infinite' : 'none',
                 transformOrigin: 'center bottom',
-                transform: isDragging ? 'scale(1.06) translateY(-5px)' : 'none',
-                boxShadow: isDragging ? '0 8px 20px rgba(0,0,0,0.18)' : 'none',
+                transform: isDragging ? 'scale(1.02) translateY(-2px)' : 'none',
+                boxShadow: isDragging ? '0 4px 10px rgba(0,0,0,0.12)' : 'none',
                 transition: isDragging ? 'none' : 'transform 0.15s, box-shadow 0.15s',
               }}
             >
