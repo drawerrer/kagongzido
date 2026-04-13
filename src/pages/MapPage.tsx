@@ -586,12 +586,12 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
                 flexShrink: 0,
                 height: 32,
                 padding: '0 14px',
-                borderRadius: 9999,
+                borderRadius: 8,
                 border: 'none',
-                background: activeChip === chip ? '#191F28' : '#F2F4F6',
-                color: activeChip === chip ? 'white' : '#191F28',
+                background: activeChip === chip ? '#252525' : 'rgba(46,46,46,0.08)',
+                color: activeChip === chip ? '#ffffff' : 'rgba(0,0,0,0.7)',
                 fontSize: 13,
-                fontWeight: 600,
+                fontWeight: 590,
                 transition: 'background 0.15s',
               }}
             >
