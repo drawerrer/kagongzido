@@ -110,7 +110,7 @@ const MOCK_REVIEWS: ReviewItem[] = [
 // ─────────────────────────────────────────────────────────────
 
 
-/** 서브페이지 헤더: 뒤로가기 + 타이틀 + ···|X */
+/** 서브페이지 헤더: 뒤로가기 + ···|X (타이틀 없음) + 하단 타이틀 섹션 */
 function SubHeader({
   title,
   onBack,
@@ -123,46 +123,58 @@ function SubHeader({
   onClose?: () => void;
 }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center',
-      padding: '12px 16px',
-      borderBottom: '1px solid #F2F4F6',
-      flexShrink: 0,
-    }}>
-      <button onClick={onBack} style={{ marginRight: 8, padding: 4 }}>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M15 18L9 12L15 6" stroke="#191F28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-      <span style={{ flex: 1, textAlign: 'center', fontSize: 17, fontWeight: 700, color: '#191F28' }}>
-        {title}
-      </span>
-      {(onMore || onClose) && (
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          background: '#F2F4F6', borderRadius: 20, overflow: 'hidden', height: 34,
-        }}>
-          {onMore && (
-            <button onClick={onMore} style={{
-              width: 40, height: 34,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 15, color: '#4E5968', letterSpacing: 1,
-            }}>···</button>
-          )}
-          {onMore && onClose && <div style={{ width: 1, height: 14, background: '#D1D6DB' }} />}
-          {onClose && (
-            <button onClick={onClose} style={{
-              width: 36, height: 34,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M1 1L11 11M11 1L1 11" stroke="#4E5968" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+    <>
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        padding: '12px 16px',
+        background: '#f3f3f3',
+        flexShrink: 0,
+      }}>
+        <button onClick={onBack} style={{ marginRight: 8, padding: 4 }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M15 18L9 12L15 6" stroke="#191F28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <div style={{ flex: 1 }} />
+        {(onMore || onClose) && (
+          <div style={{
+            display: 'flex', alignItems: 'center',
+            background: 'rgba(0,23,51,0.02)', borderRadius: 99, overflow: 'hidden', height: 34,
+          }}>
+            {onMore && (
+              <button onClick={onMore} style={{
+                width: 40, height: 34,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 15, color: '#4E5968', letterSpacing: 1,
+              }}>···</button>
+            )}
+            {onMore && onClose && <div style={{ width: 1, height: 14, background: '#D1D6DB' }} />}
+            {onClose && (
+              <button onClick={onClose} style={{
+                width: 36, height: 34,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M1 1L11 11M11 1L1 11" stroke="#4E5968" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      {/* 타이틀 섹션 */}
+      <div style={{
+        height: 46,
+        background: '#f3f3f3',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+        borderBottom: '1px solid #F2F4F6',
+      }}>
+        <span style={{ fontWeight: 510, fontSize: 14, color: '#000000', lineHeight: '25.5px' }}>
+          {title}
+        </span>
+      </div>
+    </>
   );
 }
 
