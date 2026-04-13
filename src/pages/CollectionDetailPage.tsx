@@ -1148,7 +1148,13 @@ export default function CollectionDetailPage({
               onPointerDown={(e) => handleChipPointerDown(tab.id, e)}
               onPointerUp={handleChipPointerUp}
               onPointerCancel={handleChipPointerUp}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                if (isEditMode && tab.id === 'recent') {
+                  showToast('기본 폴더는 수정하거나 삭제할 수 없어요');
+                  return;
+                }
+                setActiveTab(tab.id);
+              }}
               style={{
                 height: 32,
                 padding: showPencil ? '0 2px 0 10px' : '0 10px',
