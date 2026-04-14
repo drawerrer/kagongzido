@@ -93,56 +93,46 @@ function GuideBookMainView({
   onPastPress: () => void;
 }) {
   return (
-    <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#F3F3F3' }}>
-      {/* 메인 큐레이션 카드 — 피그마: padding 75px top, 30px horizontal */}
-      <div style={{ paddingTop: 75, paddingLeft: 30, paddingRight: 30 }}>
-        <button
-          onClick={onCardPress}
-          style={{ width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', display: 'block' }}
-        >
+    <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#F3F3F3', display: 'flex', flexDirection: 'column', padding: '24px 30px 16px' }}>
+      {/* 메인 큐레이션 카드 — flex: 1 로 남은 공간 전부 차지 */}
+      <button
+        onClick={onCardPress}
+        style={{ flex: 1, minHeight: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', display: 'block', width: '100%' }}
+      >
+        <div style={{
+          width: '100%',
+          height: '100%',
+          borderRadius: 6,
+          overflow: 'hidden',
+          position: 'relative',
+          background: `linear-gradient(160deg, ${guidebook.gradient[0]}, ${guidebook.gradient[1]})`,
+        }}>
+          {/* 딤 오버레이 */}
           <div style={{
-            width: '100%',
-            height: 500,
-            borderRadius: 6,
-            overflow: 'hidden',
-            position: 'relative',
-            background: `linear-gradient(160deg, ${guidebook.gradient[0]}, ${guidebook.gradient[1]})`,
-          }}>
-            {/* 딤 오버레이 — Top 33% 투명 → Bottom 56% 어둡게 */}
-            <div style={{
-              position: 'absolute', inset: 0,
-              background: 'linear-gradient(to bottom, rgba(0,0,0,0) 33%, rgba(23,20,20,0.92) 100%)',
-            }} />
-            {/* 텍스트 오버레이 — 피그마: bottom 28, left 24 */}
-            <div style={{ position: 'absolute', bottom: 28, left: 24 }}>
-              {/* 제목 — 28px/590, 줄바꿈 */}
-              <p style={{
-                
-                fontWeight: 590,
-                fontSize: 28,
-                lineHeight: '33.4px',
-                color: '#fff',
-                whiteSpace: 'pre-line',
-                marginBottom: 8,
-              }}>
-                {guidebook.title}
-              </p>
-              {/* count — 18px/400, 배경 없음 */}
-              <span style={{
-                
-                fontWeight: 400,
-                fontSize: 18,
-                color: '#fff',
-              }}>
-                {guidebook.stores.length} places
-              </span>
-            </div>
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0) 33%, rgba(23,20,20,0.92) 100%)',
+          }} />
+          {/* 텍스트 오버레이 */}
+          <div style={{ position: 'absolute', bottom: 28, left: 24 }}>
+            <p style={{
+              fontWeight: 590,
+              fontSize: 28,
+              lineHeight: '33.4px',
+              color: '#fff',
+              whiteSpace: 'pre-line',
+              marginBottom: 8,
+            }}>
+              {guidebook.title}
+            </p>
+            <span style={{ fontWeight: 400, fontSize: 18, color: '#fff' }}>
+              {guidebook.stores.length} places
+            </span>
           </div>
-        </button>
-      </div>
+        </div>
+      </button>
 
-      {/* 지난 가이드북 링크 — 피그마: 20px 아래, 가운데 정렬, 18px/590 #333333 */}
-      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
+      {/* 지난 가이드북 링크 */}
+      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 16, flexShrink: 0 }}>
         <TextButton size="medium" onClick={onPastPress}>
           지난 가이드북
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#333333" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -353,6 +343,8 @@ function GuideBookDetailView({
                   scrollSnapAlign: 'center',
                   display: 'flex',
                   flexDirection: 'column',
+                  borderRadius: 6,
+                  overflow: 'hidden',
                   opacity: isActive ? 1 : 0.55,
                   transition: 'opacity 0.25s ease',
                 }}
@@ -361,8 +353,6 @@ function GuideBookDetailView({
                 <div style={{
                   height: imgH,
                   flexShrink: 0,
-                  borderRadius: '6px 6px 0 0',
-                  overflow: 'hidden',
                   position: 'relative',
                   background: `linear-gradient(160deg, ${s.gradient[0]}, ${s.gradient[1]})`,
                 }}>
@@ -448,7 +438,6 @@ function GuideBookDetailView({
                   justifyContent: 'center',
                   padding: '0 16px',
                   backgroundColor: '#f2f4f6',
-                  borderRadius: '0 0 6px 6px',
                 }}>
                   <p style={{ fontWeight: 510, fontSize: 12, color: '#6b7684', textAlign: 'center', lineHeight: '22.5px', marginBottom: 0 }}>
                     {s.district}
