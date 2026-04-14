@@ -132,7 +132,7 @@ function GuideBookMainView({
       </button>
 
       {/* 지난 가이드북 링크 */}
-      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 16, flexShrink: 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 30, flexShrink: 0 }}>
         <TextButton size="medium" onClick={onPastPress}>
           지난 가이드북
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#333333" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -186,8 +186,6 @@ function GuideBookDetailView({
 
   const [absIndex, setAbsIndex] = useState(stores.length + (initialStoreIndex ?? 0));
   const [photoIndex, setPhotoIndex] = useState(0);
-  const [containerH, setContainerH] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRepositioning = useRef(false);
@@ -219,18 +217,6 @@ function GuideBookDetailView({
     isDragging.current = false;
     scrollRef.current.style.cursor = 'grab';
     scrollRef.current.style.removeProperty('user-select');
-  }, []);
-
-  // 컨테이너 높이 측정 (동적 CARD_H)
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(entries => {
-      const h = entries[0].contentRect.height;
-      if (h > 0) setContainerH(h);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
   }, []);
 
   // 마운트 시 초기 스크롤
@@ -304,7 +290,7 @@ function GuideBookDetailView({
       </div>
 
       {/* 수평 무한 캐러셀 — 이미지+정보 통합 카드 */}
-      <div ref={containerRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <style>{`.guide-carousel::-webkit-scrollbar { display: none; } .card-img-scroll::-webkit-scrollbar { display: none; }`}</style>
         <div
           ref={scrollRef}
@@ -331,8 +317,8 @@ function GuideBookDetailView({
         >
           {loopedStores.map((s, i) => {
             const isActive = i === absIndex;
-            const cardH = containerH > 0 ? containerH : CARD_H + 132;
-            const imgH = cardH - 132;
+            const imgH = Math.round(CARD_W * 4 / 3);
+            const cardH = imgH + 132;
             return (
               <div
                 key={i}
