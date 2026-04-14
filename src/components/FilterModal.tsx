@@ -91,7 +91,7 @@ function Chip({
 function Checkbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
   return (
     <button
-      onClick={onToggle}
+      onClick={e => { e.stopPropagation(); onToggle(); }}
       style={{
         width: 20,
         height: 20,
