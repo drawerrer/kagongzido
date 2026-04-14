@@ -17,7 +17,7 @@ interface Store {
   photos?: string[];
 }
 
-type BottomSheetType = null | 'create' | 'select-collection' | 'rename';
+type BottomSheetType = null | 'create' | 'select-collection' | 'rename' | 'col-action';
 type SnackbarType = null | 'deleted' | 'added' | 'renamed' | 'collection-deleted';
 
 // ─── 컬렉션 카드 (Figma: 121×121px card, 6px gap, 23px label) ─
@@ -29,6 +29,7 @@ function CollectionCard({
   isDragOver = false,
   wiggleDelay = 0,
   onPress,
+  onLongPress,
   onRename,
   onHandlePointerDown,
   previewPhotos = [],
@@ -40,10 +41,20 @@ function CollectionCard({
   isDragOver?: boolean;
   wiggleDelay?: number;
   onPress?: () => void;
+  onLongPress?: () => void;
   onRename?: () => void;
   onHandlePointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
   previewPhotos?: string[];
 }) {
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!onLongPress || isEditMode || isNew) return;
+    longPressTimer.current = setTimeout(() => { onLongPress(); }, 500);
+  };
+  const cancelLongPress = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  };
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0,
@@ -53,6 +64,10 @@ function CollectionCard({
     }}>
       <button
         onClick={onPress}
+        onPointerDown={handlePointerDown}
+        onPointerUp={cancelLongPress}
+        onPointerLeave={cancelLongPress}
+        onPointerCancel={cancelLongPress}
         style={{
           width: 121,
           background: 'none', border: 'none', padding: 0,
@@ -435,7 +450,7 @@ export default function CollectionPage({
   const {
     favorites, addFavorite: addFavoriteFromContext, removeFavorite: removeFavoriteFromContext,
     reorderFavorites,
-    recentlyViewed, collections, addCollection, updateCollection, addStoresToCollection,
+    recentlyViewed, collections, addCollection, updateCollection, removeCollection, addStoresToCollection,
     reorderCollections,
   } = useFavorites();
 
@@ -507,6 +522,7 @@ export default function CollectionPage({
   const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [showShareSheet, setShowShareSheet] = useState(false);
+  const [colActionTargetId, setColActionTargetId] = useState<string | null>(null);
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<Set<string>>(new Set());
   const [deletedStores, setDeletedStores] = useState<FavoritedStore[]>([]);
   const [addedToCollectionIds, setAddedToCollectionIds] = useState<string[]>([]);
@@ -708,6 +724,7 @@ export default function CollectionPage({
                         .filter((p): p is string => !!p)
                 }
                 onRename={() => openRename(col.id)}
+                onLongPress={!isEditMode && col.id !== 'recent' ? () => { setColActionTargetId(col.id); setBottomSheet('col-action'); } : undefined}
                 onPress={!isEditMode ? () => onCollectionOpen?.(col.id, col.name) : undefined}
                 onHandlePointerDown={isEditMode && col.id !== 'recent'
                   ? (e) => onColHandlePointerDown(e, index)
@@ -977,6 +994,57 @@ export default function CollectionPage({
             }}
           >확인</CTAButton>}
         />
+      </BottomSheet>
+
+      {/* ─────────── BottomSheet: 컬렉션 편집/삭제 ─────────── */}
+      <BottomSheet
+        open={bottomSheet === 'col-action'}
+        onClose={() => { setBottomSheet(null); setColActionTargetId(null); }}
+      >
+        <div style={{ padding: '8px 0 16px' }}>
+          {/* 편집 */}
+          <button
+            onClick={() => {
+              setBottomSheet(null);
+              if (colActionTargetId) openRename(colActionTargetId);
+            }}
+            style={{
+              width: '100%', padding: '14px 20px',
+              display: 'flex', alignItems: 'center', gap: 12,
+              background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#191f28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            <span style={{ fontWeight: 510, fontSize: 17, color: '#191f28' }}>편집</span>
+          </button>
+          {/* 삭제 */}
+          <button
+            onClick={() => {
+              if (!colActionTargetId) return;
+              const col = collections.find(c => c.id === colActionTargetId);
+              removeCollection(colActionTargetId);
+              setBottomSheet(null);
+              setColActionTargetId(null);
+              if (col) setSnackbar('collection-deleted');
+            }}
+            style={{
+              width: '100%', padding: '14px 20px',
+              display: 'flex', alignItems: 'center', gap: 12,
+              background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f04452" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+            <span style={{ fontWeight: 510, fontSize: 17, color: '#f04452' }}>삭제</span>
+          </button>
+        </div>
       </BottomSheet>
 
       {/* ── 스낵바 ── */}
