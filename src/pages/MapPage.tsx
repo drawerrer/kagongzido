@@ -556,13 +556,15 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
         }}
       >
-        {/* 핸들 (탭 인터랙션 없음) */}
+        {/* 핸들 */}
         <div
+          onClick={() => setPanelExpanded(e => !e)}
           style={{
             display: 'flex',
             justifyContent: 'center',
             padding: '12px 0 4px',
             flexShrink: 0,
+            cursor: 'pointer',
           }}
         >
           <div style={{ width: 48, height: 4, borderRadius: 2, background: '#E5E8EB' }} />
