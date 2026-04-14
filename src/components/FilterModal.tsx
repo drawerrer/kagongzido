@@ -188,6 +188,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
           {/* 지금 영업중인 카페만 보기
               피그마: fs=14 fw=400 lh=18.9 fill=#777777, Title instance h=39 */}
           <div
+            onClick={() => setFilters(f => ({ ...f, openNow: !f.openNow }))}
             style={{
               display: 'flex',
               alignItems: 'center',
