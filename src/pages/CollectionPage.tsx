@@ -23,6 +23,7 @@ type SnackbarType = null | 'deleted' | 'added' | 'renamed' | 'collection-deleted
 // ─── 컬렉션 카드 (Figma: 121×121px card, 6px gap, 23px label) ─
 function CollectionCard({
   label,
+  size = 121,
   isNew = false,
   isEditMode = false,
   isDragging = false,
@@ -35,6 +36,7 @@ function CollectionCard({
   previewPhotos = [],
 }: {
   label: string;
+  size?: number;
   isNew?: boolean;
   isEditMode?: boolean;
   isDragging?: boolean;
@@ -69,14 +71,14 @@ function CollectionCard({
         onPointerLeave={cancelLongPress}
         onPointerCancel={cancelLongPress}
         style={{
-          width: 121,
+          width: size,
           background: 'none', border: 'none', padding: 0,
           cursor: 'pointer', position: 'relative',
         }}
       >
-        {/* 이미지 카드 121×121 */}
+        {/* 이미지 카드 size×size */}
         <div style={{
-          width: 121, height: 121,
+          width: size, height: size,
           border: isNew ? '1px dashed #c5c5c5' : 'none',
           borderRadius: 4, overflow: 'hidden',
           backgroundColor: '#F3F3F3', position: 'relative',
@@ -100,10 +102,10 @@ function CollectionCard({
             /* 2×2 이미지 그리드 (60×60, gap 1px) */
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '60px 60px',
-              gridTemplateRows: '60px 60px',
+              gridTemplateColumns: `${Math.floor((size - 1) / 2)}px ${Math.floor((size - 1) / 2)}px`,
+              gridTemplateRows: `${Math.floor((size - 1) / 2)}px ${Math.floor((size - 1) / 2)}px`,
               gap: 1,
-              width: 121, height: 121,
+              width: size, height: size,
             }}>
               {[0, 1, 2, 3].map((i) => {
                 const photo = previewPhotos[i];
@@ -159,7 +161,7 @@ function CollectionCard({
             aria-label={`${label} 이름 변경`}
             onClick={onRename}
             style={{
-              display: 'flex', alignItems: 'center', gap: 4, width: 121,
+              display: 'flex', alignItems: 'center', gap: 4, width: size,
               background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
             }}
           >
@@ -183,7 +185,7 @@ function CollectionCard({
           </button>
         ) : (
           /* 일반모드: 텍스트만 */
-          <div style={{ display: 'flex', alignItems: 'center', width: 121 }}>
+          <div style={{ display: 'flex', alignItems: 'center', width: size }}>
             <span style={{
               fontWeight: 590, fontSize: 15,
               color: '#191f28', lineHeight: '22.5px',
@@ -455,6 +457,15 @@ export default function CollectionPage({
   } = useFavorites();
 
 
+  // 반응형 카드 크기 (375px 기준 121px)
+  const [screenW, setScreenW] = useState(window.innerWidth);
+  useEffect(() => {
+    const handler = () => setScreenW(window.innerWidth);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  const colCardSize = Math.round(screenW * 121 / 375);
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [isOrganizeMode, setIsOrganizeMode] = useState(false); // 컬렉션 선택 모드
   const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
@@ -712,6 +723,7 @@ export default function CollectionPage({
             >
               <CollectionCard
                 label={col.name}
+                size={colCardSize}
                 isEditMode={isEditMode}
                 isDragging={isEditMode && colDragIndex === index}
                 isDragOver={isEditMode && colDragOverIndex === index && colDragIndex !== index}
@@ -733,7 +745,7 @@ export default function CollectionPage({
             </div>
           ))}
           <CollectionCard
-            label="새 컬렉션" isNew
+            label="새 컬렉션" isNew size={colCardSize}
             onPress={() => setBottomSheet('create')}
           />
         </div>}

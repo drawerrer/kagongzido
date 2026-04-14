@@ -2,7 +2,7 @@
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
-import { TextButton } from '@toss/tds-mobile';
+import { TextButton, BottomCTA } from '@toss/tds-mobile';
 import { openURL, graniteEvent } from '@apps-in-toss/web-framework';
 import NavBar from '../components/NavBar';
 
@@ -93,7 +93,7 @@ function GuideBookMainView({
   onPastPress: () => void;
 }) {
   return (
-    <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#F3F3F3', display: 'flex', flexDirection: 'column', padding: '24px 30px 16px' }}>
+    <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#F3F3F3', display: 'flex', flexDirection: 'column', padding: '80px 30px' }}>
       {/* 메인 큐레이션 카드 — flex: 1 로 남은 공간 전부 차지 */}
       <button
         onClick={onCardPress}
@@ -152,12 +152,8 @@ function GuideBookMainView({
 //        buttons radius=8, height=32, bg rgba(7,25,76,0.05), text 13px/590 rgba(3,18,40,0.7)
 //        CTA: height=56, radius=16, bg #4e5968, gradient fade
 
-const CARD_W = 261;
-const CARD_H = 373;
-const CARD_H_INACTIVE = 365;
 const CARD_GAP = 20;
-const CAROUSEL_PADDING = (375 - CARD_W) / 2; // 57px — 중앙 카드 화면 정중앙
-const ITEM_W = CARD_W + CARD_GAP;
+const CARD_W_RATIO = 261 / 375; // 기준 비율 (375px 기준)
 
 function openKakaoMapWeb(store: MockStore) {
   const query = encodeURIComponent(`${store.name} ${store.district}`);
@@ -180,6 +176,17 @@ function GuideBookDetailView({
   onStoreIndexChange?: (index: number) => void;
 }) {
   const stores = guidebook.stores;
+
+  // 반응형 카드 크기
+  const [screenW, setScreenW] = useState(window.innerWidth);
+  useEffect(() => {
+    const handler = () => setScreenW(window.innerWidth);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  const cardW = Math.round(screenW * CARD_W_RATIO);
+  const carouselPadding = Math.round((screenW - cardW) / 2);
+  const itemW = cardW + CARD_GAP;
 
   // 무한 루프용 3중 배열
   const loopedStores = useMemo(() => [...stores, ...stores, ...stores], [stores]);
@@ -223,7 +230,7 @@ function GuideBookDetailView({
   useEffect(() => {
     const startAbs = stores.length + (initialStoreIndex ?? 0);
     if (scrollRef.current) {
-      scrollRef.current.scrollLeft = startAbs * ITEM_W;
+      scrollRef.current.scrollLeft = startAbs * itemW;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -235,34 +242,34 @@ function GuideBookDetailView({
       return;
     }
     setAbsIndex(stores.length);
-    if (scrollRef.current) scrollRef.current.scrollLeft = stores.length * ITEM_W;
-  }, [guidebook.id, stores.length]);
+    if (scrollRef.current) scrollRef.current.scrollLeft = stores.length * itemW;
+  }, [guidebook.id, stores.length, itemW]);
 
   const handleScroll = useCallback(() => {
     if (isRepositioning.current || !scrollRef.current) return;
     const el = scrollRef.current;
-    const newAbs = Math.round(el.scrollLeft / ITEM_W);
+    const newAbs = Math.round(el.scrollLeft / itemW);
     setAbsIndex(newAbs);
 
     if (scrollTimer.current) clearTimeout(scrollTimer.current);
     scrollTimer.current = setTimeout(() => {
       if (!scrollRef.current || isRepositioning.current) return;
-      const curAbs = Math.round(scrollRef.current.scrollLeft / ITEM_W);
+      const curAbs = Math.round(scrollRef.current.scrollLeft / itemW);
       if (curAbs < stores.length) {
         isRepositioning.current = true;
-        const next = scrollRef.current.scrollLeft + stores.length * ITEM_W;
+        const next = scrollRef.current.scrollLeft + stores.length * itemW;
         scrollRef.current.scrollLeft = next;
-        setAbsIndex(Math.round(next / ITEM_W));
+        setAbsIndex(Math.round(next / itemW));
         setTimeout(() => { isRepositioning.current = false; }, 80);
       } else if (curAbs >= stores.length * 2) {
         isRepositioning.current = true;
-        const next = scrollRef.current.scrollLeft - stores.length * ITEM_W;
+        const next = scrollRef.current.scrollLeft - stores.length * itemW;
         scrollRef.current.scrollLeft = next;
-        setAbsIndex(Math.round(next / ITEM_W));
+        setAbsIndex(Math.round(next / itemW));
         setTimeout(() => { isRepositioning.current = false; }, 80);
       }
     }, 200);
-  }, [stores.length]);
+  }, [stores.length, itemW]);
 
   const currentStoreIndex = ((absIndex % stores.length) + stores.length) % stores.length;
 
@@ -277,10 +284,10 @@ function GuideBookDetailView({
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#f2f4f6', overflow: 'hidden' }}>
 
       {/* 헤더 — 피그마: 61px, 가이드북명 14px/590 + n places 14px/400 */}
-      <div style={{ height: 61, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', flexShrink: 0, paddingTop: 16, paddingBottom: 20 }}>
         <p style={{
           fontWeight: 590, fontSize: 14, color: '#000000',
-          lineHeight: '22.5px', marginBottom: 2,
+          lineHeight: '22.5px', marginBottom: 5,
         }}>
           {guidebook.title.replace('\n', ' ')}
         </p>
@@ -306,8 +313,8 @@ function GuideBookDetailView({
             gap: CARD_GAP,
             overflowX: 'auto',
             scrollSnapType: 'x mandatory',
-            paddingLeft: CAROUSEL_PADDING,
-            paddingRight: CAROUSEL_PADDING,
+            paddingLeft: carouselPadding,
+            paddingRight: carouselPadding,
             scrollbarWidth: 'none',
             width: '100%',
             height: '100%',
@@ -317,20 +324,18 @@ function GuideBookDetailView({
         >
           {loopedStores.map((s, i) => {
             const isActive = i === absIndex;
-            const imgH = Math.round(CARD_W * 4 / 3);
-            const cardH = imgH + 132;
+            const imgH = Math.round(cardW * 4 / 3);
+            const cardH = imgH + 152;
             return (
               <div
                 key={i}
                 style={{
-                  width: CARD_W,
+                  width: cardW,
                   height: cardH,
                   flexShrink: 0,
                   scrollSnapAlign: 'center',
                   display: 'flex',
                   flexDirection: 'column',
-                  borderRadius: 6,
-                  overflow: 'hidden',
                   opacity: isActive ? 1 : 0.55,
                   transition: 'opacity 0.25s ease',
                 }}
@@ -340,6 +345,8 @@ function GuideBookDetailView({
                   height: imgH,
                   flexShrink: 0,
                   position: 'relative',
+                  borderRadius: 6,
+                  overflow: 'hidden',
                   background: `linear-gradient(160deg, ${s.gradient[0]}, ${s.gradient[1]})`,
                 }}>
                   {/* 내부 이미지 가로 스크롤 */}
@@ -367,7 +374,7 @@ function GuideBookDetailView({
                         <div
                           key={pi}
                           style={{
-                            width: CARD_W,
+                            width: cardW,
                             height: '100%',
                             flexShrink: 0,
                             scrollSnapAlign: 'start',
@@ -416,22 +423,22 @@ function GuideBookDetailView({
 
                 {/* 매장 정보 영역 */}
                 <div style={{
-                  height: 132,
+                  height: 152,
                   flexShrink: 0,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '0 16px',
+                  justifyContent: 'flex-start',
+                  padding: '20px 16px 0',
                   backgroundColor: '#f2f4f6',
                 }}>
-                  <p style={{ fontWeight: 510, fontSize: 12, color: '#6b7684', textAlign: 'center', lineHeight: '22.5px', marginBottom: 0 }}>
+                  <p style={{ fontWeight: 510, fontSize: 12, color: '#6b7684', textAlign: 'center', lineHeight: '22.5px', marginBottom: 12 }}>
                     {s.district}
                   </p>
-                  <p style={{ fontWeight: 590, fontSize: 20, color: '#000000', textAlign: 'center', lineHeight: '22.5px', marginBottom: 8 }}>
+                  <p style={{ fontWeight: 590, fontSize: 20, color: '#000000', textAlign: 'center', lineHeight: '22.5px', marginBottom: 12 }}>
                     {s.name}
                   </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(0,0,0,0.45)' }}>
                       <IcSeat />
                       <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>좌석</span>
@@ -478,20 +485,20 @@ function GuideBookDetailView({
       </div>
 
       {/* 하단 CTA */}
-      <div style={{ flexShrink: 0, padding: '12px 20px 16px', backgroundColor: '#f2f4f6' }}>
+      <BottomCTA.Single background="none">
         <button
           onClick={() => onDetailOpen?.(store.id)}
           style={{
             width: '100%', height: 52,
             borderRadius: 16,
-            backgroundColor: '#4e5968',
+            backgroundColor: '#252525',
             border: 'none', cursor: 'pointer',
             color: '#ffffff', fontWeight: 700, fontSize: 17,
           }}
         >
           자세히보기
         </button>
-      </div>
+      </BottomCTA.Single>
     </div>
   );
 }
