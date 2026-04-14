@@ -236,6 +236,14 @@ const MOCK_DETAILS: Record<string, CafeDetailData> = {
         images: [PHOTO_BG[5]],
         likeCount: 7,
       },
+      {
+        id: 'r4',
+        author: '김지훈',
+        avatarColor: '#60A5FA',
+        date: '2024.12.01',
+        content: '조용하고 깔끔한 카페예요. 오래 앉아 있어도 눈치 안 보이고, 콘센트도 넉넉해서 노트북 작업하기에 딱이에요. 재방문 의사 100%입니다.',
+        likeCount: 2,
+      },
     ],
   },
 };
@@ -445,7 +453,7 @@ function InfoRow({
           <button onClick={() => openURL(value)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0 }}><LinkIcon /></button>
         )}
         {onCopy && value && (
-          <button onClick={onCopy} style={{ flexShrink: 0, padding: 4 }}>
+          <button onClick={onCopy} style={{ flexShrink: 0, padding: 4, background: 'none', border: 'none', cursor: 'pointer' }}>
             <CopyIcon />
           </button>
         )}
@@ -1121,7 +1129,19 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const handleCopyPhone = async () => {
     if (!cafe.phone) return;
     try {
-      await navigator.clipboard.writeText(cafe.phone);
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(cafe.phone);
+      } else {
+        // fallback for WebView environments without Clipboard API
+        const el = document.createElement('textarea');
+        el.value = cafe.phone;
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      }
       setCopyToastVisible(true);
       setTimeout(() => setCopyToastVisible(false), 2000);
     } catch { /* ignore */ }
