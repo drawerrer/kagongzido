@@ -463,7 +463,7 @@ function AmenityBadge({ icon, label }: { icon: ReactNode; label: string }) {
       gap: 3,
     }}>
       <span style={{ fontSize: 20 }}>{icon}</span>
-      <span style={{ fontSize: 10, fontWeight: 500, color: '#4E5968', textAlign: 'center', lineHeight: 1.2 }}>{label}</span>
+      <span style={{ fontSize: 10, fontWeight: 500, color: '#4E5968', textAlign: 'center', lineHeight: 1.2, display: 'block', minHeight: 24 }}>{label}</span>
     </div>
   );
 }
