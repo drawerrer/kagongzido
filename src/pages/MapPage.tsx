@@ -556,15 +556,13 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
         }}
       >
-        {/* 핸들 */}
+        {/* 핸들 (탭 인터랙션 없음) */}
         <div
-          onClick={() => setPanelExpanded(e => !e)}
           style={{
             display: 'flex',
             justifyContent: 'center',
             padding: '12px 0 4px',
             flexShrink: 0,
-            cursor: 'pointer',
           }}
         >
           <div style={{ width: 48, height: 4, borderRadius: 2, background: '#E5E8EB' }} />
@@ -642,8 +640,15 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           )}
         </div>
 
-        {/* 카페 목록 */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        {/* 카페 목록 — 스크롤 시 패널 자동 펼침 */}
+        <div
+          style={{ flex: 1, overflowY: 'auto' }}
+          onScroll={(e) => {
+            if (!panelExpanded && e.currentTarget.scrollTop > 0) {
+              setPanelExpanded(true);
+            }
+          }}
+        >
           {cafes.length > 0 ? (
             cafes.map(cafe => <CafeRow key={cafe.id} cafe={cafe} onTap={() => onDetailOpen(cafe.id)} />)
           ) : (
