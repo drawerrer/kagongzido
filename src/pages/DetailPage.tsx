@@ -704,21 +704,19 @@ function ReviewCard({ review }: { review: ReviewItem }) {
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             width: liked ? 44 : 46, height: 29, borderRadius: 13,
-            background: liked ? '#252525' : '#FAFAFB',
+            background: liked ? '#EBEBEB' : '#FAFAFB',
             border: 'none',
             justifyContent: 'center', flexShrink: 0,
             transition: 'background 0.15s, width 0.15s',
             boxSizing: 'border-box', padding: 0,
           }}
         >
-          {/* 하트 아이콘 — 컨테이너 16×16, 하트 자체 13.33×11.48 */}
-          <svg width="16" height="16" viewBox="8 4.538 16 18.284" preserveAspectRatio="none" fill={liked ? '#CA4548' : '#697482'}>
-            <path d="M9.3335 12.6632C9.3335 15.9052 12.0135 17.6325 13.9748 19.1792C14.6668 19.7245 15.3335 20.2385 16.0002 20.2385C16.6668 20.2385 17.3335 19.7252 18.0255 19.1785C19.9875 17.6332 22.6668 15.9052 22.6668 12.6639C22.6668 9.42254 19.0002 7.12187 16.0002 10.2392C13.0002 7.12187 9.3335 9.4212 9.3335 12.6632Z" />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path fillRule="evenodd" clipRule="evenodd" d="M10.9038 21.2884C11.5698 21.7284 12.4288 21.7284 13.0938 21.2884C15.2088 19.8924 19.8138 16.5554 21.7978 12.8214C24.4128 7.89542 21.3418 2.98242 17.2818 2.98242C14.9678 2.98242 13.5758 4.19142 12.8058 5.23042C12.4818 5.67542 11.8588 5.77442 11.4128 5.45042C11.3278 5.38942 11.2538 5.31442 11.1928 5.23042C10.4228 4.19142 9.03076 2.98242 6.71676 2.98242C2.65676 2.98242 -0.414244 7.89542 2.20176 12.8214C4.18376 16.5554 8.79076 19.8924 10.9038 21.2884Z" fill={liked ? '#252525' : '#D1D6DB'}/>
           </svg>
-          {/* 숫자: 미클릭 "0", 클릭 "1" */}
           <span style={{
             fontSize: 13, fontWeight: 600, lineHeight: 1,
-            color: liked ? '#ffffff' : '#697482',
+            color: liked ? '#252525' : '#697482',
             letterSpacing: -0.3,
           }}>
             {likeCount}
