@@ -2,7 +2,7 @@
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
-import { BottomCTA, CTAButton, Button, TextButton } from '@toss/tds-mobile';
+import { TextButton } from '@toss/tds-mobile';
 import { openURL, graniteEvent } from '@apps-in-toss/web-framework';
 import NavBar from '../components/NavBar';
 
@@ -196,6 +196,8 @@ function GuideBookDetailView({
 
   const [absIndex, setAbsIndex] = useState(stores.length + (initialStoreIndex ?? 0));
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [containerH, setContainerH] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRepositioning = useRef(false);
@@ -229,6 +231,18 @@ function GuideBookDetailView({
     scrollRef.current.style.removeProperty('user-select');
   }, []);
 
+  // 컨테이너 높이 측정 (동적 CARD_H)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      const h = entries[0].contentRect.height;
+      if (h > 0) setContainerH(h);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // 마운트 시 초기 스크롤
   useEffect(() => {
     const startAbs = stores.length + (initialStoreIndex ?? 0);
@@ -245,9 +259,7 @@ function GuideBookDetailView({
       return;
     }
     setAbsIndex(stores.length);
-    if (scrollRef.current) {
-      scrollRef.current.scrollLeft = stores.length * ITEM_W;
-    }
+    if (scrollRef.current) scrollRef.current.scrollLeft = stores.length * ITEM_W;
   }, [guidebook.id, stores.length]);
 
   const handleScroll = useCallback(() => {
@@ -301,8 +313,8 @@ function GuideBookDetailView({
         </p>
       </div>
 
-      {/* 수평 무한 캐러셀 — 피그마: 413px 영역, 중앙 크게·좌우 작게 */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+      {/* 수평 무한 캐러셀 — 이미지+정보 통합 카드 */}
+      <div ref={containerRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <style>{`.guide-carousel::-webkit-scrollbar { display: none; } .card-img-scroll::-webkit-scrollbar { display: none; }`}</style>
         <div
           ref={scrollRef}
@@ -314,7 +326,7 @@ function GuideBookDetailView({
           onMouseLeave={onMouseUp}
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             gap: CARD_GAP,
             overflowX: 'auto',
             scrollSnapType: 'x mandatory',
@@ -322,169 +334,189 @@ function GuideBookDetailView({
             paddingRight: CAROUSEL_PADDING,
             scrollbarWidth: 'none',
             width: '100%',
+            height: '100%',
             boxSizing: 'border-box',
             cursor: 'grab',
           }}
         >
           {loopedStores.map((s, i) => {
             const isActive = i === absIndex;
+            const cardH = containerH > 0 ? containerH : CARD_H + 132;
+            const imgH = cardH - 132;
             return (
               <div
                 key={i}
                 style={{
                   width: CARD_W,
-                  height: isActive ? CARD_H : CARD_H_INACTIVE,
+                  height: cardH,
                   flexShrink: 0,
                   scrollSnapAlign: 'center',
-                  borderRadius: 6,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  opacity: isActive ? 1 : 0.55,
+                  transition: 'opacity 0.25s ease',
+                }}
+              >
+                {/* 이미지 영역 */}
+                <div style={{
+                  height: imgH,
+                  flexShrink: 0,
+                  borderRadius: '6px 6px 0 0',
                   overflow: 'hidden',
                   position: 'relative',
                   background: `linear-gradient(160deg, ${s.gradient[0]}, ${s.gradient[1]})`,
-                  transition: 'height 0.25s ease',
-                }}
-              >
-                {/* 내부 이미지 가로 스크롤 */}
-                <div
-                  className="card-img-scroll"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    overflowX: 'auto',
-                    overflowY: 'hidden',
-                    display: 'flex',
-                    scrollSnapType: 'x mandatory',
-                    scrollbarWidth: 'none',
-                  }}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onScroll={isActive ? (e) => {
-                    const el = e.currentTarget;
-                    const idx = Math.round(el.scrollLeft / el.clientWidth);
-                    setPhotoIndex(idx);
-                  } : undefined}
-                >
-                  {s.photos.map((photo, pi) => {
-                    const isLastPhoto = pi === s.photos.length - 1;
-                    return (
-                      <div
-                        key={pi}
+                }}>
+                  {/* 내부 이미지 가로 스크롤 */}
+                  <div
+                    className="card-img-scroll"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      overflowX: 'auto',
+                      overflowY: 'hidden',
+                      display: 'flex',
+                      scrollSnapType: 'x mandatory',
+                      scrollbarWidth: 'none',
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onScroll={isActive ? (e) => {
+                      const el = e.currentTarget;
+                      const idx = Math.round(el.scrollLeft / el.clientWidth);
+                      setPhotoIndex(idx);
+                    } : undefined}
+                  >
+                    {s.photos.map((photo, pi) => {
+                      const isLastPhoto = pi === s.photos.length - 1;
+                      return (
+                        <div
+                          key={pi}
+                          style={{
+                            width: CARD_W,
+                            height: '100%',
+                            flexShrink: 0,
+                            scrollSnapAlign: 'start',
+                            background: photo,
+                            position: 'relative',
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isLastPhoto) onDetailOpen?.(s.id);
+                            else onDetailOpenToReview?.(s.id);
+                          }}
+                        >
+                          {isLastPhoto && (
+                            <div style={{
+                              position: 'absolute',
+                              inset: 0,
+                              background: 'rgba(0,0,0,0.52)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}>
+                              <span style={{ color: 'white', fontSize: 18, fontWeight: 590 }}>+{s.photos.length - 1}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* 그라디언트 오버레이 */}
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(23,20,20,0.56) 100%)', pointerEvents: 'none' }} />
+                  {/* 페이지네이션 점 */}
+                  {isActive && (
+                    <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5, pointerEvents: 'none' }}>
+                      {s.photos.map((_, di) => (
+                        <div key={di} style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: 99,
+                          backgroundColor: di === photoIndex ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.35)',
+                          transition: 'background-color 0.25s ease',
+                        }} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 매장 정보 영역 */}
+                <div style={{
+                  height: 132,
+                  flexShrink: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 16px',
+                  backgroundColor: '#f2f4f6',
+                  borderRadius: '0 0 6px 6px',
+                }}>
+                  <p style={{ fontWeight: 510, fontSize: 12, color: '#6b7684', textAlign: 'center', lineHeight: '22.5px', marginBottom: 0 }}>
+                    {s.district}
+                  </p>
+                  <p style={{ fontWeight: 590, fontSize: 20, color: '#000000', textAlign: 'center', lineHeight: '22.5px', marginBottom: 8 }}>
+                    {s.name}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(0,0,0,0.45)' }}>
+                      <IcSeat />
+                      <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>좌석</span>
+                      <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{s.seats}석</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(0,0,0,0.45)' }}>
+                      <IcOutlet />
+                      <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>콘센트</span>
+                      <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{s.outlet}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {(['길찾기', '리뷰보기', '저장하기'] as const).map((label) => (
+                      <button
+                        key={label}
                         style={{
-                          width: CARD_W,
-                          height: '100%',
-                          flexShrink: 0,
-                          scrollSnapAlign: 'start',
-                          background: photo,
-                          position: 'relative',
+                          height: 32,
+                          padding: '0 12px',
+                          borderRadius: 8,
+                          backgroundColor: 'rgba(211,211,223,0.19)',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 590,
+                          fontSize: 13,
+                          color: '#252525',
+                          whiteSpace: 'nowrap',
                         }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isLastPhoto) onDetailOpen?.(s.id);
-                          else onDetailOpenToReview?.(s.id);
+                        onClick={() => {
+                          if (label === '저장하기') onSave(s);
+                          else if (label === '리뷰보기') onDetailOpenToReview?.(s.id);
+                          else if (label === '길찾기') openKakaoMapWeb(s);
+                          else onDetailOpen?.(s.id);
                         }}
                       >
-                        {isLastPhoto && (
-                          <div style={{
-                            position: 'absolute',
-                            inset: 0,
-                            background: 'rgba(0,0,0,0.52)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}>
-                            <span style={{ color: 'white', fontSize: 18, fontWeight: 590 }}>+{s.photos.length - 1}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                {/* 그라디언트 오버레이 */}
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(23,20,20,0.56) 100%)', pointerEvents: 'none' }} />
-                {/* 페이지네이션 점 — 피그마: 6×6, active #6b7684, inactive #d9d9d9 */}
-                {isActive && (
-                  <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5, pointerEvents: 'none' }}>
-                    {s.photos.map((_, di) => (
-                      <div key={di} style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: 99,
-                        backgroundColor: di === photoIndex ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.35)',
-                        transition: 'background-color 0.25s ease',
-                      }} />
+                        {label}
+                      </button>
                     ))}
                   </div>
-                )}
+                </div>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* 카페 정보 — 피그마: 132px, 중앙 정렬, padding 0 50px */}
-      <div style={{
-        flexShrink: 0,
-        height: 132,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0 50px',
-      }}>
-        {/* 주소 — 12px/510 #6b7684 */}
-        <p style={{
-          fontWeight: 510, fontSize: 12,
-          color: '#6b7684', textAlign: 'center',
-          lineHeight: '22.5px', marginBottom: 0,
-        }}>
-          {store.district}
-        </p>
-        {/* 매장명 — 20px/590 #000 */}
-        <p style={{
-          fontWeight: 590, fontSize: 20,
-          color: '#000000', textAlign: 'center',
-          lineHeight: '22.5px', marginBottom: 12,
-        }}>
-          {store.name}
-        </p>
-
-        {/* 정보 행 — 좌석/콘센트 — 14px, 라벨 510 #000, 값 400 #777 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(0,0,0,0.45)' }}>
-            <IcSeat />
-            <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>좌석</span>
-            <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{store.seats}석</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(0,0,0,0.45)' }}>
-            <IcOutlet />
-            <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>콘센트</span>
-            <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{store.outlet}</span>
-          </div>
-        </div>
-
-        {/* 퀵 액션 버튼 — 피그마: radius=8, height=32, bg rgba(7,25,76,0.05), 13px/590 */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          {(['길찾기', '리뷰보기', '저장하기'] as const).map((label) => (
-            <Button
-              key={label}
-              color="light"
-              variant="weak"
-              size="small"
-              onClick={() => {
-                if (label === '저장하기') onSave(store);
-                else if (label === '리뷰보기') onDetailOpenToReview?.(store.id);
-                else if (label === '길찾기') openKakaoMapWeb(store);
-                else onDetailOpen?.(store.id);
-              }}
-            >
-              {label}
-            </Button>
-          ))}
-        </div>
+      {/* 하단 CTA */}
+      <div style={{ flexShrink: 0, padding: '12px 20px 16px', backgroundColor: '#f2f4f6' }}>
+        <button
+          onClick={() => onDetailOpen?.(store.id)}
+          style={{
+            width: '100%', height: 52,
+            borderRadius: 16,
+            backgroundColor: '#4e5968',
+            border: 'none', cursor: 'pointer',
+            color: '#ffffff', fontWeight: 700, fontSize: 17,
+          }}
+        >
+          자세히보기
+        </button>
       </div>
-
-      {/* 하단 CTA — 피그마: 그라디언트 페이드 36px + 흰 컨테이너 76px */}
-      <BottomCTA.Single fixed>
-        <CTAButton onClick={() => onDetailOpen?.(store.id)}>자세히보기</CTAButton>
-      </BottomCTA.Single>
     </div>
   );
 }
