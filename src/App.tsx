@@ -224,14 +224,11 @@ function AppInner() {
                 onClick={() => setActiveTab(tab.id)}
                 style={{
                   flex: 1,
-                  padding: '10px 0 8px',
+                  padding: '18px 0 16px',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 2,
                   color: activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-text-tertiary)',
-                  fontSize: 'var(--font-size-xs)',
-                  fontWeight: activeTab === tab.id ? 600 : 400,
                   transition: 'color 0.15s',
                 }}
               >
