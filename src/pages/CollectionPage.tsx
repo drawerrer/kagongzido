@@ -3,6 +3,8 @@ import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites, FavoritedStore } from '../context/FavoritesContext';
 import { BottomSheet, BottomCTA, CTAButton, Button } from '@toss/tds-mobile';
+import IcDelete from '../assets/icons/icon_delete.svg?react';
+import IcPencil from '../assets/icons/icon_pencil.svg?react';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 import NavBar from '../components/NavBar';
 
@@ -404,24 +406,19 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
         onClick={onAdd}
         style={{
           marginTop: 52,
-          width: 165, height: 48,
-          borderRadius: 14,
+          height: 38,
+          borderRadius: 10,
           backgroundColor: 'rgba(211,211,223,0.19)',
           border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center',
+          display: 'inline-flex', alignItems: 'center',
           padding: '0 16px',
-          gap: 10,
+          gap: 6,
           flexShrink: 0,
         }}
       >
-        <span style={{
-          flex: 1,
-          fontWeight: 590, fontSize: 17, color: '#252525',
-          textAlign: 'center',
-          whiteSpace: 'nowrap',
-        }}>매장 추가하기</span>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-          <path d="M12 5v14M5 12h14" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round"/>
+        <span style={{ fontWeight: 590, fontSize: 15, color: '#252525', whiteSpace: 'nowrap' }}>매장 추가하기</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+          <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round"/>
         </svg>
       </button>
     </div>
@@ -1011,52 +1008,44 @@ export default function CollectionPage({
       {/* ─────────── BottomSheet: 컬렉션 편집/삭제 ─────────── */}
       <BottomSheet
         open={bottomSheet === 'col-action'}
+        header={<BottomSheet.Header>{collections.find(c => c.id === colActionTargetId)?.name}</BottomSheet.Header>}
         onClose={() => { setBottomSheet(null); setColActionTargetId(null); }}
       >
-        <div style={{ padding: '8px 0 16px' }}>
-          {/* 편집 */}
-          <button
-            onClick={() => {
-              setBottomSheet(null);
-              if (colActionTargetId) openRename(colActionTargetId);
-            }}
-            style={{
-              width: '100%', padding: '14px 20px',
-              display: 'flex', alignItems: 'center', gap: 12,
-              background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#191f28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            <span style={{ fontWeight: 510, fontSize: 17, color: '#191f28' }}>편집</span>
-          </button>
-          {/* 삭제 */}
-          <button
-            onClick={() => {
-              if (!colActionTargetId) return;
-              const col = collections.find(c => c.id === colActionTargetId);
-              removeCollection(colActionTargetId);
-              setBottomSheet(null);
-              setColActionTargetId(null);
-              if (col) setSnackbar('collection-deleted');
-            }}
-            style={{
-              width: '100%', padding: '14px 20px',
-              display: 'flex', alignItems: 'center', gap: 12,
-              background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f04452" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6M14 11v6"/>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
-            <span style={{ fontWeight: 510, fontSize: 17, color: '#f04452' }}>삭제</span>
-          </button>
-        </div>
+        {/* 편집 */}
+        <button
+          onClick={() => {
+            setBottomSheet(null);
+            if (colActionTargetId) openRename(colActionTargetId);
+          }}
+          style={{
+            width: '100%', height: 56, display: 'flex', alignItems: 'center', gap: 12,
+            paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
+            fontWeight: 510, fontSize: 17, color: '#000C1E',
+          }}
+        >
+          <IcPencil width={20} height={20} color="#333D4B" style={{ display: 'block', flexShrink: 0 }} />
+          <span style={{ lineHeight: '20px' }}>편집</span>
+        </button>
+        {/* 삭제 */}
+        <button
+          onClick={() => {
+            if (!colActionTargetId) return;
+            const col = collections.find(c => c.id === colActionTargetId);
+            removeCollection(colActionTargetId);
+            setBottomSheet(null);
+            setColActionTargetId(null);
+            if (col) setSnackbar('collection-deleted');
+          }}
+          style={{
+            width: '100%', height: 56, display: 'flex', alignItems: 'center', gap: 12,
+            paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
+            fontWeight: 510, fontSize: 17, color: '#000C1E',
+          }}
+        >
+          <IcDelete width={20} height={20} color="#333D4B" style={{ display: 'block', flexShrink: 0 }} />
+          <span style={{ lineHeight: '20px' }}>삭제</span>
+        </button>
+        <div style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} />
       </BottomSheet>
 
       {/* ── 스낵바 ── */}

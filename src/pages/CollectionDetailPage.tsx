@@ -5,6 +5,8 @@ import ShareSheet from '../components/ShareSheet';
 import { BottomSheet, ConfirmDialog, BottomCTA, CTAButton, Button, Toast } from '@toss/tds-mobile';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 import NavBar from '../components/NavBar';
+import IcPencil from '../assets/icons/icon_pencil.svg?react';
+import IcDelete from '../assets/icons/icon_delete.svg?react';
 
 
 // ─── 타입 ─────────────────────────────────────────────────────
@@ -592,22 +594,17 @@ function EmptyState({
         onClick={onButtonClick}
         style={{
           marginTop: 52,
-          width: 165, height: 48,
-          borderRadius: 14,
+          height: 38,
+          borderRadius: 10,
           backgroundColor: 'rgba(211,211,223,0.19)',
           border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center',
+          display: 'inline-flex', alignItems: 'center',
           padding: '0 16px',
-          gap: 10,
+          gap: 6,
           flexShrink: 0,
         }}
       >
-        <span style={{
-          flex: 1,
-          fontWeight: 590, fontSize: 17, color: '#252525',
-          textAlign: 'center',
-          whiteSpace: 'nowrap',
-        }}>{buttonLabel}</span>
+        <span style={{ fontWeight: 590, fontSize: 15, color: '#252525', whiteSpace: 'nowrap' }}>{buttonLabel}</span>
         {buttonIcon}
       </button>
     </div>
@@ -615,14 +612,14 @@ function EmptyState({
 }
 
 const IconPlus = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-    <path d="M12 5v14M5 12h14" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round"/>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+    <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round"/>
   </svg>
 );
 
 const IconArrow = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-    <path d="M5 12h14M13 6l6 6-6 6" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+    <path d="M5 12h14M13 6l6 6-6 6" stroke="#252525" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
@@ -1154,11 +1151,11 @@ export default function CollectionDetailPage({
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
-                    <path d="M8.5 1.5a1.121 1.121 0 0 1 1.586 0 1.121 1.121 0 0 1 0 1.586L3.75 9.422 1.5 10l.578-2.25L8.5 1.5Z"
-                      stroke={activeTab === tab.id ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)'}
-                      strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <IcPencil
+                    width={12} height={12}
+                    color={activeTab === tab.id ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)'}
+                    style={{ flexShrink: 0 }}
+                  />
                 </button>
               )}
             </div>
@@ -1314,11 +1311,14 @@ export default function CollectionDetailPage({
             enterEditMode();
           }}
           style={{
-            width: '100%', height: 56, display: 'flex', alignItems: 'center',
+            width: '100%', height: 56, display: 'flex', alignItems: 'center', gap: 12,
             paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
-            fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)',
+            fontWeight: 510, fontSize: 17, color: '#000C1E',
           }}
-        >편집</button>
+        >
+          <IcPencil width={20} height={20} color="#333D4B" style={{ display: 'block', flexShrink: 0 }} />
+          <span style={{ lineHeight: '20px' }}>편집</span>
+        </button>
         <button
           onClick={() => {
             const id = tabManageTargetId;
@@ -1326,11 +1326,14 @@ export default function CollectionDetailPage({
             setTimeout(() => setDeleteTabTargetId(id), 200);
           }}
           style={{
-            width: '100%', height: 56, display: 'flex', alignItems: 'center',
+            width: '100%', height: 56, display: 'flex', alignItems: 'center', gap: 12,
             paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
-            fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)',
+            fontWeight: 510, fontSize: 17, color: '#000C1E',
           }}
-        >삭제</button>
+        >
+          <IcDelete width={20} height={20} color="#333D4B" style={{ display: 'block', flexShrink: 0 }} />
+          <span style={{ lineHeight: '20px' }}>삭제</span>
+        </button>
         <div style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} />
       </BottomSheet>
 
