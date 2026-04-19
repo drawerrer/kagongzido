@@ -1424,20 +1424,19 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                   직접 방문한 경험을 공유해주세요!
                 </p>
               </div>
-              {/* 리뷰 쓰기 버튼 */}
+              {/* 리뷰 쓰기 버튼 — '자세히보기' 버튼과 동일 스펙 */}
               <button
                 onClick={() => setShowWriteReview(true)}
                 style={{
                   width: '100%',
                   height: 52,
-                  borderRadius: 10,
-                  background: '#3182F6',
-                  color: 'white',
-                  fontSize: 16,
+                  borderRadius: 16,
+                  backgroundColor: '#252525',
+                  color: '#ffffff',
+                  fontSize: 17,
                   fontWeight: 700,
                   border: 'none',
                   cursor: 'pointer',
-                  letterSpacing: -0.3,
                 }}
               >
                 리뷰 쓰기
