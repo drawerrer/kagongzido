@@ -284,11 +284,17 @@ const CAFE_NAME_MAP: Record<string, { name: string; address: string }> = {
   gs5: { name: '스탠딩커피',      address: '경기 성남시' },
 };
 
+// ─── 리뷰 없는 카페 목록 (reviews: [] 처리) ─────────────────────
+const EMPTY_REVIEW_CAFE_IDS = new Set(['gs5']);
+
 function getCafeDetail(cafeId: string): CafeDetailData {
   if (MOCK_DETAILS[cafeId]) return MOCK_DETAILS[cafeId];
   const meta = CAFE_NAME_MAP[cafeId];
-  if (meta) return { ...MOCK_DETAILS['default'], id: cafeId, name: meta.name, address: meta.address };
-  return { ...MOCK_DETAILS['default'], id: cafeId };
+  const base = meta
+    ? { ...MOCK_DETAILS['default'], id: cafeId, name: meta.name, address: meta.address }
+    : { ...MOCK_DETAILS['default'], id: cafeId };
+  if (EMPTY_REVIEW_CAFE_IDS.has(cafeId)) return { ...base, reviews: [] };
+  return base;
 }
 
 // ────────── 유틸 함수 ────────────────────────────────────────
@@ -1381,10 +1387,12 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               리뷰&nbsp;<span style={{ color: '#252525' }}>({cafe.reviews.length})</span>
             </h2>
             <button
-              onClick={() => setPhotoOnly(v => !v)}
+              onClick={() => cafe.reviews.length > 0 && setPhotoOnly(v => !v)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'none', padding: 0,
+                opacity: cafe.reviews.length === 0 ? 0.35 : 1,
+                cursor: cafe.reviews.length === 0 ? 'default' : 'pointer',
               }}
             >
               {/* 체크박스 */}
@@ -1406,15 +1414,34 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           </div>
 
           {cafe.reviews.length === 0 ? (
-            <div style={{
-              textAlign: 'center', padding: '32px 0',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-            }}>
-              <span style={{ fontSize: 36 }}>💬</span>
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#4E5968' }}>
-                아직 리뷰가 없어요
-              </p>
-              <p style={{ fontSize: 13, color: '#B0B8C1' }}>첫 번째 리뷰를 남겨보세요!</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
+              {/* 카피 텍스트 */}
+              <div style={{ width: '100%', textAlign: 'center', paddingBottom: 20 }}>
+                <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', marginBottom: 6 }}>
+                  오직 당신만이 남길 수 있는 리뷰가 있어요
+                </p>
+                <p style={{ fontSize: 13, color: '#8B95A1' }}>
+                  직접 방문한 경험을 공유해주세요!
+                </p>
+              </div>
+              {/* 리뷰 쓰기 버튼 */}
+              <button
+                onClick={() => setShowWriteReview(true)}
+                style={{
+                  width: '100%',
+                  height: 52,
+                  borderRadius: 10,
+                  background: '#3182F6',
+                  color: 'white',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
+                  letterSpacing: -0.3,
+                }}
+              >
+                리뷰 쓰기
+              </button>
             </div>
           ) : (
             <>
