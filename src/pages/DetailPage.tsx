@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { openURL, appLogin } from '@apps-in-toss/web-framework';
-import { IconButton } from '@toss/tds-mobile';
+// import { IconButton } from '@toss/tds-mobile';
 import BottomSheet from '../components/BottomSheet';
 import ShareSheet from '../components/ShareSheet';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
@@ -376,34 +376,7 @@ function LinkIcon() {
   );
 }
 
-// ────────── TDS IconButton SVG 헬퍼 ─────────────────────────
-/** SVG 문자열 → data URL (IconButton src 전달용) */
-const svgUrl = (svg: string) =>
-  `data:image/svg+xml,${encodeURIComponent(svg)}`;
-
-const NS = 'xmlns="http://www.w3.org/2000/svg"';
-const navIcons = {
-  back: (color: string) => svgUrl(
-    `<svg ${NS} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`
-  ),
-  heart: (color: string) => svgUrl(
-    `<svg ${NS} width="22" height="22" viewBox="0 0 24 24" fill="${color}"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
-  ),
-  more: (color: string) => svgUrl(
-    `<svg ${NS} width="22" height="22" viewBox="0 0 24 24" fill="${color}"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>`
-  ),
-  close: (color: string) => svgUrl(
-    `<svg ${NS} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
-  ),
-};
-
-/** TDS IconButton 공통 스타일 — 원형 36px, 스크롤 전후 배경 전환 */
-const navBtnStyle = (scrolled: boolean): React.CSSProperties => ({
-  width: 36,
-  height: 36,
-  borderRadius: 18,
-  flexShrink: 0,
-});
+// ────────── (NavBar icon helpers removed) ─────────────────────
 
 // ────────── 서브 컴포넌트 ────────────────────────────────────
 function Divider() {

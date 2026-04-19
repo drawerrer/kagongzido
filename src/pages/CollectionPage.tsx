@@ -52,7 +52,7 @@ function CollectionCard({
 }) {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const handlePointerDown = (_e: React.PointerEvent<HTMLButtonElement>) => {
     if (!onLongPress || isEditMode || isNew) return;
     longPressTimer.current = setTimeout(() => { onLongPress(); }, 500);
   };
