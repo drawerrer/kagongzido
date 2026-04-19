@@ -355,7 +355,7 @@ export default function SearchPage({ onClose, onDetailOpen }: SearchPageProps) {
 
   return (
     <div style={{
-      height: '100%', background: '#ffffff',
+      height: '100%', background: '#f3f3f3',
       display: 'flex', flexDirection: 'column',
       animation: 'slideInRight 0.2s ease',
     }}>
@@ -368,7 +368,7 @@ export default function SearchPage({ onClose, onDetailOpen }: SearchPageProps) {
           Placeholder: "장소, 주소 검색" 17px fw510 rgba(3,24,50,0.46) */}
       <div style={{
         width: '100%', height: 72,
-        background: '#ffffff',
+        background: '#f3f3f3',
         display: 'flex', alignItems: 'center',
         padding: '14px 16px',
         flexShrink: 0,
