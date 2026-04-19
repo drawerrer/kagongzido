@@ -1453,6 +1453,37 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                 />
               )}
 
+              {/* 리뷰 쓰기 유도 — 포토 모아보기 바로 하단 */}
+              <div style={{
+                display: 'flex', flexDirection: 'column', gap: 12,
+                marginBottom: 20,
+              }}>
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', marginBottom: 4 }}>
+                    {cafe.name} 다녀오셨나요?
+                  </p>
+                  <p style={{ fontSize: 13, color: '#8B95A1' }}>
+                    텍스트와 이미지로 경험을 남겨보세요!
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowWriteReview(true)}
+                  style={{
+                    width: '100%',
+                    height: 52,
+                    borderRadius: 16,
+                    backgroundColor: '#252525',
+                    color: '#ffffff',
+                    fontSize: 17,
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  리뷰 쓰기
+                </button>
+              </div>
+
               {/* 리뷰 카드 목록 (제보자 항상 최상단, 포토리뷰 체크 시 상단 모아보기) */}
               {(photoOnly
                 ? [
