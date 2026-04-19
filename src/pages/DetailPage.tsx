@@ -982,6 +982,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
   const [photoOnly, setPhotoOnly] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
   const [favoriteSnackbar, setFavoriteSnackbar] = useState<'added' | 'removed' | null>(null);
   const [snackbarDissolving, setSnackbarDissolving] = useState(false);
   const snackbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1485,15 +1486,36 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               </div>
 
               {/* 리뷰 카드 목록 (제보자 항상 최상단, 포토리뷰 체크 시 상단 모아보기) */}
-              {(photoOnly
-                ? [
-                    ...sortedReviews.filter(r => r.images && r.images.length > 0),
-                    ...sortedReviews.filter(r => !(r.images && r.images.length > 0)),
-                  ]
-                : sortedReviews
-              ).map(review => (
-                <ReviewCard key={review.id} review={review} />
-              ))}
+              {(() => {
+                const ordered = photoOnly
+                  ? [
+                      ...sortedReviews.filter(r => r.images && r.images.length > 0),
+                      ...sortedReviews.filter(r => !(r.images && r.images.length > 0)),
+                    ]
+                  : sortedReviews;
+                const visible = showAllReviews ? ordered : ordered.slice(0, 3);
+                return (
+                  <>
+                    {visible.map(review => (
+                      <ReviewCard key={review.id} review={review} />
+                    ))}
+                    {!showAllReviews && ordered.length > 3 && (
+                      <div style={{ height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <button
+                          onClick={() => setShowAllReviews(true)}
+                          style={{
+                            fontSize: 15, fontWeight: 400,
+                            color: '#2272EB',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                          }}
+                        >
+                          리뷰 더 보기
+                        </button>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </>
           )}
         </div>
