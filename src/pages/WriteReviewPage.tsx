@@ -118,7 +118,7 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
       <div style={{
         height: '100%', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        background: 'white', gap: 20,
+        background: '#f3f3f3', gap: 20,
       }}>
         <Spinner />
         <p style={{ fontSize: 16, fontWeight: 600, color: '#191F28' }}>로딩중이에요</p>
@@ -134,7 +134,7 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
       <div style={{
         height: '100%', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        background: 'white', gap: 16, padding: '0 24px',
+        background: '#f3f3f3', gap: 16, padding: '0 24px',
       }}>
         {/* 체크 아이콘 */}
         <div style={{
@@ -176,7 +176,7 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
       <div style={{
         height: '100%', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        background: 'white', gap: 16, padding: '0 24px',
+        background: '#f3f3f3', gap: 16, padding: '0 24px',
       }}>
         {/* 실패 아이콘 */}
         <div style={{
@@ -222,14 +222,14 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
   return (
     <div style={{
       height: '100%', display: 'flex', flexDirection: 'column',
-      background: 'white', position: 'relative',
+      background: '#f3f3f3', position: 'relative',
     }}>
 
       {/* ── 헤더 ── */}
       <header style={{
         display: 'flex', alignItems: 'center',
-        padding: '12px 8px 12px 4px',
-        borderBottom: '1px solid #F2F4F6',
+        height: 60, padding: '0 4px',
+        background: '#f3f3f3',
         flexShrink: 0,
       }}>
         {/* 뒤로가기 */}
@@ -245,50 +245,21 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
           </svg>
         </button>
 
-        {/* 타이틀 */}
-        <span style={{
-          flex: 1, textAlign: 'center',
-          fontSize: 17, fontWeight: 700, color: '#191F28',
-        }}>
-          리뷰 남기기
-        </span>
+        {/* 우측 여백 (닫기 버튼 정렬용) */}
+        <div style={{ flex: 1 }} />
 
-        {/* 우측 버튼들 */}
-        <div style={{ display: 'flex', gap: 0 }}>
-          {/* 하트 */}
-          <button style={{
+        {/* 닫기 */}
+        <button
+          onClick={handleClose}
+          style={{
             width: 44, height: 44,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                stroke="#8B95A1" strokeWidth="1.5" fill="none" />
-            </svg>
-          </button>
-          {/* 더보기 */}
-          <button style={{
-            width: 44, height: 44,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="#8B95A1">
-              <circle cx="4" cy="10" r="2" />
-              <circle cx="10" cy="10" r="2" />
-              <circle cx="16" cy="10" r="2" />
-            </svg>
-          </button>
-          {/* 닫기 */}
-          <button
-            onClick={handleClose}
-            style={{
-              width: 44, height: 44,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M4 4L16 16M16 4L4 16" stroke="#6B7684" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M4 4L16 16M16 4L4 16" stroke="#6B7684" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
       </header>
 
       {/* ── 스크롤 영역 ── */}
@@ -299,7 +270,7 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '16px 20px',
           borderBottom: '1px solid #F2F4F6',
-          background: 'white',
+          background: '#f3f3f3',
         }}>
           {/* 썸네일 */}
           <div style={{
@@ -483,7 +454,7 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0,
         padding: '12px 20px 24px',
-        background: 'white',
+        background: '#f3f3f3',
         borderTop: '1px solid #F2F4F6',
       }}>
         <button
