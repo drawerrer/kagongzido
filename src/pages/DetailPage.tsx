@@ -1414,14 +1414,14 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           </div>
 
           {cafe.reviews.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {/* 카피 텍스트 */}
-              <div style={{ width: '100%', textAlign: 'center', paddingBottom: 20 }}>
-                <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', marginBottom: 6 }}>
-                  오직 당신만이 남길 수 있는 리뷰가 있어요
+              <div>
+                <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', marginBottom: 4 }}>
+                  아직 리뷰가 없어요!
                 </p>
                 <p style={{ fontSize: 13, color: '#8B95A1' }}>
-                  직접 방문한 경험을 공유해주세요!
+                  {cafe.name}에 첫 번째로 리뷰를 남겨보세요
                 </p>
               </div>
               {/* 리뷰 쓰기 버튼 — '자세히보기' 버튼과 동일 스펙 */}
