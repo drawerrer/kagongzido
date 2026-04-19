@@ -724,81 +724,7 @@ function openKakaoMapWeb(cafe: CafeDetailData) {
   openURL(`https://map.kakao.com/link/search/${query}`);
 }
 
-// ────────── 드롭다운 팝업: 더보기 액션 ──────────────────────
-function MorePopup({
-  onClose, onShare, onWriteReview,
-}: {
-  onClose: () => void;
-  onShare: () => void;
-  onWriteReview: () => void;
-}) {
-  const actions = [
-    { label: '후기 남기기', icon: '✏️', onClick: () => { onWriteReview(); onClose(); } },
-    { label: '공유하기',   icon: '🔗', onClick: () => { onShare(); onClose(); } },
-  ];
-
-  return (
-    <>
-      {/* 외부 탭 시 닫기 */}
-      <div
-        onClick={onClose}
-        style={{ position: 'fixed', inset: 0, zIndex: 199 }}
-      />
-      {/* 팝업 본체 — Figma 245-1382 스펙
-          r=20, fill rgba(253,253,254,0.89), border rgba(253,253,255,0.75)
-          backdrop-filter blur(11px), shadow dy=16 blur=60 rgba(0,27,55,0.1) */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 52,
-          right: 16,
-          zIndex: 200,
-          background: 'rgba(253,253,254,0.89)',
-          backdropFilter: 'blur(11px)',
-          WebkitBackdropFilter: 'blur(11px)',
-          borderRadius: 20,
-          border: '1px solid rgba(253,253,255,0.75)',
-          boxShadow: '0 16px 60px rgba(0,27,55,0.10)',
-          minWidth: 180,
-          padding: '4px',
-          overflow: 'hidden',
-        }}
-      >
-        {/* 섹션 헤더: 메뉴 */}
-        <div style={{
-          padding: '10px 14px 6px',
-          fontSize: 12,
-          fontWeight: 600,
-          color: 'rgba(3,18,40,0.35)',
-          letterSpacing: 0.3,
-        }}>
-          메뉴
-        </div>
-
-        {actions.map((a) => (
-          <button
-            key={a.label}
-            onClick={a.onClick}
-            style={{
-              display: 'flex', alignItems: 'center',
-              width: '100%', padding: '12px 14px',
-              borderRadius: 12,
-              textAlign: 'left',
-              background: 'transparent',
-            }}
-          >
-            <span style={{
-              fontSize: 15,
-              fontWeight: 500,
-              color: 'rgba(3,18,40,0.7)',
-              whiteSpace: 'nowrap',
-            }}>{a.label}</span>
-          </button>
-        ))}
-      </div>
-    </>
-  );
-}
+// MorePopup — 배포 시 네이티브 바텀시트로 대체 예정
 
 // ────────── 바텀시트: 로그인 유도 ────────────────────────────
 function LoginPromptSheet({ onClose }: { onClose: () => void }) {
@@ -1035,7 +961,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [hoursExpanded, setHoursExpanded] = useState(false);
   const [isLoggedIn] = useState(true); // mock: 로그인 상태 (Supabase 연동 전 임시)
 
-  const [showMoreSheet, setShowMoreSheet] = useState(false);
+  // showMoreSheet — 배포 시 바텀시트 연결 예정
   const [showLoginSheet, setShowLoginSheet] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
 
@@ -1102,9 +1028,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     }
   };
 
-  const handleShare = () => {
-    setShowShareSheet(true);
-  };
+  const handleShare = () => { setShowShareSheet(true); };
+  void handleShare; // 배포 시 MorePopup 연결 예정
 
   const handleCopyPhone = async () => {
     if (!cafe.phone) return;
@@ -1236,10 +1161,10 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               WebkitBackdropFilter: scrolled ? undefined : 'blur(20px)',
               display: 'flex', alignItems: 'center', overflow: 'hidden',
             }}>
+              {/* 배포 시 바텀시트 연결 예정 */}
               <button
-                onClick={() => setShowMoreSheet(v => !v)}
                 aria-label="더보기"
-                style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}
+                style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', cursor: 'default' }}
               >
                 <MoreIcon color={scrolled ? '#697482' : '#F9FAFB'} />
               </button>
@@ -1253,13 +1178,6 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                 <CloseIcon color={scrolled ? 'rgba(0,19,43,0.58)' : '#F9FAFB'} />
               </button>
             </div>
-            {showMoreSheet && (
-              <MorePopup
-                onClose={() => setShowMoreSheet(false)}
-                onShare={handleShare}
-                onWriteReview={() => setShowWriteReview(true)}
-              />
-            )}
           </div>
         </div>
       </header>
