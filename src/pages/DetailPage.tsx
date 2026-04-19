@@ -733,9 +733,8 @@ function MorePopup({
   onWriteReview: () => void;
 }) {
   const actions = [
-    { label: '후기 남기기',       icon: '✏️', onClick: () => { onWriteReview(); onClose(); } },
-    { label: '공유하기',          icon: '🔗', onClick: () => { onShare(); onClose(); } },
-    { label: '정보 수정 제안하기', icon: '📝', onClick: onClose },
+    { label: '후기 남기기', icon: '✏️', onClick: () => { onWriteReview(); onClose(); } },
+    { label: '공유하기',   icon: '🔗', onClick: () => { onShare(); onClose(); } },
   ];
 
   return (

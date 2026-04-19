@@ -88,7 +88,7 @@ function PhotoDetailView({
   const [idx, setIdx] = useState(initialIndex);
   const [likedSet, setLikedSet] = useState<Set<number>>(new Set());
   const [likeCountMap, setLikeCountMap] = useState<Map<number, number>>(new Map());
-  const [showMeatball, setShowMeatball] = useState(false);
+  // showMeatball — 배포 시 바텀시트 연결 예정
   const [showReport, setShowReport] = useState(false);
   const [reportDone, setReportDone] = useState(false);
   const [textExpanded, setTextExpanded] = useState(false);
@@ -168,9 +168,9 @@ function PhotoDetailView({
           background: 'rgba(0,23,51,0.02)',
           display: 'flex', alignItems: 'center', overflow: 'hidden',
         }}>
+          {/* 배포 시 바텀시트 연결 예정 */}
           <button
-            onClick={() => setShowMeatball(v => !v)}
-            style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'pointer' }}
+            style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'default' }}
           >
             <MoreDotsIcon color="#697482" />
           </button>
@@ -290,45 +290,13 @@ function PhotoDetailView({
                   </span>
                 )}
               </div>
-              {/* 미트볼 드롭다운 */}
+              {/* 미트볼 버튼 — 배포 시 바텀시트 연결 예정 */}
               <div style={{ position: 'relative' }}>
                 <button
-                  onClick={() => setShowMeatball(v => !v)}
-                  style={{ display: 'flex', alignItems: 'center', border: 'none', background: 'none', cursor: 'pointer', padding: 4 }}
+                  style={{ display: 'flex', alignItems: 'center', border: 'none', background: 'none', cursor: 'default', padding: 4 }}
                 >
                   <MoreDotsIcon color="#B0B8C1" />
                 </button>
-                {showMeatball && (
-                  <>
-                    <div onClick={() => setShowMeatball(false)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
-                    <div style={{
-                      position: 'absolute', bottom: 40, right: 0, zIndex: 200,
-                      background: 'rgba(253,253,254,0.89)',
-                      backdropFilter: 'blur(11px)', WebkitBackdropFilter: 'blur(11px)',
-                      borderRadius: 20, border: '1px solid rgba(253,253,255,0.75)',
-                      boxShadow: '0 16px 60px rgba(0,27,55,0.10)',
-                      minWidth: 160, padding: 4,
-                    }}>
-                      <div style={{ padding: '10px 14px 6px', fontSize: 12, fontWeight: 600, color: 'rgba(3,18,40,0.35)' }}>메뉴</div>
-                      {[
-                        { label: '신고하기', action: () => { setShowMeatball(false); setShowReport(true); } },
-                        { label: '차단하기', action: () => setShowMeatball(false) },
-                        { label: '정보 수정 제안하기', action: () => setShowMeatball(false) },
-                      ].map(item => (
-                        <button key={item.label} onClick={item.action} style={{
-                          display: 'flex', alignItems: 'center', width: '100%',
-                          padding: '12px 14px', borderRadius: 12,
-                          textAlign: 'left', background: 'transparent',
-                          border: 'none', cursor: 'pointer',
-                        }}>
-                          <span style={{ fontSize: 15, fontWeight: 500, color: 'rgba(3,18,40,0.70)', whiteSpace: 'nowrap' }}>
-                            {item.label}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
               </div>
             </div>
 
