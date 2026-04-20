@@ -101,6 +101,7 @@ function PhotoDetailView({
   const [reportDone, setReportDone] = useState(false);
   const [showBlock, setShowBlock] = useState(false);
   const [blockDone, setBlockDone] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
   const [textExpanded, setTextExpanded] = useState(false);
 
   const touchStartX = useRef(0);
@@ -149,6 +150,7 @@ function PhotoDetailView({
 
   const handleBlock = (reason: string) => {
     setShowBlock(false);
+    setIsBlocked(true);
     setBlockDone(true);
     setTimeout(() => setBlockDone(false), 2500);
     console.log('차단 사유:', reason);
@@ -276,7 +278,33 @@ function PhotoDetailView({
       <div style={{
         background: '#f3f3f3', padding: '20px 20px 24px',
         flexShrink: 0, borderTop: '1px solid #F2F4F6',
+        position: 'relative',
       }}>
+        {/* 차단된 사용자 오버레이 */}
+        {isBlocked && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            borderRadius: 0,
+            background: 'rgba(243,243,243,0.88)',
+            backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 10,
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              border: '1px solid #E5E8EB', borderRadius: 12,
+              background: 'white', padding: '10px 18px',
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B0B8C1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+              </svg>
+              <span style={{ fontSize: 14, color: '#8B95A1', fontWeight: 500 }}>
+                차단된 사용자의 댓글입니다
+              </span>
+            </div>
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
           {/* 아바타 — 32×32, rx=16 */}
           <div style={{
