@@ -54,15 +54,6 @@ function HeartIconXs({ color }: { color: string }) {
   );
 }
 
-/** 타이핑 결과 위치 마커 — 22×22 */
-function LocationIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="rgba(3,18,40,0.70)">
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-    </svg>
-  );
-}
-
 /** 입력 지우기 — 20×20 */
 function ClearIcon() {
   return (
@@ -96,10 +87,10 @@ const MOCK_RECENT = [
 const MOCK_SUGGESTIONS = ['대형카페', '브런치카페'];
 
 const MOCK_RESULTS = [
-  { id: '1', name: '블루보틀 강남',     address: '서울 강남구 논현로 508',  distance: '1.7km' },
-  { id: '3', name: '모노 커피',         address: '서울 강남구 언주로 234',  distance: '2km'   },
-  { id: '5', name: '브런치 팩토리',     address: '서울 강남구 선릉로 890',  distance: '2.3km' },
-  { id: '6', name: '더 로스터리',       address: '서울 강남구 도곡로 321',  distance: '9.7km' },
+  { id: '1', name: '블루보틀 강남',  address: '서울 강남구 논현로 508',  distance: '150m',  rating: 4.8, reviewCount: 523, tags: ['카공'] },
+  { id: '3', name: '모노 커피',      address: '서울 강남구 언주로 234',  distance: '410m',  rating: 4.9, reviewCount: 87,  tags: ['조용한'] },
+  { id: '5', name: '브런치 팩토리', address: '서울 강남구 선릉로 890',  distance: '800m',  rating: 4.6, reviewCount: 142, tags: ['브런치'] },
+  { id: '6', name: '더 로스터리',   address: '서울 강남구 도곡로 321',  distance: '9.7km', rating: 4.7, reviewCount: 201, tags: ['가성비'] },
 ];
 
 // ── 공통 서브컴포넌트 ─────────────────────────────────────────
@@ -208,46 +199,23 @@ function FavoriteRow({
   );
 }
 
-/** 검색 결과 행 (타이핑 상태) — h=57, title color rgba(0,12,30,0.80) */
-function ResultRow({
-  name, address, distance, onTap,
-}: {
-  name: string; address: string; distance: string; onTap?: () => void;
-}) {
+/** 검색 결과 카페 행 — MapPage CafeRow 동일 스펙 */
+function SearchCafeRow({ r, onTap }: { r: typeof MOCK_RESULTS[0]; onTap?: () => void }) {
   return (
-    <div
-      onClick={onTap}
-      style={{
-        display: 'flex', alignItems: 'center',
-        height: 57,
-        paddingLeft: 20, paddingRight: 20,
-        cursor: onTap ? 'pointer' : 'default',
-      }}
-    >
-      {/* 왼쪽: 30×30 위치 마커 */}
-      <LeftIconBox><LocationIcon /></LeftIconBox>
-
-      {/* 중앙 */}
-      <div style={{ flex: 1, marginLeft: 12, minWidth: 0 }}>
-        <p style={{
-          fontSize: 17, fontWeight: 510,
-          color: 'rgba(0,12,30,0.80)',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>
-          {name}
-        </p>
-        <p style={{
-          fontSize: 13, fontWeight: 400,
-          color: 'rgba(0,19,43,0.58)',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>
-          {address}
-        </p>
+    <div onClick={onTap} style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid #F2F4F6', cursor: 'pointer' }}>
+      <div style={{ width: 80, height: 80, borderRadius: 10, flexShrink: 0, background: '#F2F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: 28 }}>☕</span>
       </div>
-
-      <span style={{ fontSize: 15, fontWeight: 400, color: 'rgba(3,18,40,0.70)', marginLeft: 8, flexShrink: 0 }}>
-        {distance}
-      </span>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4, minWidth: 0 }}>
+        <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</p>
+        <p style={{ fontSize: 12, color: '#6B7684', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.address}</p>
+        <span style={{ fontSize: 12, color: '#6B7684' }}>⭐ {r.rating} · {r.distance} · 리뷰 {r.reviewCount}</span>
+        {r.tags[0] && (
+          <span style={{ display: 'inline-block', padding: '2px 8px', background: '#F2F4F6', borderRadius: 4, fontSize: 11, color: '#4E5968', alignSelf: 'flex-start' }}>
+            {r.tags[0]}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -354,87 +322,79 @@ export default function SearchPage({ onClose, onDetailOpen }: SearchPageProps) {
   }));
 
   return (
-    <div style={{
-      height: '100%', background: '#f3f3f3',
-      display: 'flex', flexDirection: 'column',
-      animation: 'slideInRight 0.2s ease',
-    }}>
+    <div style={{ height: '100%', position: 'relative', animation: 'slideInRight 0.2s ease' }}>
 
-      {/* ── NavBar ── */}
-      <NavBar noBorder onBack={onClose} onClose={onClose} />
-
-      {/* ── SearchField — Figma: 375×72, bg #fff, padding 14 16 ──
-          Input: bg #F2F4F6, r=12, h=44, paddingLeft=10, gap=8
-          Placeholder: "장소, 주소 검색" 17px fw510 rgba(3,24,50,0.46) */}
-      <div style={{
-        width: '100%', height: 72,
-        background: '#f3f3f3',
-        display: 'flex', alignItems: 'center',
-        padding: '14px 16px',
-        flexShrink: 0,
-        boxSizing: 'border-box',
-      }}>
-        <div style={{
-          flex: 1,
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: '#F2F4F6',
-          borderRadius: 12, height: 44,
-          paddingLeft: 10, paddingRight: 10,
-        }}>
-          <SearchIcon />
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={e => handleQueryChange(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
-            placeholder="장소, 주소 검색"
-            style={{
-              flex: 1, minWidth: 0,
-              background: 'transparent', border: 'none', outline: 'none',
-              fontSize: 17, fontWeight: 510,
-              color: '#191F28', fontFamily: 'inherit',
-            }}
-          />
-          {query && (
-            <button onClick={() => setQuery('')} style={{ padding: 0, lineHeight: 0 }}>
-              <ClearIcon />
-            </button>
-          )}
-        </div>
+      {/* ── 지도 배경 ── */}
+      <div style={{ position: 'absolute', inset: 0, background: '#E8EAED', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <span style={{ fontSize: 44 }}>🗺️</span>
+        <p style={{ fontSize: 14, color: '#6B7684', fontWeight: 500 }}>카카오맵이 표시됩니다</p>
       </div>
 
-      {/* ── 칩 행 (타이핑 중 숨김) — Figma: h=44, paddingLeft=20, gap=8
-          칩: h=32, r=999, padding 0 11, 하트아이콘 12×12, 텍스트 13px fw590 ── */}
-      {!isTyping && (
-        <div style={{
-          height: 44,
-          display: 'flex', alignItems: 'center',
-          gap: 8,
-          overflowX: 'auto',
-          paddingLeft: 20,
-          flexShrink: 0,
-          scrollbarWidth: 'none',
-        }}>
-          {/* 즐겨찾기 칩 */}
-          <Chip
-            label="즐겨찾기"
-            selected={activeChip === '즐겨찾기'}
-            onPress={() => handleChipPress('즐겨찾기')}
-          />
-          {/* 사용자 컬렉션 칩 */}
-          {userCollections.map(col => (
-            <Chip
-              key={col.id}
-              label={col.name}
-              selected={activeChip === col.id}
-              onPress={() => handleChipPress(col.id)}
-            />
-          ))}
-        </div>
-      )}
+      {/* ── NavBar (floating) ── */}
+      <NavBar noBorder floating onBack={onClose} onClose={onClose} />
 
-      {/* ── 콘텐츠 ── */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      {/* ── 바텀시트 패널 ── */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0, left: 0, right: 0,
+        height: 'calc(100% - env(safe-area-inset-top) - 44px)',
+        background: '#f3f3f3',
+        borderRadius: '16px 16px 0 0',
+        boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
+        display: 'flex', flexDirection: 'column',
+        zIndex: 20,
+      }}>
+
+        {/* 핸들 */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 0', flexShrink: 0 }}>
+          <div style={{ width: 48, height: 4, borderRadius: 2, background: '#E5E8EB' }} />
+        </div>
+
+        {/* 검색 필드 */}
+        <div style={{ padding: '10px 16px 0', flexShrink: 0 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: '#F2F4F6', borderRadius: 12, height: 44,
+            paddingLeft: 10, paddingRight: 10,
+          }}>
+            <SearchIcon />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={e => handleQueryChange(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
+              placeholder="장소, 주소 검색"
+              style={{
+                flex: 1, minWidth: 0,
+                background: 'transparent', border: 'none', outline: 'none',
+                fontSize: 17, fontWeight: 510,
+                color: '#191F28', fontFamily: 'inherit',
+              }}
+            />
+            {query && (
+              <button onClick={() => setQuery('')} style={{ padding: 0, lineHeight: 0 }}>
+                <ClearIcon />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 칩 행 (타이핑 중 숨김) */}
+        {!isTyping && (
+          <div style={{
+            height: 44, display: 'flex', alignItems: 'center',
+            gap: 8, overflowX: 'auto', paddingLeft: 16,
+            flexShrink: 0, scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
+          }}>
+            <Chip label="즐겨찾기" selected={activeChip === '즐겨찾기'} onPress={() => handleChipPress('즐겨찾기')} />
+            {userCollections.map(col => (
+              <Chip key={col.id} label={col.name} selected={activeChip === col.id} onPress={() => handleChipPress(col.id)} />
+            ))}
+          </div>
+        )}
+
+        {/* 콘텐츠 */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
 
         {/* ① 타이핑 중 — Figma: search_typing
             Frame 5766: 검색 제안 (h=46 rows)
@@ -451,26 +411,25 @@ export default function SearchPage({ onClose, onDetailOpen }: SearchPageProps) {
                 ))}
             </div>
 
-            {/* Frame 5767 — 카페/장소 결과 */}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {MOCK_RESULTS
-                .filter(r => r.name.includes(query) || r.address.includes(query))
-                .map(r => (
-                  <ResultRow
-                    key={r.id}
-                    name={r.name}
-                    address={r.address}
-                    distance={r.distance}
-                    onTap={() => { onDetailOpen?.(r.id); }}
-                  />
-                ))}
-              {MOCK_RESULTS.filter(r => r.name.includes(query) || r.address.includes(query)).length === 0 && (
+            {/* Frame 5767 — 카페/장소 결과 (CafeRow 스타일) */}
+            {(() => {
+              const filtered = MOCK_RESULTS.filter(r => r.name.includes(query) || r.address.includes(query));
+              return filtered.length > 0 ? (
+                <div>
+                  <div style={{ padding: '8px 16px 4px', fontSize: 13, color: '#6B7684' }}>
+                    총 <strong style={{ color: '#191F28' }}>{filtered.length}</strong>개
+                  </div>
+                  {filtered.map(r => (
+                    <SearchCafeRow key={r.id} r={r} onTap={() => onDetailOpen?.(r.id)} />
+                  ))}
+                </div>
+              ) : (
                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginTop:60, color:'rgba(3,18,40,0.30)' }}>
                   <span style={{ fontSize: 32 }}>🔍</span>
                   <p style={{ fontSize: 14 }}>검색 결과가 없어요</p>
                 </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
         )}
 
@@ -569,7 +528,8 @@ export default function SearchPage({ onClose, onDetailOpen }: SearchPageProps) {
             )}
           </div>
         )}
-      </div>
+        </div>
+      </div>{/* end 바텀시트 패널 */}
 
       <style>{`
         @keyframes slideInRight {
