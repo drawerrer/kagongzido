@@ -29,6 +29,14 @@ const REPORT_REASONS = [
   '기타',
 ];
 
+const BLOCK_REASONS = [
+  '불쾌한 내용을 게시해요',
+  '스팸 또는 광고성 글을 올려요',
+  '욕설 또는 혐오 표현을 사용해요',
+  '허위 정보를 올려요',
+  '기타',
+];
+
 // ────────── 아이콘 ────────────────────────────────────────────
 function BackIcon({ color = '#191F28' }: { color?: string }) {
   return (
@@ -91,6 +99,8 @@ function PhotoDetailView({
   const [showMeatball, setShowMeatball] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportDone, setReportDone] = useState(false);
+  const [showBlock, setShowBlock] = useState(false);
+  const [blockDone, setBlockDone] = useState(false);
   const [textExpanded, setTextExpanded] = useState(false);
 
   const touchStartX = useRef(0);
@@ -135,6 +145,13 @@ function PhotoDetailView({
     setReportDone(true);
     setTimeout(() => setReportDone(false), 2000);
     console.log('신고 사유:', reason);
+  };
+
+  const handleBlock = (reason: string) => {
+    setShowBlock(false);
+    setBlockDone(true);
+    setTimeout(() => setBlockDone(false), 2500);
+    console.log('차단 사유:', reason);
   };
 
   return (
@@ -312,7 +329,7 @@ function PhotoDetailView({
                       <div style={{ padding: '10px 14px 6px', fontSize: 12, fontWeight: 600, color: 'rgba(3,18,40,0.35)' }}>메뉴</div>
                       {[
                         { label: '신고하기', action: () => { setShowMeatball(false); setShowReport(true); } },
-                        { label: '차단하기', action: () => setShowMeatball(false) },
+                        { label: '차단하기', action: () => { setShowMeatball(false); setShowBlock(true); } },
                       ].map(item => (
                         <button key={item.label} onClick={item.action} style={{
                           display: 'flex', alignItems: 'center', width: '100%',
@@ -411,6 +428,34 @@ function PhotoDetailView({
         </BottomSheet>
       )}
 
+      {/* ── 차단 사유 선택 바텀시트 ── */}
+      {showBlock && (
+        <BottomSheet isOpen onClose={() => setShowBlock(false)}>
+          <div style={{ padding: '4px 20px 0', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#191F28', marginBottom: 12 }}>
+              차단 사유를 선택해주세요
+            </p>
+            {BLOCK_REASONS.map(reason => (
+              <button
+                key={reason}
+                onClick={() => handleBlock(reason)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  width: '100%', padding: '15px 4px',
+                  textAlign: 'left', border: 'none', borderBottom: '1px solid #F2F4F6',
+                  background: 'none', cursor: 'pointer',
+                }}
+              >
+                <span style={{ fontSize: 15, color: '#191F28' }}>{reason}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B0B8C1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            ))}
+          </div>
+        </BottomSheet>
+      )}
+
       {/* 신고 완료 토스트 */}
       <div style={{
         position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)',
@@ -423,6 +468,20 @@ function PhotoDetailView({
         whiteSpace: 'nowrap',
       }}>
         신고가 접수됐어요
+      </div>
+
+      {/* 차단 완료 토스트 */}
+      <div style={{
+        position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)',
+        background: '#191F28', color: 'white',
+        borderRadius: 8, padding: '8px 16px',
+        fontSize: 13, fontWeight: 500,
+        zIndex: 300, pointerEvents: 'none',
+        opacity: blockDone ? 1 : 0,
+        transition: 'opacity 0.2s',
+        whiteSpace: 'nowrap',
+      }}>
+        이제 {photo.reviewAuthor}님의 글은 볼 수 없게 됩니다
       </div>
     </div>
   );
