@@ -685,7 +685,7 @@ export default function GuidebookPage({
         shareTitle="카페인덱스 가이드북"
       />
 
-      {snackbar && <Snackbar message={snackbar} onDismiss={dismissSnackbar} />}
+      {snackbar && <Snackbar type="positive" message={snackbar} onDismiss={dismissSnackbar} />}
     </div>
   );
 }

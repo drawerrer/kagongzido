@@ -1050,7 +1050,7 @@ export default function CollectionPage({
 
       {/* ── 스낵바 ── */}
       {snackbar === 'deleted' && (
-        <Snackbar message="매장을 삭제했어요" actionLabel="되돌리기"
+        <Snackbar type="negative" message="매장을 삭제했어요" actionLabel="되돌리기"
           onAction={() => {
             deletedStores.forEach(s => addFavoriteFromContext(s));
             setDeletedStores([]);
@@ -1059,7 +1059,7 @@ export default function CollectionPage({
           onDismiss={dismissSnackbar} />
       )}
       {snackbar === 'added' && (
-        <Snackbar message="컬렉션에 담았어요" actionLabel="보러가기"
+        <Snackbar type="positive" message="컬렉션에 담았어요" actionLabel="보러가기"
           onAction={() => {
             const firstId = addedToCollectionIds[0];
             const col = collections.find(c => c.id === firstId);
@@ -1069,7 +1069,7 @@ export default function CollectionPage({
           onDismiss={dismissSnackbar} />
       )}
       {snackbar === 'collection-deleted' && (
-        <Snackbar message="컬렉션을 삭제했어요" actionLabel="되돌리기"
+        <Snackbar type="negative" message="컬렉션을 삭제했어요" actionLabel="되돌리기"
           onAction={() => {
             if (deletedCollectionStore) {
               const newId = addCollection({ name: deletedCollectionStore.name });
