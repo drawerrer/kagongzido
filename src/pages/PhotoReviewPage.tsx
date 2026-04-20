@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import BottomSheet from '../components/BottomSheet';
 
 // ────────── 타입 ─────────────────────────────────────────────
@@ -95,11 +95,9 @@ function PhotoDetailView({
 }) {
   // 같은 작성자의 사진만 표시
   const authorPhotos = photos.filter(p => p.reviewAuthor === photos[initialIndex].reviewAuthor);
-  const authorInitialIdx = Math.max(0, authorPhotos.findIndex(p => p === photos[initialIndex]));
 
-  const [idx, setIdx] = useState(authorInitialIdx);
-  const [likedSet, setLikedSet] = useState<Set<number>>(new Set());
-  const [likeCountMap, setLikeCountMap] = useState<Map<number, number>>(new Map());
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
   const [showMeatball, setShowMeatball] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportDone, setReportDone] = useState(false);
@@ -108,41 +106,13 @@ function PhotoDetailView({
   const [isBlocked, setIsBlocked] = useState(false);
   const [textExpanded, setTextExpanded] = useState(false);
 
-  const touchStartX = useRef(0);
-  const touchStartY = useRef(0);
-
-  const photo = authorPhotos[idx];
-  const isLiked = likedSet.has(idx);
-  const likeCount = likeCountMap.get(idx) ?? 0;
+  const photo = authorPhotos[0];
 
   const toggleLike = () => {
-    setLikedSet(s => {
-      const ns = new Set(s);
-      const wasLiked = ns.has(idx);
-      wasLiked ? ns.delete(idx) : ns.add(idx);
-      setLikeCountMap(m => {
-        const nm = new Map(m);
-        nm.set(idx, (nm.get(idx) ?? 0) + (wasLiked ? -1 : 1));
-        return nm;
-      });
-      return ns;
+    setLiked(l => {
+      setLikeCount(c => c + (l ? -1 : 1));
+      return !l;
     });
-  };
-
-  const goNext = () => { if (idx < authorPhotos.length - 1) { setIdx(i => i + 1); setTextExpanded(false); } };
-  const goPrev = () => { if (idx > 0) { setIdx(i => i - 1); setTextExpanded(false); } };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const dx = touchStartX.current - e.changedTouches[0].clientX;
-    const dy = Math.abs(touchStartY.current - e.changedTouches[0].clientY);
-    if (dy > Math.abs(dx)) return;
-    if (dx > 50) goNext();
-    else if (dx < -50) goPrev();
   };
 
   const handleReport = (reason: string) => {
@@ -218,64 +188,26 @@ function PhotoDetailView({
         </span>
       </div>
 
-      {/* ── 사진 영역 — 패딩 10px, hug ── */}
-      <div
-        style={{ flexShrink: 0, background: '#f3f3f3', padding: 10, display: 'flex', justifyContent: 'center' }}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        {/* 이미지 프레임 343×343, rx=4, 버튼 내부 포함 */}
-        <div style={{
-          width: 343, height: 343,
-          background: photo.bg, borderRadius: 4,
-          position: 'relative', overflow: 'hidden',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <span style={{ fontSize: 90, opacity: 0.08 }}>☕</span>
-
-          {/* 좌 탐색 화살표 */}
-          {idx > 0 && (
-            <button onClick={goPrev} style={{
-              position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-              width: 36, height: 36, borderRadius: 18,
-              background: 'rgba(0,0,0,0.35)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: 'none', cursor: 'pointer',
-            }}>
-              <BackIcon color="white" />
-            </button>
-          )}
-          {/* 우 탐색 화살표 — rotate를 transform에 합쳐 translateY 방향 보존 */}
-          {idx < authorPhotos.length - 1 && (
-            <button onClick={goNext} style={{
-              position: 'absolute', right: 10, top: '50%',
-              transform: 'translateY(-50%) rotate(180deg)',
-              width: 36, height: 36, borderRadius: 18,
-              background: 'rgba(0,0,0,0.35)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: 'none', cursor: 'pointer',
-            }}>
-              <BackIcon color="white" />
-            </button>
-          )}
-
-          {/* 점 인디케이터 — 7×7 원형, white/4F4F4F */}
-          <div style={{
-            position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', gap: 5,
+      {/* ── 사진 영역 — 수평 스크롤 ── */}
+      <div style={{
+        flexShrink: 0, background: '#f3f3f3',
+        overflowX: 'auto', display: 'flex', gap: 8,
+        padding: '10px 10px',
+        scrollSnapType: 'x mandatory',
+        WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
+        scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
+      }}>
+        {authorPhotos.map((p, i) => (
+          <div key={i} style={{
+            flexShrink: 0, width: 343, height: 343,
+            background: p.bg, borderRadius: 4,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            scrollSnapAlign: 'start',
+            overflow: 'hidden',
           }}>
-            {authorPhotos.slice(Math.max(0, idx - 4), Math.min(authorPhotos.length, idx + 5)).map((_, i) => {
-              const absIdx = Math.max(0, idx - 4) + i;
-              return (
-                <div key={absIdx} style={{
-                  width: 7, height: 7, borderRadius: 3.5,
-                  background: absIdx === idx ? 'white' : '#4F4F4F',
-                  transition: 'background 0.2s',
-                }} />
-              );
-            })}
+            <span style={{ fontSize: 90, opacity: 0.08 }}>☕</span>
           </div>
-        </div>
+        ))}
       </div>
 
       {/* ── 리뷰 카드 ── */}
@@ -415,17 +347,17 @@ function PhotoDetailView({
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               width: 53, height: 29, borderRadius: 13,
-              background: isLiked ? '#252525' : '#FAFAFB',
+              background: liked ? '#252525' : '#FAFAFB',
               border: 'none', justifyContent: 'center', flexShrink: 0,
               transition: 'background 0.15s',
               boxSizing: 'border-box', padding: 0, cursor: 'pointer',
             }}
           >
             <svg width="16" height="16" viewBox="8 4.538 16 18.284" preserveAspectRatio="none"
-              fill={isLiked ? '#CA4548' : '#697482'}>
+              fill={liked ? '#CA4548' : '#697482'}>
               <path d="M9.3335 12.6632C9.3335 15.9052 12.0135 17.6325 13.9748 19.1792C14.6668 19.7245 15.3335 20.2385 16.0002 20.2385C16.6668 20.2385 17.3335 19.7252 18.0255 19.1785C19.9875 17.6332 22.6668 15.9052 22.6668 12.6639C22.6668 9.42254 19.0002 7.12187 16.0002 10.2392C13.0002 7.12187 9.3335 9.4212 9.3335 12.6632Z" />
             </svg>
-            <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1, color: isLiked ? '#ffffff' : '#697482', letterSpacing: -0.3 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1, color: liked ? '#ffffff' : '#697482', letterSpacing: -0.3 }}>
               {likeCount}
             </span>
           </button>
@@ -608,7 +540,7 @@ export default function PhotoReviewPage({
         </span>
       </div>
 
-      {/* ── 3열 그리드 ── */}
+      {/* ── 3열 그리드 (작성자 단위) ── */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{
           display: 'grid',
@@ -616,29 +548,49 @@ export default function PhotoReviewPage({
           gap: 1,
           padding: '0 16px',
         }}>
-          {photos.map((photo, i) => (
-            <div
-              key={i}
-              onClick={() => setDetailIndex(i)}
-              style={{
-                aspectRatio: '1 / 1',
-                background: photo.bg,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', position: 'relative', overflow: 'hidden',
-              }}
-            >
-              <span style={{ fontSize: 22, opacity: 0.15 }}>☕</span>
-              {i === 0 && photo.isReporter && (
-                <div style={{
-                  position: 'absolute', top: 6, left: 6,
-                  background: '#252525', borderRadius: 4,
-                  padding: '2px 6px', fontSize: 9, fontWeight: 700, color: 'white',
-                }}>
-                  제보
+          {(() => {
+            // 작성자별 첫 번째 사진만 노출 (순서 유지)
+            const seen = new Set<string>();
+            return photos.map((photo, i) => {
+              if (seen.has(photo.reviewAuthor)) return null;
+              seen.add(photo.reviewAuthor);
+              const count = photos.filter(p => p.reviewAuthor === photo.reviewAuthor).length;
+              return (
+                <div
+                  key={i}
+                  onClick={() => setDetailIndex(i)}
+                  style={{
+                    aspectRatio: '1 / 1',
+                    background: photo.bg,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                  }}
+                >
+                  <span style={{ fontSize: 22, opacity: 0.15 }}>☕</span>
+                  {/* 제보자 뱃지 */}
+                  {photo.isReporter && (
+                    <div style={{
+                      position: 'absolute', top: 6, left: 6,
+                      background: '#252525', borderRadius: 4,
+                      padding: '2px 6px', fontSize: 9, fontWeight: 700, color: 'white',
+                    }}>
+                      제보
+                    </div>
+                  )}
+                  {/* 이미지 여러장 아이콘 */}
+                  {count > 1 && (
+                    <div style={{ position: 'absolute', top: 6, right: 6 }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="7" width="13" height="13" rx="2" fill="white" opacity="0.9"/>
+                        <rect x="6" y="4" width="13" height="13" rx="2" stroke="white" strokeWidth="1.5" fill="none" opacity="0.7"/>
+                        <rect x="3" y="7" width="13" height="13" rx="2" stroke="white" strokeWidth="1.5" fill="none"/>
+                      </svg>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              );
+            }).filter(Boolean);
+          })()}
         </div>
         <div style={{ height: 32 }} />
       </div>
