@@ -2,7 +2,7 @@
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
-import { TextButton, BottomCTA } from '@toss/tds-mobile';
+import { TextButton } from '@toss/tds-mobile';
 import { openURL, graniteEvent } from '@apps-in-toss/web-framework';
 import NavBar from '../components/NavBar';
 
@@ -351,6 +351,7 @@ function GuideBookDetailView({
                   flexDirection: 'column',
                   opacity: isActive ? 1 : 0.55,
                   transition: 'opacity 0.25s ease',
+                  pointerEvents: isActive ? 'auto' : 'none',
                 }}
               >
                 {/* 이미지 영역 */}
@@ -498,7 +499,7 @@ function GuideBookDetailView({
       </div>
 
       {/* 하단 CTA */}
-      <BottomCTA.Single background="none">
+      <div style={{ flexShrink: 0, padding: '12px 20px 16px', backgroundColor: '#f2f4f6' }}>
         <button
           onClick={() => onDetailOpen?.(store.id)}
           style={{
@@ -511,7 +512,7 @@ function GuideBookDetailView({
         >
           자세히보기
         </button>
-      </BottomCTA.Single>
+      </div>
     </div>
   );
 }
