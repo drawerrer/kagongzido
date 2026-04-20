@@ -1,6 +1,8 @@
-import { defineConfig } from '@rsbuild/core';
+import { defineConfig, loadEnv } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
+
+const { publicVars } = loadEnv({ prefixes: ['VITE_'] });
 
 export default defineConfig({
   plugins: [pluginReact(), pluginSvgr()],
@@ -8,6 +10,7 @@ export default defineConfig({
     template: './index.html',
   },
   source: {
+    define: publicVars,
     entry: {
       index: './src/index.tsx',
     },
