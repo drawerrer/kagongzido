@@ -405,7 +405,7 @@ export default function SearchPage({ onClose, onDetailOpen }: SearchPageProps) {
             {/* Frame 5766 — 자동완성 제안 */}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {MOCK_SUGGESTIONS
-                .filter(s => s.includes(query))
+                .filter(s => s.includes(query) && s !== query.trim())
                 .map(s => (
                   <SuggestionRow key={s} keyword={s} onTap={() => setQuery(s)} />
                 ))}
