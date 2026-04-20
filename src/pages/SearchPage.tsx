@@ -412,24 +412,14 @@ export default function SearchPage({ onClose, onDetailOpen }: SearchPageProps) {
             </div>
 
             {/* Frame 5767 — 카페/장소 결과 (CafeRow 스타일) */}
-            {(() => {
-              const filtered = MOCK_RESULTS.filter(r => r.name.includes(query) || r.address.includes(query));
-              return filtered.length > 0 ? (
-                <div>
-                  <div style={{ padding: '8px 16px 4px', fontSize: 13, color: '#6B7684' }}>
-                    총 <strong style={{ color: '#191F28' }}>{filtered.length}</strong>개
-                  </div>
-                  {filtered.map(r => (
-                    <SearchCafeRow key={r.id} r={r} onTap={() => onDetailOpen?.(r.id)} />
-                  ))}
-                </div>
-              ) : (
-                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginTop:60, color:'rgba(3,18,40,0.30)' }}>
-                  <span style={{ fontSize: 32 }}>🔍</span>
-                  <p style={{ fontSize: 14 }}>검색 결과가 없어요</p>
-                </div>
-              );
-            })()}
+            <div>
+              <div style={{ padding: '8px 16px 4px', fontSize: 13, color: '#6B7684' }}>
+                총 <strong style={{ color: '#191F28' }}>{MOCK_RESULTS.length}</strong>개
+              </div>
+              {MOCK_RESULTS.map(r => (
+                <SearchCafeRow key={r.id} r={r} onTap={() => onDetailOpen?.(r.id)} />
+              ))}
+            </div>
           </div>
         )}
 
