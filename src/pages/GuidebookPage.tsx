@@ -397,8 +397,7 @@ function GuideBookDetailView({
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (isLastPhoto) onDetailOpen?.(s.id);
-                            else onDetailOpenToReview?.(s.id);
+                            onDetailOpen?.(s.id);
                           }}
                         >
                           {isLastPhoto && (
