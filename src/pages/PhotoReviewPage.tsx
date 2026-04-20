@@ -93,7 +93,11 @@ function PhotoDetailView({
   isFavorite?: boolean;
   onFavoriteToggle?: () => void;
 }) {
-  const [idx, setIdx] = useState(initialIndex);
+  // 같은 작성자의 사진만 표시
+  const authorPhotos = photos.filter(p => p.reviewAuthor === photos[initialIndex].reviewAuthor);
+  const authorInitialIdx = Math.max(0, authorPhotos.findIndex(p => p === photos[initialIndex]));
+
+  const [idx, setIdx] = useState(authorInitialIdx);
   const [likedSet, setLikedSet] = useState<Set<number>>(new Set());
   const [likeCountMap, setLikeCountMap] = useState<Map<number, number>>(new Map());
   const [showMeatball, setShowMeatball] = useState(false);
@@ -107,7 +111,7 @@ function PhotoDetailView({
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
 
-  const photo = photos[idx];
+  const photo = authorPhotos[idx];
   const isLiked = likedSet.has(idx);
   const likeCount = likeCountMap.get(idx) ?? 0;
 
@@ -125,7 +129,7 @@ function PhotoDetailView({
     });
   };
 
-  const goNext = () => { if (idx < photos.length - 1) { setIdx(i => i + 1); setTextExpanded(false); } };
+  const goNext = () => { if (idx < authorPhotos.length - 1) { setIdx(i => i + 1); setTextExpanded(false); } };
   const goPrev = () => { if (idx > 0) { setIdx(i => i - 1); setTextExpanded(false); } };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -242,7 +246,7 @@ function PhotoDetailView({
             </button>
           )}
           {/* 우 탐색 화살표 — rotate를 transform에 합쳐 translateY 방향 보존 */}
-          {idx < photos.length - 1 && (
+          {idx < authorPhotos.length - 1 && (
             <button onClick={goNext} style={{
               position: 'absolute', right: 10, top: '50%',
               transform: 'translateY(-50%) rotate(180deg)',
@@ -260,7 +264,7 @@ function PhotoDetailView({
             position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
             display: 'flex', gap: 5,
           }}>
-            {photos.slice(Math.max(0, idx - 4), Math.min(photos.length, idx + 5)).map((_, i) => {
+            {authorPhotos.slice(Math.max(0, idx - 4), Math.min(authorPhotos.length, idx + 5)).map((_, i) => {
               const absIdx = Math.max(0, idx - 4) + i;
               return (
                 <div key={absIdx} style={{
