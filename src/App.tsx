@@ -116,7 +116,7 @@ function AppInner() {
         <DetailPage
           cafeId={detailCafeId}
           onBack={() => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
-          onClose={() => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
+          onClose={() => { setDetailCafeId(null); setShowSearch(false); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
           activeTab={activeTab}
           onTabChange={(tab) => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); setActiveTab(tab as TabId); }}
           scrollToReview={detailScrollToReview}
@@ -160,7 +160,7 @@ function AppInner() {
         /* ── 검색 화면 (탭바 숨김) ── */
         <SearchPage
           onClose={() => setShowSearch(false)}
-          onDetailOpen={(id) => { setShowSearch(false); setDetailCafeId(id); }}
+          onDetailOpen={(id) => { setDetailCafeId(id); }}
         />
       ) : (
         <>
