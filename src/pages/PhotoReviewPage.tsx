@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import BottomSheet from '../components/BottomSheet';
 
 // ────────── 타입 ─────────────────────────────────────────────
@@ -98,6 +98,8 @@ function PhotoDetailView({
 
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [imgIdx, setImgIdx] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [showMeatball, setShowMeatball] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportDone, setReportDone] = useState(false);
@@ -188,26 +190,49 @@ function PhotoDetailView({
         </span>
       </div>
 
-      {/* ── 사진 영역 — 수평 스크롤 ── */}
-      <div style={{
-        flexShrink: 0, background: '#f3f3f3',
-        overflowX: 'auto', display: 'flex', gap: 8,
-        padding: '10px 10px',
-        scrollSnapType: 'x mandatory',
-        WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
-        scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
-      }}>
-        {authorPhotos.map((p, i) => (
-          <div key={i} style={{
-            flexShrink: 0, width: 343, height: 343,
-            background: p.bg, borderRadius: 4,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            scrollSnapAlign: 'start',
-            overflow: 'hidden',
-          }}>
-            <span style={{ fontSize: 90, opacity: 0.08 }}>☕</span>
+      {/* ── 사진 영역 — 고정 프레임 내부 수평 스크롤 ── */}
+      <div style={{ flexShrink: 0, background: '#f3f3f3', padding: 10, display: 'flex', justifyContent: 'center' }}>
+        <div style={{ width: 343, height: 343, borderRadius: 4, position: 'relative', overflow: 'hidden' }}>
+          {/* 내부 수평 스크롤 */}
+          <div
+            ref={scrollRef}
+            onScroll={() => {
+              if (!scrollRef.current) return;
+              setImgIdx(Math.round(scrollRef.current.scrollLeft / 343));
+            }}
+            style={{
+              display: 'flex', width: '100%', height: '100%',
+              overflowX: 'auto', scrollSnapType: 'x mandatory',
+              scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
+            }}
+          >
+            {authorPhotos.map((p, i) => (
+              <div key={i} style={{
+                flexShrink: 0, width: 343, height: 343,
+                background: p.bg,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                scrollSnapAlign: 'start',
+              }}>
+                <span style={{ fontSize: 90, opacity: 0.08 }}>☕</span>
+              </div>
+            ))}
           </div>
-        ))}
+          {/* 점 인디케이터 */}
+          {authorPhotos.length > 1 && (
+            <div style={{
+              position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
+              display: 'flex', gap: 5, pointerEvents: 'none',
+            }}>
+              {authorPhotos.map((_, i) => (
+                <div key={i} style={{
+                  width: 7, height: 7, borderRadius: 3.5,
+                  background: i === imgIdx ? 'white' : '#4F4F4F',
+                  transition: 'background 0.2s',
+                }} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── 리뷰 카드 ── */}
