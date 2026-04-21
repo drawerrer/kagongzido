@@ -31,7 +31,7 @@ function LocationIcon() {
   return (
     <div style={{
       width: 64, height: 64, borderRadius: 32,
-      background: '#EBEBEB',
+      background: '#e0e0e0',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       marginBottom: 16,
     }}>
@@ -146,7 +146,7 @@ export default function LocationPermissionSheet({
         bottom: 0,
         left: 10,
         right: 10,
-        background: '#ffffff',
+        background: '#f3f3f3',
         borderRadius: 28,
         animation: 'locSlideUp 0.25s ease',
       }}>
@@ -262,8 +262,8 @@ export default function LocationPermissionSheet({
                 onClick={onClose}
                 style={{
                   flex: 1, height: 56, borderRadius: 16, border: 'none',
-                  background: 'rgba(34,114,235,0.08)', fontSize: 17,
-                  fontWeight: 590, color: '#2272eb', cursor: 'pointer',
+                  background: '#252525', fontSize: 17,
+                  fontWeight: 590, color: '#ffffff', cursor: 'pointer',
                 }}
               >
                 확인
@@ -299,13 +299,12 @@ export default function LocationPermissionSheet({
           )}
 
           {type === 'granted' && (
-            /* 확인 — 피그마: fill=rgba(34,114,235,0.08) text=#2272eb */
             <button
               onClick={onClose}
               style={{
                 flex: 1, height: 56, borderRadius: 16, border: 'none',
-                background: 'rgba(34,114,235,0.08)', fontSize: 17,
-                fontWeight: 590, color: '#2272eb', cursor: 'pointer',
+                background: '#252525', fontSize: 17,
+                fontWeight: 590, color: '#ffffff', cursor: 'pointer',
               }}
             >
               확인
