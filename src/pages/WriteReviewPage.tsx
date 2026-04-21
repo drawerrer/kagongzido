@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { insertReview } from '../services/db';
 
 // ────────── 타입 ─────────────────────────────────────────────
 interface CafeInfo {
@@ -9,8 +10,11 @@ interface CafeInfo {
 
 interface WriteReviewPageProps {
   cafe: CafeInfo;
-  onBack: () => void;    // 상세페이지로 돌아가기
-  onClose: () => void;   // 전체 닫기
+  cafeId: string;
+  userId: string;
+  onBack: () => void;
+  onClose: () => void;
+  onReviewSubmitted?: () => void;
 }
 
 // ────────── 평가 칩 데이터 ────────────────────────────────────
@@ -39,7 +43,7 @@ type EvalState = Partial<Record<CategoryId, string>>;
 type PageState = 'form' | 'loading' | 'success' | 'fail';
 
 // ────────── 메인 컴포넌트 ────────────────────────────────────
-export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPageProps) {
+export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose, onReviewSubmitted }: WriteReviewPageProps) {
   const [pageState, setPageState] = useState<PageState>('form');
   const [evalState, setEvalState] = useState<EvalState>({});
   const [photos, setPhotos] = useState<string[]>([]); // gradient strings (mock)
@@ -100,11 +104,17 @@ export default function WriteReviewPage({ cafe, onBack, onClose }: WriteReviewPa
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setPageState('loading');
-    // mock delay
-    await new Promise(r => setTimeout(r, 1800));
-    // 70% 성공, 30% 실패 (mock)
-    const success = Math.random() > 0.3;
+    const success = await insertReview({
+      user_id: userId,
+      cafe_id: cafeId,
+      content: text.trim(),
+      outlet: evalState.outlet,
+      seat: evalState.seat,
+      noise: evalState.noise,
+      images: photos,
+    });
     setPageState(success ? 'success' : 'fail');
+    if (success) onReviewSubmitted?.();
   };
 
   // ── 재시도 ────────────────────────────────────────────────

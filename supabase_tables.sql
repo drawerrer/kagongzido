@@ -39,6 +39,20 @@ create table if not exists collection_stores (
   unique (collection_id, store_id)
 );
 
+-- 4. 리뷰
+create table if not exists reviews (
+  id          uuid default gen_random_uuid() primary key,
+  user_id     text not null,
+  cafe_id     text not null,
+  content     text not null,
+  outlet      text,
+  seat        text,
+  noise       text,
+  images      text[],
+  like_count  int default 0,
+  created_at  timestamptz default now()
+);
+
 -- ================================================
 -- RLS (Row Level Security) — 개발 중에는 비활성
 -- 배포 전에 활성화 권장
@@ -46,3 +60,4 @@ create table if not exists collection_stores (
 -- alter table favorites enable row level security;
 -- alter table collections enable row level security;
 -- alter table collection_stores enable row level security;
+-- alter table reviews enable row level security;

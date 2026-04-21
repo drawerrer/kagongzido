@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { openURL, appLogin } from '@apps-in-toss/web-framework';
 // import { IconButton } from '@toss/tds-mobile';
@@ -7,6 +7,7 @@ import ShareSheet from '../components/ShareSheet';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
 import WriteReviewPage from './WriteReviewPage';
 import { useFavorites } from '../context/FavoritesContext';
+import { fetchReviews, type ReviewRow } from '../services/db';
 
 // ── 편의시설 SVG 아이콘 ──────────────────────────────────────
 function IcParking() {
@@ -936,11 +937,44 @@ interface DetailPageProps {
   onGoToCollection?: (collection: { id: string; name: string }) => void;
 }
 
+// 아바타 색상 (user_id 기반 고정 색)
+const AVATAR_COLORS = ['#3182F6','#F04452','#00C471','#FF8C00','#9B59B6','#1ABC9C'];
+function avatarColor(userId: string) {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+}
+function rowToReviewItem(row: ReviewRow): ReviewItem {
+  return {
+    id: row.id,
+    author: `사용자 ${row.user_id.slice(-4)}`,
+    avatarColor: avatarColor(row.user_id),
+    date: formatDate(row.created_at),
+    content: row.content,
+    images: row.images ?? [],
+    likeCount: row.like_count,
+  };
+}
+
 export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, onGoToCollection }: DetailPageProps) {
   const cafe = getCafeDetail(cafeId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
-  const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed, collections } = useFavorites();
+  const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed, collections, userId } = useFavorites();
+
+  // ── DB 리뷰 로딩 ──────────────────────────────────────────
+  const [dbReviews, setDbReviews] = useState<ReviewItem[]>([]);
+  const loadReviews = useCallback(async () => {
+    const rows = await fetchReviews(cafeId);
+    setDbReviews(rows.map(rowToReviewItem));
+  }, [cafeId]);
+  useEffect(() => { loadReviews(); }, [loadReviews]);
+
+  const reviews = dbReviews.length > 0 ? dbReviews : cafe.reviews;
 
   const [scrolled, setScrolled] = useState(false);
 
@@ -1068,8 +1102,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
   // 리뷰 정렬: 카페 제보자 → 나머지 (최신순)
   const sortedReviews = [
-    ...cafe.reviews.filter(r => r.isReporter),
-    ...cafe.reviews.filter(r => !r.isReporter),
+    ...reviews.filter(r => r.isReporter),
+    ...reviews.filter(r => !r.isReporter),
   ];
 
   // 포토 모아보기: 모든 리뷰 이미지 수집 (제보자 리뷰 사진 먼저)
@@ -1097,8 +1131,11 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     return (
       <WriteReviewPage
         cafe={{ name: cafe.name, address: cafe.address }}
+        cafeId={cafeId}
+        userId={userId}
         onBack={() => setShowWriteReview(false)}
         onClose={onClose}
+        onReviewSubmitted={() => { setShowWriteReview(false); loadReviews(); }}
       />
     );
   }
@@ -1435,15 +1472,15 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           {/* 헤더: "리뷰 (n)" + 포토리뷰만 모아보기 체크박스 */}
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
             <h2 style={{ fontSize: 17, fontWeight: 700, color: '#191F28', flex: 1 }}>
-              리뷰&nbsp;<span style={{ color: '#252525' }}>({cafe.reviews.length})</span>
+              리뷰&nbsp;<span style={{ color: '#252525' }}>({reviews.length})</span>
             </h2>
             <button
-              onClick={() => cafe.reviews.length > 0 && setPhotoOnly(v => !v)}
+              onClick={() => reviews.length > 0 && setPhotoOnly(v => !v)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'none', padding: 0,
-                opacity: cafe.reviews.length === 0 ? 0.35 : 1,
-                cursor: cafe.reviews.length === 0 ? 'default' : 'pointer',
+                opacity: reviews.length === 0 ? 0.35 : 1,
+                cursor: reviews.length === 0 ? 'default' : 'pointer',
               }}
             >
               {/* 체크박스 */}
@@ -1464,7 +1501,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
             </button>
           </div>
 
-          {cafe.reviews.length === 0 ? (
+          {reviews.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {/* 카피 텍스트 */}
               <div>
