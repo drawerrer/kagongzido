@@ -37,6 +37,19 @@ const DEFAULT_COLLECTIONS: Collection[] = [
   { id: 'recent', name: '최근', storeIds: [] },
 ];
 
+// ─── localStorage 헬퍼 ────────────────────────────────────────
+function lsGet<T>(key: string, fallback: T): T {
+  try {
+    const v = localStorage.getItem(key);
+    return v ? (JSON.parse(v) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+function lsSet(key: string, value: unknown) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+}
+
 // ─── Context 타입 ─────────────────────────────────────────────
 interface FavoritesContextType {
   userId: string;
@@ -68,42 +81,58 @@ export function FavoritesProvider({
   userId: string;
   children: ReactNode;
 }) {
+  // localStorage에서 즉시 초기값 로드 → 새로고침 후에도 데이터 즉시 표시
   const [isLoading, setIsLoading] = useState(true);
-  const [favorites, setFavorites] = useState<FavoritedStore[]>([]);
 
-  // 최근 본 카페: localStorage에서 초기값 로드
-  const [recentlyViewed, setRecentlyViewed] = useState<RecentCafe[]>(() => {
-    try {
-      const stored = localStorage.getItem('recentlyViewed');
-      return stored ? (JSON.parse(stored) as RecentCafe[]) : [];
-    } catch {
-      return [];
+  const [favorites, setFavorites] = useState<FavoritedStore[]>(() =>
+    lsGet<FavoritedStore[]>(`favorites_${userId}`, [])
+  );
+
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentCafe[]>(() =>
+    lsGet<RecentCafe[]>('recentlyViewed', [])
+  );
+
+  const [collections, setCollections] = useState<Collection[]>(() => {
+    const cached = lsGet<Collection[]>(`collections_${userId}`, []);
+    if (cached.length > 0) {
+      const hasRecent = cached.some(c => c.id === 'recent');
+      return hasRecent ? cached : [{ id: 'recent', name: '최근', storeIds: [] }, ...cached];
     }
+    return DEFAULT_COLLECTIONS;
   });
 
-  const [collections, setCollections] = useState<Collection[]>(DEFAULT_COLLECTIONS);
-
-  // ── 앱 시작 시 Supabase에서 데이터 불러오기 ──────────────
+  // ── 앱 시작 시 Supabase에서 최신 데이터 동기화 ──────────
   useEffect(() => {
     if (!userId) return;
-    const load = async () => {
+    const sync = async () => {
       setIsLoading(true);
       const [favs, cols] = await Promise.all([
         fetchFavorites(userId),
         fetchCollections(userId),
       ]);
-      setFavorites(favs);
+
+      // favorites
+      if (favs.length > 0) {
+        setFavorites(favs);
+        lsSet(`favorites_${userId}`, favs);
+      }
+
+      // collections
       if (cols.length > 0) {
         const hasRecent = cols.some(c => c.id === 'recent');
-        setCollections(hasRecent ? cols : [{ id: 'recent', name: '최근', storeIds: [] }, ...cols]);
+        const next = hasRecent ? cols : [{ id: 'recent', name: '최근', storeIds: [] }, ...cols];
+        setCollections(next);
+        lsSet(`collections_${userId}`, next);
       } else {
         // 첫 접속: 기본 컬렉션 DB에 생성
         await insertCollection(userId, DEFAULT_COLLECTIONS[0], 0);
         setCollections(DEFAULT_COLLECTIONS);
+        lsSet(`collections_${userId}`, DEFAULT_COLLECTIONS);
       }
+
       setIsLoading(false);
     };
-    load();
+    sync();
   }, [userId]);
 
   // ── 찜하기 ───────────────────────────────────────────────
@@ -114,17 +143,23 @@ export function FavoritesProvider({
       if (prev.some(f => f.id === store.id)) return prev;
       const next = [...prev, store];
       insertFavorite(userId, store, next.length - 1);
+      lsSet(`favorites_${userId}`, next);
       return next;
     });
   }, [userId]);
 
   const removeFavorite = useCallback((id: string) => {
-    setFavorites(prev => prev.filter(f => f.id !== id));
+    setFavorites(prev => {
+      const next = prev.filter(f => f.id !== id);
+      lsSet(`favorites_${userId}`, next);
+      return next;
+    });
     deleteFavorite(userId, id);
   }, [userId]);
 
   const reorderFavorites = useCallback((newOrder: FavoritedStore[]) => {
     setFavorites(newOrder);
+    lsSet(`favorites_${userId}`, newOrder);
     updateFavoritesOrder(userId, newOrder);
   }, [userId]);
 
@@ -133,73 +168,96 @@ export function FavoritesProvider({
     setRecentlyViewed(prev => {
       const filtered = prev.filter(r => r.id !== cafe.id);
       const next = [cafe, ...filtered].slice(0, 20);
-      try { localStorage.setItem('recentlyViewed', JSON.stringify(next)); } catch {}
+      lsSet('recentlyViewed', next);
       return next;
     });
   }, []);
 
-  // ── 컬렉션 ───────────────────────────────────────────────
+  // ── 컬렉션 (로컬 + Supabase) ─────────────────────────────
   const addCollection = useCallback((col: Omit<Collection, 'id' | 'storeIds'>) => {
     const newId = Date.now().toString();
     const newCol: Collection = { id: newId, storeIds: [], ...col };
     setCollections(prev => {
       const recent = prev.find(c => c.id === 'recent')!;
       const rest = prev.filter(c => c.id !== 'recent');
+      const next = [recent, newCol, ...rest];
       insertCollection(userId, newCol, 1);
-      return [recent, newCol, ...rest];
+      lsSet(`collections_${userId}`, next);
+      return next;
     });
     return newId;
   }, [userId]);
 
   const updateCollection = useCallback((id: string, updates: Partial<Omit<Collection, 'id'>>) => {
-    setCollections(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+    setCollections(prev => {
+      const next = prev.map(c => c.id === id ? { ...c, ...updates } : c);
+      lsSet(`collections_${userId}`, next);
+      return next;
+    });
     const { memos: _m, storeIds: _s, ...dbUpdates } = updates as Collection;
     if (Object.keys(dbUpdates).length > 0) updateCollectionDB(id, dbUpdates);
-  }, []);
+  }, [userId]);
 
   const removeCollection = useCallback((id: string) => {
     if (id === 'recent') return;
-    setCollections(prev => prev.filter(c => c.id !== id));
+    setCollections(prev => {
+      const next = prev.filter(c => c.id !== id);
+      lsSet(`collections_${userId}`, next);
+      return next;
+    });
     deleteCollectionDB(id);
-  }, []);
+  }, [userId]);
 
   const reorderCollections = useCallback((newOrder: Collection[]) => {
     setCollections(prev => {
       const recent = prev.find(c => c.id === 'recent');
       const rest = newOrder.filter(c => c.id !== 'recent');
       const next = recent ? [recent, ...rest] : rest;
+      lsSet(`collections_${userId}`, next);
       updateCollectionsOrder(userId, next);
       return next;
     });
   }, [userId]);
 
   const addStoresToCollection = useCallback((collectionId: string, storeIds: string[]) => {
-    setCollections(prev => prev.map(c =>
-      c.id === collectionId
-        ? { ...c, storeIds: [...new Set([...c.storeIds, ...storeIds])] }
-        : c
-    ));
+    setCollections(prev => {
+      const next = prev.map(c =>
+        c.id === collectionId
+          ? { ...c, storeIds: [...new Set([...c.storeIds, ...storeIds])] }
+          : c
+      );
+      lsSet(`collections_${userId}`, next);
+      return next;
+    });
     addStoresToCollectionDB(collectionId, storeIds);
-  }, []);
+  }, [userId]);
 
   const removeStoresFromCollection = useCallback((collectionId: string, storeIds: string[]) => {
     const idSet = new Set(storeIds);
-    setCollections(prev => prev.map(c =>
-      c.id === collectionId
-        ? { ...c, storeIds: c.storeIds.filter(id => !idSet.has(id)) }
-        : c
-    ));
+    setCollections(prev => {
+      const next = prev.map(c =>
+        c.id === collectionId
+          ? { ...c, storeIds: c.storeIds.filter(id => !idSet.has(id)) }
+          : c
+      );
+      lsSet(`collections_${userId}`, next);
+      return next;
+    });
     removeStoresFromCollectionDB(collectionId, storeIds);
-  }, []);
+  }, [userId]);
 
   const updateCollectionMemo = useCallback((collectionId: string, storeId: string, memo: string) => {
-    setCollections(prev => prev.map(c =>
-      c.id === collectionId
-        ? { ...c, memos: { ...(c.memos ?? {}), [storeId]: memo } }
-        : c
-    ));
+    setCollections(prev => {
+      const next = prev.map(c =>
+        c.id === collectionId
+          ? { ...c, memos: { ...(c.memos ?? {}), [storeId]: memo } }
+          : c
+      );
+      lsSet(`collections_${userId}`, next);
+      return next;
+    });
     updateStoreMemo(collectionId, storeId, memo);
-  }, []);
+  }, [userId]);
 
   return (
     <FavoritesContext.Provider value={{
