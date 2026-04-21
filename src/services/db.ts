@@ -212,3 +212,48 @@ export async function updateStoreMemo(collectionId: string, storeId: string, mem
 
   if (error) console.error('updateStoreMemo:', error);
 }
+
+// ─────────────────────────────────────────────────────────────
+// 리뷰
+// ─────────────────────────────────────────────────────────────
+
+export interface ReviewRow {
+  id: string;
+  user_id: string;
+  cafe_id: string;
+  content: string;
+  outlet?: string;
+  seat?: string;
+  noise?: string;
+  images?: string[];
+  like_count: number;
+  created_at: string;
+}
+
+export async function fetchReviews(cafeId: string): Promise<ReviewRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('cafe_id', cafeId)
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error('fetchReviews:', error); return []; }
+  return data ?? [];
+}
+
+export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' | 'created_at'>): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('reviews').insert({
+    user_id: review.user_id,
+    cafe_id: review.cafe_id,
+    content: review.content,
+    outlet: review.outlet ?? null,
+    seat: review.seat ?? null,
+    noise: review.noise ?? null,
+    images: review.images ?? [],
+  });
+
+  if (error) { console.error('insertReview:', error); return false; }
+  return true;
+}
