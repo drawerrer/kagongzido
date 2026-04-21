@@ -15,14 +15,14 @@ export async function fetchFavorites(userId: string): Promise<FavoritedStore[]> 
 
   if (error) { console.error('fetchFavorites:', error); return []; }
 
-  return (data ?? []).map(row => ({
-    id: row.store_id,
-    name: row.name,
-    address: row.address,
-    rating: row.rating,
-    reviewCount: row.review_count,
-    badge: row.badge ?? undefined,
-    photos: row.photos ?? [],
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    id: row.store_id as string,
+    name: row.name as string,
+    address: row.address as string,
+    rating: row.rating as number,
+    reviewCount: row.review_count as number,
+    badge: (row.badge ?? undefined) as string | undefined,
+    photos: (row.photos ?? []) as string[],
   }));
 }
 
@@ -90,7 +90,7 @@ export async function fetchCollections(userId: string): Promise<Collection[]> {
   if (colErr) { console.error('fetchCollections:', colErr); return []; }
   if (!cols || cols.length === 0) return [];
 
-  const colIds = cols.map(c => c.id);
+  const colIds = cols.map((c: Record<string, unknown>) => c.id);
   const { data: stores, error: storeErr } = await supabase
     .from('collection_stores')
     .select('*')
@@ -99,16 +99,16 @@ export async function fetchCollections(userId: string): Promise<Collection[]> {
 
   if (storeErr) { console.error('fetchCollectionStores:', storeErr); }
 
-  return cols.map(col => {
-    const colStores = (stores ?? []).filter(s => s.collection_id === col.id);
+  return cols.map((col: Record<string, unknown>) => {
+    const colStores = (stores ?? []).filter((s: Record<string, unknown>) => s.collection_id === col.id);
     const memos: Record<string, string> = {};
-    colStores.forEach(s => { if (s.memo) memos[s.store_id] = s.memo; });
+    colStores.forEach((s: Record<string, unknown>) => { if (s.memo) memos[s.store_id as string] = s.memo as string; });
 
     return {
-      id: col.id,
-      name: col.name,
-      memo: col.memo ?? undefined,
-      storeIds: colStores.map(s => s.store_id),
+      id: col.id as string,
+      name: col.name as string,
+      memo: (col.memo ?? undefined) as string | undefined,
+      storeIds: colStores.map((s: Record<string, unknown>) => s.store_id as string),
       memos,
     };
   });
