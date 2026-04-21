@@ -604,7 +604,7 @@ function ReviewCard({ review }: { review: ReviewItem }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'white', lineHeight: 1, textAlign: 'center' }}>
             {review.author[0]}
           </span>
         </div>
