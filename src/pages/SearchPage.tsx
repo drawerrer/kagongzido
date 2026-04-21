@@ -339,16 +339,9 @@ export default function SearchPage({ onClose, onDetailOpen }: SearchPageProps) {
         bottom: 0, left: 0, right: 0,
         height: 'calc(100% - env(safe-area-inset-top) - 44px)',
         background: '#f3f3f3',
-        borderRadius: '16px 16px 0 0',
-        boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
         display: 'flex', flexDirection: 'column',
         zIndex: 20,
       }}>
-
-        {/* 핸들 */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 0', flexShrink: 0 }}>
-          <div style={{ width: 48, height: 4, borderRadius: 2, background: '#E5E8EB' }} />
-        </div>
 
         {/* 검색 필드 */}
         <div style={{ padding: '10px 16px 0', flexShrink: 0 }}>
