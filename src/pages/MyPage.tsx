@@ -46,13 +46,8 @@ const MOCK_REPORTED: CafeItem[] = [
   { id: 'r4', name: '모노 커피', address: '서울 강남구 언주로 234', bg: CAFE_BG[3] },
 ];
 
-const MOCK_RECENT: CafeItem[] = [
-  { id: 'rc1', name: '블루보틀 강남', address: '서울 강남구 논현로 508', bg: CAFE_BG[4] },
-  { id: 'rc2', name: '스타벅스 역삼역점', address: '서울 강남구 역삼로 123', bg: CAFE_BG[5] },
-  { id: 'rc3', name: '우모에', address: '서울 용산구 한강대로84길 21-17 1층', bg: CAFE_BG[0] },
-  { id: 'rc4', name: '더 로스터리', address: '서울 강남구 도곡로 321', bg: CAFE_BG[1] },
-  { id: 'rc5', name: '카페 베이커리', address: '서울 강남구 역삼동 567', bg: CAFE_BG[2] },
-];
+// MOCK_RECENT: 최근 방문 카페 (추후 활성화 예정)
+// const MOCK_RECENT: CafeItem[] = [...]
 
 const MOCK_REVIEWS: ReviewItem[] = [
   {

@@ -111,11 +111,9 @@ export function FavoritesProvider({
         fetchCollections(userId),
       ]);
 
-      // favorites
-      if (favs.length > 0) {
-        setFavorites(favs);
-        lsSet(`favorites_${userId}`, favs);
-      }
+      // favorites — 항상 Supabase 결과로 덮어씀 (빈 배열 포함)
+      setFavorites(favs);
+      lsSet(`favorites_${userId}`, favs);
 
       // collections
       if (cols.length > 0) {
@@ -124,7 +122,7 @@ export function FavoritesProvider({
         setCollections(next);
         lsSet(`collections_${userId}`, next);
       } else {
-        // 첫 접속: 기본 컬렉션 DB에 생성
+        // 첫 접속 또는 전체 삭제: 기본 컬렉션 DB에 생성
         await insertCollection(userId, DEFAULT_COLLECTIONS[0], 0);
         setCollections(DEFAULT_COLLECTIONS);
         lsSet(`collections_${userId}`, DEFAULT_COLLECTIONS);
