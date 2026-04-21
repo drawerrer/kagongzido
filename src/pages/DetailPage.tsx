@@ -978,6 +978,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const [heroIdx, setHeroIdx] = useState(0);
+  const heroScrollRef = useRef<HTMLDivElement>(null);
   const [copyToastVisible, setCopyToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
@@ -1231,20 +1233,68 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         style={{ height: '100%', overflowY: 'auto', paddingBottom: 60 }}
       >
         {/* 포토 히어로 */}
-        <div style={{ height: 260, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-          <div style={{
-            height: '100%',
-            background: 'linear-gradient(160deg, #6B7684 0%, #4E5968 40%, #252525 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <span style={{ fontSize: 72, opacity: 0.5 }}>☕</span>
-          </div>
-          {/* 상단 그라디언트 (헤더 아이콘 가독성 확보) */}
-          <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, height: 120,
-            background: 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 100%)',
-          }} />
-        </div>
+        {(() => {
+          const heroImages = [
+            { bg: 'linear-gradient(160deg, #6B7684 0%, #4E5968 40%, #252525 100%)' },
+            { bg: 'linear-gradient(160deg, #7B6874 0%, #684E5E 40%, #251525 100%)' },
+            { bg: 'linear-gradient(160deg, #6B8474 0%, #4E6858 40%, #152525 100%)' },
+          ];
+          return (
+            <div style={{ height: 260, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+              {/* 수평 스크롤 */}
+              <div
+                ref={heroScrollRef}
+                onScroll={() => {
+                  if (!heroScrollRef.current) return;
+                  setHeroIdx(Math.round(heroScrollRef.current.scrollLeft / heroScrollRef.current.offsetWidth));
+                }}
+                style={{
+                  display: 'flex', width: '100%', height: '100%',
+                  overflowX: 'auto', scrollSnapType: 'x mandatory',
+                  scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
+                }}
+              >
+                {heroImages.map((img, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      flexShrink: 0, width: '100%', height: '100%',
+                      background: img.bg,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      scrollSnapAlign: 'start',
+                    }}
+                  >
+                    <span style={{ fontSize: 72, opacity: 0.5 }}>☕</span>
+                  </div>
+                ))}
+              </div>
+              {/* 상단 그라디언트 (헤더 아이콘 가독성 확보) */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 120,
+                background: 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 100%)',
+                pointerEvents: 'none',
+              }} />
+              {/* 원형 인디케이터 */}
+              {heroImages.length > 1 && (
+                <div style={{
+                  position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
+                  display: 'flex', gap: 6, pointerEvents: 'none',
+                }}>
+                  {heroImages.map((_, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        width: 7, height: 7, borderRadius: '50%',
+                        background: i === heroIdx ? 'white' : 'rgba(255,255,255,0.4)',
+                        transition: 'background 0.2s',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ── 기본 정보 섹션 ── */}
         <div style={{ padding: '20px 20px 0' }}>

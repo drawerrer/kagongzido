@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import {
+  fetchFavorites, insertFavorite, deleteFavorite, updateFavoritesOrder,
+  fetchCollections, insertCollection, updateCollectionDB, deleteCollectionDB,
+  updateCollectionsOrder, addStoresToCollectionDB, removeStoresFromCollectionDB,
+  updateStoreMemo,
+} from '../services/db';
 
 // ─── 찜한 매장 타입 ───────────────────────────────────────────
 export interface FavoritedStore {
@@ -23,8 +29,8 @@ export interface Collection {
   id: string;
   name: string;
   memo?: string;
-  storeIds: string[]; // 이 컬렉션에 속한 매장 ID 목록
-  memos?: Record<string, string>; // storeId → 메모 텍스트
+  storeIds: string[];
+  memos?: Record<string, string>;
 }
 
 const DEFAULT_COLLECTIONS: Collection[] = [
@@ -33,17 +39,17 @@ const DEFAULT_COLLECTIONS: Collection[] = [
 
 // ─── Context 타입 ─────────────────────────────────────────────
 interface FavoritesContextType {
+  userId: string;
+  isLoading: boolean;
   favorites: FavoritedStore[];
   isFavorited: (id: string) => boolean;
   addFavorite: (store: FavoritedStore) => void;
   removeFavorite: (id: string) => void;
   reorderFavorites: (newOrder: FavoritedStore[]) => void;
-  // 최근 본 카페 (최대 4개, 최신순)
   recentlyViewed: RecentCafe[];
   addRecentlyViewed: (cafe: RecentCafe) => void;
-  // 컬렉션 목록 (화면 이동해도 유지)
   collections: Collection[];
-  addCollection: (col: Omit<Collection, 'id' | 'storeIds'>) => string; // 생성된 컬렉션 id 반환
+  addCollection: (col: Omit<Collection, 'id' | 'storeIds'>) => string;
   updateCollection: (id: string, updates: Partial<Omit<Collection, 'id'>>) => void;
   removeCollection: (id: string) => void;
   addStoresToCollection: (collectionId: string, storeIds: string[]) => void;
@@ -52,28 +58,67 @@ interface FavoritesContextType {
   reorderCollections: (newOrder: Collection[]) => void;
 }
 
-// ─── Context 생성 ─────────────────────────────────────────────
 const FavoritesContext = createContext<FavoritesContextType | null>(null);
 
 // ─── Provider ─────────────────────────────────────────────────
-export function FavoritesProvider({ children }: { children: ReactNode }) {
+export function FavoritesProvider({
+  userId,
+  children,
+}: {
+  userId: string;
+  children: ReactNode;
+}) {
+  const [isLoading, setIsLoading] = useState(true);
   const [favorites, setFavorites] = useState<FavoritedStore[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<RecentCafe[]>([]);
   const [collections, setCollections] = useState<Collection[]>(DEFAULT_COLLECTIONS);
 
+  // ── 앱 시작 시 Supabase에서 데이터 불러오기 ──────────────
+  useEffect(() => {
+    if (!userId) return;
+    const load = async () => {
+      setIsLoading(true);
+      const [favs, cols] = await Promise.all([
+        fetchFavorites(userId),
+        fetchCollections(userId),
+      ]);
+      setFavorites(favs);
+      if (cols.length > 0) {
+        const hasRecent = cols.some(c => c.id === 'recent');
+        setCollections(hasRecent ? cols : [{ id: 'recent', name: '최근', storeIds: [] }, ...cols]);
+      } else {
+        // 첫 접속: 기본 컬렉션 DB에 생성
+        await insertCollection(userId, DEFAULT_COLLECTIONS[0], 0);
+        setCollections(DEFAULT_COLLECTIONS);
+      }
+      setIsLoading(false);
+    };
+    load();
+  }, [userId]);
+
+  // ── 찜하기 ───────────────────────────────────────────────
   const isFavorited = (id: string) => favorites.some(f => f.id === id);
 
-  const addFavorite = (store: FavoritedStore) => {
-    setFavorites(prev =>
-      prev.some(f => f.id === store.id) ? prev : [...prev, store]
-    );
-  };
+  const addFavorite = useCallback((store: FavoritedStore) => {
+    setFavorites(prev => {
+      if (prev.some(f => f.id === store.id)) return prev;
+      const next = [...prev, store];
+      insertFavorite(userId, store, next.length - 1);
+      return next;
+    });
+  }, [userId]);
 
-  const removeFavorite = (id: string) => {
+  const removeFavorite = useCallback((id: string) => {
     setFavorites(prev => prev.filter(f => f.id !== id));
-  };
+    deleteFavorite(userId, id);
+  }, [userId]);
 
-  // 중복 제거 후 최신순 앞에 추가, 최대 4개 유지
+  const reorderFavorites = useCallback((newOrder: FavoritedStore[]) => {
+    setFavorites(newOrder);
+    updateFavoritesOrder(userId, newOrder);
+  }, [userId]);
+
+  // ── 최근 본 카페 (로컬만 유지) ───────────────────────────
   const addRecentlyViewed = useCallback((cafe: RecentCafe) => {
     setRecentlyViewed(prev => {
       const filtered = prev.filter(r => r.id !== cafe.id);
@@ -81,44 +126,50 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // 컬렉션 추가 ('recent'는 항상 첫 번째 고정) — 생성된 id 반환
+  // ── 컬렉션 ───────────────────────────────────────────────
   const addCollection = useCallback((col: Omit<Collection, 'id' | 'storeIds'>) => {
     const newId = Date.now().toString();
     const newCol: Collection = { id: newId, storeIds: [], ...col };
     setCollections(prev => {
       const recent = prev.find(c => c.id === 'recent')!;
       const rest = prev.filter(c => c.id !== 'recent');
+      insertCollection(userId, newCol, 1);
       return [recent, newCol, ...rest];
     });
     return newId;
-  }, []);
+  }, [userId]);
 
-  // 컬렉션 수정
   const updateCollection = useCallback((id: string, updates: Partial<Omit<Collection, 'id'>>) => {
     setCollections(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+    const { memos: _m, storeIds: _s, ...dbUpdates } = updates as Collection;
+    if (Object.keys(dbUpdates).length > 0) updateCollectionDB(id, dbUpdates);
   }, []);
 
-  // 찜 목록 순서 변경
-  const reorderFavorites = useCallback((newOrder: FavoritedStore[]) => {
-    setFavorites([...newOrder]);
+  const removeCollection = useCallback((id: string) => {
+    if (id === 'recent') return;
+    setCollections(prev => prev.filter(c => c.id !== id));
+    deleteCollectionDB(id);
   }, []);
 
-  // 컬렉션에 매장 추가 (중복 제거)
+  const reorderCollections = useCallback((newOrder: Collection[]) => {
+    setCollections(prev => {
+      const recent = prev.find(c => c.id === 'recent');
+      const rest = newOrder.filter(c => c.id !== 'recent');
+      const next = recent ? [recent, ...rest] : rest;
+      updateCollectionsOrder(userId, next);
+      return next;
+    });
+  }, [userId]);
+
   const addStoresToCollection = useCallback((collectionId: string, storeIds: string[]) => {
     setCollections(prev => prev.map(c =>
       c.id === collectionId
         ? { ...c, storeIds: [...new Set([...c.storeIds, ...storeIds])] }
         : c
     ));
+    addStoresToCollectionDB(collectionId, storeIds);
   }, []);
 
-  // 컬렉션 삭제 ('recent'는 삭제 불가)
-  const removeCollection = useCallback((id: string) => {
-    if (id === 'recent') return;
-    setCollections(prev => prev.filter(c => c.id !== id));
-  }, []);
-
-  // 컬렉션에서 매장 제거
   const removeStoresFromCollection = useCallback((collectionId: string, storeIds: string[]) => {
     const idSet = new Set(storeIds);
     setCollections(prev => prev.map(c =>
@@ -126,27 +177,21 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         ? { ...c, storeIds: c.storeIds.filter(id => !idSet.has(id)) }
         : c
     ));
+    removeStoresFromCollectionDB(collectionId, storeIds);
   }, []);
 
-  // 컬렉션 내 특정 매장의 메모 저장
   const updateCollectionMemo = useCallback((collectionId: string, storeId: string, memo: string) => {
     setCollections(prev => prev.map(c =>
       c.id === collectionId
         ? { ...c, memos: { ...(c.memos ?? {}), [storeId]: memo } }
         : c
     ));
-  }, []);
-
-  const reorderCollections = useCallback((newOrder: Collection[]) => {
-    setCollections(prev => {
-      const recent = prev.find(c => c.id === 'recent');
-      const rest = newOrder.filter(c => c.id !== 'recent');
-      return recent ? [recent, ...rest] : rest;
-    });
+    updateStoreMemo(collectionId, storeId, memo);
   }, []);
 
   return (
     <FavoritesContext.Provider value={{
+      userId, isLoading,
       favorites, isFavorited, addFavorite, removeFavorite, reorderFavorites,
       recentlyViewed, addRecentlyViewed,
       collections, addCollection, updateCollection, removeCollection,

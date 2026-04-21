@@ -62,9 +62,12 @@ const TABS: { id: TabId; label: string; icon: ReactNode }[] = [
   { id: 'mypage',     label: '마이',   icon: <TabMypageIcon /> },
 ];
 
+// 개발 단계: 임시 userId 사용 (배포 시 토스 SDK user_id로 교체)
+const DEV_USER_ID = 'dev-user-001';
+
 export default function App() {
   return (
-    <FavoritesProvider>
+    <FavoritesProvider userId={DEV_USER_ID}>
       <AppInner />
     </FavoritesProvider>
   );
