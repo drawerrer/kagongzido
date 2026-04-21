@@ -486,7 +486,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              background: '#F2F4F6',
+              background: '#ffffff',
               borderRadius: 12,
               height: 44,
               padding: '0 10px',
