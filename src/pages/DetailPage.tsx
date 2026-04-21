@@ -1017,7 +1017,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [copyToastVisible, setCopyToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
-  const [photoOnly, setPhotoOnly] = useState(false);
+  const [reviewSort, setReviewSort] = useState<'최신순' | '추천순' | '포토리뷰'>('최신순');
+  const [reviewSortPopupOpen, setReviewSortPopupOpen] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [favoriteSnackbar, setFavoriteSnackbar] = useState<'added' | 'removed' | null>(null);
   const [snackbarDissolving, setSnackbarDissolving] = useState(false);
@@ -1100,11 +1101,16 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     .filter(([key]) => cafe.amenities[key as keyof typeof cafe.amenities] === true);
   const hasAmenities = activeAmenities.length > 0;
 
-  // 리뷰 정렬: 카페 제보자 → 나머지 (최신순)
-  const sortedReviews = [
-    ...reviews.filter(r => r.isReporter),
-    ...reviews.filter(r => !r.isReporter),
-  ];
+  // 리뷰 정렬
+  const sortedReviews = (() => {
+    const reporters = reviews.filter(r => r.isReporter);
+    const rest = reviews.filter(r => !r.isReporter);
+    if (reviewSort === '추천순') {
+      return [...reporters, ...rest.slice().sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0))];
+    }
+    // 최신순 (기본): 제보자 최상단, 나머지 기본 순서
+    return [...reporters, ...rest];
+  })();
 
   // 포토 모아보기: 모든 리뷰 이미지 수집 (제보자 리뷰 사진 먼저)
   const allReviewPhotos = sortedReviews.flatMap(r => r.images ?? []);
@@ -1469,36 +1475,55 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
         {/* ── 리뷰 섹션 ── */}
         <div ref={reviewSectionRef} style={{ padding: '20px' }}>
-          {/* 헤더: "리뷰 (n)" + 포토리뷰만 모아보기 체크박스 */}
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+          {/* 헤더: "리뷰 (n)" + 정렬 드롭다운 */}
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, position: 'relative' }}>
             <h2 style={{ fontSize: 17, fontWeight: 700, color: '#191F28', flex: 1 }}>
               리뷰&nbsp;<span style={{ color: '#252525' }}>({reviews.length})</span>
             </h2>
             <button
-              onClick={() => reviews.length > 0 && setPhotoOnly(v => !v)}
+              onClick={() => reviews.length > 0 && setReviewSortPopupOpen(v => !v)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6,
+                display: 'flex', alignItems: 'center', gap: 4,
                 background: 'none', padding: 0,
                 opacity: reviews.length === 0 ? 0.35 : 1,
                 cursor: reviews.length === 0 ? 'default' : 'pointer',
+                fontSize: 14, color: '#6B7684', fontWeight: 400,
               }}
             >
-              {/* 체크박스 */}
-              <div style={{
-                width: 18, height: 18, borderRadius: 4,
-                border: photoOnly ? 'none' : '1.5px solid #C9CDD2',
-                background: photoOnly ? '#252525' : 'white',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-                {photoOnly && (
-                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                    <polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </div>
-              <span style={{ fontSize: 13, color: '#4E5968', whiteSpace: 'nowrap' }}>포토리뷰만 모아보기</span>
+              {reviewSort}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
             </button>
+            {/* 정렬 팝업 */}
+            {reviewSortPopupOpen && (
+              <>
+                <div onClick={() => setReviewSortPopupOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 200 }} />
+                <div style={{
+                  position: 'absolute', right: 0, top: 28, zIndex: 201,
+                  background: '#FDFDFE', borderRadius: 12,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                  width: 140, overflow: 'hidden',
+                }}>
+                  <div style={{ padding: '10px 16px 6px', fontSize: 13, fontWeight: 600, color: '#6B7684' }}>정렬</div>
+                  {(['최신순', '추천순', '포토리뷰'] as const).map(opt => (
+                    <button
+                      key={opt}
+                      onClick={() => { setReviewSort(opt); setReviewSortPopupOpen(false); setShowAllReviews(false); }}
+                      style={{
+                        display: 'block', width: '100%', textAlign: 'left',
+                        padding: '12px 16px', fontSize: 15,
+                        fontWeight: opt === reviewSort ? 600 : 400,
+                        color: opt === reviewSort ? '#252525' : '#191F28',
+                        background: 'transparent',
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {reviews.length === 0 ? (
@@ -1572,13 +1597,10 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                 </button>
               </div>
 
-              {/* 리뷰 카드 목록 (제보자 항상 최상단, 포토리뷰 체크 시 상단 모아보기) */}
+              {/* 리뷰 카드 목록 */}
               {(() => {
-                const ordered = photoOnly
-                  ? [
-                      ...sortedReviews.filter(r => r.images && r.images.length > 0),
-                      ...sortedReviews.filter(r => !(r.images && r.images.length > 0)),
-                    ]
+                const ordered = reviewSort === '포토리뷰'
+                  ? sortedReviews.filter(r => r.images && r.images.length > 0)
                   : sortedReviews;
                 const visible = showAllReviews ? ordered : ordered.slice(0, 3);
                 return (
