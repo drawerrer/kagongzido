@@ -70,7 +70,17 @@ export function FavoritesProvider({
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [favorites, setFavorites] = useState<FavoritedStore[]>([]);
-  const [recentlyViewed, setRecentlyViewed] = useState<RecentCafe[]>([]);
+
+  // 최근 본 카페: localStorage에서 초기값 로드
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentCafe[]>(() => {
+    try {
+      const stored = localStorage.getItem('recentlyViewed');
+      return stored ? (JSON.parse(stored) as RecentCafe[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [collections, setCollections] = useState<Collection[]>(DEFAULT_COLLECTIONS);
 
   // ── 앱 시작 시 Supabase에서 데이터 불러오기 ──────────────
@@ -118,11 +128,13 @@ export function FavoritesProvider({
     updateFavoritesOrder(userId, newOrder);
   }, [userId]);
 
-  // ── 최근 본 카페 (로컬만 유지) ───────────────────────────
+  // ── 최근 본 카페 (localStorage 유지) ────────────────────
   const addRecentlyViewed = useCallback((cafe: RecentCafe) => {
     setRecentlyViewed(prev => {
       const filtered = prev.filter(r => r.id !== cafe.id);
-      return [cafe, ...filtered].slice(0, 4);
+      const next = [cafe, ...filtered].slice(0, 20);
+      try { localStorage.setItem('recentlyViewed', JSON.stringify(next)); } catch {}
+      return next;
     });
   }, []);
 

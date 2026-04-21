@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import NavBar from '../components/NavBar';
+import { useFavorites } from '../context/FavoritesContext';
 
 // ─────────────────────────────────────────────────────────────
 // 타입
@@ -12,6 +13,7 @@ interface CafeItem {
   name: string;
   address: string;
   bg: string;
+  photo?: string;
 }
 
 interface ReviewItem {
@@ -201,8 +203,13 @@ function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               marginBottom: 8,
               overflow: 'hidden',
+              position: 'relative',
             }}>
-              <span style={{ fontSize: 28, opacity: 0.2 }}>☕</span>
+              {cafe.photo ? (
+                <img src={cafe.photo} alt={cafe.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+              ) : (
+                <span style={{ fontSize: 28, opacity: 0.2 }}>☕</span>
+              )}
             </div>
             {/* 카페명 */}
             <p style={{
@@ -298,11 +305,31 @@ function RecentCafePage({
   onClose: () => void;
   onDetailOpen?: (id: string) => void;
 }) {
+  const { recentlyViewed } = useFavorites();
+  const cafes: CafeItem[] = recentlyViewed.map(r => ({
+    id: r.id,
+    name: r.name,
+    address: '',
+    bg: '#E8EDF4',
+    photo: r.photo,
+  }));
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
       <SubHeader title="최근 본 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        <CafeGrid cafes={MOCK_RECENT} onDetailOpen={onDetailOpen} />
+        {cafes.length === 0 ? (
+          <div style={{
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            paddingTop: 80, gap: 10,
+          }}>
+            <span style={{ fontSize: 40 }}>☕</span>
+            <p style={{ fontSize: 15, color: '#8B95A1' }}>아직 최근에 본 카페가 없어요</p>
+          </div>
+        ) : (
+          <CafeGrid cafes={cafes} onDetailOpen={onDetailOpen} />
+        )}
         <div style={{ height: 24 }} />
       </div>
     </div>
