@@ -347,7 +347,7 @@ export default function SearchPage({ onClose, onDetailOpen }: SearchPageProps) {
         <div style={{ padding: '10px 16px 0', flexShrink: 0 }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            background: '#F2F4F6', borderRadius: 12, height: 44,
+            background: '#ffffff', borderRadius: 12, height: 44,
             paddingLeft: 10, paddingRight: 10,
           }}>
             <SearchIcon />
