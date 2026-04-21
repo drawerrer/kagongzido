@@ -375,8 +375,9 @@ export default function SearchPage({ onClose, onDetailOpen }: SearchPageProps) {
         {/* 칩 행 (타이핑 중 숨김) */}
         {!isTyping && (
           <div style={{
-            height: 44, display: 'flex', alignItems: 'center',
-            gap: 8, overflowX: 'auto', paddingLeft: 16,
+            display: 'flex', alignItems: 'center',
+            gap: 8, overflowX: 'auto',
+            padding: '16px 0 16px 16px',
             flexShrink: 0, scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
           }}>
             <Chip label="즐겨찾기" selected={activeChip === '즐겨찾기'} onPress={() => handleChipPress('즐겨찾기')} />
