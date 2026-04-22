@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import NavBar from '../components/NavBar';
 import { useFavorites } from '../context/FavoritesContext';
 
 // ─────────────────────────────────────────────────────────────
@@ -788,7 +787,7 @@ const CHIP_OPTIONS: Record<string, string[]> = {
   소음: ['시끄러워요', '적당해요', '조용해요'],
 };
 
-function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
+function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => void; onClose: () => void }) {
   const [query, setQuery] = useState('');
   const [selectedCafe, setSelectedCafe] = useState<{ id: string; name: string; address: string } | null>(null);
   const [chips, setChips] = useState<Record<string, string>>({});
@@ -807,7 +806,6 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative', overflow: 'hidden' }}>
-      <NavBar onBack={onBack} onMore={() => {}} onClose={onClose} />
       <div style={{ flex: 1, overflowY: 'auto' }}>
 
         {/* 페이지 타이틀 */}
@@ -1023,12 +1021,6 @@ export default function MyPage({
   const [versionToast, setVersionToast] = useState(false);
   const [showMoreSheet, setShowMoreSheet] = useState(false);
 
-  const handleMoreAction = () => setShowMoreSheet(true);
-  const handleClose = () => {
-    // 탭 바 있는 구조에서 '닫기'는 서브페이지 닫기 or 마이페이지 기본 상태로
-    if (subPage) { changeSubPage(null); setEditingReview(null); }
-    // 전체 닫기는 App.tsx에서 탭 전환으로 처리됨 (탭 바 구조이므로 onClose prop 없음)
-  };
 
   const showVersionToast = () => {
     setVersionToast(true);
@@ -1072,9 +1064,6 @@ export default function MyPage({
       height: '100%', display: 'flex', flexDirection: 'column',
       background: '#f3f3f3', position: 'relative', overflow: 'hidden',
     }}>
-      {/* 상단 헤더 */}
-      <NavBar onBack={handleClose} onMore={handleMoreAction} onClose={handleClose} />
-
       {/* 스크롤 영역 */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {/* 프로필 */}

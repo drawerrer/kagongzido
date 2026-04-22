@@ -217,32 +217,52 @@ function AppInner() {
             )}
           </div>
 
-          {/* ── 탭 바 ── */}
+          {/* ── 탭 바 (Toss 플로팅 형태) ── */}
           <nav
             style={{
+              position: 'fixed',
+              left: 16,
+              right: 16,
+              bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+              height: 56,
               display: 'flex',
-              borderTop: '1px solid var(--color-border)',
-              backgroundColor: 'var(--color-surface)',
-              paddingBottom: 'env(safe-area-inset-bottom)',
+              alignItems: 'center',
+              background: '#ffffff',
+              borderRadius: 28,
+              boxShadow: '0 4px 24px rgba(0, 27, 55, 0.14)',
+              zIndex: 100,
             }}
           >
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  flex: 1,
-                  padding: '18px 0 16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  color: activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-text-tertiary)',
-                  transition: 'color 0.15s',
-                }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>{tab.icon}</span>
-              </button>
-            ))}
+            {TABS.map(tab => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 2,
+                    padding: '8px 0',
+                    color: isActive ? '#252525' : '#b0b8c1',
+                    fontSize: 11,
+                    fontWeight: isActive ? 600 : 400,
+                    transition: 'color 0.15s',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
+                    {tab.icon}
+                  </span>
+                  {tab.label}
+                </button>
+              );
+            })}
           </nav>
         </>
       )}

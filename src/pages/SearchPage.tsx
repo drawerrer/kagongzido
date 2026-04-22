@@ -2,7 +2,6 @@
 // search_before_typing | search_favorite | search_typing
 
 import { useState, useEffect, useRef } from 'react';
-import NavBar from '../components/NavBar';
 import { useFavorites } from '../context/FavoritesContext';
 
 interface SearchPageProps {
@@ -286,7 +285,7 @@ function Chip({
 }
 
 // ── SearchPage ────────────────────────────────────────────────
-export default function SearchPage({ onClose, onDetailOpen, onReportCafe }: SearchPageProps) {
+export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCafe }: SearchPageProps) {
   const [query, setQuery]           = useState('');
   const [activeChip, setActiveChip] = useState<string | null>(null);
   const [recentSearches, setRecentSearches] = useState(MOCK_RECENT);
@@ -330,9 +329,6 @@ export default function SearchPage({ onClose, onDetailOpen, onReportCafe }: Sear
         <span style={{ fontSize: 44 }}>🗺️</span>
         <p style={{ fontSize: 14, color: '#6B7684', fontWeight: 500 }}>카카오맵이 표시됩니다</p>
       </div>
-
-      {/* ── NavBar (floating) ── */}
-      <NavBar noBorder floating onBack={onClose} onClose={onClose} />
 
       {/* ── 바텀시트 패널 ── */}
       <div style={{

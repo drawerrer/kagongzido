@@ -4,7 +4,6 @@ import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import { TextButton } from '@toss/tds-mobile';
 import { openURL, graniteEvent } from '@apps-in-toss/web-framework';
-import NavBar from '../components/NavBar';
 
 // ─── 아이콘 ────────────────────────────────────────────────────
 function IcSeat() {
@@ -41,6 +40,7 @@ interface MockStore {
   id: string;
   district: string;
   name: string;
+  message?: string;
   seats: number;
   outlet: '충분' | '보통' | '적음';
   gradient: [string, string];
@@ -69,11 +69,11 @@ function mkPhotos(c1: string, c2: string): string[] {
 
 // ─── 목 데이터 ────────────────────────────────────────────────
 const FEATURE_STORES: MockStore[] = [
-  { id: 'gs1', district: '서울 영등포구', name: '도트커피', seats: 15, outlet: '충분', gradient: ['#C4A882', '#7A5A3C'], photos: mkPhotos('#C4A882', '#7A5A3C') },
-  { id: 'gs2', district: '서울 마포구', name: '프릳츠 커피', seats: 20, outlet: '보통', gradient: ['#A89276', '#5E4030'], photos: mkPhotos('#A89276', '#5E4030') },
-  { id: 'gs3', district: '서울 성동구', name: '어니언', seats: 30, outlet: '충분', gradient: ['#9B8B7A', '#4A3A2C'], photos: mkPhotos('#9B8B7A', '#4A3A2C') },
-  { id: 'gs4', district: '서울 강남구', name: '오르에르', seats: 25, outlet: '충분', gradient: ['#C8B8A2', '#6E5E4C'], photos: mkPhotos('#C8B8A2', '#6E5E4C') },
-  { id: 'gs5', district: '경기 성남시', name: '스탠딩커피', seats: 10, outlet: '적음', gradient: ['#B0A090', '#5A4A3C'], photos: mkPhotos('#B0A090', '#5A4A3C') },
+  { id: 'gs1', district: '서울 영등포구', name: '도트커피', message: '감각적인 공간에서 즐기는 스페셜티 커피. 조용하고 넓은 좌석이 카공하기 딱 좋아요.', seats: 15, outlet: '충분', gradient: ['#C4A882', '#7A5A3C'], photos: mkPhotos('#C4A882', '#7A5A3C') },
+  { id: 'gs2', district: '서울 마포구', name: '프릳츠 커피', message: '도넛과 커피의 완벽한 조화. 아늑한 분위기 속에서 오래 머물고 싶은 공간이에요.', seats: 20, outlet: '보통', gradient: ['#A89276', '#5E4030'], photos: mkPhotos('#A89276', '#5E4030') },
+  { id: 'gs3', district: '서울 성동구', name: '어니언', message: '빈티지한 건물을 개조한 복합 문화 공간. 넓은 실내와 루프탑이 매력적이에요.', seats: 30, outlet: '충분', gradient: ['#9B8B7A', '#4A3A2C'], photos: mkPhotos('#9B8B7A', '#4A3A2C') },
+  { id: 'gs4', district: '서울 강남구', name: '오르에르', message: '미니멀한 인테리어와 정성 가득한 브런치. 조용한 분위기 덕분에 집중하기 좋아요.', seats: 25, outlet: '충분', gradient: ['#C8B8A2', '#6E5E4C'], photos: mkPhotos('#C8B8A2', '#6E5E4C') },
+  { id: 'gs5', district: '경기 성남시', name: '스탠딩커피', message: '로스터리 감성의 작은 카페. 핸드드립 커피 한 잔의 여유를 느낄 수 있는 곳이에요.', seats: 10, outlet: '적음', gradient: ['#B0A090', '#5A4A3C'], photos: mkPhotos('#B0A090', '#5A4A3C') },
 ];
 
 const FEATURED: MockGuidebook = {
@@ -201,6 +201,23 @@ function GuideBookDetailView({
   const carouselPadding = Math.round((screenW - cardW) / 2);
   const itemW = cardW + CARD_GAP;
 
+  // 캐러셀 컨테이너 실제 높이 측정 (기기별 유동 대응)
+  const carouselWrapperRef = useRef<HTMLDivElement>(null);
+  const [carouselH, setCarouselH] = useState(0);
+  useEffect(() => {
+    const el = carouselWrapperRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      setCarouselH(entries[0].contentRect.height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const INFO_H = 220; // 정보 영역 고정 높이
+  const cardH = carouselH > 0 ? carouselH : Math.round(cardW * 0.85) + 40 + INFO_H; // 첫 렌더 fallback
+  const imgH = Math.max(cardH - INFO_H, 0);
+
   // 무한 루프용 3중 배열
   const loopedStores = useMemo(() => [...stores, ...stores, ...stores], [stores]);
 
@@ -310,7 +327,7 @@ function GuideBookDetailView({
       </div>
 
       {/* 수평 무한 캐러셀 — 이미지+정보 통합 카드 */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <div ref={carouselWrapperRef} style={{ flex: 1, overflow: 'hidden' }}>
         <style>{`.guide-carousel::-webkit-scrollbar { display: none; } .card-img-scroll::-webkit-scrollbar { display: none; }`}</style>
         <div
           ref={scrollRef}
@@ -330,15 +347,13 @@ function GuideBookDetailView({
             paddingRight: carouselPadding,
             scrollbarWidth: 'none',
             width: '100%',
-            height: '100%',
+            height: cardH,
             boxSizing: 'border-box',
             cursor: 'grab',
           }}
         >
           {loopedStores.map((s, i) => {
             const isActive = i === absIndex;
-            const imgH = Math.round(cardW * 4 / 3);
-            const cardH = imgH + 152;
             return (
               <div
                 key={i}
@@ -376,6 +391,15 @@ function GuideBookDetailView({
                       scrollbarWidth: 'none',
                     }}
                     onPointerDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                      if (scrollRef.current) scrollRef.current.style.overflowX = 'hidden';
+                    }}
+                    onTouchEnd={() => {
+                      setTimeout(() => {
+                        if (scrollRef.current) scrollRef.current.style.overflowX = 'auto';
+                      }, 50);
+                    }}
                     onScroll={isActive ? (e) => {
                       const el = e.currentTarget;
                       const idx = Math.round(el.scrollLeft / el.clientWidth);
@@ -436,13 +460,13 @@ function GuideBookDetailView({
 
                 {/* 매장 정보 영역 */}
                 <div style={{
-                  height: 152,
+                  height: 220,
                   flexShrink: 0,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  padding: '20px 16px 0',
+                  justifyContent: 'center',
+                  padding: '0 16px',
                   backgroundColor: '#f2f4f6',
                 }}>
                   <p style={{ fontWeight: 510, fontSize: 12, color: '#6b7684', textAlign: 'center', lineHeight: '22.5px', marginBottom: 12 }}>
@@ -451,6 +475,24 @@ function GuideBookDetailView({
                   <p style={{ fontWeight: 590, fontSize: 20, color: '#000000', textAlign: 'center', lineHeight: '22.5px', marginBottom: 12 }}>
                     {s.name}
                   </p>
+                  {s.message && (
+                    <p style={{
+                      fontSize: 12,
+                      fontWeight: 400,
+                      color: '#6b7684',
+                      textAlign: 'center',
+                      lineHeight: '18px',
+                      marginBottom: 12,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      paddingLeft: 8,
+                      paddingRight: 8,
+                    }}>
+                      {s.message}
+                    </p>
+                  )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(0,0,0,0.45)' }}>
                       <IcSeat />
@@ -498,7 +540,7 @@ function GuideBookDetailView({
       </div>
 
       {/* 하단 CTA */}
-      <div style={{ flexShrink: 0, padding: '12px 20px 16px', backgroundColor: '#f2f4f6' }}>
+      <div style={{ flexShrink: 0, padding: '12px 20px 8px', backgroundColor: '#f2f4f6' }}>
         <button
           onClick={() => onDetailOpen?.(store.id)}
           style={{
@@ -586,7 +628,7 @@ export default function GuidebookPage({
   onDetailOpen,
   onDetailOpenToReview,
   onBack,
-  onClose,
+  onClose: _onClose,
   initialView,
   onViewChange,
   initialStoreIndex,
@@ -649,11 +691,9 @@ export default function GuidebookPage({
     setSnackbar('모음집에 담았어요');
   };
 
-  const isTossApp = !!(window as any).ReactNativeWebView;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
-      {!isTossApp && <NavBar onBack={handleBack} onClose={onClose ?? onBack} />}
       {view === 'main' && (
         <GuideBookMainView
           guidebook={FEATURED}
