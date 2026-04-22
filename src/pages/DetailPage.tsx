@@ -1537,17 +1537,17 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                   {cafe.name}에 첫 번째로 리뷰를 남겨보세요
                 </p>
               </div>
-              {/* 리뷰 쓰기 버튼 — '자세히보기' 버튼과 동일 스펙 */}
+              {/* 리뷰 쓰기 버튼 */}
               <button
                 onClick={() => setShowWriteReview(true)}
                 style={{
                   width: '100%',
-                  height: 52,
-                  borderRadius: 16,
+                  height: 38,
+                  borderRadius: 10,
                   backgroundColor: '#252525',
                   color: '#ffffff',
-                  fontSize: 17,
-                  fontWeight: 700,
+                  fontSize: 15,
+                  fontWeight: 590,
                   border: 'none',
                   cursor: 'pointer',
                 }}
@@ -1583,12 +1583,12 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                   onClick={() => setShowWriteReview(true)}
                   style={{
                     width: '100%',
-                    height: 52,
-                    borderRadius: 16,
+                    height: 38,
+                    borderRadius: 10,
                     backgroundColor: '#252525',
                     color: '#ffffff',
-                    fontSize: 17,
-                    fontWeight: 700,
+                    fontSize: 15,
+                    fontWeight: 590,
                     border: 'none',
                     cursor: 'pointer',
                   }}
