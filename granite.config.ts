@@ -10,11 +10,14 @@ export default defineConfig({
       build: 'rsbuild build',
     },
   },
-  permissions: ['geolocation'],
+  permissions: [
+    { name: 'geolocation', access: 'access' },
+  ],
   outdir: 'dist',
   brand: {
     displayName: '카페인덱스',
     primaryColor: '#252525',
+    icon: 'https://static.toss.im/icons/app-icon.png',
   },
   webViewProps: {
     type: 'partner',
