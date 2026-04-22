@@ -6,7 +6,6 @@ import { BottomSheet, BottomCTA, CTAButton, Button } from '@toss/tds-mobile';
 import IcDelete from '../assets/icons/icon_delete.svg?react';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
 import { graniteEvent } from '@apps-in-toss/web-framework';
-import NavBar from '../components/NavBar';
 
 // ─── 타입 ────────────────────────────────────────────────────
 interface Store {
@@ -432,7 +431,7 @@ export default function CollectionPage({
   onCollectionOpen,
   onGoHome,
   onBack,
-  onClose,
+  onClose: _onClose,
   onPhotoMore,
   deletedCollection,
   onClearDeletedCollection,
@@ -675,14 +674,12 @@ export default function CollectionPage({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode, isOrganizeMode]);
 
-  const isTossApp = !!(window as any).ReactNativeWebView;
 
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
       height: '100%', backgroundColor: '#F3F3F3', position: 'relative',
     }}>
-      {!isTossApp && <NavBar onBack={onBack} onClose={onClose} />}
       {/* ── info_2 bar (Figma: 46px, Medium 510 14px centered) ── */}
       <div style={{
         height: 46, backgroundColor: '#F3F3F3',

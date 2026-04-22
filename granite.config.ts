@@ -1,12 +1,12 @@
 import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
-  appName: 'cafeindex',
+  appName: 'cafeindex-test',
   web: {
-    host: '172.30.1.83',
+    host: '0.0.0.0',
     port: 3000,
     commands: {
-      dev: 'rsbuild dev',
+      dev: 'rsbuild dev --host 0.0.0.0',
       build: 'rsbuild build',
     },
   },

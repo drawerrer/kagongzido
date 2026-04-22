@@ -3,7 +3,6 @@ import { getCurrentLocation, Accuracy } from '@apps-in-toss/web-framework';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
-import NavBar from '../components/NavBar';
 
 // ── 타입 ─────────────────────────────────
 interface Cafe {
@@ -437,9 +436,6 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
 
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
-
-      {/* ── Navigation with Status Bar ── */}
-      <NavBar variant="logo" floating />
 
       {/* ── 카카오 지도 배경 ── */}
       <div ref={mapRef} style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 44px + 72px)', bottom: 0, left: 0, right: 0, background: '#E8EAED' }}>

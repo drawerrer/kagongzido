@@ -4,7 +4,6 @@ import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import { TextButton } from '@toss/tds-mobile';
 import { openURL, graniteEvent } from '@apps-in-toss/web-framework';
-import NavBar from '../components/NavBar';
 
 // ─── 아이콘 ────────────────────────────────────────────────────
 function IcSeat() {
@@ -629,7 +628,7 @@ export default function GuidebookPage({
   onDetailOpen,
   onDetailOpenToReview,
   onBack,
-  onClose,
+  onClose: _onClose,
   initialView,
   onViewChange,
   initialStoreIndex,
@@ -692,11 +691,9 @@ export default function GuidebookPage({
     setSnackbar('모음집에 담았어요');
   };
 
-  const isTossApp = !!(window as any).ReactNativeWebView;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
-      {!isTossApp && <NavBar onBack={handleBack} onClose={onClose ?? onBack} />}
       {view === 'main' && (
         <GuideBookMainView
           guidebook={FEATURED}

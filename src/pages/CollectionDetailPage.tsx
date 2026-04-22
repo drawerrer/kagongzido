@@ -4,7 +4,6 @@ import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { BottomSheet, ConfirmDialog, BottomCTA, CTAButton, Button, Toast } from '@toss/tds-mobile';
 import { graniteEvent } from '@apps-in-toss/web-framework';
-import NavBar from '../components/NavBar';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
 import IcDelete from '../assets/icons/icon_delete.svg?react';
 
@@ -628,7 +627,7 @@ export default function CollectionDetailPage({
   collectionName,
   collectionId,
   onBack,
-  onClose,
+  onClose: _onClose,
   onDetailOpen,
   onPhotoMore,
   onCollectionDeleted,
@@ -1032,10 +1031,6 @@ export default function CollectionDetailPage({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode]);
 
-  const handleClose = () => {
-    if (isEditMode) { exitEditMode(); return; }
-    (onClose ?? onBack)?.();
-  };
 
   // SDK 네이티브 백 이벤트 등록 (Toss 앱 외부 환경에서는 무시)
   useEffect(() => {
@@ -1050,11 +1045,9 @@ export default function CollectionDetailPage({
     }
   }, [handleBack]);
 
-  const isTossApp = !!(window as any).ReactNativeWebView;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
-      {!isTossApp && <NavBar onBack={handleBack} onClose={handleClose} />}
       {/* ── info_2 (46px) — 항상 "컬렉션명 + 편집" 고정 ── */}
       <div style={{ height: 46, backgroundColor: '#F3F3F3', display: 'flex', alignItems: 'center', position: 'relative', flexShrink: 0 }}>
         <span style={{ flex: 1, textAlign: 'center', fontWeight: 510, fontSize: 14, color: '#000000' }}>
