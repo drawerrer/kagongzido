@@ -8,6 +8,7 @@ import { useFavorites } from '../context/FavoritesContext';
 interface SearchPageProps {
   onClose: () => void;
   onDetailOpen?: (cafeId: string) => void;
+  onReportCafe?: () => void;
 }
 
 // ── 아이콘 ────────────────────────────────────────────────────
@@ -285,7 +286,7 @@ function Chip({
 }
 
 // ── SearchPage ────────────────────────────────────────────────
-export default function SearchPage({ onClose, onDetailOpen }: SearchPageProps) {
+export default function SearchPage({ onClose, onDetailOpen, onReportCafe }: SearchPageProps) {
   const [query, setQuery]           = useState('');
   const [activeChip, setActiveChip] = useState<string | null>(null);
   const [recentSearches, setRecentSearches] = useState(MOCK_RECENT);
@@ -390,32 +391,66 @@ export default function SearchPage({ onClose, onDetailOpen }: SearchPageProps) {
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
 
-        {/* ① 타이핑 중 — Figma: search_typing
-            Frame 5766: 검색 제안 (h=46 rows)
-            Frame 5767: 검색 결과 (h=57 rows)
-            두 프레임 사이 gap=10 */}
-        {isTyping && (
-          <div style={{ paddingTop: 10, paddingLeft: 10, paddingRight: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {/* Frame 5766 — 자동완성 제안 */}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {MOCK_SUGGESTIONS
-                .filter(s => s.includes(query) && s !== query.trim())
-                .map(s => (
-                  <SuggestionRow key={s} keyword={s} onTap={() => setQuery(s)} />
-                ))}
-            </div>
+        {/* ① 타이핑 중 — Figma: search_typing */}
+        {isTyping && (() => {
+          const filteredResults = MOCK_RESULTS.filter(r =>
+            r.name.includes(query.trim()) || r.address.includes(query.trim())
+          );
+          const suggestions = MOCK_SUGGESTIONS.filter(s => s.includes(query) && s !== query.trim());
 
-            {/* Frame 5767 — 카페/장소 결과 (CafeRow 스타일) */}
-            <div>
-              <div style={{ padding: '8px 16px 4px', fontSize: 13, color: '#6B7684' }}>
-                총 <strong style={{ color: '#191F28' }}>{MOCK_RESULTS.length}</strong>개
+          if (filteredResults.length === 0 && suggestions.length === 0) {
+            /* ── 검색 결과 없음 ── */
+            return (
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                gap: 16, paddingTop: 80, paddingLeft: 24, paddingRight: 24,
+              }}>
+                <p style={{ fontSize: 16, fontWeight: 600, color: '#191F28', textAlign: 'center' }}>
+                  찾으시는 카페가 아직 없어요!
+                </p>
+                <p style={{ fontSize: 13, color: '#8B95A1', textAlign: 'center', lineHeight: 1.5, marginTop: -8 }}>
+                  카페를 직접 제보하면<br />지도에 등록할 수 있어요
+                </p>
+                <button
+                  onClick={onReportCafe}
+                  style={{
+                    marginTop: 4,
+                    width: '100%', height: 48, borderRadius: 12,
+                    background: '#252525', color: '#ffffff',
+                    fontSize: 15, fontWeight: 600,
+                    border: 'none', cursor: 'pointer',
+                  }}
+                >
+                  카페 제보하기
+                </button>
               </div>
-              {MOCK_RESULTS.map(r => (
-                <SearchCafeRow key={r.id} r={r} onTap={() => onDetailOpen?.(r.id)} />
-              ))}
+            );
+          }
+
+          return (
+            <div style={{ paddingTop: 10, paddingLeft: 10, paddingRight: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* 자동완성 제안 */}
+              {suggestions.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {suggestions.map(s => (
+                    <SuggestionRow key={s} keyword={s} onTap={() => setQuery(s)} />
+                  ))}
+                </div>
+              )}
+              {/* 카페/장소 결과 */}
+              {filteredResults.length > 0 && (
+                <div>
+                  <div style={{ padding: '8px 16px 4px', fontSize: 13, color: '#6B7684' }}>
+                    총 <strong style={{ color: '#191F28' }}>{filteredResults.length}</strong>개
+                  </div>
+                  {filteredResults.map(r => (
+                    <SearchCafeRow key={r.id} r={r} onTap={() => onDetailOpen?.(r.id)} />
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ② 즐겨찾기 칩 선택 — Figma: search_favorite
             Frame 5766: 즐겨찾기 행 (h=57 rows, gap=10) */}

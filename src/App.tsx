@@ -164,6 +164,11 @@ function AppInner() {
         <SearchPage
           onClose={() => setShowSearch(false)}
           onDetailOpen={(id) => { setDetailCafeId(id); }}
+          onReportCafe={() => {
+            setShowSearch(false);
+            setActiveTab('mypage');
+            setMyPageSubPage('report-cafe');
+          }}
         />
       ) : (
         <>
