@@ -438,7 +438,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
 
       {/* ── 카카오 지도 배경 ── */}
-      <div ref={mapRef} style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 44px + 72px)', bottom: 0, left: 0, right: 0, background: '#E8EAED' }}>
+      <div ref={mapRef} style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 72px)', bottom: 0, left: 0, right: 0, background: '#E8EAED' }}>
         {!import.meta.env.VITE_KAKAO_MAP_KEY && (
           /* API 키 미설정 시 안내 */
           <div
@@ -465,7 +465,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
       <div
         style={{
           position: 'absolute',
-          top: 'calc(env(safe-area-inset-top) + 44px)',
+          top: 'env(safe-area-inset-top)',
           left: 0,
           right: 0,
           zIndex: 20,
