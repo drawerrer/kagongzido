@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { openURL, appLogin } from '@apps-in-toss/web-framework';
+import CheckConfirmIcon from '../assets/icons/icon_check_confirm.svg?react';
+import SnackbarCloseIcon from '../assets/icons/icon_close.svg?react';
 // import { IconButton } from '@toss/tds-mobile';
 import BottomSheet from '../components/BottomSheet';
 import ShareSheet from '../components/ShareSheet';
@@ -784,7 +786,6 @@ function FavoriteSnackbar({
   const visible = type !== null;
 
   if (type === 'added') {
-    // 담았어요: w=319, 파란 북마크 아이콘 24×24, 텍스트 fw=590, 보러가기 버튼
     return (
       <div style={{
         position: 'fixed', bottom: 76, left: '50%',
@@ -792,43 +793,28 @@ function FavoriteSnackbar({
         opacity: dissolving ? 0 : visible ? 1 : 0,
         transition: dissolving ? 'opacity 0.7s ease, transform 0.7s ease' : 'opacity 0.25s, transform 0.25s',
         width: 319, height: 59, borderRadius: 9999,
-        background: '#8b95a1',
+        background: '#FDFDFE',
         display: 'flex', alignItems: 'center',
         paddingLeft: 16, paddingRight: 16, gap: 12,
         zIndex: 300, pointerEvents: visible ? 'auto' : 'none',
         boxSizing: 'border-box',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
       }}>
-        {/* 왼쪽 아이콘: 24×24 초록 원 + 체크 */}
-        <div style={{
-          width: 24, height: 24, borderRadius: 9999,
-          background: '#00C471', flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20,6 9,17 4,12" />
-          </svg>
+        <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <CheckConfirmIcon width={24} height={24} />
         </div>
-        {/* 텍스트 */}
-        <span style={{
-          flex: 1, fontSize: 15, fontWeight: 590, color: '#ffffff',
-          whiteSpace: 'nowrap',
-        }}>
+        <span style={{ flex: 1, fontSize: 15, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
           카페를 모음집에 담았어요
         </span>
-        {/* 보러가기 버튼: w=72 h=31 r=100 bg=rgba(0,25,54,0.31) */}
         <button
           onClick={onGoToCollection}
           style={{
             width: 72, height: 31, borderRadius: 100, flexShrink: 0,
-            background: 'rgba(0,25,54,0.31)',
+            background: 'rgba(0,25,54,0.15)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <span style={{
-            fontSize: 13, fontWeight: 590,
-            color: 'rgba(253,253,254,0.89)', whiteSpace: 'nowrap',
-          }}>
+          <span style={{ fontSize: 13, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
             보러가기
           </span>
         </button>
@@ -837,7 +823,6 @@ function FavoriteSnackbar({
   }
 
   if (type === 'removed') {
-    // 꺼냈어요: w=333, 빨간 원(#f04452) + X 아이콘, 텍스트만
     return (
       <div style={{
         position: 'fixed', bottom: 76, left: '50%',
@@ -845,44 +830,28 @@ function FavoriteSnackbar({
         opacity: dissolving ? 0 : visible ? 1 : 0,
         transition: dissolving ? 'opacity 0.7s ease, transform 0.7s ease' : 'opacity 0.25s, transform 0.25s',
         width: 333, height: 59, borderRadius: 9999,
-        background: '#8b95a1',
+        background: '#FDFDFE',
         display: 'flex', alignItems: 'center',
         paddingLeft: 16, paddingRight: 16, gap: 12,
         zIndex: 300, pointerEvents: visible ? 'auto' : 'none',
         boxSizing: 'border-box',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
       }}>
-        {/* 왼쪽 아이콘: 24×24 빨간 원(#f04452) + X */}
-        <div style={{
-          width: 24, height: 24, borderRadius: 9999,
-          background: '#f04452', flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="white" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+        <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <SnackbarCloseIcon width={24} height={24} />
         </div>
-        {/* 텍스트 */}
-        <span style={{
-          flex: 1, fontSize: 15, fontWeight: 590, color: '#ffffff',
-          whiteSpace: 'nowrap',
-        }}>
+        <span style={{ flex: 1, fontSize: 15, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
           카페를 모음집에서 꺼냈어요
         </span>
-        {/* 되돌리기 버튼: 보러가기와 동일 스펙 */}
         <button
           onClick={onRestore}
           style={{
             width: 72, height: 31, borderRadius: 100, flexShrink: 0,
-            background: 'rgba(0,25,54,0.31)',
+            background: 'rgba(0,25,54,0.15)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <span style={{
-            fontSize: 13, fontWeight: 590,
-            color: 'rgba(253,253,254,0.89)', whiteSpace: 'nowrap',
-          }}>
+          <span style={{ fontSize: 13, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
             되돌리기
           </span>
         </button>
