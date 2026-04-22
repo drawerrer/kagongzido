@@ -779,11 +779,12 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
   const [chips, setChips] = useState<Record<string, string>>({});
   const [reviewText, setReviewText] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const results = query.trim()
     ? MOCK_CAFE_SEARCH.filter(c => c.name.includes(query.trim()))
     : [];
-  const isSearching = query.trim().length > 0 && results.length > 0;
+  const isSearching = !selectedCafe && query.trim().length > 0 && results.length > 0;
 
   const toggleChip = (category: string, option: string) => {
     setChips(prev => prev[category] === option ? { ...prev, [category]: '' } : { ...prev, [category]: option });
@@ -806,39 +807,71 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
         <div style={{ padding: '0 16px 20px', background: '#f3f3f3' }}>
           <span style={{ display: 'block', fontSize: 14, fontWeight: 590, color: '#000000', lineHeight: '25.5px', marginBottom: 8 }}>카페명</span>
 
-          {/* 검색 인풋 */}
+          {/* 검색 인풋 / 선택 완료 표시 */}
           <div style={{
             background: '#ffffff', borderRadius: 12, height: 44,
-            display: 'flex', alignItems: 'center', paddingLeft: 10,
+            display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10, gap: 6,
           }}>
-            <input
-              value={query}
-              onChange={e => { setQuery(e.target.value); setSelectedCafe(null); }}
-              placeholder="카페 이름을 검색해 보세요"
-              style={{
-                flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                fontSize: 17, fontWeight: 510, color: '#191f28', fontFamily: 'inherit',
-              }}
-            />
+            {selectedCafe ? (
+              /* 선택 완료: 카페명 + 주소 표시 */
+              <>
+                <span style={{ fontSize: 14, fontWeight: 510, color: '#252525', lineHeight: '17.5px', flexShrink: 0 }}>
+                  {selectedCafe.name}
+                </span>
+                <span style={{
+                  fontSize: 12, fontWeight: 510, color: 'rgba(3,24,50,0.46)', lineHeight: '15px',
+                  flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {selectedCafe.address}
+                </span>
+                {/* 선택 해제 버튼 */}
+                <button
+                  onClick={() => { setSelectedCafe(null); setQuery(''); }}
+                  style={{ padding: 0, lineHeight: 0, flexShrink: 0 }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" fill="#E5E8EB" />
+                    <line x1="15" y1="9" x2="9" y2="15" stroke="#6B7684" strokeWidth="1.5" strokeLinecap="round" />
+                    <line x1="9" y1="9" x2="15" y2="15" stroke="#6B7684" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </>
+            ) : (
+              /* 검색 인풋 */
+              <input
+                value={query}
+                onChange={e => { setQuery(e.target.value); setSelectedCafe(null); }}
+                placeholder="카페 이름을 검색해 보세요"
+                style={{
+                  flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                  fontSize: 17, fontWeight: 510, color: '#191f28', fontFamily: 'inherit',
+                }}
+              />
+            )}
           </div>
 
           {/* 검색 결과 */}
-          {isSearching && results.map(cafe => (
-            <div
-              key={cafe.id}
-              onClick={() => { setSelectedCafe(cafe); setQuery(cafe.name); }}
-              style={{
-                background: selectedCafe?.id === cafe.id ? '#252525' : '#ffffff',
-                border: selectedCafe?.id === cafe.id ? '1px solid #000000' : 'none',
-                borderRadius: 12, height: 44, marginTop: 4,
-                display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10,
-                cursor: 'pointer', gap: 8,
-              }}
-            >
-              <span style={{ fontSize: 14, fontWeight: 510, color: selectedCafe?.id === cafe.id ? '#ffffff' : '#252525', lineHeight: '17.5px' }}>{cafe.name}</span>
-              <span style={{ fontSize: 12, fontWeight: 510, color: selectedCafe?.id === cafe.id ? '#e9e9e9' : 'rgba(3,24,50,0.46)', lineHeight: '15px' }}>{cafe.address}</span>
-            </div>
-          ))}
+          {isSearching && results.map(cafe => {
+            const isDark = hoveredId === cafe.id;
+            return (
+              <div
+                key={cafe.id}
+                onClick={() => { setSelectedCafe(cafe); setQuery(''); setHoveredId(null); }}
+                onMouseEnter={() => setHoveredId(cafe.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                style={{
+                  background: isDark ? '#252525' : '#ffffff',
+                  border: isDark ? '1px solid #000000' : 'none',
+                  borderRadius: 12, height: 44, marginTop: 4,
+                  display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10,
+                  cursor: 'pointer', gap: 8, transition: 'background 0.12s',
+                }}
+              >
+                <span style={{ fontSize: 14, fontWeight: 510, color: isDark ? '#ffffff' : '#252525', lineHeight: '17.5px' }}>{cafe.name}</span>
+                <span style={{ fontSize: 12, fontWeight: 510, color: isDark ? '#e9e9e9' : 'rgba(3,24,50,0.46)', lineHeight: '15px' }}>{cafe.address}</span>
+              </div>
+            );
+          })}
         </div>
 
         {/* 구분선 */}
