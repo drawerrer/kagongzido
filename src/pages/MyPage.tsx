@@ -6,7 +6,7 @@ import { useFavorites } from '../context/FavoritesContext';
 // 타입
 // ─────────────────────────────────────────────────────────────
 type MyTab = '내 활동' | '설정';
-type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit';
+type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe';
 
 interface CafeItem {
   id: string;
@@ -760,6 +760,191 @@ function WrittenReviewPage({
 }
 
 // ─────────────────────────────────────────────────────────────
+// 카페 제보하기 페이지 (mypage_recommend / searching / searched)
+// ─────────────────────────────────────────────────────────────
+const MOCK_CAFE_SEARCH = [
+  { id: 'r1', name: '우모에', address: '서울 용산구 103길 영원프라자 1층' },
+  { id: 'r2', name: '우모메루', address: '서울 관악구 행복로 35-1길' },
+];
+
+const CHIP_OPTIONS: Record<string, string[]> = {
+  콘센트: ['부족해요', '적당해요', '넉넉해요'],
+  좌석: ['불편해요', '적당해요', '편안해요'],
+  소음: ['시끄러워요', '적당해요', '조용해요'],
+};
+
+function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
+  const [query, setQuery] = useState('');
+  const [selectedCafe, setSelectedCafe] = useState<{ id: string; name: string; address: string } | null>(null);
+  const [chips, setChips] = useState<Record<string, string>>({});
+  const [reviewText, setReviewText] = useState('');
+  const [photos, setPhotos] = useState<string[]>([]);
+
+  const results = query.trim()
+    ? MOCK_CAFE_SEARCH.filter(c => c.name.includes(query.trim()))
+    : [];
+  const isSearching = query.trim().length > 0 && results.length > 0;
+
+  const toggleChip = (category: string, option: string) => {
+    setChips(prev => prev[category] === option ? { ...prev, [category]: '' } : { ...prev, [category]: option });
+  };
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative', overflow: 'hidden' }}>
+      <NavBar onBack={onBack} onMore={() => {}} onClose={onClose} />
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+
+        {/* 페이지 타이틀 */}
+        <div style={{
+          height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: '#f3f3f3',
+        }}>
+          <span style={{ fontSize: 14, fontWeight: 510, color: '#000000', lineHeight: '25.5px' }}>카페 제보하기</span>
+        </div>
+
+        {/* 카페명 섹션 */}
+        <div style={{ padding: '0 16px 20px', background: '#f3f3f3' }}>
+          <span style={{ display: 'block', fontSize: 14, fontWeight: 590, color: '#000000', lineHeight: '25.5px', marginBottom: 8 }}>카페명</span>
+
+          {/* 검색 인풋 */}
+          <div style={{
+            background: '#ffffff', borderRadius: 12, height: 44,
+            display: 'flex', alignItems: 'center', paddingLeft: 10,
+          }}>
+            <input
+              value={query}
+              onChange={e => { setQuery(e.target.value); setSelectedCafe(null); }}
+              placeholder="카페 이름을 검색해 보세요"
+              style={{
+                flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                fontSize: 17, fontWeight: 510, color: '#191f28', fontFamily: 'inherit',
+              }}
+            />
+          </div>
+
+          {/* 검색 결과 */}
+          {isSearching && results.map(cafe => (
+            <div
+              key={cafe.id}
+              onClick={() => { setSelectedCafe(cafe); setQuery(cafe.name); }}
+              style={{
+                background: selectedCafe?.id === cafe.id ? '#252525' : '#ffffff',
+                border: selectedCafe?.id === cafe.id ? '1px solid #000000' : 'none',
+                borderRadius: 12, height: 44, marginTop: 4,
+                display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10,
+                cursor: 'pointer', gap: 8,
+              }}
+            >
+              <span style={{ fontSize: 14, fontWeight: 510, color: selectedCafe?.id === cafe.id ? '#ffffff' : '#252525', lineHeight: '17.5px' }}>{cafe.name}</span>
+              <span style={{ fontSize: 12, fontWeight: 510, color: selectedCafe?.id === cafe.id ? '#e9e9e9' : 'rgba(3,24,50,0.46)', lineHeight: '15px' }}>{cafe.address}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* 구분선 */}
+        <div style={{ height: 1, background: 'rgba(0,27,55,0.1)' }} />
+
+        {/* 편의시설 칩 */}
+        <div style={{ padding: '20px 16px', background: '#f3f3f3' }}>
+          {Object.entries(CHIP_OPTIONS).map(([category, options]) => (
+            <div key={category} style={{ marginBottom: 20 }}>
+              <span style={{ display: 'block', fontSize: 14, fontWeight: 590, color: '#000000', lineHeight: '25.5px', marginBottom: 8 }}>{category}</span>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {options.map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => toggleChip(category, opt)}
+                    style={{
+                      height: 32, padding: '0 12px', borderRadius: 8,
+                      background: chips[category] === opt ? '#252525' : 'rgba(7,25,76,0.05)',
+                      border: '1px solid rgba(0,23,51,0.02)',
+                      fontSize: 13, fontWeight: 590,
+                      color: chips[category] === opt ? '#ffffff' : 'rgba(3,18,40,0.7)',
+                      cursor: 'pointer', transition: 'background 0.15s, color 0.15s',
+                    }}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 구분선 */}
+        <div style={{ height: 1, background: 'rgba(0,27,55,0.1)' }} />
+
+        {/* 사진 기록 */}
+        <div style={{ padding: '20px 16px', background: '#f3f3f3' }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+            <span style={{ fontSize: 14, fontWeight: 590, color: '#000000', lineHeight: '25.5px' }}>사진 기록</span>
+            <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 400, color: '#4b5666', letterSpacing: -1, lineHeight: '15.4px' }}>*사진은 최대 5장까지 추가할 수 있어요</span>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {photos.map((_, i) => (
+              <div key={i} style={{ width: 57, height: 57, borderRadius: 4, background: '#e5e8eb', flexShrink: 0 }} />
+            ))}
+            {photos.length < 5 && (
+              <button
+                onClick={() => setPhotos(p => [...p, ''])}
+                style={{
+                  width: 57, height: 57, borderRadius: 4,
+                  background: '#ffffff', border: '1px solid #c5c5c5',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: 4, cursor: 'pointer',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#b0b8c1" strokeWidth="2" strokeLinecap="round" /></svg>
+                <span style={{ fontSize: 9, fontWeight: 590, color: '#4b5666', lineHeight: '15.5px' }}>사진 추가</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 리뷰 작성 */}
+        <div style={{ padding: '0 16px 20px', background: '#f3f3f3' }}>
+          <div style={{
+            background: '#ffffff', border: '1px solid #d1d6db', borderRadius: 8,
+            height: 171, display: 'flex', flexDirection: 'column', padding: 12,
+          }}>
+            <textarea
+              value={reviewText}
+              onChange={e => setReviewText(e.target.value.slice(0, 200))}
+              placeholder="카페에서 작업 또는 공부하면서 느낀 점을 기록해 보세요 (최소 10자 이상 입력)"
+              maxLength={200}
+              style={{
+                flex: 1, border: 'none', outline: 'none', resize: 'none',
+                background: 'transparent', fontSize: 13, fontWeight: 400,
+                color: '#000000', fontFamily: 'inherit', letterSpacing: -1, lineHeight: '18.2px',
+              }}
+            />
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ fontSize: 9, fontWeight: 590, color: 'rgba(3,18,40,0.7)', lineHeight: '11.3px' }}>
+                {reviewText.length}/200
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 제보하기 버튼 */}
+        <div style={{ padding: '17px 16px', background: '#f3f3f3' }}>
+          <button
+            style={{
+              width: '100%', height: 38, borderRadius: 10,
+              background: '#3182f6', border: 'none',
+              fontSize: 15, fontWeight: 590, color: '#ffffff',
+              cursor: 'pointer',
+            }}
+          >
+            제보하기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // 메인: 마이페이지
 // ─────────────────────────────────────────────────────────────
 export default function MyPage({
@@ -821,6 +1006,9 @@ export default function MyPage({
       />
     );
   }
+  if (subPage === 'report-cafe') {
+    return <ReportCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} />;
+  }
 
   // ── 메인 마이페이지 ──────────────────────────────────────
   return (
@@ -833,11 +1021,39 @@ export default function MyPage({
 
       {/* 스크롤 영역 */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {/* 닉네임 */}
-        <div style={{ padding: '16px 20px 0' }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#191F28', letterSpacing: '-0.5px' }}>
-            김카페
-          </h1>
+        {/* 프로필 */}
+        <div style={{ padding: '24px', background: '#f3f3f3', display: 'flex', gap: 16, alignItems: 'center' }}>
+          {/* 프로필 원형 60×60 */}
+          <div style={{
+            width: 60, height: 60, borderRadius: 1000,
+            background: '#d2d2d2',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 28, fontWeight: 700, color: '#101010', lineHeight: 1 }}>김</span>
+          </div>
+          {/* 이름 + 정보 + 제보하기 배지 */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: 18, fontWeight: 510, color: '#101010', lineHeight: '23px' }}>김카페</span>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 510, color: '#9b9b9b', lineHeight: '18px' }}>제보한 카페</span>
+                <span style={{ fontSize: 14, fontWeight: 510, color: '#101010', lineHeight: '18px' }}>{MOCK_REPORTED.length}개</span>
+              </div>
+              <div style={{ flex: 1 }} />
+              <button
+                onClick={() => changeSubPage('report-cafe')}
+                style={{
+                  background: '#252525', borderRadius: 13,
+                  height: 29, padding: '0 10px',
+                  fontSize: 12, fontWeight: 510, color: '#ffffff',
+                  border: 'none', cursor: 'pointer', lineHeight: '21px',
+                }}
+              >
+                제보하기
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* 탭 바 */}
