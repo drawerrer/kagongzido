@@ -975,18 +975,26 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
         </div>
 
         {/* 제보하기 버튼 */}
-        <div style={{ padding: '17px 16px', background: '#f3f3f3' }}>
-          <button
-            style={{
-              width: '100%', height: 38, borderRadius: 10,
-              background: '#3182f6', border: 'none',
-              fontSize: 15, fontWeight: 590, color: '#ffffff',
-              cursor: 'pointer',
-            }}
-          >
-            제보하기
-          </button>
-        </div>
+        {(() => {
+          const canSubmit = reviewText.trim().length >= 10;
+          return (
+            <div style={{ padding: '17px 16px', background: '#f3f3f3' }}>
+              <button
+                disabled={!canSubmit}
+                style={{
+                  width: '100%', height: 38, borderRadius: 10,
+                  background: canSubmit ? '#252525' : '#e5e8eb', border: 'none',
+                  fontSize: 15, fontWeight: 590,
+                  color: canSubmit ? '#ffffff' : '#b0b8c1',
+                  cursor: canSubmit ? 'pointer' : 'not-allowed',
+                  transition: 'background 0.15s, color 0.15s',
+                }}
+              >
+                제보하기
+              </button>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
