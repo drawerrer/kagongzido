@@ -763,8 +763,23 @@ function WrittenReviewPage({
 // 카페 제보하기 페이지 (mypage_recommend / searching / searched)
 // ─────────────────────────────────────────────────────────────
 const MOCK_CAFE_SEARCH = [
-  { id: 'r1', name: '우모에', address: '서울 용산구 103길 영원프라자 1층' },
-  { id: 'r2', name: '우모메루', address: '서울 관악구 행복로 35-1길' },
+  // MyPage 제보 목록
+  { id: 'r1',  name: '우모에',           address: '서울 용산구 한강대로84길 21-17 1층' },
+  { id: 'r2',  name: '본지르본 연희',    address: '서울 서대문구 연희로 93-10' },
+  { id: 'r3',  name: '카페 온도',        address: '서울 마포구 와우산로 21' },
+  { id: 'r4',  name: '모노 커피',        address: '서울 강남구 언주로 234' },
+  // MapPage 카페 목록
+  { id: '1',   name: '블루보틀 강남',    address: '서울 강남구 논현로 508' },
+  { id: '2',   name: '스타벅스 역삼역점', address: '서울 강남구 역삼로 123' },
+  { id: '4',   name: '카페 베이커리',    address: '서울 강남구 역삼동 567' },
+  { id: '5',   name: '브런치 팩토리',   address: '서울 강남구 선릉로 890' },
+  { id: '6',   name: '더 로스터리',     address: '서울 강남구 도곡로 321' },
+  // 가이드북 카페 목록
+  { id: 'gs1', name: '도트커피',        address: '서울 영등포구 당산로41길 11' },
+  { id: 'gs2', name: '프릳츠 커피',     address: '서울 마포구 도화길 20' },
+  { id: 'gs3', name: '어니언',          address: '서울 성동구 아차산로9길 8' },
+  { id: 'gs4', name: '오르에르',        address: '서울 강남구 도산대로15길 8' },
+  { id: 'gs5', name: '스탠딩커피',      address: '경기 성남시 분당구 판교역로 235' },
 ];
 
 const CHIP_OPTIONS: Record<string, string[]> = {
