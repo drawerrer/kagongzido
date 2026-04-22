@@ -1092,7 +1092,10 @@ export default function MyPage({
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={{ fontSize: 18, fontWeight: 510, color: '#101010', lineHeight: '23px' }}>김카페</span>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div
+                onClick={() => changeSubPage('reported')}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+              >
                 <span style={{ fontSize: 14, fontWeight: 510, color: '#9b9b9b', lineHeight: '18px' }}>제보한 카페</span>
                 <span style={{ fontSize: 14, fontWeight: 510, color: '#101010', lineHeight: '18px' }}>{MOCK_REPORTED.length}개</span>
               </div>
