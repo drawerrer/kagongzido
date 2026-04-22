@@ -3,21 +3,19 @@ import { defineConfig } from '@apps-in-toss/web-framework/config';
 export default defineConfig({
   appName: 'cafeindex',
   web: {
-    host: 'localhost',
+    host: '172.30.1.83',
     port: 3000,
     commands: {
       dev: 'rsbuild dev',
       build: 'rsbuild build',
     },
   },
-  permissions: [
-    { name: 'geolocation', access: 'access' },
-  ],
+  permissions: [{ name: 'geolocation', access: 'access' }],
   outdir: 'dist',
   brand: {
     displayName: '카페인덱스',
     primaryColor: '#252525',
-    icon: 'https://static.toss.im/icons/app-icon.png',
+    icon: './src/assets/LOGO/logo.png',
   },
   webViewProps: {
     type: 'partner',
