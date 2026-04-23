@@ -926,8 +926,8 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
                       onClick={() => toggleChip(category, opt)}
                       style={{
                         flex: 1, height: 40, borderRadius: 20,
-                        border: isSel ? '1.5px solid #252525' : '1.5px solid #E5E8EB',
-                        background: isSel ? '#EBEBEB' : 'white',
+                        border: isSel ? '1.5px solid #252525' : '1.5px solid #E7E8EB',
+                        background: isSel ? '#EBEBEB' : '#E7E8EB',
                         fontSize: 14, fontWeight: isSel ? 700 : 400,
                         color: isSel ? '#252525' : '#6B7684',
                         cursor: 'pointer', transition: 'all 0.15s',

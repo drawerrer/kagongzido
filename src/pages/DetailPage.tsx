@@ -1242,7 +1242,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        style={{ height: '100%', overflowY: 'auto', paddingBottom: 60 }}
+        style={{ height: '100%', overflowY: 'auto', paddingBottom: 88 }}
       >
         {/* 포토 히어로 */}
         {(() => {
@@ -1324,8 +1324,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               onClick={() => openKakaoMapWeb(cafe)}
               style={{
                 flexShrink: 0, height: 34, padding: '0 14px', marginLeft: 10,
-                borderRadius: 8, border: '1px solid #E5E8EB',
-                fontSize: 13, fontWeight: 600, color: '#252525', background: 'white',
+                borderRadius: 8, border: 'none',
+                fontSize: 13, fontWeight: 600, color: 'rgba(3,18,40,0.7)', background: '#E7E8EB',
               }}
             >
               길 안내
@@ -1639,41 +1639,49 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         }}
       />
 
-      {/* ── 하단 탭 네비바 ── */}
+      {/* ── 하단 탭 네비바 (TDS 플로팅) ── */}
       <nav style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0,
+        position: 'absolute',
+        left: 16, right: 16,
+        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+        height: 56,
         display: 'flex',
-        borderTop: '1px solid #F2F4F6',
-        backgroundColor: 'white',
-        paddingBottom: 'env(safe-area-inset-bottom)',
+        alignItems: 'center',
+        background: '#ffffff',
+        borderRadius: 28,
+        boxShadow: '0 4px 24px rgba(0, 27, 55, 0.14)',
         zIndex: 100,
       }}>
-        {DETAIL_TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => onTabChange ? onTabChange(tab.id) : onClose()}
-            style={{
-              flex: 1,
-              padding: '10px 0 8px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 2,
-              color: activeTab === tab.id ? '#252525' : '#B0B8C1',
-              fontSize: 11,
-              fontWeight: activeTab === tab.id ? 600 : 400,
-              transition: 'color 0.15s',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
-              {tab.icon}
-            </span>
-            {tab.label}
-          </button>
-        ))}
+        {DETAIL_TABS.map(tab => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange ? onTabChange(tab.id) : onClose()}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
+                padding: '8px 0',
+                color: isActive ? '#252525' : '#b0b8c1',
+                fontSize: 11,
+                fontWeight: isActive ? 600 : 400,
+                transition: 'color 0.15s',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
+                {tab.icon}
+              </span>
+              {tab.label}
+            </button>
+          );
+        })}
       </nav>
 
       {/* ── 바텀시트들 ── */}
