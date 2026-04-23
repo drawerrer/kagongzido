@@ -799,6 +799,7 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
     ? MOCK_CAFE_SEARCH.filter(c => c.name.includes(query.trim()))
     : [];
   const isSearching = !selectedCafe && query.trim().length > 0 && results.length > 0;
+  const isNoResult = !selectedCafe && query.trim().length > 0 && results.length === 0;
 
   const toggleChip = (category: string, option: string) => {
     setChips(prev => prev[category] === option ? { ...prev, [category]: '' } : { ...prev, [category]: option });
@@ -864,6 +865,27 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
           </div>
 
           {/* 검색 결과 */}
+          {isNoResult && (
+            <div style={{
+              marginTop: 16, padding: '32px 0',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+            }}>
+              <span style={{ fontSize: 15, fontWeight: 510, color: '#8B95A1', textAlign: 'center' }}>
+                찾으시는 카페가 아직 없어요!
+              </span>
+              <button
+                onClick={() => { setQuery(''); setSelectedCafe(null); }}
+                style={{
+                  height: 38, padding: '0 20px', borderRadius: 10,
+                  background: '#252525', border: 'none',
+                  fontSize: 14, fontWeight: 590, color: '#ffffff',
+                  cursor: 'pointer',
+                }}
+              >
+                카페 제보하기
+              </button>
+            </div>
+          )}
           {isSearching && results.map(cafe => {
             const isDark = hoveredId === cafe.id;
             return (
