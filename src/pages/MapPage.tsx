@@ -132,7 +132,7 @@ function SortPopup({
 }
 
 // ── 카페 목록 행 ──────────────────────────
-function CafeRow({ cafe, onTap }: { cafe: Cafe; onTap: () => void }) {
+function CafeRow({ cafe, onTap, onFavoriteAdded }: { cafe: Cafe; onTap: () => void; onFavoriteAdded?: () => void }) {
   const fmtDist = (m: number) => (m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`);
   const { isFavorited, addFavorite, removeFavorite } = useFavorites();
   const favorited = isFavorited(cafe.id);
@@ -150,6 +150,7 @@ function CafeRow({ cafe, onTap }: { cafe: Cafe; onTap: () => void }) {
         reviewCount: cafe.reviewCount,
         photos: [],
       });
+      onFavoriteAdded?.();
     }
   };
 
@@ -217,7 +218,7 @@ function CafeRow({ cafe, onTap }: { cafe: Cafe; onTap: () => void }) {
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 12, color: '#6B7684' }}>
-            ⭐ {cafe.rating} · {fmtDist(cafe.distance)} · 리뷰 {cafe.reviewCount}
+            {fmtDist(cafe.distance)} · 리뷰 {cafe.reviewCount}
           </span>
         </div>
         {/* 배지 */}
@@ -307,6 +308,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('unknown');
   const [locSheet, setLocSheet] = useState<LocationSheetType | null>(null);
   const [gpsToast, setGpsToast] = useState(false); // GPS 신호 실패 토스트
+  const [saveToast, setSaveToast] = useState(false); // 모음집 저장 토스트
+  const showSaveToast = () => { setSaveToast(true); setTimeout(() => setSaveToast(false), 2000); };
 
   // 카테고리 필터 + 정렬 적용
   const cafes = (() => {
@@ -648,7 +651,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           }}
         >
           {cafes.length > 0 ? (
-            cafes.map(cafe => <CafeRow key={cafe.id} cafe={cafe} onTap={() => onDetailOpen(cafe.id)} />)
+            cafes.map(cafe => <CafeRow key={cafe.id} cafe={cafe} onTap={() => onDetailOpen(cafe.id)} onFavoriteAdded={showSaveToast} />)
           ) : (
             <div
               style={{
@@ -713,6 +716,27 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         pointerEvents: 'none',
       }}>
         현재 위치를 가져오지 못했어요. 다시 시도해주세요
+      </div>
+
+      {/* ── 저장 완료 토스트 ── */}
+      <div style={{
+        position: 'absolute',
+        bottom: `${PANEL_COLLAPSED + 20}px`,
+        left: '50%',
+        transform: `translateX(-50%) translateY(${saveToast ? 0 : 12}px)`,
+        opacity: saveToast ? 1 : 0,
+        transition: 'opacity 0.2s, transform 0.2s',
+        background: '#191F28',
+        color: 'white',
+        borderRadius: 8,
+        padding: '9px 16px',
+        fontSize: 13,
+        fontWeight: 500,
+        whiteSpace: 'nowrap',
+        zIndex: 350,
+        pointerEvents: 'none',
+      }}>
+        모음집에 저장되었어요
       </div>
 
     </div>

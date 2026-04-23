@@ -106,7 +106,7 @@ function GuideBookMainView({
   onPastPress: () => void;
 }) {
   return (
-    <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#F3F3F3', display: 'flex', flexDirection: 'column', padding: '80px 30px' }}>
+    <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#F3F3F3', display: 'flex', flexDirection: 'column', padding: '40px 30px' }}>
       {/* 메인 큐레이션 카드 — flex: 1 로 남은 공간 전부 차지 */}
       <button
         onClick={onCardPress}

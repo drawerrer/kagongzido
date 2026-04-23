@@ -209,7 +209,7 @@ function SearchCafeRow({ r, onTap }: { r: typeof MOCK_RESULTS[0]; onTap?: () => 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4, minWidth: 0 }}>
         <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</p>
         <p style={{ fontSize: 12, color: '#6B7684', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.address}</p>
-        <span style={{ fontSize: 12, color: '#6B7684' }}>⭐ {r.rating} · {r.distance} · 리뷰 {r.reviewCount}</span>
+        <span style={{ fontSize: 12, color: '#6B7684' }}>{r.distance} · 리뷰 {r.reviewCount}</span>
         {r.tags[0] && (
           <span style={{ display: 'inline-block', padding: '2px 8px', background: '#F2F4F6', borderRadius: 4, fontSize: 11, color: '#4E5968', alignSelf: 'flex-start' }}>
             {r.tags[0]}

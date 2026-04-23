@@ -918,22 +918,25 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
             <div key={category} style={{ marginBottom: 20 }}>
               <span style={{ display: 'block', fontSize: 14, fontWeight: 590, color: '#000000', lineHeight: '25.5px', marginBottom: 8 }}>{category}</span>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {options.map(opt => (
-                  <button
-                    key={opt}
-                    onClick={() => toggleChip(category, opt)}
-                    style={{
-                      height: 32, padding: '0 12px', borderRadius: 8,
-                      background: chips[category] === opt ? '#252525' : 'rgba(7,25,76,0.05)',
-                      border: '1px solid rgba(0,23,51,0.02)',
-                      fontSize: 13, fontWeight: 590,
-                      color: chips[category] === opt ? '#ffffff' : 'rgba(3,18,40,0.7)',
-                      cursor: 'pointer', transition: 'background 0.15s, color 0.15s',
-                    }}
-                  >
-                    {opt}
-                  </button>
-                ))}
+                {options.map(opt => {
+                  const isSel = chips[category] === opt;
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => toggleChip(category, opt)}
+                      style={{
+                        flex: 1, height: 40, borderRadius: 20,
+                        border: isSel ? '1.5px solid #252525' : '1.5px solid #E5E8EB',
+                        background: isSel ? '#EBEBEB' : 'white',
+                        fontSize: 14, fontWeight: isSel ? 700 : 400,
+                        color: isSel ? '#252525' : '#6B7684',
+                        cursor: 'pointer', transition: 'all 0.15s',
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -942,30 +945,31 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
         {/* 구분선 */}
         <div style={{ height: 1, background: 'rgba(0,27,55,0.1)' }} />
 
-        {/* 사진 기록 */}
+        {/* 사진 첨부 */}
         <div style={{ padding: '20px 16px', background: '#f3f3f3' }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 14, fontWeight: 590, color: '#000000', lineHeight: '25.5px' }}>사진 기록</span>
-            <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 400, color: '#4b5666', letterSpacing: -1, lineHeight: '15.4px' }}>*사진은 최대 5장까지 추가할 수 있어요</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <span style={{ fontSize: 14, fontWeight: 590, color: '#000000', lineHeight: '25.5px' }}>사진 첨부</span>
+            <span style={{ fontSize: 13, color: '#B0B8C1' }}>{photos.length}/5</span>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {photos.map((_, i) => (
-              <div key={i} style={{ width: 57, height: 57, borderRadius: 4, background: '#e5e8eb', flexShrink: 0 }} />
-            ))}
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
             {photos.length < 5 && (
               <button
                 onClick={() => setPhotos(p => [...p, ''])}
                 style={{
-                  width: 57, height: 57, borderRadius: 4,
-                  background: '#ffffff', border: '1px solid #c5c5c5',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  gap: 4, cursor: 'pointer',
+                  width: 80, height: 80, borderRadius: 10, flexShrink: 0,
+                  border: '1.5px dashed #C9CDD2', background: '#F3F3F3',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#b0b8c1" strokeWidth="2" strokeLinecap="round" /></svg>
-                <span style={{ fontSize: 9, fontWeight: 590, color: '#4b5666', lineHeight: '15.5px' }}>사진 추가</span>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 5V19M5 12H19" stroke="#B0B8C1" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                <span style={{ fontSize: 11, color: '#B0B8C1' }}>사진 추가</span>
               </button>
             )}
+            {photos.map((_, i) => (
+              <div key={i} style={{ width: 80, height: 80, borderRadius: 10, background: '#e5e8eb', flexShrink: 0 }} />
+            ))}
           </div>
         </div>
 
@@ -994,28 +998,29 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
           </div>
         </div>
 
-        {/* 제보하기 버튼 */}
-        {(() => {
-          const canSubmit = reviewText.trim().length >= 10;
-          return (
-            <div style={{ padding: '17px 16px', background: '#f3f3f3' }}>
-              <button
-                disabled={!canSubmit}
-                style={{
-                  width: '100%', height: 38, borderRadius: 10,
-                  background: canSubmit ? '#252525' : '#e5e8eb', border: 'none',
-                  fontSize: 15, fontWeight: 590,
-                  color: canSubmit ? '#ffffff' : '#b0b8c1',
-                  cursor: canSubmit ? 'pointer' : 'not-allowed',
-                  transition: 'background 0.15s, color 0.15s',
-                }}
-              >
-                제보하기
-              </button>
-            </div>
-          );
-        })()}
       </div>
+
+      {/* 제보하기 버튼 — 하단 고정 */}
+      {(() => {
+        const canSubmit = reviewText.trim().length >= 10;
+        return (
+          <div style={{ padding: '12px 16px 20px', background: '#f3f3f3', flexShrink: 0 }}>
+            <button
+              disabled={!canSubmit}
+              style={{
+                width: '100%', height: 38, borderRadius: 10,
+                background: canSubmit ? '#252525' : '#e5e8eb', border: 'none',
+                fontSize: 15, fontWeight: 590,
+                color: canSubmit ? '#ffffff' : '#b0b8c1',
+                cursor: canSubmit ? 'pointer' : 'not-allowed',
+                transition: 'background 0.15s, color 0.15s',
+              }}
+            >
+              제보하기
+            </button>
+          </div>
+        );
+      })()}
     </div>
   );
 }
