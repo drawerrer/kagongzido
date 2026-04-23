@@ -105,7 +105,7 @@ function GuideBookMainView({
   onPastPress: () => void;
 }) {
   return (
-    <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#F3F3F3', display: 'flex', flexDirection: 'column', padding: '80px 30px' }}>
+    <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#F3F3F3', display: 'flex', flexDirection: 'column', padding: '80px 30px calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
       {/* 메인 큐레이션 카드 — flex: 1 로 남은 공간 전부 차지 */}
       <button
         onClick={onCardPress}
@@ -553,7 +553,7 @@ function GuideBookDetailView({
       </div>
 
       {/* 하단 CTA */}
-      <div style={{ flexShrink: 0, padding: '12px 20px 8px', backgroundColor: '#f2f4f6' }}>
+      <div style={{ flexShrink: 0, padding: '12px 20px calc(env(safe-area-inset-bottom, 0px) + 76px)', backgroundColor: '#f2f4f6' }}>
         <button
           onClick={() => onDetailOpen?.(store.id)}
           style={{
@@ -586,7 +586,7 @@ function GuideBookPastView({
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: 16,
-        padding: 20,
+        padding: '20px 20px calc(env(safe-area-inset-bottom, 0px) + 76px)',
       }}>
         {guidebooks.map((g) => (
           <button
@@ -707,6 +707,14 @@ export default function GuidebookPage({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
+      {import.meta.env.DEV && (
+        <button onClick={handleBack} style={{
+          position: 'absolute', top: 12, left: 8, zIndex: 999,
+          background: 'rgba(255,255,255,0.85)', border: 'none', borderRadius: 8,
+          cursor: 'pointer', fontSize: 14, color: '#4E5968', padding: '6px 10px',
+          backdropFilter: 'blur(4px)',
+        }}>← 뒤로</button>
+      )}
       {view === 'main' && (
         <GuideBookMainView
           guidebook={FEATURED}

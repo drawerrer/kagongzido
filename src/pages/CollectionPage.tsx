@@ -675,8 +675,15 @@ export default function CollectionPage({
       <div style={{
         height: 46, backgroundColor: '#F3F3F3',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
+        flexShrink: 0, position: 'relative',
       }}>
+        {import.meta.env.DEV && (
+          <button onClick={onBack} style={{
+            position: 'absolute', left: 8,
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 14, color: '#4E5968', padding: '8px',
+          }}>← 뒤로</button>
+        )}
         <span style={{
           fontWeight: 510, fontSize: 14,
           color: '#000000', lineHeight: '25.5px',
@@ -738,14 +745,24 @@ export default function CollectionPage({
         {/* 저장한 매장 (Figma: Listheader 41px, Bold 700 17px) */}
         <div>
           <div style={{
-            height: 41, display: 'flex', alignItems: 'center',
-            paddingLeft: 20, paddingRight: 20,
+            height: 41, display: 'flex', alignItems: 'flex-end',
+            paddingLeft: 20, paddingRight: 20, paddingBottom: 4,
           }}>
             <h2 style={{
               fontWeight: 700, fontSize: 17,
               lineHeight: '21.25px', color: 'rgba(0,12,30,0.8)',
               margin: 0,
-            }}>저장한 매장 ({orderedStores.length})</h2>
+            }}>저장한 매장</h2>
+          </div>
+          <div style={{
+            height: 32, display: 'flex', alignItems: 'center',
+            paddingLeft: 20, paddingRight: 20,
+          }}>
+            <span style={{ fontWeight: 400, fontSize: 12, lineHeight: '16.2px' }}>
+              <span style={{ color: '#6B7684' }}>총 </span>
+              <span style={{ color: '#4E5968', fontWeight: 600 }}>{orderedStores.length}</span>
+              <span style={{ color: '#6B7684', marginLeft: 2 }}>개</span>
+            </span>
           </div>
 
           {isEmpty ? (
@@ -784,8 +801,8 @@ export default function CollectionPage({
           )}
         </div>
 
-        {/* 편집/오거나이즈 모드 하단 여백 */}
-        {(isEditMode || isOrganizeMode) && <div style={{ height: 112 }} />}
+        {/* 하단 여백 — 탭바/CTA 가림 방지 */}
+        <div style={{ height: isEditMode || isOrganizeMode ? 112 : 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }} />
       </div>
 
       {/* ── 편집 모드 Bottom CTA ── */}

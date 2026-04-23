@@ -1242,7 +1242,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        style={{ height: '100%', overflowY: 'auto', paddingBottom: 88 }}
+        style={{ height: '100%', overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
       >
         {/* 포토 히어로 */}
         {(() => {

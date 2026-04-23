@@ -138,6 +138,12 @@ function AddStoreSheet({
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasSelection = selectedIds.size > 0;
 
+  const scrollToTop = () => {
+    requestAnimationFrame(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    });
+  };
+
   const toggle = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -152,7 +158,7 @@ function AddStoreSheet({
   };
   const onHandleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
     const dy = touchStartY.current - e.changedTouches[0].clientY;
-    if (dy > 30) setExpanded(true);
+    if (dy > 30) { setExpanded(true); scrollToTop(); }
     else if (dy < -30) setExpanded(false);
   };
 
@@ -164,14 +170,14 @@ function AddStoreSheet({
   const onContentTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
     const dy = touchStartY.current - e.changedTouches[0].clientY;
     const wasAtTop = dragStartScrollTop.current === 0;
-    if (!expanded && wasAtTop && dy > 50) setExpanded(true);
+    if (!expanded && wasAtTop && dy > 50) { setExpanded(true); scrollToTop(); }
     else if (expanded && wasAtTop && dy < -50) setExpanded(false);
   };
 
   return (
     <div
       style={{
-        position: 'absolute', inset: 0, zIndex: 200,
+        position: 'fixed', inset: 0, zIndex: 1200,
         backgroundColor: 'rgba(0,0,0,0.4)',
       }}
       onClick={onClose}
@@ -184,7 +190,7 @@ function AddStoreSheet({
           backgroundColor: '#ffffff',
           borderRadius: '20px 20px 0 0',
           display: 'flex', flexDirection: 'column',
-          transition: 'height 0.3s cubic-bezier(0.32,0.72,0,1)',
+          transition: 'height 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
           overflow: 'hidden',
         }}
         onClick={e => e.stopPropagation()}
@@ -330,11 +336,49 @@ function AddStoreSheet({
         </div>
 
         {/* 하단 버튼 */}
-        <div style={{ flexShrink: 0 }}>
-          <BottomCTA.Double
-            leftButton={<CTAButton color="dark" variant="weak" onClick={onClose}>닫기</CTAButton>}
-            rightButton={<CTAButton onClick={() => hasSelection && onConfirm([...selectedIds])} disabled={!hasSelection}>확인</CTAButton>}
-          />
+        <div style={{
+          flexShrink: 0,
+          padding: '12px 20px',
+          paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+          backgroundColor: '#ffffff',
+        }}>
+          {!hasSelection ? (
+            /* 선택 없음: 완료 버튼(비활성 스타일, 탭 시 닫힘) */
+            <button
+              onClick={onClose}
+              style={{
+                width: '100%', height: 52, borderRadius: 12,
+                backgroundColor: 'rgba(0,23,51,0.06)',
+                border: 'none', cursor: 'pointer',
+                fontWeight: 700, fontSize: 17,
+                color: 'rgba(0,12,30,0.25)',
+              }}
+            >완료</button>
+          ) : (
+            /* 선택됨: 닫기 + 확인 */
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={onClose}
+                style={{
+                  flex: 1, height: 52, borderRadius: 12,
+                  backgroundColor: 'rgba(0,23,51,0.06)',
+                  border: 'none', cursor: 'pointer',
+                  fontWeight: 700, fontSize: 17,
+                  color: 'rgba(0,12,30,0.8)',
+                }}
+              >닫기</button>
+              <button
+                onClick={() => onConfirm([...selectedIds])}
+                style={{
+                  flex: 1, height: 52, borderRadius: 12,
+                  backgroundColor: '#252525',
+                  border: 'none', cursor: 'pointer',
+                  fontWeight: 700, fontSize: 17,
+                  color: '#ffffff',
+                }}
+              >확인</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -518,10 +562,7 @@ function StoreCard({
           }}
           onClick={(e) => { if (!isEditMode) { e.stopPropagation(); onMemoTap(store.id); } }}
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
-            <path d="M8.5 1.5a1.5 1.5 0 0 1 2.12 2.12L3.5 10.74 1 11l.26-2.5L8.5 1.5z"
-              stroke="rgba(0,19,43,0.38)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <IcPencil width={12} height={12} style={{ flexShrink: 0, color: 'rgba(0,19,43,0.38)' }} />
           {store.memo ? (
             <span style={{
               fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.58)',
@@ -1151,6 +1192,18 @@ export default function CollectionDetailPage({
             </div>
           );
         })}
+      </div>
+
+      {/* ── 총 N개 ── */}
+      <div style={{
+        height: 32, display: 'flex', alignItems: 'center',
+        paddingLeft: 20, paddingRight: 20,
+      }}>
+        <span style={{ fontWeight: 400, fontSize: 12, lineHeight: '16.2px' }}>
+          <span style={{ color: '#6B7684' }}>총 </span>
+          <span style={{ color: '#4E5968', fontWeight: 600 }}>{stores.length}</span>
+          <span style={{ color: '#6B7684', marginLeft: 2 }}>개</span>
+        </span>
       </div>
 
       {/* ── 편집 모드 — 매장 추가하기 행 ── */}
