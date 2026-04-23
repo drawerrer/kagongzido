@@ -244,7 +244,7 @@ function CafeRow({ cafe, onTap, onFavoriteAdded }: { cafe: Cafe; onTap: () => vo
         onClick={handleHeartClick}
         style={{
           alignSelf: 'center',
-          width: 36, height: 36,
+          width: 44, height: 44,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'none', border: 'none', cursor: 'pointer',
           flexShrink: 0,
