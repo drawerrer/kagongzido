@@ -6,6 +6,7 @@ import { BottomSheet, ConfirmDialog, BottomCTA, CTAButton, Button, Toast } from 
 import { graniteEvent } from '@apps-in-toss/web-framework';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
 import IcDelete from '../assets/icons/icon_delete.svg?react';
+import IcArrowUpDown from '../assets/icons/icon_arrowupdown.svg?react';
 
 
 // ─── 타입 ─────────────────────────────────────────────────────
@@ -132,7 +133,8 @@ function AddStoreSheet({
 }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState(false);
-  const dragStartY = useRef(0);
+  const touchStartY = useRef(0);
+  const dragStartScrollTop = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasSelection = selectedIds.size > 0;
 
@@ -144,31 +146,26 @@ function AddStoreSheet({
     });
   };
 
-  // 핸들 드래그 (위: 확장, 아래: 축소)
-  const onHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    dragStartY.current = e.clientY;
-    e.currentTarget.setPointerCapture(e.pointerId);
+  // 핸들 터치 드래그 (위: 확장, 아래: 축소)
+  const onHandleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartY.current = e.touches[0].clientY;
   };
-  const onHandlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    const dy = dragStartY.current - e.clientY;
+  const onHandleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    const dy = touchStartY.current - e.changedTouches[0].clientY;
     if (dy > 30) setExpanded(true);
-    if (dy < -30) setExpanded(false);
+    else if (dy < -30) setExpanded(false);
   };
 
-  // 콘텐츠 드래그 — 스크롤 최상단일 때만 시트 확장/축소로 인식
-  const dragStartScrollTop = useRef(0);
-  const onContentPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    dragStartY.current = e.clientY;
+  // 콘텐츠 터치 — 스크롤 최상단일 때만 시트 확장/축소로 인식
+  const onContentTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartY.current = e.touches[0].clientY;
     dragStartScrollTop.current = scrollRef.current?.scrollTop ?? 0;
   };
-  const onContentPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    const dy = dragStartY.current - e.clientY;
+  const onContentTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    const dy = touchStartY.current - e.changedTouches[0].clientY;
     const wasAtTop = dragStartScrollTop.current === 0;
-    if (!expanded && wasAtTop && dy > 40) {
-      setExpanded(true);
-    } else if (expanded && wasAtTop && dy < -40) {
-      setExpanded(false);
-    }
+    if (!expanded && wasAtTop && dy > 50) setExpanded(true);
+    else if (expanded && wasAtTop && dy < -50) setExpanded(false);
   };
 
   return (
@@ -194,11 +191,11 @@ function AddStoreSheet({
       >
         {/* 드래그 핸들 */}
         <div
-          onPointerDown={onHandlePointerDown}
-          onPointerUp={onHandlePointerUp}
+          onTouchStart={onHandleTouchStart}
+          onTouchEnd={onHandleTouchEnd}
           style={{
             height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, cursor: 'grab', touchAction: 'none',
+            flexShrink: 0, cursor: 'grab', touchAction: 'pan-x',
           }}
         >
           <div style={{ width: 36, height: 4, borderRadius: 40, backgroundColor: '#e5e8eb' }} />
@@ -220,8 +217,8 @@ function AddStoreSheet({
         <div
           ref={scrollRef}
           style={{ flex: 1, overflowY: 'auto', marginTop: 12 }}
-          onPointerDown={onContentPointerDown}
-          onPointerUp={onContentPointerUp}
+          onTouchStart={onContentTouchStart}
+          onTouchEnd={onContentTouchEnd}
         >
           {availableStores.length === 0 ? (
             <div style={{ padding: '40px 20px', textAlign: 'center' }}>
@@ -236,6 +233,7 @@ function AddStoreSheet({
                 <div
                   key={store.id}
                   onClick={() => toggle(store.id)}
+                  onPointerDown={(e) => e.stopPropagation()}
                   style={{ padding: '20px 16px 0', cursor: 'pointer' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -444,17 +442,9 @@ function StoreCard({
             {isEditMode ? (
               <div
                 onPointerDown={onHandleDrag}
-                style={{ width: 24, height: 24, flexShrink: 0, marginLeft: 8, marginTop: 2, cursor: 'grab', touchAction: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: 44, height: 44, flexShrink: 0, marginLeft: 4, marginTop: -11, cursor: 'grab', touchAction: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <g fill="rgba(0,29,58,0.18)" fillRule="evenodd" clipRule="evenodd">
-                    <path d="M10.293 7.707a1 1 0 0 1 0-1.414l3-3a1 1 0 1 1 1.414 1.414l-3 3a1 1 0 0 1-1.414 0"/>
-                    <path d="M17.707 7.707a1 1 0 0 1-1.414 0l-3-3a1 1 0 0 1 1.414-1.414l3 3a1 1 0 0 1 0 1.414"/>
-                    <path d="M14 5a1 1 0 0 1 1 1v8a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1m-4.293 7.293a1 1 0 0 1 0 1.414l-3 3a1 1 0 0 1-1.414-1.414l3-3a1 1 0 0 1 1.414 0"/>
-                    <path d="M2.293 12.293a1 1 0 0 1 1.414 0l3 3a1 1 0 1 1-1.414 1.414l-3-3a1 1 0 0 1 0-1.414"/>
-                    <path d="M6 15a1 1 0 0 1-1-1V6a1 1 0 1 1 2 0v8a1 1 0 0 1-1 1"/>
-                  </g>
-                </svg>
+                <IcArrowUpDown width={22} height={22} style={{ color: 'rgba(0,29,58,0.18)' }} />
               </div>
             ) : showHeart ? (
               <button
@@ -757,7 +747,21 @@ export default function CollectionDetailPage({
 
 
   // ── 편집모드 ──
-  function enterEditMode() {
+  function enterEditMode(targetTabId?: string) {
+    const userCollections = collections.filter(c => c.id !== 'recent');
+
+    // 사용자 생성 컬렉션이 없으면 토스트 표시 후 편집 비활성화
+    if (userCollections.length === 0) {
+      showToast('기본 폴더는 수정하거나 삭제할 수 없어요');
+      return;
+    }
+
+    // 최근 탭에서 편집 진입 시 첫 번째 사용자 컬렉션으로 자동 이동
+    const resolvedTab = targetTabId ?? activeTab;
+    if (resolvedTab === 'recent') {
+      setActiveTab(userCollections[0].id);
+    }
+
     setIsEditMode(true);
     setSelectedIds(new Set());
   }
@@ -1049,7 +1053,7 @@ export default function CollectionDetailPage({
         {/* 편집 버튼 — 일반 모드 항상 고정 노출 */}
         {!isEditMode && (
           <button
-            onClick={enterEditMode}
+            onClick={() => enterEditMode()}
             style={{
               position: 'absolute', right: 16,
               background: 'none', border: 'none', cursor: 'pointer',
@@ -1294,7 +1298,7 @@ export default function CollectionDetailPage({
             const targetId = tabManageTargetId!;
             setTabManageTargetId(null);
             setActiveTab(targetId);
-            enterEditMode();
+            enterEditMode(targetId);
           }}
           style={{
             width: '100%', height: 56, display: 'flex', alignItems: 'center', gap: 12,
