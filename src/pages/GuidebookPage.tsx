@@ -2,7 +2,6 @@
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
-import { TextButton } from '@toss/tds-mobile';
 import { openURL, graniteEvent } from '@apps-in-toss/web-framework';
 
 // ─── 아이콘 ────────────────────────────────────────────────────
@@ -146,12 +145,26 @@ function GuideBookMainView({
 
       {/* 지난 가이드북 링크 */}
       <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 30, flexShrink: 0 }}>
-        <TextButton size="medium" onClick={onPastPress}>
+        <button
+          onClick={onPastPress}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontWeight: 590,
+            fontSize: 16,
+            color: '#333333',
+            padding: '4px 8px',
+          }}
+        >
           지난 가이드북
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#333333" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 4 10 8 6 12"/>
           </svg>
-        </TextButton>
+        </button>
       </div>
     </div>
   );
