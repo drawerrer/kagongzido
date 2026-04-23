@@ -5,6 +5,7 @@ import { useFavorites, FavoritedStore } from '../context/FavoritesContext';
 import { BottomSheet, BottomCTA, CTAButton, Button } from '@toss/tds-mobile';
 import IcDelete from '../assets/icons/icon_delete.svg?react';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
+import IcArrowUpDown from '../assets/icons/icon_arrowupdown.svg?react';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 
 // ─── 타입 ────────────────────────────────────────────────────
@@ -282,21 +283,9 @@ function StoreCard({
             {onHandlePointerDown ? (
               <div
                 onPointerDown={onHandlePointerDown}
-                style={{
-                  width: 24, height: 24, flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'grab', touchAction: 'none',
-                }}
+                style={{ width: 44, height: 44, flexShrink: 0, marginTop: -11, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab', touchAction: 'none' }}
               >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <g fill="rgba(0,29,58,0.18)" fillRule="evenodd" clipRule="evenodd">
-                    <path d="M10.293 7.707a1 1 0 0 1 0-1.414l3-3a1 1 0 1 1 1.414 1.414l-3 3a1 1 0 0 1-1.414 0"/>
-                    <path d="M17.707 7.707a1 1 0 0 1-1.414 0l-3-3a1 1 0 0 1 1.414-1.414l3 3a1 1 0 0 1 0 1.414"/>
-                    <path d="M14 5a1 1 0 0 1 1 1v8a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1m-4.293 7.293a1 1 0 0 1 0 1.414l-3 3a1 1 0 0 1-1.414-1.414l3-3a1 1 0 0 1 1.414 0"/>
-                    <path d="M2.293 12.293a1 1 0 0 1 1.414 0l3 3a1 1 0 1 1-1.414 1.414l-3-3a1 1 0 0 1 0-1.414"/>
-                    <path d="M6 15a1 1 0 0 1-1-1V6a1 1 0 1 1 2 0v8a1 1 0 0 1-1 1"/>
-                  </g>
-                </svg>
+                <IcArrowUpDown width={22} height={22} style={{ color: 'rgba(0,29,58,0.18)' }} />
               </div>
             ) : !isEditMode ? (
               <button
