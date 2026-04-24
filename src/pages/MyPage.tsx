@@ -810,7 +810,7 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
 
         {/* 페이지 타이틀 */}
         <div style={{
@@ -1001,29 +1001,28 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
           </div>
         </div>
 
+        {/* 제보하기 버튼 */}
+        {(() => {
+          const canSubmit = reviewText.trim().length >= 10;
+          return (
+            <div style={{ padding: '12px 16px 20px', background: '#f3f3f3' }}>
+              <button
+                disabled={!canSubmit}
+                style={{
+                  width: '100%', height: 38, borderRadius: 10,
+                  background: canSubmit ? '#252525' : '#e5e8eb', border: 'none',
+                  fontSize: 15, fontWeight: 590,
+                  color: canSubmit ? '#ffffff' : '#b0b8c1',
+                  cursor: canSubmit ? 'pointer' : 'not-allowed',
+                  transition: 'background 0.15s, color 0.15s',
+                }}
+              >
+                제보하기
+              </button>
+            </div>
+          );
+        })()}
       </div>
-
-      {/* 제보하기 버튼 — 하단 고정 */}
-      {(() => {
-        const canSubmit = reviewText.trim().length >= 10;
-        return (
-          <div style={{ padding: '12px 16px 20px', background: '#f3f3f3', flexShrink: 0 }}>
-            <button
-              disabled={!canSubmit}
-              style={{
-                width: '100%', height: 38, borderRadius: 10,
-                background: canSubmit ? '#252525' : '#e5e8eb', border: 'none',
-                fontSize: 15, fontWeight: 590,
-                color: canSubmit ? '#ffffff' : '#b0b8c1',
-                cursor: canSubmit ? 'pointer' : 'not-allowed',
-                transition: 'background 0.15s, color 0.15s',
-              }}
-            >
-              제보하기
-            </button>
-          </div>
-        );
-      })()}
     </div>
   );
 }
