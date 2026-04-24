@@ -680,7 +680,7 @@ export default function CollectionDetailPage({
   const [showDeleteStoreId, setShowDeleteStoreId] = useState<string | null>(null);
   const [showAddStoreSheet, setShowAddStoreSheet] = useState(false);
   const [memoTargetId, setMemoTargetId] = useState<string | null>(null);
-  const [snackbar, setSnackbar] = useState<{ msg: string; actionLabel?: string; undoFn?: () => void } | null>(null);
+  const [snackbar, setSnackbar] = useState<{ msg: string; actionLabel?: string; undoFn?: () => void; type?: 'positive' | 'negative' } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const snackbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -831,6 +831,7 @@ export default function CollectionDetailPage({
     setSnackbar({
       msg: `${deletedIds.length}개의 매장을 삭제했어요`,
       actionLabel: '되돌리기',
+      type: 'negative',
       undoFn: () => {
         addStoresToCollection(activeTab, deletedIds);
         setSnackbar(null);
@@ -862,6 +863,7 @@ export default function CollectionDetailPage({
         setSnackbar({
           msg: '매장을 삭제했어요',
           actionLabel: '되돌리기',
+          type: 'negative',
           undoFn: () => {
             if (favStore) addFavorite(favStore);
             setSnackbar(null);
@@ -893,6 +895,7 @@ export default function CollectionDetailPage({
     setSnackbar({
       msg: '1개의 매장을 삭제했어요',
       actionLabel: '되돌리기',
+      type: 'negative',
       undoFn: () => {
         if (favStore) addFavorite(favStore);
         setSnackbar(null);
@@ -1199,10 +1202,10 @@ export default function CollectionDetailPage({
         height: 32, display: 'flex', alignItems: 'center',
         paddingLeft: 20, paddingRight: 20,
       }}>
-        <span style={{ fontWeight: 400, fontSize: 12, lineHeight: '16.2px' }}>
+        <span style={{ fontWeight: 600, fontSize: 12, lineHeight: '16.2px' }}>
           <span style={{ color: '#6B7684' }}>총 </span>
-          <span style={{ color: '#4E5968', fontWeight: 600 }}>{stores.length}</span>
-          <span style={{ color: '#6B7684', marginLeft: 2 }}>개</span>
+          <span style={{ color: '#4E5968' }}>{stores.length}</span>
+          <span style={{ color: '#6B7684' }}>개</span>
         </span>
       </div>
 
@@ -1279,6 +1282,8 @@ export default function CollectionDetailPage({
               />
             </div>
           ))}
+          {/* 탭바 가림 방지 spacer */}
+          <div style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }} />
         </div>
       )}
 
@@ -1438,6 +1443,7 @@ export default function CollectionDetailPage({
           actionLabel={snackbar.actionLabel}
           onAction={snackbar.undoFn}
           onDismiss={() => setSnackbar(null)}
+          type={snackbar.type ?? 'positive'}
           duration={3000}
         />
       )}

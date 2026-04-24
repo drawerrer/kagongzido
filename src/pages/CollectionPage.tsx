@@ -2,7 +2,7 @@
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites, FavoritedStore } from '../context/FavoritesContext';
-import { BottomSheet, BottomCTA, CTAButton, Button } from '@toss/tds-mobile';
+import { BottomSheet, BottomCTA, CTAButton, Button, ConfirmDialog } from '@toss/tds-mobile';
 import IcDelete from '../assets/icons/icon_delete.svg?react';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
 import IcArrowUpDown from '../assets/icons/icon_arrowupdown.svg?react';
@@ -521,6 +521,7 @@ export default function CollectionPage({
   const [renameValue, setRenameValue] = useState('');
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [colActionTargetId, setColActionTargetId] = useState<string | null>(null);
+  const [showColDeleteConfirm, setShowColDeleteConfirm] = useState(false);
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<Set<string>>(new Set());
   const [deletedStores, setDeletedStores] = useState<FavoritedStore[]>([]);
   const [addedToCollectionIds, setAddedToCollectionIds] = useState<string[]>([]);
@@ -758,10 +759,10 @@ export default function CollectionPage({
             height: 32, display: 'flex', alignItems: 'center',
             paddingLeft: 20, paddingRight: 20,
           }}>
-            <span style={{ fontWeight: 400, fontSize: 12, lineHeight: '16.2px' }}>
+            <span style={{ fontWeight: 600, fontSize: 12, lineHeight: '16.2px' }}>
               <span style={{ color: '#6B7684' }}>총 </span>
-              <span style={{ color: '#4E5968', fontWeight: 600 }}>{orderedStores.length}</span>
-              <span style={{ color: '#6B7684', marginLeft: 2 }}>개</span>
+              <span style={{ color: '#4E5968' }}>{orderedStores.length}</span>
+              <span style={{ color: '#6B7684' }}>개</span>
             </span>
           </div>
 
@@ -802,7 +803,7 @@ export default function CollectionPage({
         </div>
 
         {/* 하단 여백 — 탭바/CTA 가림 방지 */}
-        <div style={{ height: isEditMode || isOrganizeMode ? 112 : 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }} />
+        <div style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }} />
       </div>
 
       {/* ── 편집 모드 Bottom CTA ── */}
@@ -1034,12 +1035,8 @@ export default function CollectionPage({
         {/* 삭제 */}
         <button
           onClick={() => {
-            if (!colActionTargetId) return;
-            const col = collections.find(c => c.id === colActionTargetId);
-            removeCollection(colActionTargetId);
             setBottomSheet(null);
-            setColActionTargetId(null);
-            if (col) setSnackbar('collection-deleted');
+            setTimeout(() => setShowColDeleteConfirm(true), 200);
           }}
           style={{
             width: '100%', height: 56, display: 'flex', alignItems: 'center', gap: 12,
@@ -1052,6 +1049,30 @@ export default function CollectionPage({
         </button>
         <div style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} />
       </BottomSheet>
+
+      {/* ── 컬렉션 삭제 확인 다이얼로그 (롱프레스 → 삭제) ── */}
+      {showColDeleteConfirm && (
+        <ConfirmDialog
+          open={true}
+          title={<ConfirmDialog.Title>컬렉션을 삭제할까요?</ConfirmDialog.Title>}
+          description={<ConfirmDialog.Description>만들어둔 컬렉션이 사라져요.{'\n'}담아둔 매장은 전체 모음집에서 계속 볼 수 있어요.</ConfirmDialog.Description>}
+          cancelButton={<ConfirmDialog.CancelButton onClick={() => { setShowColDeleteConfirm(false); setColActionTargetId(null); }}>닫기</ConfirmDialog.CancelButton>}
+          confirmButton={
+            <ConfirmDialog.ConfirmButton
+              color="danger"
+              variant="weak"
+              onClick={() => {
+                if (!colActionTargetId) return;
+                removeCollection(colActionTargetId);
+                setShowColDeleteConfirm(false);
+                setColActionTargetId(null);
+                setSnackbar('collection-deleted');
+              }}
+            >삭제하기</ConfirmDialog.ConfirmButton>
+          }
+          onClose={() => { setShowColDeleteConfirm(false); setColActionTargetId(null); }}
+        />
+      )}
 
       {/* ── 스낵바 ── */}
       {snackbar === 'deleted' && (

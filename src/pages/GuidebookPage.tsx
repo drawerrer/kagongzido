@@ -485,7 +485,7 @@ function GuideBookDetailView({
                     top: 0, bottom: 0, left: 0,
                     display: 'flex',
                     width: cardW * s.photos.length,
-                    transform: `translateX(${-photoIndex * cardW}px)`,
+                    transform: `translateX(${isActive ? -photoIndex * cardW : 0}px)`,
                     transition: 'transform 0.25s ease',
                   }}>
                     {s.photos.map((photo, pi) => (
