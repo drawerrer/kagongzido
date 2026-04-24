@@ -105,46 +105,48 @@ function GuideBookMainView({
   onPastPress: () => void;
 }) {
   return (
-    <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#F3F3F3', display: 'flex', flexDirection: 'column', padding: '80px 30px' }}>
-      {/* 메인 큐레이션 카드 — flex: 1 로 남은 공간 전부 차지 */}
-      <button
-        onClick={onCardPress}
-        style={{ flex: 1, minHeight: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', display: 'block', width: '100%' }}
-      >
-        <div style={{
-          width: '100%',
-          height: '100%',
-          borderRadius: 6,
-          overflow: 'hidden',
-          position: 'relative',
-          background: `linear-gradient(160deg, ${guidebook.gradient[0]}, ${guidebook.gradient[1]})`,
-        }}>
-          {/* 딤 오버레이 */}
+    <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#F3F3F3', display: 'flex', flexDirection: 'column', paddingTop: 80, paddingLeft: 30, paddingRight: 30, paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
+      {/* 카드 — 너비 100% 기준 4:3 비율 고정 */}
+      <div style={{ width: '100%', flexShrink: 0 }}>
+        <button
+          onClick={onCardPress}
+          style={{ width: '100%', aspectRatio: '3 / 4', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', display: 'block' }}
+        >
           <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0) 33%, rgba(23,20,20,0.92) 100%)',
-          }} />
-          {/* 텍스트 오버레이 */}
-          <div style={{ position: 'absolute', bottom: 28, left: 24 }}>
-            <p style={{
-              fontWeight: 590,
-              fontSize: 28,
-              lineHeight: '33.4px',
-              color: '#fff',
-              whiteSpace: 'pre-line',
-              marginBottom: 8,
-            }}>
-              {guidebook.title}
-            </p>
-            <span style={{ fontWeight: 400, fontSize: 18, color: '#fff' }}>
-              {guidebook.stores.length} places
-            </span>
+            width: '100%',
+            height: '100%',
+            borderRadius: 6,
+            overflow: 'hidden',
+            position: 'relative',
+            background: `linear-gradient(160deg, ${guidebook.gradient[0]}, ${guidebook.gradient[1]})`,
+          }}>
+            {/* 딤 오버레이 */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0) 33%, rgba(23,20,20,0.92) 100%)',
+            }} />
+            {/* 텍스트 오버레이 */}
+            <div style={{ position: 'absolute', bottom: 28, left: 24 }}>
+              <p style={{
+                fontWeight: 590,
+                fontSize: 28,
+                lineHeight: '33.4px',
+                color: '#fff',
+                whiteSpace: 'pre-line',
+                marginBottom: 8,
+              }}>
+                {guidebook.title}
+              </p>
+              <span style={{ fontWeight: 400, fontSize: 18, color: '#fff' }}>
+                {guidebook.stores.length} places
+              </span>
+            </div>
           </div>
-        </div>
-      </button>
+        </button>
+      </div>
 
       {/* 지난 가이드북 링크 */}
-      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 30, flexShrink: 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 24, paddingBottom: 8, flexShrink: 0 }}>
         <button
           onClick={onPastPress}
           style={{
@@ -228,8 +230,10 @@ function GuideBookDetailView({
   }, []);
 
   const INFO_H = 220; // 정보 영역 고정 높이
-  const cardH = carouselH > 0 ? carouselH : Math.round(cardW * 0.85) + 40 + INFO_H; // 첫 렌더 fallback
-  const imgH = Math.max(cardH - INFO_H, 0);
+  const HEADER_H = 65; // 헤더(가이드북명) 영역 근사 높이
+  // 이미지 1:1 기본, 가용 공간(헤더+정보영역 제외)에 맞게 축소
+  const imgH = carouselH > 0 ? Math.min(cardW, Math.max(carouselH - HEADER_H - INFO_H, 0)) : cardW;
+  const cardH = imgH + INFO_H;
 
   // 무한 루프용 3중 배열
   const loopedStores = useMemo(() => [...stores, ...stores, ...stores], [stores]);
@@ -241,7 +245,7 @@ function GuideBookDetailView({
   const isRepositioning = useRef(false);
   const isFirstMount = useRef(true);
 
-  // 마우스 드래그 (데스크탑 테스트용)
+  // ── 데스크탑 마우스 드래그 ───────────────────────────────────
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
   const dragScrollLeft = useRef(0);
@@ -268,6 +272,64 @@ function GuideBookDetailView({
     scrollRef.current.style.cursor = 'grab';
     scrollRef.current.style.removeProperty('user-select');
   }, []);
+
+  // ── 모바일 터치 (정보영역에서만 외부 캐러셀 동작) ────────────
+  const touchDragging = useRef(false);
+  const touchStartX = useRef(0);
+  const touchScrollLeft = useRef(0);
+  const touchLastX = useRef(0);
+  const touchLastTime = useRef(0);
+  const touchVelocity = useRef(0); // px/ms, 음수=왼쪽
+
+  const snapTo = useCallback((targetIdx: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.style.scrollBehavior = 'smooth';
+    el.scrollLeft = targetIdx * itemW;
+    setTimeout(() => { if (scrollRef.current) scrollRef.current.style.scrollBehavior = 'auto'; }, 400);
+  }, [itemW]);
+
+  const onCarouselTouchStart = useCallback((e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.card-info-area')) return; // 정보영역에서만
+    if (!scrollRef.current) return;
+    touchDragging.current = true;
+    const x = e.touches[0].clientX;
+    touchStartX.current = x;
+    touchScrollLeft.current = scrollRef.current.scrollLeft;
+    touchLastX.current = x;
+    touchLastTime.current = Date.now();
+    touchVelocity.current = 0;
+    scrollRef.current.style.scrollBehavior = 'auto';
+  }, []);
+
+  const onCarouselTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchDragging.current || !scrollRef.current) return;
+    const x = e.touches[0].clientX;
+    const now = Date.now();
+    const dt = now - touchLastTime.current;
+    if (dt > 0) touchVelocity.current = (x - touchLastX.current) / dt;
+    touchLastX.current = x;
+    touchLastTime.current = now;
+    scrollRef.current.scrollLeft = touchScrollLeft.current - (x - touchStartX.current);
+  }, []);
+
+  const onCarouselTouchEnd = useCallback(() => {
+    if (!touchDragging.current) return;
+    touchDragging.current = false;
+    const el = scrollRef.current;
+    if (!el) return;
+    const startCard = Math.round(touchScrollLeft.current / itemW);
+    const totalDx = touchLastX.current - touchStartX.current;
+    const vel = touchVelocity.current;
+    let target = startCard;
+    if (vel < -0.3 || totalDx < -itemW * 0.3) target = startCard + 1; // 왼쪽 플릭 → 다음
+    else if (vel > 0.3 || totalDx > itemW * 0.3) target = startCard - 1; // 오른쪽 플릭 → 이전
+    snapTo(target);
+  }, [itemW, snapTo]);
+
+  // 이미지 스와이프 (transform 기반 — touch-action:none으로 외부 캐러셀 차단)
+  const imgTouchStartX = useRef(0);
 
   // 마운트 시 초기 스크롤
   useEffect(() => {
@@ -326,21 +388,24 @@ function GuideBookDetailView({
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#f2f4f6', overflow: 'hidden' }}>
 
-      {/* 헤더 — 피그마: 61px, 가이드북명 14px/590 + n places 14px/400 */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', flexShrink: 0, paddingTop: 16, paddingBottom: 20 }}>
-        <p style={{
-          fontWeight: 590, fontSize: 14, color: '#000000',
-          lineHeight: '22.5px', marginBottom: 5,
-        }}>
-          {guidebook.title.replace('\n', ' ')}
-        </p>
-        <p style={{ fontWeight: 400, fontSize: 14, color: '#000000' }}>
-          {guidebook.stores.length} places
-        </p>
-      </div>
+      {/* 헤더 + 캐러셀 — 함께 수직 중앙 정렬 */}
+      <div ref={carouselWrapperRef} style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
 
-      {/* 수평 무한 캐러셀 — 이미지+정보 통합 카드 */}
-      <div ref={carouselWrapperRef} style={{ flex: 1, overflow: 'hidden' }}>
+        {/* 헤더 — 가이드북명 14px/590 + n places 14px/400 */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, paddingBottom: 20 }}>
+          <p style={{
+            fontWeight: 590, fontSize: 14, color: '#000000',
+            lineHeight: '22.5px', marginBottom: 5,
+          }}>
+            {guidebook.title.replace('\n', ' ')}
+          </p>
+          <p style={{ fontWeight: 400, fontSize: 14, color: '#000000' }}>
+            {guidebook.stores.length} places
+          </p>
+        </div>
+
+        {/* 수평 무한 캐러셀 — 이미지+정보 통합 카드 */}
+        <div style={{ width: '100%', height: cardH, flexShrink: 0, overflow: 'hidden' }}>
         <style>{`.guide-carousel::-webkit-scrollbar { display: none; } .card-img-scroll::-webkit-scrollbar { display: none; }`}</style>
         <div
           ref={scrollRef}
@@ -350,12 +415,15 @@ function GuideBookDetailView({
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
           onMouseLeave={onMouseUp}
+          onTouchStart={onCarouselTouchStart}
+          onTouchMove={onCarouselTouchMove}
+          onTouchEnd={onCarouselTouchEnd}
+          onTouchCancel={onCarouselTouchEnd}
           style={{
             display: 'flex',
             alignItems: 'flex-start',
             gap: CARD_GAP,
-            overflowX: 'auto',
-            scrollSnapType: 'x mandatory',
+            overflowX: 'hidden',
             paddingLeft: carouselPadding,
             paddingRight: carouselPadding,
             scrollbarWidth: 'none',
@@ -379,79 +447,69 @@ function GuideBookDetailView({
                   flexDirection: 'column',
                   opacity: isActive ? 1 : 0.55,
                   transition: 'opacity 0.25s ease',
-                  pointerEvents: isActive ? 'auto' : 'none',
+                  // pointerEvents는 자식별로 제어 (정보영역은 비활성 카드도 스와이프 감지)
                 }}
               >
-                {/* 이미지 영역 */}
-                <div style={{
-                  height: imgH,
-                  flexShrink: 0,
-                  position: 'relative',
-                  borderRadius: 6,
-                  overflow: 'hidden',
-                  background: `linear-gradient(160deg, ${s.gradient[0]}, ${s.gradient[1]})`,
-                }}>
-                  {/* 내부 이미지 가로 스크롤 */}
-                  <div
-                    className="card-img-scroll"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      overflowX: 'auto',
-                      overflowY: 'hidden',
-                      display: 'flex',
-                      scrollSnapType: 'x mandatory',
-                      scrollbarWidth: 'none',
-                    }}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => {
-                      e.stopPropagation();
-                      if (scrollRef.current) scrollRef.current.style.overflowX = 'hidden';
-                    }}
-                    onTouchEnd={() => {
-                      setTimeout(() => {
-                        if (scrollRef.current) scrollRef.current.style.overflowX = 'auto';
-                      }, 50);
-                    }}
-                    onScroll={isActive ? (e) => {
-                      const el = e.currentTarget;
-                      const idx = Math.round(el.scrollLeft / el.clientWidth);
-                      setPhotoIndex(idx);
-                    } : undefined}
-                  >
-                    {s.photos.map((photo, pi) => {
-                      const isLastPhoto = pi === s.photos.length - 1;
-                      return (
-                        <div
-                          key={pi}
-                          style={{
-                            width: cardW,
-                            height: '100%',
-                            flexShrink: 0,
-                            scrollSnapAlign: 'start',
-                            background: photo,
-                            position: 'relative',
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDetailOpen?.(s.id);
-                          }}
-                        >
-                          {isLastPhoto && (
-                            <div style={{
-                              position: 'absolute',
-                              inset: 0,
-                              background: 'rgba(0,0,0,0.52)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}>
-                              <span style={{ color: 'white', fontSize: 18, fontWeight: 590 }}>+{s.photos.length - 1}</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                {/* 이미지 영역 — 비활성 카드는 터치 차단, 활성 카드만 transform 스와이프 */}
+                <div
+                  style={{
+                    height: imgH,
+                    flexShrink: 0,
+                    position: 'relative',
+                    borderRadius: 6,
+                    overflow: 'hidden',
+                    background: `linear-gradient(160deg, ${s.gradient[0]}, ${s.gradient[1]})`,
+                    touchAction: isActive ? 'none' : 'auto',
+                    pointerEvents: isActive ? 'auto' : 'none',
+                  }}
+                  onTouchStart={isActive ? (e) => {
+                    e.stopPropagation();
+                    imgTouchStartX.current = e.touches[0].clientX;
+                  } : undefined}
+                  onTouchEnd={isActive ? (e) => {
+                    e.stopPropagation();
+                    const dx = e.changedTouches[0].clientX - imgTouchStartX.current;
+                    if (Math.abs(dx) < 10) {
+                      onDetailOpen?.(s.id); // 탭 → 상세보기
+                    } else if (dx < -40 && photoIndex < s.photos.length - 1) {
+                      setPhotoIndex(p => p + 1);
+                    } else if (dx > 40 && photoIndex > 0) {
+                      setPhotoIndex(p => p - 1);
+                    }
+                  } : undefined}
+                  onClick={isActive ? () => onDetailOpen?.(s.id) : undefined}
+                >
+                  {/* transform 기반 이미지 스트립 */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0, bottom: 0, left: 0,
+                    display: 'flex',
+                    width: cardW * s.photos.length,
+                    transform: `translateX(${isActive ? -photoIndex * cardW : 0}px)`,
+                    transition: 'transform 0.25s ease',
+                  }}>
+                    {s.photos.map((photo, pi) => (
+                      <div
+                        key={pi}
+                        style={{
+                          width: cardW,
+                          height: '100%',
+                          flexShrink: 0,
+                          background: photo,
+                          position: 'relative',
+                        }}
+                      >
+                        {pi === s.photos.length - 1 && (
+                          <div style={{
+                            position: 'absolute', inset: 0,
+                            background: 'rgba(0,0,0,0.52)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <span style={{ color: 'white', fontSize: 18, fontWeight: 590 }}>+{s.photos.length - 1}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                   {/* 그라디언트 오버레이 */}
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(23,20,20,0.56) 100%)', pointerEvents: 'none' }} />
@@ -460,9 +518,7 @@ function GuideBookDetailView({
                     <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5, pointerEvents: 'none' }}>
                       {s.photos.map((_, di) => (
                         <div key={di} style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: 99,
+                          width: 6, height: 6, borderRadius: 99,
                           backgroundColor: di === photoIndex ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.35)',
                           transition: 'background-color 0.25s ease',
                         }} />
@@ -471,8 +527,8 @@ function GuideBookDetailView({
                   )}
                 </div>
 
-                {/* 매장 정보 영역 */}
-                <div style={{
+                {/* 매장 정보 영역 — 이 영역 스와이프로 외부 카드 캐러셀 동작 */}
+                <div className="card-info-area" style={{
                   height: 220,
                   flexShrink: 0,
                   display: 'flex',
@@ -518,7 +574,7 @@ function GuideBookDetailView({
                       <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{s.outlet}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, pointerEvents: isActive ? 'auto' : 'none' }}>
                     {(['길찾기', '리뷰보기', '저장하기'] as const).map((label) => (
                       <button
                         key={label}
@@ -550,10 +606,11 @@ function GuideBookDetailView({
             );
           })}
         </div>
-      </div>
+        </div>{/* 캐러셀 래퍼 */}
+      </div>{/* 중앙 정렬 컨테이너 */}
 
       {/* 하단 CTA */}
-      <div style={{ flexShrink: 0, padding: '12px 20px 8px', backgroundColor: '#f2f4f6' }}>
+      <div style={{ flexShrink: 0, padding: '12px 20px calc(env(safe-area-inset-bottom, 0px) + 76px)', backgroundColor: '#f2f4f6' }}>
         <button
           onClick={() => onDetailOpen?.(store.id)}
           style={{
@@ -586,7 +643,7 @@ function GuideBookPastView({
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: 16,
-        padding: 20,
+        padding: '20px 20px calc(env(safe-area-inset-bottom, 0px) + 76px)',
       }}>
         {guidebooks.map((g) => (
           <button
@@ -707,6 +764,14 @@ export default function GuidebookPage({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
+      {import.meta.env.DEV && (
+        <button onClick={handleBack} style={{
+          position: 'absolute', top: 12, left: 8, zIndex: 999,
+          background: 'rgba(255,255,255,0.85)', border: 'none', borderRadius: 8,
+          cursor: 'pointer', fontSize: 14, color: '#4E5968', padding: '6px 10px',
+          backdropFilter: 'blur(4px)',
+        }}>← 뒤로</button>
+      )}
       {view === 'main' && (
         <GuideBookMainView
           guidebook={FEATURED}

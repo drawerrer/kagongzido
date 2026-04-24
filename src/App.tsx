@@ -138,24 +138,6 @@ function AppInner() {
     );
   }
 
-  // 컬렉션 상세 (탭바 완전히 가림)
-  if (collectionDetail) {
-    return (
-      <div style={{ height: '100%' }}>
-        <CollectionDetailPage
-          collectionId={collectionDetail.id}
-          collectionName={collectionDetail.name}
-          onBack={() => setCollectionDetail(null)}
-          onClose={() => { setCollectionDetail(null); setActiveTab('collection'); }}
-          onDetailOpen={(id) => setDetailCafeId(id)}
-          onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
-          onCollectionDeleted={(data) => { setCollectionDetail(null); setDeletedCollectionData(data); }}
-          onGoHome={() => { setCollectionDetail(null); setActiveTab('home'); }}
-        />
-      </div>
-    );
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
@@ -174,46 +156,61 @@ function AppInner() {
         <>
           {/* ── 화면 영역 ── */}
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            {activeTab === 'home'       && (
-              <MapPage
-                onSearchOpen={() => setShowSearch(true)}
+            {collectionDetail ? (
+              <CollectionDetailPage
+                collectionId={collectionDetail.id}
+                collectionName={collectionDetail.name}
+                onBack={() => setCollectionDetail(null)}
+                onClose={() => { setCollectionDetail(null); setActiveTab('collection'); }}
                 onDetailOpen={(id) => setDetailCafeId(id)}
+                onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
+                onCollectionDeleted={(data) => { setCollectionDetail(null); setDeletedCollectionData(data); }}
+                onGoHome={() => { setCollectionDetail(null); setActiveTab('home'); }}
               />
-            )}
-            {activeTab === 'guidebook'  && (
-              <PageErrorBoundary>
-                <GuidebookPage
-                  onDetailOpen={(id) => setDetailCafeId(id)}
-                  onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
-                  onBack={() => setActiveTab('home')}
-                  onClose={() => setActiveTab('home')}
-                  initialView={(guidebookView as any) ?? 'main'}
-                  onViewChange={(v) => setGuidebookView(v)}
-                  initialStoreIndex={guidebookStoreIndex}
-                  onStoreIndexChange={(i) => setGuidebookStoreIndex(i)}
-                />
-              </PageErrorBoundary>
-            )}
-            {activeTab === 'collection' && (
-              <PageErrorBoundary>
-                <CollectionPage
-                  onDetailOpen={(id) => setDetailCafeId(id)}
-                  onCollectionOpen={(id, name) => setCollectionDetail({ id, name })}
-                  onGoHome={() => setActiveTab('home')}
-                  onBack={() => setActiveTab('home')}
-                  onClose={() => setActiveTab('home')}
-                  onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
-                  deletedCollection={deletedCollectionData}
-                  onClearDeletedCollection={() => setDeletedCollectionData(null)}
-                />
-              </PageErrorBoundary>
-            )}
-            {activeTab === 'mypage'     && (
-              <MyPage
-                onDetailOpen={(id) => setDetailCafeId(id)}
-                initialSubPage={myPageSubPage as any}
-                onSubPageChange={setMyPageSubPage}
-              />
+            ) : (
+              <>
+                {activeTab === 'home'       && (
+                  <MapPage
+                    onSearchOpen={() => setShowSearch(true)}
+                    onDetailOpen={(id) => setDetailCafeId(id)}
+                  />
+                )}
+                {activeTab === 'guidebook'  && (
+                  <PageErrorBoundary>
+                    <GuidebookPage
+                      onDetailOpen={(id) => setDetailCafeId(id)}
+                      onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
+                      onBack={() => setActiveTab('home')}
+                      onClose={() => setActiveTab('home')}
+                      initialView={(guidebookView as any) ?? 'main'}
+                      onViewChange={(v) => setGuidebookView(v)}
+                      initialStoreIndex={guidebookStoreIndex}
+                      onStoreIndexChange={(i) => setGuidebookStoreIndex(i)}
+                    />
+                  </PageErrorBoundary>
+                )}
+                {activeTab === 'collection' && (
+                  <PageErrorBoundary>
+                    <CollectionPage
+                      onDetailOpen={(id) => setDetailCafeId(id)}
+                      onCollectionOpen={(id, name) => setCollectionDetail({ id, name })}
+                      onGoHome={() => setActiveTab('home')}
+                      onBack={() => setActiveTab('home')}
+                      onClose={() => setActiveTab('home')}
+                      onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
+                      deletedCollection={deletedCollectionData}
+                      onClearDeletedCollection={() => setDeletedCollectionData(null)}
+                    />
+                  </PageErrorBoundary>
+                )}
+                {activeTab === 'mypage'     && (
+                  <MyPage
+                    onDetailOpen={(id) => setDetailCafeId(id)}
+                    initialSubPage={myPageSubPage as any}
+                    onSubPageChange={setMyPageSubPage}
+                  />
+                )}
+              </>
             )}
           </div>
 
