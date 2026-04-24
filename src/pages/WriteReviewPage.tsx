@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
+import { fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
 import { insertReview } from '../services/db';
 
 // ────────── 타입 ─────────────────────────────────────────────
@@ -50,7 +51,6 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose,
   const [text, setText] = useState('');
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasContent =
     Object.keys(evalState).length > 0 || photos.length > 0 || text.trim().length > 0;
@@ -83,16 +83,26 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose,
     setShowPhotoSheet(true);
   };
 
-  const addMockPhoto = () => {
-    if (photos.length >= 5) return;
-    const GRADIENTS = [
-      'linear-gradient(145deg,#1C1C1E 0%,#2C2C2E 100%)',
-      'linear-gradient(145deg,#1a1a2e 0%,#2d2d44 100%)',
-      'linear-gradient(145deg,#2d1b0e 0%,#4e3020 100%)',
-      'linear-gradient(145deg,#0f2530 0%,#1a3d50 100%)',
-      'linear-gradient(145deg,#1a2a1a 0%,#2d4a2d 100%)',
-    ];
-    setPhotos(prev => [...prev, GRADIENTS[prev.length % GRADIENTS.length]]);
+  const handleGallery = async () => {
+    try {
+      const remaining = 5 - photos.length;
+      const results = await fetchAlbumPhotos({ maxCount: remaining, maxWidth: 1024, base64: true });
+      const uris = results.map(r => 'data:image/jpeg;base64,' + r.dataUri);
+      setPhotos(prev => [...prev, ...uris].slice(0, 5));
+    } catch {
+      // 권한 거부 등 실패 시 무시
+    }
+    setShowPhotoSheet(false);
+  };
+
+  const handleCamera = async () => {
+    try {
+      const result = await openCamera({ base64: true, maxWidth: 1024 });
+      const uri = 'data:image/jpeg;base64,' + result.dataUri;
+      setPhotos(prev => [...prev, uri].slice(0, 5));
+    } catch {
+      // 권한 거부 등 실패 시 무시
+    }
     setShowPhotoSheet(false);
   };
 
@@ -384,16 +394,15 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose,
             )}
 
             {/* 첨부된 사진들 */}
-            {photos.map((bg, idx) => (
+            {photos.map((uri, idx) => (
               <div
                 key={idx}
                 style={{
                   width: 80, height: 80, borderRadius: 10, flexShrink: 0,
-                  background: bg, position: 'relative', overflow: 'hidden',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  position: 'relative', overflow: 'hidden',
                 }}
               >
-                <span style={{ fontSize: 20, opacity: 0.2 }}>☕</span>
+                <img src={uri} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 {/* 삭제 버튼 */}
                 <button
                   onClick={() => removePhoto(idx)}
@@ -494,14 +503,12 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose,
       {/* ── 사진 추가 바텀시트 ── */}
       {showPhotoSheet && (
         <PhotoSourceSheet
-          onGallery={addMockPhoto}
-          onCamera={addMockPhoto}
+          onGallery={handleGallery}
+          onCamera={handleCamera}
           onClose={() => setShowPhotoSheet(false)}
         />
       )}
 
-      {/* hidden file input */}
-      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} />
     </div>
   );
 }
