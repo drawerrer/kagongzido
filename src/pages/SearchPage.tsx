@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useFavorites } from '../context/FavoritesContext';
+import { graniteEvent } from '@apps-in-toss/web-framework';
 
 interface SearchPageProps {
   onClose: () => void;
@@ -300,6 +301,18 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
     const t = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(t);
   }, []);
+
+  // 뒤로가기 → 홈으로 이동 (앱 종료 방지)
+  useEffect(() => {
+    try {
+      return graniteEvent.addEventListener('backEvent', {
+        onEvent: () => _onClose(),
+        onError: (err) => console.error(err),
+      });
+    } catch {
+      return undefined;
+    }
+  }, [_onClose]);
 
   const handleChipPress = (chipId: string) => {
     setActiveChip(prev => prev === chipId ? null : chipId);
