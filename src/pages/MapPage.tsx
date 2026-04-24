@@ -29,7 +29,7 @@ const MOCK_CAFES: Cafe[] = [
   { id: '6', name: '더 로스터리', address: '서울 강남구 도곡로 321', distance: 950, rating: 4.7, reviewCount: 98, tags: ['카공', '버터떡'] },
 ];
 
-const PANEL_COLLAPSED = 264;
+const PANEL_COLLAPSED = 320;
 // GPS 권한 상태는 SDK getCurrentLocation.getPermission() 으로 관리
 
 // ── 아이콘 ────────────────────────────────
@@ -282,6 +282,7 @@ interface MapPageProps {
 export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onStateChange }: MapPageProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
+  const touchStartYRef = useRef<number>(0);
 
   const [activeChip, setActiveChip] = useState<string | null>(initialState?.activeChip ?? null);
   const [sortType, setSortType] = useState<SortType>(initialState?.sortType ?? '조회순');
@@ -538,8 +539,22 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         <GpsIcon />
       </button>
 
+      {/* ── 외부 탭 시 패널 축소 오버레이 ── */}
+      {panelExpanded && (
+        <div
+          onClick={() => setPanelExpanded(false)}
+          style={{ position: 'absolute', inset: 0, zIndex: 9 }}
+        />
+      )}
+
       {/* ── 바텀 패널 ── */}
       <div
+        onTouchStart={(e) => { touchStartYRef.current = e.touches[0].clientY; }}
+        onTouchEnd={(e) => {
+          const delta = e.changedTouches[0].clientY - touchStartYRef.current;
+          if (delta > 60 && panelExpanded) setPanelExpanded(false);   // 아래로 스와이프 → 축소
+          if (delta < -60 && !panelExpanded) setPanelExpanded(true);  // 위로 스와이프 → 확장
+        }}
         style={{
           position: 'absolute',
           bottom: 0,
