@@ -769,12 +769,10 @@ function LoginPromptSheet({ onClose }: { onClose: () => void }) {
 // bg=#8b95a1, h=59, r=9999, 가운데 정렬, bottom=76px
 
 function FavoriteSnackbar({
-  type, dissolving, onGoToCollection, onRestore,
+  type, dissolving,
 }: {
   type: 'added' | 'removed' | null;
   dissolving: boolean;
-  onGoToCollection?: () => void;
-  onRestore?: () => void;
 }) {
   const visible = type !== null;
 
@@ -799,18 +797,6 @@ function FavoriteSnackbar({
         <span style={{ flex: 1, fontSize: 15, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
           카페를 모음집에 담았어요
         </span>
-        <button
-          onClick={onGoToCollection}
-          style={{
-            width: 72, height: 31, borderRadius: 100, flexShrink: 0,
-            background: 'rgba(0,25,54,0.15)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <span style={{ fontSize: 13, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
-            보러가기
-          </span>
-        </button>
       </div>
     );
   }
@@ -836,18 +822,6 @@ function FavoriteSnackbar({
         <span style={{ flex: 1, fontSize: 15, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
           카페를 모음집에서 꺼냈어요
         </span>
-        <button
-          onClick={onRestore}
-          style={{
-            width: 72, height: 31, borderRadius: 100, flexShrink: 0,
-            background: 'rgba(0,25,54,0.15)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <span style={{ fontSize: 13, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
-            되돌리기
-          </span>
-        </button>
       </div>
     );
   }
@@ -922,11 +896,11 @@ function rowToReviewItem(row: ReviewRow): ReviewItem {
   };
 }
 
-export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, onGoToCollection }: DetailPageProps) {
+export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections }: DetailPageProps) {
   const cafe = getCafeDetail(cafeId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
-  const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed, collections, userId } = useFavorites();
+  const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed, userId } = useFavorites();
 
   // ── DB 리뷰 로딩 ──────────────────────────────────────────
   const [dbReviews, setDbReviews] = useState<ReviewItem[]>([]);
@@ -1634,36 +1608,6 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       <FavoriteSnackbar
         type={favoriteSnackbar}
         dissolving={snackbarDissolving}
-        onGoToCollection={() => {
-          // 이 카페가 담긴 첫 번째 사용자 컬렉션으로 이동
-          const col = collections.find(c => c.id !== 'recent' && c.storeIds.includes(cafeId));
-          if (col && onGoToCollection) {
-            onGoToCollection({ id: col.id, name: col.name });
-          } else if (onGoToCollection) {
-            // 컬렉션이 없으면 모음집 탭으로 이동
-            onGoToCollection({ id: '', name: '' });
-          }
-          setFavoriteSnackbar(null);
-          setSnackbarDissolving(false);
-          if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
-          if (dissolveTimerRef.current) clearTimeout(dissolveTimerRef.current);
-        }}
-        onRestore={() => {
-          // 카페를 다시 즐겨찾기에 추가 (새 스낵바 없이)
-          if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
-          if (dissolveTimerRef.current) clearTimeout(dissolveTimerRef.current);
-          addFavorite({
-            id: cafe.id,
-            name: cafe.name,
-            address: cafe.address,
-            rating: 5,
-            reviewCount: 0,
-            badge: cafe.amenities.noTimeLimit ? '시간 제한 없음' : undefined,
-            photos: cafe.photos ?? [],
-          });
-          setFavoriteSnackbar(null);
-          setSnackbarDissolving(false);
-        }}
       />
 
       {/* ── 하단 탭 네비바 (TDS 플로팅) ── */}

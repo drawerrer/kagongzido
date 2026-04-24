@@ -285,7 +285,6 @@ interface MapPageProps {
 }
 
 export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onStateChange }: MapPageProps) {
-  const { addFavorite } = useFavorites();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
   const touchStartYRef = useRef<number>(0);
@@ -319,7 +318,6 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   const [snackbarDissolving, setSnackbarDissolving] = useState(false);
   const snackbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dissolveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastRemovedCafeRef = useRef<Cafe | null>(null);
 
   const showFavoriteSnackbar = (type: 'added' | 'removed') => {
     if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
@@ -710,8 +708,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
               key={cafe.id}
               cafe={cafe}
               onTap={() => onDetailOpen(cafe.id)}
-              onFavoriteChange={(type, changedCafe) => {
-                if (type === 'removed') lastRemovedCafeRef.current = changedCafe;
+              onFavoriteChange={(type) => {
                 showFavoriteSnackbar(type);
               }}
             />
@@ -803,21 +800,6 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           <span style={{ flex: 1, fontSize: 15, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
             카페를 모음집에 담았어요
           </span>
-          <button
-            onClick={() => {
-              if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
-              if (dissolveTimerRef.current) clearTimeout(dissolveTimerRef.current);
-              setFavoriteSnackbar(null);
-              setSnackbarDissolving(false);
-            }}
-            style={{
-              width: 72, height: 31, borderRadius: 100, flexShrink: 0,
-              background: 'rgba(0,25,54,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <span style={{ fontSize: 13, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>확인</span>
-          </button>
         </div>
       )}
       {favoriteSnackbar === 'removed' && (
@@ -840,25 +822,6 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           <span style={{ flex: 1, fontSize: 15, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
             카페를 모음집에서 꺼냈어요
           </span>
-          <button
-            onClick={() => {
-              if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
-              if (dissolveTimerRef.current) clearTimeout(dissolveTimerRef.current);
-              const cafe = lastRemovedCafeRef.current;
-              if (cafe) {
-                addFavorite({ id: cafe.id, name: cafe.name, address: cafe.address, rating: cafe.rating, reviewCount: cafe.reviewCount, photos: [] });
-              }
-              setFavoriteSnackbar(null);
-              setSnackbarDissolving(false);
-            }}
-            style={{
-              width: 72, height: 31, borderRadius: 100, flexShrink: 0,
-              background: 'rgba(0,25,54,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <span style={{ fontSize: 13, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>되돌리기</span>
-          </button>
         </div>
       )}
 
