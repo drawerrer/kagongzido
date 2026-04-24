@@ -53,8 +53,22 @@ npm run dev
 
 echo.
 echo ============================================
-echo  서버 종료됨. 5초 후 자동 재시작...
-echo  완전히 닫으려면 이 창 X 버튼 누르세요.
+echo  서버 종료됨.
+echo  [R] 재시작  /  [Q] 완전 종료 + 방화벽 정리
+echo  5초 후 자동 재시작됩니다.
 echo ============================================
-timeout /t 5 /nobreak
+choice /C RQ /N /T 5 /D R /M "선택 (R=재시작 / Q=종료+방화벽정리): "
+if %ERRORLEVEL% EQU 2 goto CLEANUP
 goto RESTART
+
+:CLEANUP
+echo.
+echo 방화벽 규칙 제거 중...
+netsh advfirewall firewall delete rule name="Dev 3000" >nul 2>&1
+netsh advfirewall firewall delete rule name="Dev 8081" >nul 2>&1
+netsh advfirewall firewall delete rule name="Node.js" >nul 2>&1
+echo     완료 - 포트 3000, 8081 차단됨
+echo.
+echo 창을 닫으셔도 됩니다.
+pause
+exit /b 0
