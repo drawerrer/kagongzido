@@ -375,7 +375,7 @@ function ReviewEditPage({
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative' }}>
       <SubHeader title="수정하기" onBack={handleCancel} onMore={() => {}} onClose={onClose} />
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 88 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {/* 카페 정보 */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12,
@@ -474,15 +474,13 @@ function ReviewEditPage({
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 하단 버튼 */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        display: 'flex', gap: 10,
-        padding: '12px 20px 24px',
-        background: 'white', borderTop: '1px solid #F2F4F6',
-      }}>
+        {/* 하단 버튼 */}
+        <div style={{
+          display: 'flex', gap: 10,
+          padding: '12px 20px 24px',
+          background: 'white', borderTop: '1px solid #F2F4F6',
+        }}>
         <button
           onClick={handleCancel}
           style={{
@@ -503,6 +501,7 @@ function ReviewEditPage({
         >
           {saved ? '✓ 완료' : '등록하기'}
         </button>
+        </div>
       </div>
 
       {/* 취소 확인 다이얼로그 */}
