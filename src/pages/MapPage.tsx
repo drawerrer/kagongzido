@@ -3,6 +3,8 @@ import { getCurrentLocation, Accuracy } from '@apps-in-toss/web-framework';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
+import CheckConfirmIcon from '../assets/icons/icon_check_confirm.svg?react';
+import SnackbarCloseIcon from '../assets/icons/icon_close.svg?react';
 
 // ── 타입 ─────────────────────────────────
 interface Cafe {
@@ -13,6 +15,9 @@ interface Cafe {
   rating: number;
   reviewCount: number;
   tags: string[];
+  mood: string;
+  priceRange: number;
+  options: string[];
 }
 
 type SortType = '조회순' | '거리순' | '평점순';
@@ -21,15 +26,14 @@ type SortType = '조회순' | '거리순' | '평점순';
 const CATEGORY_CHIPS = ['카공', '두쫀쿠', '버터떡', '조용한', '넓은', '가성비'];
 
 const MOCK_CAFES: Cafe[] = [
-  { id: '1', name: '블루보틀 강남', address: '서울 강남구 논현로 508', distance: 150, rating: 4.8, reviewCount: 523, tags: ['카공', '넓은'] },
-  { id: '2', name: '스타벅스 역삼역점', address: '서울 강남구 역삼로 123', distance: 280, rating: 4.5, reviewCount: 1200, tags: ['넓은'] },
-  { id: '3', name: '모노 커피', address: '서울 강남구 언주로 234', distance: 410, rating: 4.9, reviewCount: 87, tags: ['조용한', '카공'] },
-  { id: '4', name: '카페 베이커리', address: '서울 강남구 역삼동 567', distance: 590, rating: 4.3, reviewCount: 342, tags: ['가성비'] },
-  { id: '5', name: '브런치 팩토리', address: '서울 강남구 선릉로 890', distance: 720, rating: 4.6, reviewCount: 156, tags: ['두쫀쿠'] },
-  { id: '6', name: '더 로스터리', address: '서울 강남구 도곡로 321', distance: 950, rating: 4.7, reviewCount: 98, tags: ['카공', '버터떡'] },
+  { id: '1', name: '블루보틀 강남', address: '서울 강남구 논현로 508', distance: 150, rating: 4.8, reviewCount: 523, tags: ['카공', '넓은'], mood: '모던한', priceRange: 7000, options: ['콘센트 충분', '소음 적당'] },
+  { id: '2', name: '스타벅스 역삼역점', address: '서울 강남구 역삼로 123', distance: 280, rating: 4.5, reviewCount: 1200, tags: ['넓은'], mood: '개방적인', priceRange: 6000, options: ['콘센트 충분', '단체 방문 가능', '주차 가능'] },
+  { id: '3', name: '모노 커피', address: '서울 강남구 언주로 234', distance: 410, rating: 4.9, reviewCount: 87, tags: ['조용한', '카공'], mood: '조용한', priceRange: 8000, options: ['콘센트 충분', '조용', '시간제한 없음'] },
+  { id: '4', name: '카페 베이커리', address: '서울 강남구 역삼동 567', distance: 590, rating: 4.3, reviewCount: 342, tags: ['가성비'], mood: '아늑한', priceRange: 5500, options: ['조용', '내부 화장실'] },
+  { id: '5', name: '브런치 팩토리', address: '서울 강남구 선릉로 890', distance: 720, rating: 4.6, reviewCount: 156, tags: ['두쫀쿠'], mood: '따뜻한', priceRange: 9000, options: ['단체 방문 가능', '반려동물 동반 가능'] },
+  { id: '6', name: '더 로스터리', address: '서울 강남구 도곡로 321', distance: 950, rating: 4.7, reviewCount: 98, tags: ['카공', '버터떡'], mood: '빈티지', priceRange: 10000, options: ['시간제한 없음', '주차 가능', '콘센트 충분'] },
 ];
 
-const PANEL_COLLAPSED = 320;
 // GPS 권한 상태는 SDK getCurrentLocation.getPermission() 으로 관리
 
 // ── 아이콘 ────────────────────────────────
@@ -132,7 +136,7 @@ function SortPopup({
 }
 
 // ── 카페 목록 행 ──────────────────────────
-function CafeRow({ cafe, onTap, onFavoriteAdded }: { cafe: Cafe; onTap: () => void; onFavoriteAdded?: () => void }) {
+function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => void; onFavoriteChange?: (type: 'added' | 'removed', cafe: Cafe) => void }) {
   const fmtDist = (m: number) => (m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`);
   const { isFavorited, addFavorite, removeFavorite } = useFavorites();
   const favorited = isFavorited(cafe.id);
@@ -141,6 +145,7 @@ function CafeRow({ cafe, onTap, onFavoriteAdded }: { cafe: Cafe; onTap: () => vo
     e.stopPropagation();
     if (favorited) {
       removeFavorite(cafe.id);
+      onFavoriteChange?.('removed', cafe);
     } else {
       addFavorite({
         id: cafe.id,
@@ -150,7 +155,7 @@ function CafeRow({ cafe, onTap, onFavoriteAdded }: { cafe: Cafe; onTap: () => vo
         reviewCount: cafe.reviewCount,
         photos: [],
       });
-      onFavoriteAdded?.();
+      onFavoriteChange?.('added', cafe);
     }
   };
 
@@ -280,6 +285,7 @@ interface MapPageProps {
 }
 
 export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onStateChange }: MapPageProps) {
+  const { addFavorite } = useFavorites();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
   const touchStartYRef = useRef<number>(0);
@@ -309,14 +315,47 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('unknown');
   const [locSheet, setLocSheet] = useState<LocationSheetType | null>(null);
   const [gpsToast, setGpsToast] = useState(false); // GPS 신호 실패 토스트
-  const [saveToast, setSaveToast] = useState(false); // 모음집 저장 토스트
-  const showSaveToast = () => { setSaveToast(true); setTimeout(() => setSaveToast(false), 2000); };
+  const [favoriteSnackbar, setFavoriteSnackbar] = useState<'added' | 'removed' | null>(null);
+  const [snackbarDissolving, setSnackbarDissolving] = useState(false);
+  const snackbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dissolveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastRemovedCafeRef = useRef<Cafe | null>(null);
 
-  // 카테고리 필터 + 정렬 적용
+  const showFavoriteSnackbar = (type: 'added' | 'removed') => {
+    if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+    if (dissolveTimerRef.current) clearTimeout(dissolveTimerRef.current);
+    setSnackbarDissolving(false);
+    setFavoriteSnackbar(type);
+    snackbarTimerRef.current = setTimeout(() => {
+      setSnackbarDissolving(true);
+      dissolveTimerRef.current = setTimeout(() => {
+        setFavoriteSnackbar(null);
+        setSnackbarDissolving(false);
+      }, 700);
+    }, 3000);
+  };
+
+  // 카테고리 필터 + appliedFilters + 정렬 적용
   const cafes = (() => {
-    const filtered = activeChip
+    let filtered = activeChip
       ? MOCK_CAFES.filter(c => c.tags.includes(activeChip))
       : [...MOCK_CAFES];
+
+    // 분위기 필터
+    if (appliedFilters.moods.length > 0) {
+      filtered = filtered.filter(c => appliedFilters.moods.includes(c.mood));
+    }
+    // 가격대 필터
+    if (appliedFilters.priceMax < DEFAULT_FILTERS.priceMax) {
+      filtered = filtered.filter(c => c.priceRange <= appliedFilters.priceMax);
+    }
+    // 옵션 필터 (선택된 모든 옵션을 카페가 보유해야 함)
+    if (appliedFilters.options.length > 0) {
+      filtered = filtered.filter(c =>
+        appliedFilters.options.every(opt => c.options.includes(opt))
+      );
+    }
+
     if (sortType === '평점순') return filtered.slice().sort((a, b) => b.rating - a.rating);
     if (sortType === '거리순') return filtered.slice().sort((a, b) => a.distance - b.distance);
     return filtered; // 조회순: 기본 순서
@@ -436,7 +475,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
     }
   };
 
-  const panelBottomValue = panelExpanded ? 'calc(72vh + 12px)' : `${PANEL_COLLAPSED + 12}px`;
+  const panelBottomValue = panelExpanded ? 'calc(72vh + 12px)' : 'calc(50vh + 12px)';
 
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
@@ -563,7 +602,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           zIndex: 10,
           background: '#f3f3f3',
           borderRadius: '16px 16px 0 0',
-          height: panelExpanded ? '72vh' : `${PANEL_COLLAPSED}px`,
+          height: panelExpanded ? '72vh' : '50vh',
           transition: 'height 0.3s ease',
           display: 'flex',
           flexDirection: 'column',
@@ -666,7 +705,17 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           }}
         >
           {cafes.length > 0 ? (
-            cafes.map(cafe => <CafeRow key={cafe.id} cafe={cafe} onTap={() => onDetailOpen(cafe.id)} onFavoriteAdded={showSaveToast} />)
+            cafes.map(cafe => (
+            <CafeRow
+              key={cafe.id}
+              cafe={cafe}
+              onTap={() => onDetailOpen(cafe.id)}
+              onFavoriteChange={(type, changedCafe) => {
+                if (type === 'removed') lastRemovedCafeRef.current = changedCafe;
+                showFavoriteSnackbar(type);
+              }}
+            />
+          ))
           ) : (
             <div
               style={{
@@ -715,7 +764,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
       {/* ── GPS 실패 토스트 ── */}
       <div style={{
         position: 'absolute',
-        bottom: `${PANEL_COLLAPSED + 20}px`,
+        bottom: 'calc(50vh + 20px)',
         left: '50%',
         transform: `translateX(-50%) translateY(${gpsToast ? 0 : 12}px)`,
         opacity: gpsToast ? 1 : 0,
@@ -733,26 +782,85 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         현재 위치를 가져오지 못했어요. 다시 시도해주세요
       </div>
 
-      {/* ── 저장 완료 토스트 ── */}
-      <div style={{
-        position: 'absolute',
-        bottom: `${PANEL_COLLAPSED + 20}px`,
-        left: '50%',
-        transform: `translateX(-50%) translateY(${saveToast ? 0 : 12}px)`,
-        opacity: saveToast ? 1 : 0,
-        transition: 'opacity 0.2s, transform 0.2s',
-        background: '#191F28',
-        color: 'white',
-        borderRadius: 8,
-        padding: '9px 16px',
-        fontSize: 13,
-        fontWeight: 500,
-        whiteSpace: 'nowrap',
-        zIndex: 350,
-        pointerEvents: 'none',
-      }}>
-        모음집에 저장되었어요
-      </div>
+      {/* ── 모음집 저장/제거 스낵바 ── */}
+      {favoriteSnackbar === 'added' && (
+        <div style={{
+          position: 'absolute', bottom: 76, left: '50%',
+          transform: `translateX(-50%) translateY(${!snackbarDissolving ? 0 : 12}px)`,
+          opacity: snackbarDissolving ? 0 : 1,
+          transition: snackbarDissolving ? 'opacity 0.7s ease, transform 0.7s ease' : 'opacity 0.25s, transform 0.25s',
+          width: 319, height: 59, borderRadius: 9999,
+          background: '#FDFDFE',
+          display: 'flex', alignItems: 'center',
+          paddingLeft: 16, paddingRight: 16, gap: 12,
+          zIndex: 350, pointerEvents: 'auto',
+          boxSizing: 'border-box',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+        }}>
+          <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CheckConfirmIcon width={24} height={24} />
+          </div>
+          <span style={{ flex: 1, fontSize: 15, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
+            카페를 모음집에 담았어요
+          </span>
+          <button
+            onClick={() => {
+              if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+              if (dissolveTimerRef.current) clearTimeout(dissolveTimerRef.current);
+              setFavoriteSnackbar(null);
+              setSnackbarDissolving(false);
+            }}
+            style={{
+              width: 72, height: 31, borderRadius: 100, flexShrink: 0,
+              background: 'rgba(0,25,54,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>확인</span>
+          </button>
+        </div>
+      )}
+      {favoriteSnackbar === 'removed' && (
+        <div style={{
+          position: 'absolute', bottom: 76, left: '50%',
+          transform: `translateX(-50%) translateY(${!snackbarDissolving ? 0 : 12}px)`,
+          opacity: snackbarDissolving ? 0 : 1,
+          transition: snackbarDissolving ? 'opacity 0.7s ease, transform 0.7s ease' : 'opacity 0.25s, transform 0.25s',
+          width: 333, height: 59, borderRadius: 9999,
+          background: '#FDFDFE',
+          display: 'flex', alignItems: 'center',
+          paddingLeft: 16, paddingRight: 16, gap: 12,
+          zIndex: 350, pointerEvents: 'auto',
+          boxSizing: 'border-box',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+        }}>
+          <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <SnackbarCloseIcon width={24} height={24} />
+          </div>
+          <span style={{ flex: 1, fontSize: 15, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
+            카페를 모음집에서 꺼냈어요
+          </span>
+          <button
+            onClick={() => {
+              if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+              if (dissolveTimerRef.current) clearTimeout(dissolveTimerRef.current);
+              const cafe = lastRemovedCafeRef.current;
+              if (cafe) {
+                addFavorite({ id: cafe.id, name: cafe.name, address: cafe.address, rating: cafe.rating, reviewCount: cafe.reviewCount, photos: [] });
+              }
+              setFavoriteSnackbar(null);
+              setSnackbarDissolving(false);
+            }}
+            style={{
+              width: 72, height: 31, borderRadius: 100, flexShrink: 0,
+              background: 'rgba(0,25,54,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>되돌리기</span>
+          </button>
+        </div>
+      )}
 
     </div>
   );

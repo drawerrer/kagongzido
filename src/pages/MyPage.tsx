@@ -107,19 +107,15 @@ const MOCK_REVIEWS: ReviewItem[] = [
 // ─────────────────────────────────────────────────────────────
 
 
-/** 서브페이지 헤더: ···|X + 하단 타이틀 섹션 (백버튼은 공통 내비게이션 바 사용) */
+/** 서브페이지 백버튼 핸들러 (TDS 네비바가 시각적 헤더 담당) */
 function SubHeader({
-  title,
   onBack,
-  onMore,
-  onClose,
 }: {
-  title: string;
+  title?: string;
   onBack: () => void;
   onMore?: () => void;
   onClose?: () => void;
 }) {
-  // 공통 내비게이션 백버튼 → onBack 연결
   useEffect(() => {
     try {
       return graniteEvent.addEventListener('backEvent', {
@@ -129,55 +125,7 @@ function SubHeader({
     } catch { return undefined; }
   }, [onBack]);
 
-  return (
-    <>
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        padding: '12px 16px',
-        background: '#f3f3f3',
-        flexShrink: 0,
-      }}>
-        <div style={{ flex: 1 }} />
-        {(onMore || onClose) && (
-          <div style={{
-            display: 'flex', alignItems: 'center',
-            background: 'rgba(0,23,51,0.02)', borderRadius: 99, overflow: 'hidden', height: 34,
-          }}>
-            {onMore && (
-              <button onClick={onMore} style={{
-                width: 40, height: 34,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 15, color: '#4E5968', letterSpacing: 1,
-              }}>···</button>
-            )}
-            {onMore && onClose && <div style={{ width: 1, height: 14, background: '#D1D6DB' }} />}
-            {onClose && (
-              <button onClick={onClose} style={{
-                width: 36, height: 34,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M1 1L11 11M11 1L1 11" stroke="#4E5968" strokeWidth="1.8" strokeLinecap="round" />
-                </svg>
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-      {/* 타이틀 섹션 */}
-      <div style={{
-        height: 46,
-        background: '#f3f3f3',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
-        borderBottom: '1px solid #F2F4F6',
-      }}>
-        <span style={{ fontWeight: 510, fontSize: 14, color: '#000000', lineHeight: '25.5px' }}>
-          {title}
-        </span>
-      </div>
-    </>
-  );
+  return null;
 }
 
 /** 카페 2-컬럼 그리드 카드 */
@@ -930,10 +878,10 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
                       onClick={() => toggleChip(category, opt)}
                       style={{
                         flex: 1, height: 40, borderRadius: 20,
-                        border: isSel ? '1.5px solid #252525' : '1.5px solid #E7E8EB',
-                        background: isSel ? '#EBEBEB' : '#E7E8EB',
+                        border: 'none',
+                        background: isSel ? '#252525' : '#E7E8EB',
                         fontSize: 14, fontWeight: isSel ? 700 : 400,
-                        color: isSel ? '#252525' : '#6B7684',
+                        color: isSel ? '#ffffff' : '#6B7684',
                         cursor: 'pointer', transition: 'all 0.15s',
                       }}
                     >

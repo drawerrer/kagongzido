@@ -324,13 +324,6 @@ function getStatusInfo(cafe: CafeDetailData): { label: string; color: string } {
 }
 
 // ────────── 아이콘 컴포넌트 ──────────────────────────────────
-function BackIcon({ color = '#191F28' }: { color?: string }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  );
-}
 
 function HeartIcon({ filled: _filled, color = '#181E28' }: { filled: boolean; color?: string }) {
   return (
@@ -999,6 +992,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   heartHandlerRef.current = () => {
     if (isFavorited(cafeId)) {
       removeFavorite(cafeId);
+      showFavoriteSnackbar('removed');
     } else {
       addFavorite({
         id: cafe.id,
@@ -1008,6 +1002,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         reviewCount: cafe.reviews.length,
         photos: cafe.photos ?? [],
       });
+      showFavoriteSnackbar('added');
     }
   };
   useEffect(() => {

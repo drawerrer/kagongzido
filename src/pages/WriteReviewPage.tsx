@@ -44,7 +44,7 @@ type EvalState = Partial<Record<CategoryId, string>>;
 type PageState = 'form' | 'loading' | 'success' | 'fail';
 
 // ────────── 메인 컴포넌트 ────────────────────────────────────
-export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose, onReviewSubmitted }: WriteReviewPageProps) {
+export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose: _onClose, onReviewSubmitted }: WriteReviewPageProps) {
   const [pageState, setPageState] = useState<PageState>('form');
   const [evalState, setEvalState] = useState<EvalState>({});
   const [photos, setPhotos] = useState<string[]>([]); // gradient strings (mock)
@@ -61,10 +61,6 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose,
   const handleBack = () => {
     if (hasContent) { setShowDiscardDialog(true); } else { onBack(); }
   };
-  const handleClose = () => {
-    if (hasContent) { setShowDiscardDialog(true); } else { onClose(); }
-  };
-
   // 공통 내비게이션 백버튼 → handleBack 연결
   useEffect(() => {
     try {
@@ -256,29 +252,6 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose,
       background: '#f3f3f3', position: 'relative',
     }}>
 
-      {/* ── 헤더 ── */}
-      <header style={{
-        display: 'flex', alignItems: 'center',
-        height: 60, padding: '0 4px',
-        background: '#f3f3f3',
-        flexShrink: 0,
-      }}>
-        <div style={{ flex: 1 }} />
-
-        {/* 닫기 */}
-        <button
-          onClick={handleClose}
-          style={{
-            width: 44, height: 44,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M4 4L16 16M16 4L4 16" stroke="#6B7684" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </button>
-      </header>
-
       {/* ── 스크롤 영역 ── */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 100 }}>
 
@@ -339,9 +312,9 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose,
                         flex: 1,
                         height: 40,
                         borderRadius: 20,
-                        border: isSelected ? '1.5px solid #252525' : '1.5px solid #E7E8EB',
-                        background: isSelected ? '#EBEBEB' : '#E7E8EB',
-                        color: isSelected ? '#252525' : 'rgba(3,18,40,0.7)',
+                        border: 'none',
+                        background: isSelected ? '#252525' : '#E7E8EB',
+                        color: isSelected ? '#ffffff' : 'rgba(3,18,40,0.7)',
                         fontSize: 14,
                         fontWeight: isSelected ? 700 : 400,
                         transition: 'all 0.15s',
