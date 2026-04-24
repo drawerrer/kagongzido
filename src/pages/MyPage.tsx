@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { graniteEvent } from '@apps-in-toss/web-framework';
+import { graniteEvent, fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
 import { useFavorites } from '../context/FavoritesContext';
 
 // ─────────────────────────────────────────────────────────────
@@ -785,9 +785,9 @@ const MOCK_CAFE_SEARCH = [
 ];
 
 const CHIP_OPTIONS: Record<string, string[]> = {
-  콘센트: ['부족해요', '적당해요', '넉넉해요'],
-  좌석: ['불편해요', '적당해요', '편안해요'],
-  소음: ['시끄러워요', '적당해요', '조용해요'],
+  콘센트: ['부족', '적당', '넉넉'],
+  좌석: ['불편', '적당', '편안'],
+  소음: ['시끄러움', '적당', '조용'],
 };
 
 function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => void; onClose: () => void }) {
@@ -796,6 +796,7 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
   const [chips, setChips] = useState<Record<string, string>>({});
   const [reviewText, setReviewText] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
+  const [showPhotoSheet, setShowPhotoSheet] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const results = query.trim()
@@ -916,10 +917,10 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
         <div style={{ height: 1, background: 'rgba(0,27,55,0.1)' }} />
 
         {/* 편의시설 칩 */}
-        <div style={{ padding: '20px 16px', background: '#f3f3f3' }}>
+        <div style={{ padding: '24px 20px 0', background: '#f3f3f3' }}>
           {Object.entries(CHIP_OPTIONS).map(([category, options]) => (
             <div key={category} style={{ marginBottom: 20 }}>
-              <span style={{ display: 'block', fontSize: 14, fontWeight: 590, color: '#000000', lineHeight: '25.5px', marginBottom: 8 }}>{category}</span>
+              <p style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#000000', marginBottom: 10, margin: '0 0 10px 0' }}>{category}</p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {options.map(opt => {
                   const isSel = chips[category] === opt;
@@ -949,15 +950,15 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
         <div style={{ height: 1, background: 'rgba(0,27,55,0.1)' }} />
 
         {/* 사진 첨부 */}
-        <div style={{ padding: '20px 16px', background: '#f3f3f3' }}>
+        <div style={{ padding: '20px 20px 0', background: '#f3f3f3' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <span style={{ fontSize: 14, fontWeight: 590, color: '#000000', lineHeight: '25.5px' }}>사진 첨부</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#000000' }}>사진 첨부</span>
             <span style={{ fontSize: 13, color: '#B0B8C1' }}>{photos.length}/5</span>
           </div>
           <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
             {photos.length < 5 && (
               <button
-                onClick={() => setPhotos(p => [...p, ''])}
+                onClick={() => setShowPhotoSheet(true)}
                 style={{
                   width: 80, height: 80, borderRadius: 10, flexShrink: 0,
                   border: '1.5px dashed #C9CDD2', background: '#F3F3F3',
@@ -970,31 +971,73 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
                 <span style={{ fontSize: 11, color: '#B0B8C1' }}>사진 추가</span>
               </button>
             )}
-            {photos.map((_, i) => (
-              <div key={i} style={{ width: 80, height: 80, borderRadius: 10, background: '#e5e8eb', flexShrink: 0 }} />
+            {photos.map((uri, i) => (
+              <img key={i} src={uri} alt="" style={{ width: 80, height: 80, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
             ))}
           </div>
         </div>
 
+        {/* 사진 선택 바텀시트 */}
+        {showPhotoSheet && (
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}
+            onClick={() => setShowPhotoSheet(false)}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{ background: '#fff', borderRadius: '16px 16px 0 0', padding: '20px 20px calc(env(safe-area-inset-bottom, 0px) + 20px)' }}
+            >
+              <button
+                onClick={async () => {
+                  try {
+                    const remaining = 5 - photos.length;
+                    const results = await fetchAlbumPhotos({ maxCount: remaining, maxWidth: 1024, base64: true });
+                    const uris = results.map(r => 'data:image/jpeg;base64,' + r.dataUri);
+                    setPhotos(prev => [...prev, ...uris].slice(0, 5));
+                  } catch {}
+                  setShowPhotoSheet(false);
+                }}
+                style={{ width: '100%', height: 52, borderRadius: 12, background: '#f3f3f3', border: 'none', fontSize: 15, fontWeight: 600, color: '#252525', cursor: 'pointer', marginBottom: 8 }}
+              >
+                갤러리에서 선택
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const result = await openCamera({ base64: true, maxWidth: 1024 });
+                    const uri = 'data:image/jpeg;base64,' + result.dataUri;
+                    setPhotos(prev => [...prev, uri].slice(0, 5));
+                  } catch {}
+                  setShowPhotoSheet(false);
+                }}
+                style={{ width: '100%', height: 52, borderRadius: 12, background: '#f3f3f3', border: 'none', fontSize: 15, fontWeight: 600, color: '#252525', cursor: 'pointer' }}
+              >
+                카메라로 촬영
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* 리뷰 작성 */}
-        <div style={{ padding: '0 16px 20px', background: '#f3f3f3' }}>
+        <div style={{ padding: '20px', background: '#f3f3f3' }}>
           <div style={{
-            background: '#ffffff', border: '1px solid #d1d6db', borderRadius: 8,
-            height: 171, display: 'flex', flexDirection: 'column', padding: 12,
+            background: '#FAFBFC', border: '1.5px solid #E5E8EB', borderRadius: 12,
+            display: 'flex', flexDirection: 'column', padding: 14,
           }}>
             <textarea
               value={reviewText}
               onChange={e => setReviewText(e.target.value.slice(0, 200))}
               placeholder="카페에서 작업 또는 공부하면서 느낀 점을 기록해 보세요 (최소 10자 이상 입력)"
               maxLength={200}
+              rows={6}
               style={{
                 flex: 1, border: 'none', outline: 'none', resize: 'none',
-                background: 'transparent', fontSize: 13, fontWeight: 400,
-                color: '#000000', fontFamily: 'inherit', letterSpacing: -1, lineHeight: '18.2px',
+                background: 'transparent', fontSize: 14, fontWeight: 400,
+                color: '#000000', fontFamily: 'inherit', lineHeight: 1.6,
               }}
             />
             <div style={{ textAlign: 'right' }}>
-              <span style={{ fontSize: 9, fontWeight: 590, color: 'rgba(3,18,40,0.7)', lineHeight: '11.3px' }}>
+              <span style={{ fontSize: 13, fontWeight: 400, color: reviewText.length >= 10 ? '#252525' : '#B0B8C1' }}>
                 {reviewText.length}/200
               </span>
             </div>
@@ -1005,13 +1048,13 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
         {(() => {
           const canSubmit = reviewText.trim().length >= 10;
           return (
-            <div style={{ padding: '12px 16px 20px', background: '#f3f3f3' }}>
+            <div style={{ padding: '0 20px 20px', background: '#f3f3f3' }}>
               <button
                 disabled={!canSubmit}
                 style={{
-                  width: '100%', height: 38, borderRadius: 10,
+                  width: '100%', height: 52, borderRadius: 12,
                   background: canSubmit ? '#252525' : '#e5e8eb', border: 'none',
-                  fontSize: 15, fontWeight: 590,
+                  fontSize: 15, fontWeight: 600,
                   color: canSubmit ? '#ffffff' : '#b0b8c1',
                   cursor: canSubmit ? 'pointer' : 'not-allowed',
                   transition: 'background 0.15s, color 0.15s',
