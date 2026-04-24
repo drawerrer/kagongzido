@@ -285,9 +285,8 @@ function ReportedCafePage({
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
       <SubHeader title="제보한 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         <CafeGrid cafes={MOCK_REPORTED} onDetailOpen={onDetailOpen} />
-        <div style={{ height: 24 }} />
       </div>
     </div>
   );
@@ -317,7 +316,7 @@ function RecentCafePage({
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
       <SubHeader title="최근 본 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {cafes.length === 0 ? (
           <div style={{
             display: 'flex', flexDirection: 'column',
@@ -330,7 +329,6 @@ function RecentCafePage({
         ) : (
           <CafeGrid cafes={cafes} onDetailOpen={onDetailOpen} />
         )}
-        <div style={{ height: 24 }} />
       </div>
     </div>
   );
@@ -619,7 +617,7 @@ function WrittenReviewPage({
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative' }}>
       <SubHeader title="작성한 리뷰" onBack={onBack} onMore={() => {}} onClose={onClose} />
 
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {/* 총 개수 */}
         <div style={{ padding: '16px 20px 8px' }}>
           <p style={{ fontSize: 13, color: '#8B95A1' }}>
@@ -1098,7 +1096,7 @@ export default function MyPage({
       background: '#f3f3f3', position: 'relative', overflow: 'hidden',
     }}>
       {/* 스크롤 영역 */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {/* 프로필 */}
         <div style={{ padding: '24px', background: '#f3f3f3', display: 'flex', gap: 16, alignItems: 'center' }}>
           {/* 프로필 원형 60×60 */}
