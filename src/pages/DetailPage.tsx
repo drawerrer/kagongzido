@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { openURL, appLogin } from '@apps-in-toss/web-framework';
+import { openURL, appLogin, partner, tdsEvent } from '@apps-in-toss/web-framework';
 import CheckConfirmIcon from '../assets/icons/icon_check_confirm.svg?react';
 import SnackbarCloseIcon from '../assets/icons/icon_close.svg?react';
 // import { IconButton } from '@toss/tds-mobile';
@@ -983,6 +983,37 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   }, []);
   const [heroIdx, setHeroIdx] = useState(0);
   const heroScrollRef = useRef<HTMLDivElement>(null);
+
+  // ── 네비바 하트 아이콘 (카페 상세페이지 전용) ──────────────
+  const heartHandlerRef = useRef<() => void>(() => {});
+  heartHandlerRef.current = () => {
+    if (isFavorited(cafeId)) {
+      removeFavorite(cafeId);
+    } else {
+      addFavorite({
+        id: cafe.id,
+        name: cafe.name,
+        address: cafe.address,
+        rating: 0,
+        reviewCount: cafe.reviews.length,
+        photos: cafe.photos ?? [],
+      });
+    }
+  };
+  useEffect(() => {
+    try {
+      partner.addAccessoryButton({ id: 'heart', title: '하트', icon: { name: 'icon-heart-mono' } });
+      const cleanup = tdsEvent.addEventListener('navigationAccessoryEvent', {
+        onEvent: ({ id }: { id: string }) => { if (id === 'heart') heartHandlerRef.current(); },
+        onError: () => {},
+      });
+      return cleanup;
+    } catch {
+      return undefined;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [copyToastVisible, setCopyToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
