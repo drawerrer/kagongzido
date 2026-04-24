@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { graniteEvent } from '@apps-in-toss/web-framework';
 import { useFavorites } from '../context/FavoritesContext';
 
 // ─────────────────────────────────────────────────────────────
@@ -106,7 +107,7 @@ const MOCK_REVIEWS: ReviewItem[] = [
 // ─────────────────────────────────────────────────────────────
 
 
-/** 서브페이지 헤더: 뒤로가기 + ···|X (타이틀 없음) + 하단 타이틀 섹션 */
+/** 서브페이지 헤더: ···|X + 하단 타이틀 섹션 (백버튼은 공통 내비게이션 바 사용) */
 function SubHeader({
   title,
   onBack,
@@ -118,6 +119,16 @@ function SubHeader({
   onMore?: () => void;
   onClose?: () => void;
 }) {
+  // 공통 내비게이션 백버튼 → onBack 연결
+  useEffect(() => {
+    try {
+      return graniteEvent.addEventListener('backEvent', {
+        onEvent: () => onBack(),
+        onError: (err) => console.error(err),
+      });
+    } catch { return undefined; }
+  }, [onBack]);
+
   return (
     <>
       <div style={{
@@ -126,11 +137,6 @@ function SubHeader({
         background: '#f3f3f3',
         flexShrink: 0,
       }}>
-        <button onClick={onBack} style={{ marginRight: 8, padding: 4 }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15 18L9 12L15 6" stroke="#191F28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
         <div style={{ flex: 1 }} />
         {(onMore || onClose) && (
           <div style={{
@@ -279,9 +285,8 @@ function ReportedCafePage({
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
       <SubHeader title="제보한 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         <CafeGrid cafes={MOCK_REPORTED} onDetailOpen={onDetailOpen} />
-        <div style={{ height: 24 }} />
       </div>
     </div>
   );
@@ -311,7 +316,7 @@ function RecentCafePage({
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
       <SubHeader title="최근 본 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {cafes.length === 0 ? (
           <div style={{
             display: 'flex', flexDirection: 'column',
@@ -324,7 +329,6 @@ function RecentCafePage({
         ) : (
           <CafeGrid cafes={cafes} onDetailOpen={onDetailOpen} />
         )}
-        <div style={{ height: 24 }} />
       </div>
     </div>
   );
@@ -613,7 +617,7 @@ function WrittenReviewPage({
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative' }}>
       <SubHeader title="작성한 리뷰" onBack={onBack} onMore={() => {}} onClose={onClose} />
 
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {/* 총 개수 */}
         <div style={{ padding: '16px 20px 8px' }}>
           <p style={{ fontSize: 13, color: '#8B95A1' }}>
@@ -1092,7 +1096,7 @@ export default function MyPage({
       background: '#f3f3f3', position: 'relative', overflow: 'hidden',
     }}>
       {/* 스크롤 영역 */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {/* 프로필 */}
         <div style={{ padding: '24px', background: '#f3f3f3', display: 'flex', gap: 16, alignItems: 'center' }}>
           {/* 프로필 원형 60×60 */}

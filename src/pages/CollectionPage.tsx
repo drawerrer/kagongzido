@@ -678,13 +678,6 @@ export default function CollectionPage({
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0, position: 'relative',
       }}>
-        {import.meta.env.DEV && (
-          <button onClick={onBack} style={{
-            position: 'absolute', left: 8,
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 14, color: '#4E5968', padding: '8px',
-          }}>← 뒤로</button>
-        )}
         <span style={{
           fontWeight: 510, fontSize: 14,
           color: '#000000', lineHeight: '25.5px',

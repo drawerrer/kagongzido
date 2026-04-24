@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
+import { useState, useEffect } from 'react';
+import { fetchAlbumPhotos, openCamera, graniteEvent } from '@apps-in-toss/web-framework';
 import { insertReview } from '../services/db';
 
 // ────────── 타입 ─────────────────────────────────────────────
@@ -64,6 +64,17 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose,
   const handleClose = () => {
     if (hasContent) { setShowDiscardDialog(true); } else { onClose(); }
   };
+
+  // 공통 내비게이션 백버튼 → handleBack 연결
+  useEffect(() => {
+    try {
+      return graniteEvent.addEventListener('backEvent', {
+        onEvent: () => handleBack(),
+        onError: (err) => console.error(err),
+      });
+    } catch { return undefined; }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasContent]);
 
   // ── 칩 토글 ──────────────────────────────────────────────
   const toggleChip = (categoryId: CategoryId, option: string) => {
@@ -252,20 +263,6 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose,
         background: '#f3f3f3',
         flexShrink: 0,
       }}>
-        {/* 뒤로가기 */}
-        <button
-          onClick={handleBack}
-          style={{
-            width: 44, height: 44,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15 18L9 12L15 6" stroke="#191F28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-
-        {/* 우측 여백 (닫기 버튼 정렬용) */}
         <div style={{ flex: 1 }} />
 
         {/* 닫기 */}

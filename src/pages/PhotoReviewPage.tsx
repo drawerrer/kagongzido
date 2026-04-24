@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { graniteEvent } from '@apps-in-toss/web-framework';
 import BottomSheet from '../components/BottomSheet';
 
 // ────────── 타입 ─────────────────────────────────────────────
@@ -110,6 +111,16 @@ function PhotoDetailView({
 
   const photo = authorPhotos[0];
 
+  // 공통 내비게이션 백버튼 → onBack 연결
+  useEffect(() => {
+    try {
+      return graniteEvent.addEventListener('backEvent', {
+        onEvent: () => onBack(),
+        onError: (err) => console.error(err),
+      });
+    } catch { return undefined; }
+  }, [onBack]);
+
   const toggleLike = () => {
     setLiked(l => {
       setLikeCount(c => c + (l ? -1 : 1));
@@ -141,9 +152,6 @@ function PhotoDetailView({
         padding: '12px 16px', flexShrink: 0, background: '#f3f3f3',
         borderBottom: '1px solid #F2F4F6',
       }}>
-        <button onClick={onBack} style={hdrBtn}>
-          <BackIcon />
-        </button>
         <div style={{ flex: 1 }} />
         {/* 하트 pill: 44×34, r=99 */}
         <button

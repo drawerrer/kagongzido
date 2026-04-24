@@ -3,12 +3,15 @@
 export default defineConfig({
   appName: 'cafeindex-test',
   web: {
-    host: '172.16.11.248',
+    host: '172.28.58.170',
     port: 3000,
     commands: {
       dev: 'rsbuild dev --host 0.0.0.0',
       build: 'rsbuild build',
     },
+  },
+  navigationBar: {
+    withBackButton: true,
   },
   permissions: [{ name: 'geolocation', access: 'access' }],
   outdir: 'dist',

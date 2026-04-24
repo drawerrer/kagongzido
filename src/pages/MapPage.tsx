@@ -658,7 +658,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
 
         {/* 카페 목록 — 스크롤 시 패널 자동 펼침 */}
         <div
-          style={{ flex: 1, overflowY: 'auto' }}
+          style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
           onScroll={(e) => {
             if (!panelExpanded && e.currentTarget.scrollTop > 0) {
               setPanelExpanded(true);
