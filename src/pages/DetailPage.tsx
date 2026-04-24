@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { openURL, appLogin, partner, tdsEvent } from '@apps-in-toss/web-framework';
+import { openURL, appLogin, partner, tdsEvent, graniteEvent } from '@apps-in-toss/web-framework';
 import CheckConfirmIcon from '../assets/icons/icon_check_confirm.svg?react';
 import SnackbarCloseIcon from '../assets/icons/icon_close.svg?react';
 // import { IconButton } from '@toss/tds-mobile';
@@ -957,6 +957,16 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 공통 내비게이션 백버튼 → onBack 연결
+  useEffect(() => {
+    try {
+      return graniteEvent.addEventListener('backEvent', {
+        onEvent: () => onBack(),
+        onError: (err) => console.error(err),
+      });
+    } catch { return undefined; }
+  }, [onBack]);
+
   // 리뷰 섹션으로 자동 스크롤
   useEffect(() => {
     if (scrollToReview && reviewSectionRef.current && scrollRef.current) {
@@ -1175,15 +1185,6 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           transition: 'background 0.2s, border-bottom 0.2s',
         }}
       >
-        {/* ── 뒤로가기: 배경 없이 아이콘만 — Figma 스펙 */}
-        <button
-          onClick={onBack}
-          aria-label="뒤로가기"
-          style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-        >
-          <BackIcon color={scrolled ? '#191F28' : '#F9FAFB'} />
-        </button>
-
         <div style={{ flex: 1 }} />
 
         {/* ── 우측 버튼 그룹 */}
