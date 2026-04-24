@@ -325,31 +325,6 @@ function getStatusInfo(cafe: CafeDetailData): { label: string; color: string } {
 
 // ────────── 아이콘 컴포넌트 ──────────────────────────────────
 
-function HeartIcon({ filled: _filled, color = '#181E28' }: { filled: boolean; color?: string }) {
-  return (
-    // Figma 스펙: left 5.14% right 5.13% top 12.42% bottom 9.93% → x≈1.23~22.77, y≈2.98~21.62
-    // filled solid 하트 패스 (outline 제거)
-    <svg width="22" height="22" viewBox="0 0 24 24" fill={color}>
-      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-    </svg>
-  );
-}
-
-function MoreIcon({ color = '#6B7684' }: { color?: string }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill={color}>
-      <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
-    </svg>
-  );
-}
-
-function CloseIcon({ color = '#6B7684' }: { color?: string }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round">
-      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
 
 function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
@@ -1142,67 +1117,6 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden', background: '#f3f3f3' }}>
 
-      {/* ── 헤더 (스크롤 시 흰 배경으로 전환) ── */}
-      <header
-        style={{
-          position: 'absolute', top: 0, left: 0, right: 0,
-          zIndex: 100,
-          display: 'flex', alignItems: 'center',
-          padding: '12px 16px',
-          background: scrolled ? '#f3f3f3' : 'transparent',
-          borderBottom: scrolled ? '1px solid #F2F4F6' : 'none',
-          transition: 'background 0.2s, border-bottom 0.2s',
-        }}
-      >
-        <div style={{ flex: 1 }} />
-
-        {/* ── 우측 버튼 그룹 */}
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-
-          {/* 하트 pill: 44×34 r=99 + blur */}
-          <button
-            onClick={handleFavorite}
-            aria-label={isFavorite ? '저장됨' : '저장하기'}
-            style={{
-              width: 44, height: 34, borderRadius: 99, flexShrink: 0,
-              background: 'rgba(0,23,51,0.02)',
-              backdropFilter: scrolled ? undefined : 'blur(20px)',
-              WebkitBackdropFilter: scrolled ? undefined : 'blur(20px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <HeartIcon filled={isFavorite} color={isFavorite ? '#252525' : (scrolled ? '#697482' : '#F9FAFB')} />
-          </button>
-
-          {/* 더보기/닫기 pill — 양쪽 모두 93×34 합체 pill, 스크롤 전은 blur+흰 아이콘 추가 */}
-          <div style={{ position: 'relative' }}>
-            <div style={{
-              width: 93, height: 34, borderRadius: 99,
-              background: 'rgba(0,23,51,0.02)',
-              backdropFilter: scrolled ? undefined : 'blur(20px)',
-              WebkitBackdropFilter: scrolled ? undefined : 'blur(20px)',
-              display: 'flex', alignItems: 'center', overflow: 'hidden',
-            }}>
-              {/* 배포 시 바텀시트 연결 예정 */}
-              <button
-                aria-label="더보기"
-                style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', cursor: 'default' }}
-              >
-                <MoreIcon color={scrolled ? '#697482' : '#F9FAFB'} />
-              </button>
-              {/* 구분선: 1×16 rgba(0,27,55,0.1) */}
-              <div style={{ width: 1, height: 16, background: 'rgba(0,27,55,0.1)', flexShrink: 0 }} />
-              <button
-                onClick={onClose}
-                aria-label="닫기"
-                style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}
-              >
-                <CloseIcon color={scrolled ? 'rgba(0,19,43,0.58)' : '#F9FAFB'} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* ── 스크롤 시 노출되는 상단 info 고정 패널 ── */}
       <div style={{
