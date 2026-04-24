@@ -537,7 +537,10 @@ function GuideBookDetailView({
                   justifyContent: 'center',
                   padding: '0 16px',
                   backgroundColor: '#f2f4f6',
+                  overflow: 'hidden',
                 }}>
+                  {/* 비활성 카드는 텍스트/버튼 숨김 */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', visibility: isActive ? 'visible' : 'hidden' }}>
                   <p style={{ fontWeight: 510, fontSize: 12, color: '#6b7684', textAlign: 'center', lineHeight: '22.5px', marginBottom: 12 }}>
                     {s.district}
                   </p>
@@ -574,7 +577,7 @@ function GuideBookDetailView({
                       <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{s.outlet}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, pointerEvents: isActive ? 'auto' : 'none' }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
                     {(['길찾기', '리뷰보기', '저장하기'] as const).map((label) => (
                       <button
                         key={label}
@@ -601,6 +604,7 @@ function GuideBookDetailView({
                       </button>
                     ))}
                   </div>
+                  </div>{/* visibility wrapper */}
                 </div>
               </div>
             );
