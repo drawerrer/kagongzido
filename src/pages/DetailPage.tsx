@@ -1123,7 +1123,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
       {/* ── 스크롤 시 노출되는 상단 info 고정 패널 ── */}
       <div style={{
-        position: 'absolute', top: 60, left: 0, right: 0,
+        position: 'absolute', top: 0, left: 0, right: 0,
         zIndex: 98,
         background: '#f3f3f3',
         padding: '10px 20px 14px',
