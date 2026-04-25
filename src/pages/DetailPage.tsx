@@ -961,7 +961,10 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         onEvent: ({ id }: { id: string }) => { if (id === 'heart') heartHandlerRef.current(); },
         onError: () => {},
       });
-      return cleanup;
+      return () => {
+        try { partner.removeAccessoryButton(); } catch { /* noop */ }
+        cleanup?.();
+      };
     } catch {
       return undefined;
     }
