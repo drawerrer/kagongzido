@@ -416,7 +416,7 @@ function StoreCard({
   onPhotoMore?: () => void;
   onHandleDrag?: (e: React.PointerEvent<HTMLDivElement>) => void;
 }) {
-  const placeholderColors = ['#D4C4B0', '#C4B4A0', '#B4A490', '#A49480'];
+  const placeholderColors = ['#E8EDF4', '#E8EDF4', '#E8EDF4', '#E8EDF4'];
 
   return (
     <div
