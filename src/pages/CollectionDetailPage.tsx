@@ -253,9 +253,7 @@ function AddStoreSheet({
                         {store.address}
                       </p>
                       <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
-                        {store.distance !== undefined
-                          ? `${store.distance < 1000 ? `${store.distance}m` : `${(store.distance / 1000).toFixed(1)}km`} · 리뷰 ${store.reviewCount.toLocaleString()}`
-                          : `리뷰 ${store.reviewCount.toLocaleString()}`}
+                        {`리뷰 ${store.reviewCount.toLocaleString()}`}
                       </span>
                     </div>
                     {/* 체크 서클 */}
@@ -470,9 +468,7 @@ function StoreCard({
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
-                  {store.distance !== undefined
-                    ? `${store.distance < 1000 ? `${store.distance}m` : `${(store.distance / 1000).toFixed(1)}km`} · 리뷰 ${store.reviewCount.toLocaleString()}`
-                    : `리뷰 ${store.reviewCount.toLocaleString()}`}
+                  {`리뷰 ${store.reviewCount.toLocaleString()}`}
                 </span>
                 {store.timeLimit && (
                   <div style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: 'rgba(0,27,55,0.1)', borderRadius: 9, padding: '3px 7px' }}>

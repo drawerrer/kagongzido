@@ -227,8 +227,6 @@ function StoreCard({
   onRemoveFavorite?: () => void;
   onPhotoMore?: () => void;
 }) {
-  const fmtDist = (m: number) => m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`;
-
   return (
     <div
       onClick={isEditMode ? onSelect : onPress}
@@ -273,19 +271,41 @@ function StoreCard({
 
         {/* 텍스트 콘텐츠 */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* 이름 + 하트/드래그 (상단 고정) */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 2 }}>
-            <p style={{
-              fontWeight: 700, fontSize: 17,
-              lineHeight: '22.95px', color: 'rgba(0,12,30,0.8)',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              flex: 1, marginRight: 8,
-            }}>{store.name}</p>
+          {/* Info + 아이콘 */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{
+                fontWeight: 700, fontSize: 17,
+                lineHeight: '22.95px', color: 'rgba(0,12,30,0.8)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                marginBottom: 2,
+              }}>{store.name}</p>
+
+              <p style={{
+                fontWeight: 510, fontSize: 13,
+                lineHeight: '17.55px', color: 'rgba(0,19,43,0.58)',
+                marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>{store.address}</p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
+                  {`리뷰 ${store.reviewCount.toLocaleString()}`}
+                </span>
+                {store.badge && (
+                  <span style={{
+                    fontWeight: 590, fontSize: 10, lineHeight: '15px',
+                    color: 'rgba(3,18,40,0.7)',
+                    backgroundColor: 'rgba(0,27,55,0.1)',
+                    borderRadius: 9, padding: '3px 7px',
+                  }}>{store.badge}</span>
+                )}
+              </div>
+            </div>
 
             {onHandlePointerDown ? (
               <div
                 onPointerDown={onHandlePointerDown}
-                style={{ width: 44, height: 44, flexShrink: 0, marginTop: -11, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab', touchAction: 'none' }}
+                style={{ width: 44, height: 44, flexShrink: 0, marginLeft: 4, marginTop: -11, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab', touchAction: 'none' }}
               >
                 <IcArrowUpDown width={22} height={22} style={{ color: 'rgba(0,29,58,0.18)' }} />
               </div>
@@ -294,7 +314,7 @@ function StoreCard({
                 type="button"
                 aria-label="즐겨찾기 해제"
                 onClick={(e) => { e.stopPropagation(); onRemoveFavorite?.(); }}
-                style={{ width: 44, height: 44, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: -11 }}
+                style={{ width: 44, height: 44, flexShrink: 0, marginLeft: 4, marginTop: -11, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
                   <path fillRule="evenodd" clipRule="evenodd"
@@ -304,30 +324,6 @@ function StoreCard({
                 </svg>
               </button>
             ) : null}
-          </div>
-
-          {/* 주소 */}
-          <p style={{
-            fontWeight: 510, fontSize: 13,
-            lineHeight: '17.55px', color: 'rgba(0,19,43,0.58)',
-            marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{store.address}</p>
-
-          {/* 거리 · 리뷰 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 12 }}>
-            <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
-              {store.distance !== undefined
-                ? `${fmtDist(store.distance)} · 리뷰 ${store.reviewCount.toLocaleString()}`
-                : `리뷰 ${store.reviewCount.toLocaleString()}`}
-            </span>
-            {store.badge && (
-              <span style={{
-                fontWeight: 590, fontSize: 10, lineHeight: '15px',
-                color: 'rgba(3,18,40,0.7)',
-                backgroundColor: 'rgba(0,27,55,0.1)',
-                borderRadius: 9, padding: '3px 7px',
-              }}>{store.badge}</span>
-            )}
           </div>
 
           {/* 이미지 10장 — 가로 스크롤 */}
