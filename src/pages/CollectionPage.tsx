@@ -311,19 +311,11 @@ function StoreCard({
             marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{store.address}</p>
 
-          {/* 별점 + 뱃지 */}
+          {/* 리뷰 + 뱃지 */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="#FBBC04">
-                <path d="M8 1.5l1.647 3.337 3.682.535-2.664 2.597.629 3.666L8 9.75l-3.294 1.885.629-3.666L2.671 5.372l3.682-.535L8 1.5z"/>
-              </svg>
-              <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
-                {store.rating}
-              </span>
-              <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
-                ({store.reviewCount.toLocaleString()})
-              </span>
-            </div>
+            <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
+              리뷰 ({store.reviewCount.toLocaleString()})
+            </span>
             {store.badge && (
               <span style={{
                 fontWeight: 590, fontSize: 10, lineHeight: '15px',
