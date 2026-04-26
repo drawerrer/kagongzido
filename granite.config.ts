@@ -3,7 +3,7 @@
 export default defineConfig({
   appName: 'cafeindex-test',
   web: {
-    host: '172.28.58.170',
+    host: '172.16.11.220',
     port: 3000,
     commands: {
       dev: 'rsbuild dev --host 0.0.0.0',
