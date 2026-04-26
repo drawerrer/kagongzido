@@ -442,7 +442,7 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
       {/* ── 하단 고정: 제출 버튼 ── */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        padding: '12px 20px 24px',
+        padding: `12px 20px calc(env(safe-area-inset-bottom, 0px) + 24px)`,
         background: '#f3f3f3',
         borderTop: '1px solid #F2F4F6',
       }}>
