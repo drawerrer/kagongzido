@@ -282,7 +282,7 @@ function StoreCard({
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{
-                fontWeight: 700, fontSize: 17,
+                fontWeight: 700, fontSize: 16,
                 lineHeight: '22.95px', color: '#191F28',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 marginBottom: 2,
