@@ -480,8 +480,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
         {/* ── 하단 고정: 초기화 + 적용하기 버튼 ── */}
         <div
           style={{
-            height: 90,
-            padding: '34px 20px 0',
+            padding: `16px 20px calc(env(safe-area-inset-bottom, 0px) + 16px)`,
             background: '#f3f3f3',
             display: 'flex',
             gap: 10,
