@@ -154,6 +154,7 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
         rating: cafe.rating,
         reviewCount: cafe.reviewCount,
         photos: [],
+        distance: cafe.distance,
       });
       onFavoriteChange?.('added', cafe);
     }

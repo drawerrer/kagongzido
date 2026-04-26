@@ -17,6 +17,7 @@ interface Store {
   reviewCount: number;
   badge?: string;
   photos?: string[];
+  distance?: number;
 }
 
 type BottomSheetType = null | 'create' | 'select-collection' | 'rename' | 'col-action';
@@ -311,10 +312,23 @@ function StoreCard({
             marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{store.address}</p>
 
+          {/* 거리 */}
+          {store.distance !== undefined && (
+            <p style={{
+              fontWeight: 510, fontSize: 13,
+              lineHeight: '17.55px', color: 'rgba(0,19,43,0.58)',
+              marginBottom: 4,
+            }}>
+              {store.distance < 1000
+                ? `${store.distance}m`
+                : `${(store.distance / 1000).toFixed(1)}km`}
+            </p>
+          )}
+
           {/* 리뷰 + 뱃지 */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 12 }}>
             <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
-              리뷰 ({store.reviewCount.toLocaleString()})
+              리뷰 {store.reviewCount.toLocaleString()}
             </span>
             {store.badge && (
               <span style={{
