@@ -193,13 +193,13 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
         style={{
           flex: 1,
           display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
           minWidth: 0,
         }}
       >
-        {/* 이름 + 하트 (컬렉션 카드와 동일하게 상단 고정) */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        {/* 텍스트 블록 (이름·주소·거리·배지) */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <p
             style={{
               fontSize: 15,
@@ -208,63 +208,62 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              flex: 1,
-              marginRight: 8,
             }}
           >
             {cafe.name}
           </p>
-          <button
-            onClick={handleHeartClick}
+          <p
             style={{
-              width: 44, height: 44,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'none', border: 'none', cursor: 'pointer',
-              flexShrink: 0, marginTop: -11,
+              fontSize: 12,
+              color: '#6B7684',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path
-                fillRule="evenodd" clipRule="evenodd"
-                d="M10.9038 21.2884C11.5698 21.7284 12.4288 21.7284 13.0938 21.2884C15.2088 19.8924 19.8138 16.5554 21.7978 12.8214C24.4128 7.89542 21.3418 2.98242 17.2818 2.98242C14.9678 2.98242 13.5758 4.19142 12.8058 5.23042C12.4818 5.67542 11.8588 5.77442 11.4128 5.45042C11.3278 5.38942 11.2538 5.31442 11.1928 5.23042C10.4228 4.19142 9.03076 2.98242 6.71676 2.98242C2.65676 2.98242 -0.414244 7.89542 2.20176 12.8214C4.18376 16.5554 8.79076 19.8924 10.9038 21.2884Z"
-                fill={favorited ? '#252525' : '#D1D6DB'}
-              />
-            </svg>
-          </button>
+            {cafe.address}
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12, color: '#6B7684' }}>
+              {fmtDist(cafe.distance)} · 리뷰 {cafe.reviewCount}
+            </span>
+          </div>
+          {/* 배지 */}
+          {cafe.tags[0] && (
+            <span
+              style={{
+                display: 'inline-block',
+                padding: '2px 8px',
+                background: '#F2F4F6',
+                borderRadius: 4,
+                fontSize: 11,
+                color: '#4E5968',
+                alignSelf: 'flex-start',
+              }}
+            >
+              {cafe.tags[0]}
+            </span>
+          )}
         </div>
 
-        <p
+        {/* 하트 — 전체 블록 옆 고정 */}
+        <button
+          onClick={handleHeartClick}
           style={{
-            fontSize: 12,
-            color: '#6B7684',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            width: 44, height: 44,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'none', border: 'none', cursor: 'pointer',
+            flexShrink: 0, marginLeft: 4, marginTop: -11,
           }}
         >
-          {cafe.address}
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 12, color: '#6B7684' }}>
-            {fmtDist(cafe.distance)} · 리뷰 {cafe.reviewCount}
-          </span>
-        </div>
-        {/* 배지 */}
-        {cafe.tags[0] && (
-          <span
-            style={{
-              display: 'inline-block',
-              padding: '2px 8px',
-              background: '#F2F4F6',
-              borderRadius: 4,
-              fontSize: 11,
-              color: '#4E5968',
-              alignSelf: 'flex-start',
-            }}
-          >
-            {cafe.tags[0]}
-          </span>
-        )}
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              fillRule="evenodd" clipRule="evenodd"
+              d="M10.9038 21.2884C11.5698 21.7284 12.4288 21.7284 13.0938 21.2884C15.2088 19.8924 19.8138 16.5554 21.7978 12.8214C24.4128 7.89542 21.3418 2.98242 17.2818 2.98242C14.9678 2.98242 13.5758 4.19142 12.8058 5.23042C12.4818 5.67542 11.8588 5.77442 11.4128 5.45042C11.3278 5.38942 11.2538 5.31442 11.1928 5.23042C10.4228 4.19142 9.03076 2.98242 6.71676 2.98242C2.65676 2.98242 -0.414244 7.89542 2.20176 12.8214C4.18376 16.5554 8.79076 19.8924 10.9038 21.2884Z"
+              fill={favorited ? '#252525' : '#D1D6DB'}
+            />
+          </svg>
+        </button>
       </div>
     </div>
   );
