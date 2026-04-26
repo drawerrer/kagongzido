@@ -276,19 +276,19 @@ function StoreCard({
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{
                 fontWeight: 700, fontSize: 17,
-                lineHeight: '22.95px', color: 'rgba(0,12,30,0.8)',
+                lineHeight: '22.95px', color: '#191F28',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 marginBottom: 2,
               }}>{store.name}</p>
 
               <p style={{
                 fontWeight: 510, fontSize: 13,
-                lineHeight: '17.55px', color: 'rgba(0,19,43,0.58)',
+                lineHeight: '17.55px', color: '#6B7684',
                 marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>{store.address}</p>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
+                <span style={{ fontWeight: 510, fontSize: 13, color: '#6B7684' }}>
                   {`리뷰 ${store.reviewCount.toLocaleString()}`}
                 </span>
                 {store.badge && (

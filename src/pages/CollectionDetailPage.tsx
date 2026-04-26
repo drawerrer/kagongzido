@@ -246,13 +246,13 @@ function AddStoreSheet({
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
                     {/* 이름·주소·별점 */}
                     <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
-                      <p style={{ fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)', lineHeight: '23px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontWeight: 700, fontSize: 17, color: '#191F28', lineHeight: '23px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {store.name}
                       </p>
-                      <p style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)', lineHeight: '17.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontWeight: 510, fontSize: 13, color: '#6B7684', lineHeight: '17.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {store.address}
                       </p>
-                      <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
+                      <span style={{ fontWeight: 510, fontSize: 13, color: '#6B7684' }}>
                         {`리뷰 ${store.reviewCount.toLocaleString()}`}
                       </span>
                     </div>
@@ -460,14 +460,14 @@ function StoreCard({
           {/* Info + 아이콘 */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontWeight: 700, fontSize: 17, color: 'rgba(0,12,30,0.8)', lineHeight: '23px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <p style={{ fontWeight: 700, fontSize: 17, color: '#191F28', lineHeight: '23px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {store.name}
               </p>
-              <p style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)', lineHeight: '17.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <p style={{ fontWeight: 510, fontSize: 13, color: '#6B7684', lineHeight: '17.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {store.address}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
+                <span style={{ fontWeight: 510, fontSize: 13, color: '#6B7684' }}>
                   {`리뷰 ${store.reviewCount.toLocaleString()}`}
                 </span>
                 {store.timeLimit && (
