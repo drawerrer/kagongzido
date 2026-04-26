@@ -140,12 +140,12 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
   const fmtDist = (m: number) => (m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`);
   const { isFavorited, addFavorite, removeFavorite } = useFavorites();
   const favorited = isFavorited(cafe.id);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
 
   const handleHeartClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (favorited) {
-      removeFavorite(cafe.id);
-      onFavoriteChange?.('removed', cafe);
+      setShowRemoveDialog(true);
     } else {
       addFavorite({
         id: cafe.id,
@@ -160,7 +160,60 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
     }
   };
 
+  const handleConfirmRemove = () => {
+    setShowRemoveDialog(false);
+    removeFavorite(cafe.id);
+    onFavoriteChange?.('removed', cafe);
+  };
+
   return (
+    <>
+    {/* 삭제 확인 다이얼로그 */}
+    {showRemoveDialog && (
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <div
+          onClick={() => setShowRemoveDialog(false)}
+          style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }}
+        />
+        <div style={{
+          position: 'relative',
+          background: '#fff',
+          borderRadius: 16,
+          padding: '28px 24px 20px',
+          width: 'calc(100% - 64px)',
+          maxWidth: 320,
+          zIndex: 1,
+        }}>
+          <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 8 }}>매장을 삭제할까요?</p>
+          <p style={{ fontSize: 14, color: '#6B7684', marginBottom: 24 }}>모음집에서 매장이 사라져요.</p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => setShowRemoveDialog(false)}
+              style={{
+                flex: 1, height: 48, borderRadius: 12,
+                background: 'rgba(0,12,30,0.05)', border: 'none',
+                fontSize: 15, fontWeight: 600, color: '#4E5968', cursor: 'pointer',
+              }}
+            >
+              취소
+            </button>
+            <button
+              onClick={handleConfirmRemove}
+              style={{
+                flex: 1, height: 48, borderRadius: 12,
+                background: '#252525', border: 'none',
+                fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer',
+              }}
+            >
+              삭제
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <div
       onClick={onTap}
       style={{
@@ -266,6 +319,7 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
         </button>
       </div>
     </div>
+    </>
   );
 }
 
