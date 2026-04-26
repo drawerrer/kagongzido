@@ -15,6 +15,7 @@ export interface FavoritedStore {
   reviewCount: number;
   badge?: string;
   photos: string[];
+  distance?: number;
 }
 
 // ─── 최근 본 카페 타입 ────────────────────────────────────────

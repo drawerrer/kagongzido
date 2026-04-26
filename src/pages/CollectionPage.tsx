@@ -17,6 +17,7 @@ interface Store {
   reviewCount: number;
   badge?: string;
   photos?: string[];
+  distance?: number;
 }
 
 type BottomSheetType = null | 'create' | 'select-collection' | 'rename' | 'col-action';
@@ -226,6 +227,8 @@ function StoreCard({
   onRemoveFavorite?: () => void;
   onPhotoMore?: () => void;
 }) {
+  const fmtDist = (m: number) => m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`;
+
   return (
     <div
       onClick={isEditMode ? onSelect : onPress}
@@ -239,7 +242,7 @@ function StoreCard({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', paddingLeft: 16, paddingRight: 16 }}>
-        {/* 편집 모드 체크박스 (Figma: 24×24) */}
+        {/* 편집 모드 체크박스 */}
         {isEditMode && (
           <button
             type="button"
@@ -270,7 +273,7 @@ function StoreCard({
 
         {/* 텍스트 콘텐츠 */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* 이름 + 아이콘 */}
+          {/* 이름 + 하트/드래그 (상단 고정) */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 2 }}>
             <p style={{
               fontWeight: 700, fontSize: 17,
@@ -279,7 +282,6 @@ function StoreCard({
               flex: 1, marginRight: 8,
             }}>{store.name}</p>
 
-            {/* 정렬핸들: 편집모드만 (onHandlePointerDown 있을 때) / 기본모드: 하트 / 오거나이즈: 없음 */}
             {onHandlePointerDown ? (
               <div
                 onPointerDown={onHandlePointerDown}
@@ -311,19 +313,13 @@ function StoreCard({
             marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{store.address}</p>
 
-          {/* 별점 + 뱃지 */}
+          {/* 거리 · 리뷰 */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="#FBBC04">
-                <path d="M8 1.5l1.647 3.337 3.682.535-2.664 2.597.629 3.666L8 9.75l-3.294 1.885.629-3.666L2.671 5.372l3.682-.535L8 1.5z"/>
-              </svg>
-              <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
-                {store.rating}
-              </span>
-              <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
-                ({store.reviewCount.toLocaleString()})
-              </span>
-            </div>
+            <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
+              {store.distance !== undefined
+                ? `${fmtDist(store.distance)} · 리뷰 ${store.reviewCount.toLocaleString()}`
+                : `리뷰 ${store.reviewCount.toLocaleString()}`}
+            </span>
             {store.badge && (
               <span style={{
                 fontWeight: 590, fontSize: 10, lineHeight: '15px',
@@ -334,7 +330,7 @@ function StoreCard({
             )}
           </div>
 
-          {/* 이미지 10장 (Kit Card: 80×80, cornerRadius 4, gap 8px) — 가로 스크롤 */}
+          {/* 이미지 10장 — 가로 스크롤 */}
           <div
             style={{ overflowX: 'auto', scrollbarWidth: 'none' }}
             onWheel={(e) => { e.preventDefault(); (e.currentTarget as HTMLDivElement).scrollLeft += e.deltaY; }}
@@ -349,7 +345,8 @@ function StoreCard({
                     key={i}
                     onClick={!isLast && !isEditMode ? (e) => { e.stopPropagation(); onPress?.(); } : undefined}
                     style={{
-                      position: 'relative', width: 80, height: 80, borderRadius: 4, backgroundColor: '#E8EDF4', flexShrink: 0, overflow: 'hidden',
+                      position: 'relative', width: 80, height: 80, borderRadius: 4,
+                      backgroundColor: '#E8EDF4', flexShrink: 0, overflow: 'hidden',
                       cursor: !isLast && !isEditMode ? 'pointer' : 'default',
                     }}
                   >
@@ -527,6 +524,8 @@ export default function CollectionPage({
   const [addedToCollectionIds, setAddedToCollectionIds] = useState<string[]>([]);
   const [renameToast, setRenameToast] = useState<string | null>(null);
   const [deletedCollectionStore, setDeletedCollectionStore] = useState<{ name: string; storeIds: string[] } | null>(null);
+  const [showRemoveStoreConfirm, setShowRemoveStoreConfirm] = useState(false);
+  const [removeStoreTarget, setRemoveStoreTarget] = useState<FavoritedStore | null>(null);
 
   // ── 컬렉션 삭제 스낵바 (CollectionDetailPage에서 전달) ──
   useEffect(() => {
@@ -744,7 +743,7 @@ export default function CollectionPage({
           }}>
             <h2 style={{
               fontWeight: 700, fontSize: 17,
-              lineHeight: '21.25px', color: 'rgba(0,12,30,0.8)',
+              lineHeight: '21.25px', color: '#191F28',
               margin: 0,
             }}>저장한 매장</h2>
           </div>
@@ -783,9 +782,8 @@ export default function CollectionPage({
                     onSelect={() => { if (dragIndex === -1) toggleSelectStore(store.id); }}
                     onPress={() => onDetailOpen?.(store.id)}
                     onRemoveFavorite={() => {
-                      setDeletedStores([store]);
-                      removeFavoriteFromContext(store.id);
-                      setSnackbar('deleted');
+                      setRemoveStoreTarget(store);
+                      setShowRemoveStoreConfirm(true);
                     }}
                     onPhotoMore={() => onPhotoMore?.(store.id, store.photos ?? [], store.name)}
                   />
@@ -1064,6 +1062,37 @@ export default function CollectionPage({
             >삭제하기</ConfirmDialog.ConfirmButton>
           }
           onClose={() => { setShowColDeleteConfirm(false); setColActionTargetId(null); }}
+        />
+      )}
+
+      {/* ── 매장 즐겨찾기 해제 확인 다이얼로그 ── */}
+      {showRemoveStoreConfirm && (
+        <ConfirmDialog
+          open={true}
+          title={<ConfirmDialog.Title>매장을 삭제할까요?</ConfirmDialog.Title>}
+          description={<ConfirmDialog.Description>모음집에서 매장이 사라져요.{'\n'}담아둔 컬렉션에서도 함께 지워져요.</ConfirmDialog.Description>}
+          cancelButton={
+            <ConfirmDialog.CancelButton onClick={() => { setShowRemoveStoreConfirm(false); setRemoveStoreTarget(null); }}>
+              닫기
+            </ConfirmDialog.CancelButton>
+          }
+          confirmButton={
+            <ConfirmDialog.ConfirmButton
+              color="danger"
+              variant="weak"
+              onClick={() => {
+                if (!removeStoreTarget) return;
+                setDeletedStores([removeStoreTarget]);
+                removeFavoriteFromContext(removeStoreTarget.id);
+                setSnackbar('deleted');
+                setShowRemoveStoreConfirm(false);
+                setRemoveStoreTarget(null);
+              }}
+            >
+              삭제하기
+            </ConfirmDialog.ConfirmButton>
+          }
+          onClose={() => { setShowRemoveStoreConfirm(false); setRemoveStoreTarget(null); }}
         />
       )}
 
