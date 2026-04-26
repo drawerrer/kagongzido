@@ -669,13 +669,14 @@ export default function CollectionPage({
     }}>
       {/* ── info_2 bar (Figma: 46px, Medium 510 14px centered) ── */}
       <div style={{
-        height: 46, backgroundColor: '#F3F3F3',
+        height: 46, backgroundColor: '#f3f3f3',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0, position: 'relative',
+        borderBottom: '1px solid #F2F4F6',
       }}>
         <span style={{
-          fontWeight: 510, fontSize: 14,
-          color: '#000000', lineHeight: '25.5px',
+          fontWeight: 600, fontSize: 14,
+          color: '#191F28', letterSpacing: -0.2,
         }}>{isEditMode ? '편집모드' : isOrganizeMode ? '컬렉션 선택' : '모음집'}</span>
       </div>
 

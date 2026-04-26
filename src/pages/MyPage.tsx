@@ -764,9 +764,9 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
         {/* 페이지 타이틀 */}
         <div style={{
           height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: '#f3f3f3',
+          background: '#f3f3f3', borderBottom: '1px solid #F2F4F6',
         }}>
-          <span style={{ fontSize: 14, fontWeight: 510, color: '#000000', lineHeight: '25.5px' }}>카페 제보하기</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#191F28', letterSpacing: -0.2 }}>카페 제보하기</span>
         </div>
 
         {/* 카페명 섹션 */}

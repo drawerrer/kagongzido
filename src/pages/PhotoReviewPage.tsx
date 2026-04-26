@@ -563,12 +563,11 @@ export default function PhotoReviewPage({
 
       {/* info_2 섹션: '포토리뷰 전체보기' */}
       <div style={{
-        padding: '12px 16px',
-        textAlign: 'center',
-        flexShrink: 0,
+        height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, background: '#f3f3f3',
         borderBottom: '1px solid #F2F4F6',
       }}>
-        <span style={{ fontSize: 14, fontWeight: 500, color: '#000000' }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#191F28', letterSpacing: -0.2 }}>
           포토리뷰 전체보기
         </span>
       </div>

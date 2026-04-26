@@ -1086,8 +1086,8 @@ export default function CollectionDetailPage({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
       {/* ── info_2 (46px) — 항상 "컬렉션명 + 편집" 고정 ── */}
-      <div style={{ height: 46, backgroundColor: '#F3F3F3', display: 'flex', alignItems: 'center', position: 'relative', flexShrink: 0 }}>
-        <span style={{ flex: 1, textAlign: 'center', fontWeight: 510, fontSize: 14, color: '#000000' }}>
+      <div style={{ height: 46, backgroundColor: '#f3f3f3', display: 'flex', alignItems: 'center', position: 'relative', flexShrink: 0, borderBottom: '1px solid #F2F4F6' }}>
+        <span style={{ flex: 1, textAlign: 'center', fontWeight: 600, fontSize: 14, color: '#191F28', letterSpacing: -0.2 }}>
           {isEditMode ? '편집모드' : '컬렉션'}
         </span>
         {/* 편집 버튼 — 일반 모드 항상 고정 노출 */}
