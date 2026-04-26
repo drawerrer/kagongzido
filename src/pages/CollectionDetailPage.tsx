@@ -16,6 +16,7 @@ interface CollectionStore {
   address: string;
   rating: number;
   reviewCount: number;
+  distance?: number;
   timeLimit: string;
   photos: string[];
   memo: string;
@@ -251,13 +252,11 @@ function AddStoreSheet({
                       <p style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)', lineHeight: '17.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {store.address}
                       </p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="#FBBC04">
-                          <path d="M8 1.5l1.73 3.51 3.87.56-2.8 2.73.66 3.85L8 10.07l-3.46 1.82.66-3.85-2.8-2.73 3.87-.56L8 1.5z" />
-                        </svg>
-                        <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>{store.rating.toFixed(1)}</span>
-                        <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>({store.reviewCount.toLocaleString()})</span>
-                      </div>
+                      <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
+                        {store.distance !== undefined
+                          ? `${store.distance < 1000 ? `${store.distance}m` : `${(store.distance / 1000).toFixed(1)}km`} · 리뷰 ${store.reviewCount.toLocaleString()}`
+                          : `리뷰 ${store.reviewCount.toLocaleString()}`}
+                      </span>
                     </div>
                     {/* 체크 서클 */}
                     <div style={{ flexShrink: 0 }}>
@@ -470,11 +469,11 @@ function StoreCard({
                 {store.address}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="#FBBC04">
-                  <path d="M8 1.5l1.73 3.51 3.87.56-2.8 2.73.66 3.85L8 10.07l-3.46 1.82.66-3.85-2.8-2.73 3.87-.56L8 1.5z" />
-                </svg>
-                <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>{store.rating.toFixed(1)}</span>
-                <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>({store.reviewCount.toLocaleString()})</span>
+                <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
+                  {store.distance !== undefined
+                    ? `${store.distance < 1000 ? `${store.distance}m` : `${(store.distance / 1000).toFixed(1)}km`} · 리뷰 ${store.reviewCount.toLocaleString()}`
+                    : `리뷰 ${store.reviewCount.toLocaleString()}`}
+                </span>
                 {store.timeLimit && (
                   <div style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: 'rgba(0,27,55,0.1)', borderRadius: 9, padding: '3px 7px' }}>
                     <span style={{ fontWeight: 590, fontSize: 10, color: 'rgba(3,18,40,0.7)' }}>{store.timeLimit}</span>
@@ -745,6 +744,7 @@ export default function CollectionDetailPage({
           address: f.address,
           rating: f.rating,
           reviewCount: f.reviewCount,
+          distance: f.distance,
           timeLimit: '',
           photos: f.photos ?? [],
           memo: activeCollection?.memos?.[f.id] ?? '',
