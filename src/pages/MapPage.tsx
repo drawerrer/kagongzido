@@ -18,6 +18,8 @@ interface Cafe {
   mood: string;
   priceRange: number;
   options: string[];
+  lat?: number;
+  lng?: number;
 }
 
 type SortType = '조회순' | '거리순' | '평점순';
@@ -26,13 +28,16 @@ type SortType = '조회순' | '거리순' | '평점순';
 const CATEGORY_CHIPS = ['카공', '두쫀쿠', '버터떡', '조용한', '넓은', '가성비'];
 
 const MOCK_CAFES: Cafe[] = [
-  { id: '1', name: '블루보틀 강남', address: '서울 강남구 논현로 508', distance: 150, rating: 4.8, reviewCount: 523, tags: ['카공', '넓은'], mood: '모던한', priceRange: 7000, options: ['콘센트 충분', '소음 적당'] },
-  { id: '2', name: '스타벅스 역삼역점', address: '서울 강남구 역삼로 123', distance: 280, rating: 4.5, reviewCount: 1200, tags: ['넓은'], mood: '개방적인', priceRange: 6000, options: ['콘센트 충분', '단체 방문 가능', '주차 가능'] },
-  { id: '3', name: '모노 커피', address: '서울 강남구 언주로 234', distance: 410, rating: 4.9, reviewCount: 87, tags: ['조용한', '카공'], mood: '조용한', priceRange: 8000, options: ['콘센트 충분', '조용', '시간제한 없음'] },
-  { id: '4', name: '카페 베이커리', address: '서울 강남구 역삼동 567', distance: 590, rating: 4.3, reviewCount: 342, tags: ['가성비'], mood: '아늑한', priceRange: 5500, options: ['조용', '내부 화장실'] },
-  { id: '5', name: '브런치 팩토리', address: '서울 강남구 선릉로 890', distance: 720, rating: 4.6, reviewCount: 156, tags: ['두쫀쿠'], mood: '따뜻한', priceRange: 9000, options: ['단체 방문 가능', '반려동물 동반 가능'] },
-  { id: '6', name: '더 로스터리', address: '서울 강남구 도곡로 321', distance: 950, rating: 4.7, reviewCount: 98, tags: ['카공', '버터떡'], mood: '빈티지', priceRange: 10000, options: ['시간제한 없음', '주차 가능', '콘센트 충분'] },
+  { id: '1', name: '블루보틀 강남', address: '서울 강남구 논현로 508', distance: 150, rating: 4.8, reviewCount: 523, tags: ['카공', '넓은'], mood: '모던한', priceRange: 7000, options: ['콘센트 충분', '소음 적당'], lat: 37.5242, lng: 127.0397 },
+  { id: '2', name: '스타벅스 역삼역점', address: '서울 강남구 역삼로 123', distance: 280, rating: 4.5, reviewCount: 1200, tags: ['넓은'], mood: '개방적인', priceRange: 6000, options: ['콘센트 충분', '단체 방문 가능', '주차 가능'], lat: 37.5006, lng: 127.0363 },
+  { id: '3', name: '모노 커피', address: '서울 강남구 언주로 234', distance: 410, rating: 4.9, reviewCount: 87, tags: ['조용한', '카공'], mood: '조용한', priceRange: 8000, options: ['콘센트 충분', '조용', '시간제한 없음'], lat: 37.5057, lng: 127.0493 },
+  { id: '4', name: '카페 베이커리', address: '서울 강남구 역삼동 567', distance: 590, rating: 4.3, reviewCount: 342, tags: ['가성비'], mood: '아늑한', priceRange: 5500, options: ['조용', '내부 화장실'], lat: 37.4932, lng: 127.0341 },
+  { id: '5', name: '브런치 팩토리', address: '서울 강남구 선릉로 890', distance: 720, rating: 4.6, reviewCount: 156, tags: ['두쫀쿠'], mood: '따뜻한', priceRange: 9000, options: ['단체 방문 가능', '반려동물 동반 가능'], lat: 37.5023, lng: 127.0433 },
+  { id: '6', name: '더 로스터리', address: '서울 강남구 도곡로 321', distance: 950, rating: 4.7, reviewCount: 98, tags: ['카공', '버터떡'], mood: '빈티지', priceRange: 10000, options: ['시간제한 없음', '주차 가능', '콘센트 충분'], lat: 37.4888, lng: 127.0413 },
 ];
+
+// ── 유틸 ──────────────────────────────────
+const fmtDist = (m: number) => (m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`);
 
 // GPS 권한 상태는 SDK getCurrentLocation.getPermission() 으로 관리
 
@@ -137,7 +142,6 @@ function SortPopup({
 
 // ── 카페 목록 행 ──────────────────────────
 function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => void; onFavoriteChange?: (type: 'added' | 'removed', cafe: Cafe) => void }) {
-  const fmtDist = (m: number) => (m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`);
   const { isFavorited, addFavorite, removeFavorite } = useFavorites();
   const favorited = isFavorited(cafe.id);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
@@ -352,6 +356,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   const [filterOpenKey, setFilterOpenKey] = useState(0); // remount key
   const [panelExpanded, setPanelExpanded] = useState(initialState?.panelExpanded ?? false);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
+  const [selectedMapCafe, setSelectedMapCafe] = useState<Cafe | null>(null);
 
   // 설정값이 DEFAULT와 다르면 true (아이콘 검정), 동일하면 false (아이콘 회색)
   const filterApplied =
@@ -471,6 +476,19 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         });
         mapInstanceRef.current = map;
 
+        // 카페 마커 추가
+        MOCK_CAFES.forEach(cafe => {
+          if (!cafe.lat || !cafe.lng) return;
+          const marker = new window.kakao.maps.Marker({
+            position: new window.kakao.maps.LatLng(cafe.lat, cafe.lng),
+            map,
+          });
+          window.kakao.maps.event.addListener(marker, 'click', () => {
+            setSelectedMapCafe(cafe);
+            setPanelExpanded(false);
+          });
+        });
+
         // 현재 위치로 이동 (SDK)
         getCurrentLocation({ accuracy: Accuracy.Balanced })
           .then(loc => {
@@ -516,7 +534,6 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
     }
   };
 
-  const panelBottomValue = panelExpanded ? 'calc(72vh + 12px)' : 'calc(50vh + 12px)';
 
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
@@ -603,8 +620,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         style={{
           position: 'absolute',
           right: 16,
-          bottom: panelBottomValue,
-          zIndex: 20,
+          bottom: 'calc(50vh + 12px)',
+          zIndex: 8,
           width: 44,
           height: 44,
           borderRadius: 22,
@@ -613,16 +630,15 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'bottom 0.3s ease',
         }}
       >
         <GpsIcon />
       </button>
 
-      {/* ── 외부 탭 시 패널 축소 오버레이 ── */}
-      {panelExpanded && (
+      {/* ── 외부 탭 시 패널 축소 / 프리뷰 닫기 오버레이 ── */}
+      {(panelExpanded || selectedMapCafe) && (
         <div
-          onClick={() => setPanelExpanded(false)}
+          onClick={() => { setPanelExpanded(false); setSelectedMapCafe(null); }}
           style={{ position: 'absolute', inset: 0, zIndex: 9 }}
         />
       )}
@@ -632,8 +648,14 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         onTouchStart={(e) => { touchStartYRef.current = e.touches[0].clientY; }}
         onTouchEnd={(e) => {
           const delta = e.changedTouches[0].clientY - touchStartYRef.current;
-          if (delta > 60 && panelExpanded) setPanelExpanded(false);   // 아래로 스와이프 → 축소
-          if (delta < -60 && !panelExpanded) setPanelExpanded(true);  // 위로 스와이프 → 확장
+          if (selectedMapCafe) {
+            // 미니 프리뷰 모드: 위로 스와이프 → 상세 이동, 아래로 스와이프 → 닫기
+            if (delta < -60) { onDetailOpen(selectedMapCafe.id); setSelectedMapCafe(null); }
+            else if (delta > 60) { setSelectedMapCafe(null); }
+          } else {
+            if (delta > 60 && panelExpanded) setPanelExpanded(false);
+            if (delta < -60 && !panelExpanded) setPanelExpanded(true);
+          }
         }}
         style={{
           position: 'absolute',
@@ -643,7 +665,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           zIndex: 10,
           background: '#f3f3f3',
           borderRadius: '16px 16px 0 0',
-          height: panelExpanded ? '72vh' : '50vh',
+          height: panelExpanded ? 'calc(100% - 8px)' : '50vh',
           transition: 'height 0.3s ease',
           display: 'flex',
           flexDirection: 'column',
@@ -664,114 +686,160 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           <div style={{ width: 48, height: 4, borderRadius: 2, background: '#E5E8EB' }} />
         </div>
 
-        {/* 카테고리 칩 */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 8,
-            overflowX: 'auto',
-            padding: '8px 16px',
-            flexShrink: 0,
-            scrollbarWidth: 'none',
-          }}
-        >
-          {CATEGORY_CHIPS.map(chip => (
+        {selectedMapCafe ? (
+          /* ── 지도 마커 클릭 시 미니 프리뷰 ── */
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '8px 16px 16px', overflow: 'hidden' }}>
+            {/* 카페명 + 닫기 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <p style={{ fontSize: 18, fontWeight: 700, color: '#191F28', flex: 1, marginRight: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {selectedMapCafe.name}
+              </p>
+              <button
+                onClick={() => setSelectedMapCafe(null)}
+                style={{ width: 32, height: 32, borderRadius: 999, background: 'rgba(0,0,0,0.06)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7684" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* 이미지 */}
+            <div style={{ width: '100%', height: 130, borderRadius: 12, background: '#F2F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, flexShrink: 0 }}>
+              <span style={{ fontSize: 48 }}>☕</span>
+            </div>
+
+            {/* 주소 · 거리 · 리뷰 */}
+            <p style={{ fontSize: 13, color: '#6B7684', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedMapCafe.address}</p>
+            <p style={{ fontSize: 12, color: '#B0B8C1', marginBottom: 10 }}>{fmtDist(selectedMapCafe.distance)} · 리뷰 {selectedMapCafe.reviewCount}</p>
+
+            {/* 태그 */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+              {selectedMapCafe.tags.map(t => (
+                <span key={t} style={{ padding: '2px 8px', background: '#F2F4F6', borderRadius: 4, fontSize: 11, color: '#4E5968' }}>{t}</span>
+              ))}
+            </div>
+
+            {/* 자세히 보기 CTA */}
             <button
-              key={chip}
-              onClick={() => setActiveChip(activeChip === chip ? null : chip)}
-              style={{
-                flexShrink: 0,
-                height: 32,
-                padding: '0 14px',
-                borderRadius: 8,
-                border: 'none',
-                background: activeChip === chip ? '#252525' : 'rgba(46,46,46,0.08)',
-                color: activeChip === chip ? '#ffffff' : 'rgba(0,0,0,0.7)',
-                fontSize: 13,
-                fontWeight: 590,
-                transition: 'background 0.15s',
-              }}
+              onClick={() => { onDetailOpen(selectedMapCafe.id); setSelectedMapCafe(null); }}
+              style={{ height: 48, borderRadius: 12, background: '#252525', color: '#fff', fontSize: 15, fontWeight: 600, border: 'none', cursor: 'pointer', flexShrink: 0 }}
             >
-              {chip}
+              자세히 보기
             </button>
-          ))}
-        </div>
-
-        {/* 총 N개 + 정렬 헤더 */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '4px 16px 8px',
-            flexShrink: 0,
-            position: 'relative',
-          }}
-        >
-          <span style={{ fontSize: 14, color: '#6B7684' }}>
-            총 <strong style={{ color: '#191F28' }}>{cafes.length}</strong>개
-          </span>
-          <button
-            onClick={() => setSortPopupOpen(o => !o)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              fontSize: 14,
-              color: '#6B7684',
-              fontWeight: 400,
-            }}
-          >
-            {sortType}
-            <ArrowDownIcon />
-          </button>
-
-          {/* 정렬 팝업 */}
-          {sortPopupOpen && (
-            <SortPopup
-              current={sortType}
-              onSelect={t => { setSortType(t); setSortPopupOpen(false); }}
-              onClose={() => setSortPopupOpen(false)}
-            />
-          )}
-        </div>
-
-        {/* 카페 목록 — 스크롤 시 패널 자동 펼침 */}
-        <div
-          style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
-          onScroll={(e) => {
-            if (!panelExpanded && e.currentTarget.scrollTop > 0) {
-              setPanelExpanded(true);
-            }
-          }}
-        >
-          {cafes.length > 0 ? (
-            cafes.map(cafe => (
-            <CafeRow
-              key={cafe.id}
-              cafe={cafe}
-              onTap={() => onDetailOpen(cafe.id)}
-              onFavoriteChange={(type) => {
-                showFavoriteSnackbar(type);
-              }}
-            />
-          ))
-          ) : (
+            <p style={{ textAlign: 'center', fontSize: 11, color: '#B0B8C1', marginTop: 8 }}>위로 스와이프하면 상세 페이지로 이동해요</p>
+          </div>
+        ) : (
+          <>
+            {/* 카테고리 칩 */}
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
                 gap: 8,
-                marginTop: 32,
-                color: '#B0B8C1',
+                overflowX: 'auto',
+                padding: '8px 16px',
+                flexShrink: 0,
+                scrollbarWidth: 'none',
               }}
             >
-              <span style={{ fontSize: 32 }}>☕</span>
-              <p style={{ fontSize: 14 }}>해당 카테고리의 카페가 없어요</p>
+              {CATEGORY_CHIPS.map(chip => (
+                <button
+                  key={chip}
+                  onClick={() => setActiveChip(activeChip === chip ? null : chip)}
+                  style={{
+                    flexShrink: 0,
+                    height: 32,
+                    padding: '0 14px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: activeChip === chip ? '#252525' : 'rgba(46,46,46,0.08)',
+                    color: activeChip === chip ? '#ffffff' : 'rgba(0,0,0,0.7)',
+                    fontSize: 13,
+                    fontWeight: 590,
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  {chip}
+                </button>
+              ))}
             </div>
-          )}
-        </div>
+
+            {/* 총 N개 + 정렬 헤더 */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '4px 16px 8px',
+                flexShrink: 0,
+                position: 'relative',
+              }}
+            >
+              <span style={{ fontSize: 14, color: '#6B7684' }}>
+                총 <strong style={{ color: '#191F28' }}>{cafes.length}</strong>개
+              </span>
+              <button
+                onClick={() => setSortPopupOpen(o => !o)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 14,
+                  color: '#6B7684',
+                  fontWeight: 400,
+                }}
+              >
+                {sortType}
+                <ArrowDownIcon />
+              </button>
+
+              {sortPopupOpen && (
+                <SortPopup
+                  current={sortType}
+                  onSelect={t => { setSortType(t); setSortPopupOpen(false); }}
+                  onClose={() => setSortPopupOpen(false)}
+                />
+              )}
+            </div>
+
+            {/* 카페 목록 */}
+            <div
+              style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
+              onScroll={(e) => {
+                if (!panelExpanded && e.currentTarget.scrollTop > 0) {
+                  setPanelExpanded(true);
+                }
+              }}
+            >
+              {cafes.length > 0 ? (
+                cafes.map(cafe => (
+                  <CafeRow
+                    key={cafe.id}
+                    cafe={cafe}
+                    onTap={() => onDetailOpen(cafe.id)}
+                    onFavoriteChange={(type) => {
+                      showFavoriteSnackbar(type);
+                    }}
+                  />
+                ))
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 8,
+                    marginTop: 32,
+                    color: '#B0B8C1',
+                  }}
+                >
+                  <span style={{ fontSize: 32 }}>☕</span>
+                  <p style={{ fontSize: 14 }}>해당 카테고리의 카페가 없어요</p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── 필터 모달 ── */}
