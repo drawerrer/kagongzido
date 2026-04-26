@@ -527,6 +527,8 @@ export default function CollectionPage({
   const [addedToCollectionIds, setAddedToCollectionIds] = useState<string[]>([]);
   const [renameToast, setRenameToast] = useState<string | null>(null);
   const [deletedCollectionStore, setDeletedCollectionStore] = useState<{ name: string; storeIds: string[] } | null>(null);
+  const [showRemoveStoreConfirm, setShowRemoveStoreConfirm] = useState(false);
+  const [removeStoreTarget, setRemoveStoreTarget] = useState<FavoritedStore | null>(null);
 
   // ── 컬렉션 삭제 스낵바 (CollectionDetailPage에서 전달) ──
   useEffect(() => {
@@ -783,9 +785,8 @@ export default function CollectionPage({
                     onSelect={() => { if (dragIndex === -1) toggleSelectStore(store.id); }}
                     onPress={() => onDetailOpen?.(store.id)}
                     onRemoveFavorite={() => {
-                      setDeletedStores([store]);
-                      removeFavoriteFromContext(store.id);
-                      setSnackbar('deleted');
+                      setRemoveStoreTarget(store);
+                      setShowRemoveStoreConfirm(true);
                     }}
                     onPhotoMore={() => onPhotoMore?.(store.id, store.photos ?? [], store.name)}
                   />
@@ -1064,6 +1065,37 @@ export default function CollectionPage({
             >삭제하기</ConfirmDialog.ConfirmButton>
           }
           onClose={() => { setShowColDeleteConfirm(false); setColActionTargetId(null); }}
+        />
+      )}
+
+      {/* ── 매장 즐겨찾기 해제 확인 다이얼로그 ── */}
+      {showRemoveStoreConfirm && (
+        <ConfirmDialog
+          open={true}
+          title={<ConfirmDialog.Title>매장을 삭제할까요?</ConfirmDialog.Title>}
+          description={<ConfirmDialog.Description>모음집에서 매장이 사라져요.</ConfirmDialog.Description>}
+          cancelButton={
+            <ConfirmDialog.CancelButton onClick={() => { setShowRemoveStoreConfirm(false); setRemoveStoreTarget(null); }}>
+              닫기
+            </ConfirmDialog.CancelButton>
+          }
+          confirmButton={
+            <ConfirmDialog.ConfirmButton
+              color="danger"
+              variant="weak"
+              onClick={() => {
+                if (!removeStoreTarget) return;
+                setDeletedStores([removeStoreTarget]);
+                removeFavoriteFromContext(removeStoreTarget.id);
+                setSnackbar('deleted');
+                setShowRemoveStoreConfirm(false);
+                setRemoveStoreTarget(null);
+              }}
+            >
+              삭제하기
+            </ConfirmDialog.ConfirmButton>
+          }
+          onClose={() => { setShowRemoveStoreConfirm(false); setRemoveStoreTarget(null); }}
         />
       )}
 
