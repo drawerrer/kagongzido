@@ -105,7 +105,7 @@ function GuideBookMainView({
   onPastPress: () => void;
 }) {
   return (
-    <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#F3F3F3', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 80, paddingLeft: 30, paddingRight: 30, paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
+    <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#F3F3F3', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingLeft: 30, paddingRight: 30, paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
       {/* 카드 — 너비 100% 기준 4:3 비율 고정 */}
       <div style={{ width: '100%', maxWidth: 315, flexShrink: 0 }}>
         <button
