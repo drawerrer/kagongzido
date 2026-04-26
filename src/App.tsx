@@ -235,7 +235,7 @@ function AppInner() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => { setCollectionDetail(null); setActiveTab(tab.id); }}
                   style={{
                     flex: 1,
                     display: 'flex',
