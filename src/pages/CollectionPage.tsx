@@ -214,7 +214,6 @@ function StoreCard({
   onPress,
   onHandlePointerDown,
   onRemoveFavorite,
-  onPhotoMore,
 }: {
   store: Store;
   isEditMode?: boolean;
@@ -225,162 +224,122 @@ function StoreCard({
   onPress?: () => void;
   onHandlePointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onRemoveFavorite?: () => void;
-  onPhotoMore?: () => void;
 }) {
+  const fmtDist = (m: number) => m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`;
+
   return (
     <div
       onClick={isEditMode ? onSelect : onPress}
       style={{
-        border: isDragOver ? '2px solid #252525' : '2px solid transparent',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '12px 16px',
+        borderBottom: isDragOver ? 'none' : '1px solid #F2F4F6',
+        outline: isDragOver ? '2px solid #252525' : 'none',
         cursor: 'pointer',
-        paddingTop: 20,
         opacity: isDragging ? 0.4 : (isEditMode && !isSelected ? 0.7 : 1),
         transition: 'opacity 0.15s',
         userSelect: 'none',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', paddingLeft: 16, paddingRight: 16 }}>
-        {/* 편집 모드 체크박스 (Figma: 24×24) */}
-        {isEditMode && (
-          <button
-            type="button"
-            aria-label={isSelected ? '선택 해제' : '선택'}
-            aria-pressed={isSelected}
-            onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
-            style={{
-              width: 24, height: 24, flexShrink: 0,
-              marginRight: 10, marginTop: 1,
-              background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 0,
-            }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              {isSelected ? (
-                <>
-                  <circle cx="12" cy="12" r="12" fill="#252525" />
-                  <path d="M7 12l3.5 3.5L17 8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </>
-              ) : (
-                <>
-                  <circle cx="12" cy="12" r="11" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
-                  <path d="M7 12l3.5 3.5L17 8" stroke="rgba(0,0,0,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </>
-              )}
-            </svg>
-          </button>
-        )}
-
-        {/* 텍스트 콘텐츠 */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* 이름 + 아이콘 */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 2 }}>
-            <p style={{
-              fontWeight: 700, fontSize: 17,
-              lineHeight: '22.95px', color: 'rgba(0,12,30,0.8)',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              flex: 1, marginRight: 8,
-            }}>{store.name}</p>
-
-            {/* 정렬핸들: 편집모드만 (onHandlePointerDown 있을 때) / 기본모드: 하트 / 오거나이즈: 없음 */}
-            {onHandlePointerDown ? (
-              <div
-                onPointerDown={onHandlePointerDown}
-                style={{ width: 44, height: 44, flexShrink: 0, marginTop: -11, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab', touchAction: 'none' }}
-              >
-                <IcArrowUpDown width={22} height={22} style={{ color: 'rgba(0,29,58,0.18)' }} />
-              </div>
-            ) : !isEditMode ? (
-              <button
-                type="button"
-                aria-label="즐겨찾기 해제"
-                onClick={(e) => { e.stopPropagation(); onRemoveFavorite?.(); }}
-                style={{ width: 44, height: 44, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: -11 }}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path fillRule="evenodd" clipRule="evenodd"
-                    d="M10.9038 21.2884C11.5698 21.7284 12.4288 21.7284 13.0938 21.2884C15.2088 19.8924 19.8138 16.5554 21.7978 12.8214C24.4128 7.89542 21.3418 2.98242 17.2818 2.98242C14.9678 2.98242 13.5758 4.19142 12.8058 5.23042C12.4818 5.67542 11.8588 5.77442 11.4128 5.45042C11.3278 5.38942 11.2538 5.31442 11.1928 5.23042C10.4228 4.19142 9.03076 2.98242 6.71676 2.98242C2.65676 2.98242 -0.414244 7.89542 2.20176 12.8214C4.18376 16.5554 8.79076 19.8924 10.9038 21.2884Z"
-                    fill="#252525"
-                  />
-                </svg>
-              </button>
-            ) : null}
-          </div>
-
-          {/* 주소 */}
-          <p style={{
-            fontWeight: 510, fontSize: 13,
-            lineHeight: '17.55px', color: 'rgba(0,19,43,0.58)',
-            marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{store.address}</p>
-
-          {/* 거리 */}
-          {store.distance !== undefined && (
-            <p style={{
-              fontWeight: 510, fontSize: 13,
-              lineHeight: '17.55px', color: 'rgba(0,19,43,0.58)',
-              marginBottom: 4,
-            }}>
-              {store.distance < 1000
-                ? `${store.distance}m`
-                : `${(store.distance / 1000).toFixed(1)}km`}
-            </p>
-          )}
-
-          {/* 리뷰 + 뱃지 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 12 }}>
-            <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
-              리뷰 {store.reviewCount.toLocaleString()}
-            </span>
-            {store.badge && (
-              <span style={{
-                fontWeight: 590, fontSize: 10, lineHeight: '15px',
-                color: 'rgba(3,18,40,0.7)',
-                backgroundColor: 'rgba(0,27,55,0.1)',
-                borderRadius: 9, padding: '3px 7px',
-              }}>{store.badge}</span>
+      {/* 편집 모드 체크박스 */}
+      {isEditMode && (
+        <button
+          type="button"
+          aria-label={isSelected ? '선택 해제' : '선택'}
+          aria-pressed={isSelected}
+          onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
+          style={{
+            width: 24, height: 24, flexShrink: 0,
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 0,
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            {isSelected ? (
+              <>
+                <circle cx="12" cy="12" r="12" fill="#252525" />
+                <path d="M7 12l3.5 3.5L17 8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </>
+            ) : (
+              <>
+                <circle cx="12" cy="12" r="11" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
+                <path d="M7 12l3.5 3.5L17 8" stroke="rgba(0,0,0,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </>
             )}
-          </div>
+          </svg>
+        </button>
+      )}
 
-          {/* 이미지 10장 (Kit Card: 80×80, cornerRadius 4, gap 8px) — 가로 스크롤 */}
-          <div
-            style={{ overflowX: 'auto', scrollbarWidth: 'none' }}
-            onWheel={(e) => { e.preventDefault(); (e.currentTarget as HTMLDivElement).scrollLeft += e.deltaY; }}
-          >
-            <div style={{ display: 'flex', gap: 8, width: 'max-content' }}>
-              {Array.from({ length: 10 }, (_, i) => {
-                const photo = store.photos?.[i];
-                const isLast = i === 9;
-                const showOverlay = isLast && !isEditMode;
-                return (
-                  <div
-                    key={i}
-                    onClick={!isLast && !isEditMode ? (e) => { e.stopPropagation(); onPress?.(); } : undefined}
-                    style={{
-                      position: 'relative', width: 80, height: 80, borderRadius: 4, backgroundColor: '#E8EDF4', flexShrink: 0, overflow: 'hidden',
-                      cursor: !isLast && !isEditMode ? 'pointer' : 'default',
-                    }}
-                  >
-                    {photo && <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                    {showOverlay && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onPhotoMore?.(); }}
-                        style={{
-                          position: 'absolute', inset: 0,
-                          backgroundColor: 'rgba(0,0,0,0.6)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          border: 'none', cursor: 'pointer', borderRadius: 4,
-                        }}
-                      >
-                        <span style={{ fontWeight: 510, fontSize: 14, color: '#ffffff', lineHeight: '25.5px' }}>더보기</span>
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+      {/* 썸네일 80×80 */}
+      <div style={{
+        width: 80, height: 80, borderRadius: 10, flexShrink: 0,
+        background: '#F2F4F6', overflow: 'hidden',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {store.photos?.[0]
+          ? <img src={store.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <span style={{ fontSize: 28 }}>☕</span>
+        }
       </div>
-      <div style={{ paddingBottom: 20 }} />
+
+      {/* 카페 정보 */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+        {/* 이름 */}
+        <p style={{
+          fontWeight: 700, fontSize: 17,
+          lineHeight: '22.95px', color: 'rgba(0,12,30,0.8)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{store.name}</p>
+
+        {/* 주소 */}
+        <p style={{
+          fontWeight: 510, fontSize: 13,
+          lineHeight: '17.55px', color: 'rgba(0,19,43,0.58)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{store.address}</p>
+
+        {/* 거리 · 리뷰 */}
+        <span style={{ fontWeight: 510, fontSize: 13, color: 'rgba(0,19,43,0.58)' }}>
+          {store.distance !== undefined
+            ? `${fmtDist(store.distance)} · 리뷰 ${store.reviewCount.toLocaleString()}`
+            : `리뷰 ${store.reviewCount.toLocaleString()}`}
+        </span>
+
+        {/* 뱃지 */}
+        {store.badge && (
+          <span style={{
+            display: 'inline-block', alignSelf: 'flex-start',
+            fontWeight: 590, fontSize: 10, lineHeight: '15px',
+            color: 'rgba(3,18,40,0.7)', backgroundColor: 'rgba(0,27,55,0.1)',
+            borderRadius: 9, padding: '3px 7px',
+          }}>{store.badge}</span>
+        )}
+      </div>
+
+      {/* 정렬 핸들 (편집모드) / 하트 (기본모드) */}
+      {onHandlePointerDown ? (
+        <div
+          onPointerDown={onHandlePointerDown}
+          style={{ width: 44, height: 44, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab', touchAction: 'none' }}
+        >
+          <IcArrowUpDown width={22} height={22} style={{ color: 'rgba(0,29,58,0.18)' }} />
+        </div>
+      ) : !isEditMode ? (
+        <button
+          type="button"
+          aria-label="즐겨찾기 해제"
+          onClick={(e) => { e.stopPropagation(); onRemoveFavorite?.(); }}
+          style={{ width: 44, height: 44, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path fillRule="evenodd" clipRule="evenodd"
+              d="M10.9038 21.2884C11.5698 21.7284 12.4288 21.7284 13.0938 21.2884C15.2088 19.8924 19.8138 16.5554 21.7978 12.8214C24.4128 7.89542 21.3418 2.98242 17.2818 2.98242C14.9678 2.98242 13.5758 4.19142 12.8058 5.23042C12.4818 5.67542 11.8588 5.77442 11.4128 5.45042C11.3278 5.38942 11.2538 5.31442 11.1928 5.23042C10.4228 4.19142 9.03076 2.98242 6.71676 2.98242C2.65676 2.98242 -0.414244 7.89542 2.20176 12.8214C4.18376 16.5554 8.79076 19.8924 10.9038 21.2884Z"
+              fill="#252525"
+            />
+          </svg>
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -429,7 +388,7 @@ export default function CollectionPage({
   onGoHome,
   onBack,
   onClose: _onClose,
-  onPhotoMore,
+  onPhotoMore: _onPhotoMore,
   deletedCollection,
   onClearDeletedCollection,
 }: {
@@ -794,7 +753,6 @@ export default function CollectionPage({
                       setRemoveStoreTarget(store);
                       setShowRemoveStoreConfirm(true);
                     }}
-                    onPhotoMore={() => onPhotoMore?.(store.id, store.photos ?? [], store.name)}
                   />
                 </div>
               ))}
