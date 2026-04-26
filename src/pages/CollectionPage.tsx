@@ -743,7 +743,7 @@ export default function CollectionPage({
           }}>
             <h2 style={{
               fontWeight: 700, fontSize: 17,
-              lineHeight: '21.25px', color: 'rgba(0,12,30,0.8)',
+              lineHeight: '21.25px', color: '#191F28',
               margin: 0,
             }}>저장한 매장</h2>
           </div>
