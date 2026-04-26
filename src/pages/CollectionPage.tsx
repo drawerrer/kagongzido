@@ -102,20 +102,27 @@ function CollectionCard({
               }}>새 컬렉션</span>
             </div>
           ) : (
-            /* 2×2 이미지 그리드 (60×60, gap 1px) */
+            /* 2×2 이미지 그리드 (gap 1px) */
             <div style={{
               display: 'grid',
-              gridTemplateColumns: `${Math.floor((size - 1) / 2)}px ${Math.floor((size - 1) / 2)}px`,
-              gridTemplateRows: `${Math.floor((size - 1) / 2)}px ${Math.floor((size - 1) / 2)}px`,
+              gridTemplateColumns: '1fr 1fr',
+              gridTemplateRows: '1fr 1fr',
               gap: 1,
               width: size, height: size,
             }}>
               {[0, 1, 2, 3].map((i) => {
                 const photo = previewPhotos[i];
+                const cellRadius = {
+                  0: { borderTopLeftRadius: 4 },
+                  1: { borderTopRightRadius: 4 },
+                  2: { borderBottomLeftRadius: 4 },
+                  3: { borderBottomRightRadius: 4 },
+                }[i];
                 return (
                   <div key={i} style={{
                     backgroundColor: '#E8EDF4',
                     overflow: 'hidden',
+                    ...cellRadius,
                   }}>
                     {photo ? (
                       <img src={photo} alt=""
