@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { openURL, appLogin, partner, tdsEvent, graniteEvent } from '@apps-in-toss/web-framework';
 import CheckConfirmIcon from '../assets/icons/icon_check_confirm.svg?react';
 import SnackbarCloseIcon from '../assets/icons/icon_close.svg?react';
-// import { IconButton } from '@toss/tds-mobile';
+import { ConfirmDialog } from '@toss/tds-mobile';
 import BottomSheet from '../components/BottomSheet';
 import ShareSheet from '../components/ShareSheet';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
@@ -926,6 +926,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   // showMoreSheet — 배포 시 바텀시트 연결 예정
   const [showLoginSheet, setShowLoginSheet] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
+  const [showUnfavoriteDialog, setShowUnfavoriteDialog] = useState(false);
 
   // 가이드북 길찾기 버튼에서 진입 시 카카오맵 웹 바로 열기
   useEffect(() => {
@@ -941,8 +942,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const heartHandlerRef = useRef<() => void>(() => {});
   heartHandlerRef.current = () => {
     if (isFavorited(cafeId)) {
-      removeFavorite(cafeId);
-      showFavoriteSnackbar('removed');
+      setShowUnfavoriteDialog(true);
     } else {
       addFavorite({
         id: cafe.id,
@@ -1016,8 +1016,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const handleFavorite = () => {
     if (!isLoggedIn) { setShowLoginSheet(true); return; }
     if (isFavorite) {
-      removeFavorite(cafeId);
-      showFavoriteSnackbar('removed');
+      setShowUnfavoriteDialog(true);
     } else {
       addFavorite({
         id: cafe.id,
@@ -1030,6 +1029,12 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       });
       showFavoriteSnackbar('added');
     }
+  };
+
+  const handleConfirmUnfavorite = () => {
+    removeFavorite(cafeId);
+    showFavoriteSnackbar('removed');
+    setShowUnfavoriteDialog(false);
   };
 
   const handleShare = () => { setShowShareSheet(true); };
@@ -1574,6 +1579,26 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           );
         })}
       </nav>
+
+      {/* ── 저장 취소 확인 다이얼로그 ── */}
+      {showUnfavoriteDialog && (
+        <ConfirmDialog
+          open={true}
+          title={<ConfirmDialog.Title>저장을 취소할까요?</ConfirmDialog.Title>}
+          description={<ConfirmDialog.Description>저장된 카페가 모음집에서 사라져요.</ConfirmDialog.Description>}
+          cancelButton={
+            <ConfirmDialog.CancelButton onClick={() => setShowUnfavoriteDialog(false)}>
+              닫기
+            </ConfirmDialog.CancelButton>
+          }
+          confirmButton={
+            <ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={handleConfirmUnfavorite}>
+              저장 취소
+            </ConfirmDialog.ConfirmButton>
+          }
+          onClose={() => setShowUnfavoriteDialog(false)}
+        />
+      )}
 
       {/* ── 바텀시트들 ── */}
 
