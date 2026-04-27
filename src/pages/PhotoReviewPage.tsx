@@ -146,47 +146,6 @@ function PhotoDetailView({
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
 
-      {/* ── 네비바 (DetailPage 동일 스펙) ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        padding: '12px 16px', flexShrink: 0, background: '#f3f3f3',
-        borderBottom: '1px solid #F2F4F6',
-      }}>
-        <div style={{ flex: 1 }} />
-        {/* 하트 pill: 44×34, r=99 */}
-        <button
-          onClick={onFavoriteToggle}
-          style={{
-            width: 44, height: 34, borderRadius: 99, flexShrink: 0,
-            background: 'rgba(0,23,51,0.02)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: 'none', cursor: 'pointer', marginRight: 4,
-          }}
-        >
-          <HeartIcon filled={!!isFavorite} color={isFavorite ? '#252525' : '#697482'} />
-        </button>
-        {/* More+Close pill: 93×34, r=99, 구분선 포함 */}
-        <div style={{
-          width: 93, height: 34, borderRadius: 99, flexShrink: 0,
-          background: 'rgba(0,23,51,0.02)',
-          display: 'flex', alignItems: 'center', overflow: 'hidden',
-        }}>
-          {/* 배포 시 바텀시트 연결 예정 */}
-          <button
-            style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'default' }}
-          >
-            <MoreDotsIcon color="#697482" />
-          </button>
-          <div style={{ width: 1, height: 16, background: 'rgba(0,27,55,0.1)', flexShrink: 0 }} />
-          <button
-            onClick={onBack}
-            style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'pointer' }}
-          >
-            <CloseIcon color="rgba(0,19,43,0.58)" />
-          </button>
-        </div>
-      </div>
-
       {/* ── info_2: 포토리뷰 페이지명 ── */}
       <div style={{
         height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center',
