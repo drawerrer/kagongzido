@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { graniteEvent, fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
+import { Toast } from '@toss/tds-mobile';
 import { useFavorites } from '../context/FavoritesContext';
 
 // ─────────────────────────────────────────────────────────────
@@ -693,18 +694,12 @@ function WrittenReviewPage({
       )}
 
       {/* 삭제 완료 토스트 */}
-      <div style={{
-        position: 'absolute', bottom: 24, left: '50%',
-        transform: `translateX(-50%) translateY(${deleteToast ? 0 : 10}px)`,
-        opacity: deleteToast ? 1 : 0,
-        transition: 'opacity 0.2s, transform 0.2s',
-        background: '#191F28', color: 'white',
-        borderRadius: 8, padding: '9px 16px',
-        fontSize: 13, fontWeight: 500,
-        whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 100,
-      }}>
-        리뷰가 삭제되었어요
-      </div>
+      <Toast
+        open={deleteToast}
+        position="bottom"
+        text="리뷰가 삭제되었어요"
+        onClose={() => setDeleteToast(false)}
+      />
     </div>
   );
 }
@@ -1188,18 +1183,13 @@ export default function MyPage({
       </div>
 
       {/* 버전 토스트 */}
-      <div style={{
-        position: 'absolute', bottom: 24, left: '50%',
-        transform: `translateX(-50%) translateY(${versionToast ? 0 : 10}px)`,
-        opacity: versionToast ? 1 : 0,
-        transition: 'opacity 0.2s, transform 0.2s',
-        background: '#191F28', color: 'white',
-        borderRadius: 8, padding: '9px 16px',
-        fontSize: 13, fontWeight: 500,
-        whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 100,
-      }}>
-        현재 최신 버전을 사용 중입니다
-      </div>
+      {/* 버전 토스트 */}
+      <Toast
+        open={versionToast}
+        position="bottom"
+        text="현재 최신 버전을 사용 중입니다"
+        onClose={() => setVersionToast(false)}
+      />
 
       {/* 더보기 드롭다운 팝업 */}
       {showMoreSheet && (

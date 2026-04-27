@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { getCurrentLocation, Accuracy } from '@apps-in-toss/web-framework';
+import { Toast } from '@toss/tds-mobile';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
-import CheckConfirmIcon from '../assets/icons/icon_check_confirm.svg?react';
-import SnackbarCloseIcon from '../assets/icons/icon_close.svg?react';
+import Snackbar from '../components/Snackbar';
 
 // ── 타입 ─────────────────────────────────
 interface Cafe {
@@ -317,22 +317,9 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   const [locSheet, setLocSheet] = useState<LocationSheetType | null>(null);
   const [gpsToast, setGpsToast] = useState(false); // GPS 신호 실패 토스트
   const [favoriteSnackbar, setFavoriteSnackbar] = useState<'added' | 'removed' | null>(null);
-  const [snackbarDissolving, setSnackbarDissolving] = useState(false);
-  const snackbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dissolveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showFavoriteSnackbar = (type: 'added' | 'removed') => {
-    if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
-    if (dissolveTimerRef.current) clearTimeout(dissolveTimerRef.current);
-    setSnackbarDissolving(false);
     setFavoriteSnackbar(type);
-    snackbarTimerRef.current = setTimeout(() => {
-      setSnackbarDissolving(true);
-      dissolveTimerRef.current = setTimeout(() => {
-        setFavoriteSnackbar(null);
-        setSnackbarDissolving(false);
-      }, 700);
-    }, 3000);
   };
 
   // 카테고리 필터 + appliedFilters + 정렬 적용
@@ -761,70 +748,27 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
       )}
 
       {/* ── GPS 실패 토스트 ── */}
-      <div style={{
-        position: 'absolute',
-        bottom: 'calc(50vh + 20px)',
-        left: '50%',
-        transform: `translateX(-50%) translateY(${gpsToast ? 0 : 12}px)`,
-        opacity: gpsToast ? 1 : 0,
-        transition: 'opacity 0.2s, transform 0.2s',
-        background: '#191F28',
-        color: 'white',
-        borderRadius: 8,
-        padding: '9px 16px',
-        fontSize: 13,
-        fontWeight: 500,
-        whiteSpace: 'nowrap',
-        zIndex: 350,
-        pointerEvents: 'none',
-      }}>
-        현재 위치를 가져오지 못했어요. 다시 시도해주세요
-      </div>
+      <Toast
+        open={gpsToast}
+        position="bottom"
+        text="현재 위치를 가져오지 못했어요. 다시 시도해주세요"
+        onClose={() => setGpsToast(false)}
+      />
 
       {/* ── 모음집 저장/제거 스낵바 ── */}
       {favoriteSnackbar === 'added' && (
-        <div style={{
-          position: 'absolute', bottom: 76, left: '50%',
-          transform: `translateX(-50%) translateY(${!snackbarDissolving ? 0 : 12}px)`,
-          opacity: snackbarDissolving ? 0 : 1,
-          transition: snackbarDissolving ? 'opacity 0.7s ease, transform 0.7s ease' : 'opacity 0.25s, transform 0.25s',
-          width: 'fit-content', height: 59, borderRadius: 9999,
-          background: '#FDFDFE',
-          display: 'flex', alignItems: 'center',
-          paddingLeft: 16, paddingRight: 16, gap: 12,
-          zIndex: 350, pointerEvents: 'auto',
-          boxSizing: 'border-box',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-        }}>
-          <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <CheckConfirmIcon width={24} height={24} />
-          </div>
-          <span style={{ flex: 1, fontSize: 15, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
-            카페를 모음집에 담았어요
-          </span>
-        </div>
+        <Snackbar
+          type="positive"
+          message="카페를 모음집에 담았어요"
+          onDismiss={() => setFavoriteSnackbar(null)}
+        />
       )}
       {favoriteSnackbar === 'removed' && (
-        <div style={{
-          position: 'absolute', bottom: 76, left: '50%',
-          transform: `translateX(-50%) translateY(${!snackbarDissolving ? 0 : 12}px)`,
-          opacity: snackbarDissolving ? 0 : 1,
-          transition: snackbarDissolving ? 'opacity 0.7s ease, transform 0.7s ease' : 'opacity 0.25s, transform 0.25s',
-          width: 'fit-content', height: 59, borderRadius: 9999,
-          background: '#FDFDFE',
-          display: 'flex', alignItems: 'center',
-          paddingLeft: 16, paddingRight: 16, gap: 12,
-          zIndex: 350, pointerEvents: 'auto',
-          boxSizing: 'border-box',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-        }}>
-          <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <SnackbarCloseIcon width={24} height={24} />
-          </div>
-          <span style={{ flex: 1, fontSize: 15, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
-            카페를 모음집에서 꺼냈어요
-          </span>
-        </div>
+        <Snackbar
+          type="negative"
+          message="카페를 모음집에서 꺼냈어요"
+          onDismiss={() => setFavoriteSnackbar(null)}
+        />
       )}
 
     </div>

@@ -85,14 +85,10 @@ function PhotoDetailView({
   photos,
   initialIndex,
   onBack,
-  isFavorite,
-  onFavoriteToggle,
 }: {
   photos: ReviewPhoto[];
   initialIndex: number;
   onBack: () => void;
-  isFavorite?: boolean;
-  onFavoriteToggle?: () => void;
 }) {
   // 같은 작성자의 사진만 표시
   const authorPhotos = photos.filter(p => p.reviewAuthor === photos[initialIndex].reviewAuthor);
@@ -461,8 +457,6 @@ export default function PhotoReviewPage({
         photos={photos}
         initialIndex={detailIndex}
         onBack={() => setDetailIndex(null)}
-        isFavorite={isFavorite}
-        onFavoriteToggle={onFavoriteToggle}
       />
     );
   }

@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { openURL, appLogin, partner, tdsEvent, graniteEvent } from '@apps-in-toss/web-framework';
-import CheckConfirmIcon from '../assets/icons/icon_check_confirm.svg?react';
-import SnackbarCloseIcon from '../assets/icons/icon_close.svg?react';
-import { ConfirmDialog } from '@toss/tds-mobile';
+import { ConfirmDialog, Toast } from '@toss/tds-mobile';
 import BottomSheet from '../components/BottomSheet';
+import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
 import WriteReviewPage from './WriteReviewPage';
@@ -740,89 +739,6 @@ function LoginPromptSheet({ onClose }: { onClose: () => void }) {
 }
 
 // ────────── 즐겨찾기 스낵바 ──────────────────────────────────
-// Figma: detail_favorite_success / detail_favorite_cancel
-// bg=#8b95a1, h=59, r=9999, 가운데 정렬, bottom=76px
-
-function FavoriteSnackbar({
-  type, dissolving,
-}: {
-  type: 'added' | 'removed' | null;
-  dissolving: boolean;
-}) {
-  const visible = type !== null;
-
-  if (type === 'added') {
-    return (
-      <div style={{
-        position: 'fixed', bottom: 76, left: '50%',
-        transform: `translateX(-50%) translateY(${visible && !dissolving ? 0 : 12}px)`,
-        opacity: dissolving ? 0 : visible ? 1 : 0,
-        transition: dissolving ? 'opacity 0.7s ease, transform 0.7s ease' : 'opacity 0.25s, transform 0.25s',
-        width: 'fit-content', height: 59, borderRadius: 9999,
-        background: '#FDFDFE',
-        display: 'flex', alignItems: 'center',
-        paddingLeft: 16, paddingRight: 16, gap: 12,
-        zIndex: 300, pointerEvents: visible ? 'auto' : 'none',
-        boxSizing: 'border-box',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-      }}>
-        <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <CheckConfirmIcon width={24} height={24} />
-        </div>
-        <span style={{ flex: 1, fontSize: 15, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
-          카페를 모음집에 담았어요
-        </span>
-      </div>
-    );
-  }
-
-  if (type === 'removed') {
-    return (
-      <div style={{
-        position: 'fixed', bottom: 76, left: '50%',
-        transform: `translateX(-50%) translateY(${visible && !dissolving ? 0 : 12}px)`,
-        opacity: dissolving ? 0 : visible ? 1 : 0,
-        transition: dissolving ? 'opacity 0.7s ease, transform 0.7s ease' : 'opacity 0.25s, transform 0.25s',
-        width: 'fit-content', height: 59, borderRadius: 9999,
-        background: '#FDFDFE',
-        display: 'flex', alignItems: 'center',
-        paddingLeft: 16, paddingRight: 16, gap: 12,
-        zIndex: 300, pointerEvents: visible ? 'auto' : 'none',
-        boxSizing: 'border-box',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-      }}>
-        <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <SnackbarCloseIcon width={24} height={24} />
-        </div>
-        <span style={{ flex: 1, fontSize: 15, fontWeight: 590, color: '#001936', whiteSpace: 'nowrap' }}>
-          카페를 모음집에서 꺼냈어요
-        </span>
-      </div>
-    );
-  }
-
-  return null;
-}
-
-// ────────── 복사 완료 토스트 ─────────────────────────────────
-function CopyToast({ visible }: { visible: boolean }) {
-  return (
-    <div style={{
-      position: 'fixed', bottom: 90, left: '50%',
-      transform: `translateX(-50%) translateY(${visible ? 0 : 8}px)`,
-      opacity: visible ? 1 : 0,
-      transition: 'opacity 0.2s, transform 0.2s',
-      background: '#191F28', color: 'white',
-      borderRadius: 8, padding: '8px 16px',
-      fontSize: 13, fontWeight: 500,
-      zIndex: 200, pointerEvents: 'none',
-      whiteSpace: 'nowrap',
-    }}>
-      전화번호가 복사됐어요
-    </div>
-  );
-}
-
 // ────────── 탭바 아이콘 ──────────────────────────────────────
 function NavHomeIcon()       { return <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>; }
 function NavGuideIcon()      { return <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>; }
@@ -986,9 +902,6 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [reviewSortPopupOpen, setReviewSortPopupOpen] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [favoriteSnackbar, setFavoriteSnackbar] = useState<'added' | 'removed' | null>(null);
-  const [snackbarDissolving, setSnackbarDissolving] = useState(false);
-  const snackbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dissolveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isFavorite = isFavorited(cafeId);
 
@@ -1004,20 +917,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   };
 
   const showFavoriteSnackbar = (type: 'added' | 'removed') => {
-    // 기존 타이머 초기화
-    if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
-    if (dissolveTimerRef.current) clearTimeout(dissolveTimerRef.current);
-    // 즉시 표시
-    setSnackbarDissolving(false);
     setFavoriteSnackbar(type);
-    // 3초 후 dissolve 시작 → 0.7s 후 완전히 제거
-    snackbarTimerRef.current = setTimeout(() => {
-      setSnackbarDissolving(true);
-      dissolveTimerRef.current = setTimeout(() => {
-        setFavoriteSnackbar(null);
-        setSnackbarDissolving(false);
-      }, 700);
-    }, 3000);
   };
 
   const handleFavorite = () => {
@@ -1541,11 +1441,27 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       </div>
 
       {/* ── 복사 완료 토스트 ── */}
-      <CopyToast visible={copyToastVisible} />
-      <FavoriteSnackbar
-        type={favoriteSnackbar}
-        dissolving={snackbarDissolving}
+      <Toast
+        open={copyToastVisible}
+        position="bottom"
+        text="전화번호가 복사됐어요"
+        onClose={() => setCopyToastVisible(false)}
       />
+      {/* ── 저장/해제 스낵바 ── */}
+      {favoriteSnackbar === 'added' && (
+        <Snackbar
+          type="positive"
+          message="카페를 모음집에 담았어요"
+          onDismiss={() => setFavoriteSnackbar(null)}
+        />
+      )}
+      {favoriteSnackbar === 'removed' && (
+        <Snackbar
+          type="negative"
+          message="카페를 모음집에서 꺼냈어요"
+          onDismiss={() => setFavoriteSnackbar(null)}
+        />
+      )}
 
       {/* ── 하단 탭 네비바 (TDS 플로팅) ── */}
       <nav style={{
