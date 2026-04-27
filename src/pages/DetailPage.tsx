@@ -875,6 +875,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const cafe = getCafeDetail(cafeId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
+  const cafeInfoRef = useRef<HTMLDivElement>(null);
   const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed, userId } = useFavorites();
 
   // ── DB 리뷰 로딩 ──────────────────────────────────────────
@@ -988,8 +989,10 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const todayKey = getTodayKey();
 
   const handleScroll = () => {
-    if (scrollRef.current) {
-      setScrolled(scrollRef.current.scrollTop > 200);
+    if (scrollRef.current && cafeInfoRef.current) {
+      const containerTop = scrollRef.current.getBoundingClientRect().top;
+      const infoBottom = cafeInfoRef.current.getBoundingClientRect().bottom;
+      setScrolled(infoBottom <= containerTop);
     }
   };
 
@@ -1227,7 +1230,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         })()}
 
         {/* ── 기본 정보 섹션 ── */}
-        <div style={{ padding: '20px 20px 0' }}>
+        <div ref={cafeInfoRef} style={{ padding: '20px 20px 0' }}>
           {/* 카페명 */}
           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#191F28', marginBottom: 10 }}>
             {cafe.name}
