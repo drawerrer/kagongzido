@@ -1584,8 +1584,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       {showUnfavoriteDialog && (
         <ConfirmDialog
           open={true}
-          title={<ConfirmDialog.Title>저장을 취소할까요?</ConfirmDialog.Title>}
-          description={<ConfirmDialog.Description>저장된 카페가 모음집에서 사라져요.</ConfirmDialog.Description>}
+          title={<ConfirmDialog.Title>매장을 삭제할까요?</ConfirmDialog.Title>}
+          description={<ConfirmDialog.Description>모음집에서 매장이 사라져요.{'\n'}담아둔 컬렉션에서도 함께 지워져요.</ConfirmDialog.Description>}
           cancelButton={
             <ConfirmDialog.CancelButton onClick={() => setShowUnfavoriteDialog(false)}>
               닫기
@@ -1593,7 +1593,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           }
           confirmButton={
             <ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={handleConfirmUnfavorite}>
-              저장 취소
+              삭제하기
             </ConfirmDialog.ConfirmButton>
           }
           onClose={() => setShowUnfavoriteDialog(false)}
