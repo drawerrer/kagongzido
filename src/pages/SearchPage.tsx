@@ -347,7 +347,7 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
       <div style={{
         position: 'absolute',
         bottom: 0, left: 0, right: 0,
-        height: 'calc(100% - env(safe-area-inset-top) - 44px)',
+        height: 'calc(100% - env(safe-area-inset-top, 0px))',
         background: '#f3f3f3',
         display: 'flex', flexDirection: 'column',
         zIndex: 20,
