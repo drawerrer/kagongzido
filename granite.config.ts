@@ -10,9 +10,6 @@ export default defineConfig({
       build: 'rsbuild build',
     },
   },
-  navigationBar: {
-    withBackButton: true,
-  },
   permissions: [{ name: 'geolocation', access: 'access' }],
   outdir: 'dist',
   brand: {
