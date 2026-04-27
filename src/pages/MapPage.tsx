@@ -5,6 +5,7 @@ import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterM
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
+import DetailPage from './DetailPage';
 
 // ── 타입 ─────────────────────────────────
 interface Cafe {
@@ -541,23 +542,56 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
       {/* ── 카카오 지도 배경 ── */}
       <div ref={mapRef} style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 72px)', bottom: 0, left: 0, right: 0, background: '#E8EAED' }}>
         {!import.meta.env.VITE_KAKAO_MAP_KEY && (
-          /* API 키 미설정 시 안내 */
-          <div
-            style={{
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              background: '#F2F4F6',
-            }}
-          >
-            <span style={{ fontSize: 44 }}>🗺️</span>
-            <p style={{ fontSize: 14, color: '#6B7684', fontWeight: 500 }}>카카오맵이 표시됩니다</p>
-            <p style={{ fontSize: 12, color: '#B0B8C1', textAlign: 'center', lineHeight: 1.5 }}>
-              .env에 VITE_KAKAO_MAP_KEY를<br />설정하면 실제 지도가 나타나요
-            </p>
+          /* API 키 미설정 시 목업 지도 */
+          <div style={{ position: 'relative', height: '100%', background: '#E8EAED', overflow: 'hidden' }}>
+            {/* 목업 도로 */}
+            <div style={{ position: 'absolute', top: '30%', left: 0, right: 0, height: 8, background: '#D0D4D8' }} />
+            <div style={{ position: 'absolute', top: '55%', left: 0, right: 0, height: 5, background: '#D0D4D8' }} />
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: '40%', width: 8, background: '#D0D4D8' }} />
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: '70%', width: 5, background: '#D0D4D8' }} />
+            {/* 목업 블록 */}
+            <div style={{ position: 'absolute', top: '8%', left: '10%', width: 60, height: 44, background: '#D8DBE0', borderRadius: 4 }} />
+            <div style={{ position: 'absolute', top: '8%', left: '50%', width: 80, height: 36, background: '#D8DBE0', borderRadius: 4 }} />
+            <div style={{ position: 'absolute', top: '38%', left: '10%', width: 50, height: 40, background: '#D8DBE0', borderRadius: 4 }} />
+            <div style={{ position: 'absolute', top: '38%', left: '50%', width: 70, height: 30, background: '#D8DBE0', borderRadius: 4 }} />
+            <div style={{ position: 'absolute', top: '62%', left: '15%', width: 55, height: 34, background: '#D8DBE0', borderRadius: 4 }} />
+            <div style={{ position: 'absolute', top: '62%', left: '75%', width: 40, height: 44, background: '#D8DBE0', borderRadius: 4 }} />
+            {/* 목업 카페 핀 — MOCK_CAFES 일부를 상대 위치로 배치 */}
+            {[
+              { cafe: MOCK_CAFES[0], top: '18%', left: '20%' },
+              { cafe: MOCK_CAFES[1], top: '22%', left: '58%' },
+              { cafe: MOCK_CAFES[2], top: '44%', left: '25%' },
+              { cafe: MOCK_CAFES[3], top: '42%', left: '62%' },
+              { cafe: MOCK_CAFES[4], top: '68%', left: '32%' },
+              { cafe: MOCK_CAFES[5], top: '66%', left: '78%' },
+            ].map(({ cafe, top, left }) => (
+              <button
+                key={cafe.id}
+                onClick={() => { setSelectedMapCafe(cafe); setPanelExpanded(false); }}
+                style={{
+                  position: 'absolute',
+                  top,
+                  left,
+                  transform: 'translate(-50%, -100%)',
+                  background: selectedMapCafe?.id === cafe.id ? '#252525' : '#ffffff',
+                  border: 'none',
+                  borderRadius: 999,
+                  padding: '4px 10px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: selectedMapCafe?.id === cafe.id ? '#fff' : '#191F28',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  zIndex: 5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                ☕ {cafe.name.split(' ').slice(-1)[0]}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -649,9 +683,14 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         onTouchEnd={(e) => {
           const delta = e.changedTouches[0].clientY - touchStartYRef.current;
           if (selectedMapCafe) {
-            // 미니 프리뷰 모드: 위로 스와이프 → 상세 이동, 아래로 스와이프 → 닫기
-            if (delta < -60) { onDetailOpen(selectedMapCafe.id); setSelectedMapCafe(null); }
-            else if (delta > 60) { setSelectedMapCafe(null); }
+            if (panelExpanded) {
+              // 확장 상태: 아래로 세게 → 기본형으로 복귀
+              if (delta > 60) setPanelExpanded(false);
+            } else {
+              // 기본형 상태: 위로 → 확장, 아래로 → 닫기
+              if (delta < -60) setPanelExpanded(true);
+              else if (delta > 60) setSelectedMapCafe(null);
+            }
           } else {
             if (delta > 60 && panelExpanded) setPanelExpanded(false);
             if (delta < -60 && !panelExpanded) setPanelExpanded(true);
@@ -670,6 +709,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
+          ...(selectedMapCafe ? { transform: 'translateZ(0)', willChange: 'transform' } : {}),
         }}
       >
         {/* 핸들 */}
@@ -687,47 +727,14 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         </div>
 
         {selectedMapCafe ? (
-          /* ── 지도 마커 클릭 시 미니 프리뷰 ── */
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '8px 16px 16px', overflow: 'hidden' }}>
-            {/* 카페명 + 닫기 */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <p style={{ fontSize: 18, fontWeight: 700, color: '#191F28', flex: 1, marginRight: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {selectedMapCafe.name}
-              </p>
-              <button
-                onClick={() => setSelectedMapCafe(null)}
-                style={{ width: 32, height: 32, borderRadius: 999, background: 'rgba(0,0,0,0.06)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7684" strokeWidth="2.5" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-
-            {/* 이미지 */}
-            <div style={{ width: '100%', height: 130, borderRadius: 12, background: '#F2F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, flexShrink: 0 }}>
-              <span style={{ fontSize: 48 }}>☕</span>
-            </div>
-
-            {/* 주소 · 거리 · 리뷰 */}
-            <p style={{ fontSize: 13, color: '#6B7684', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedMapCafe.address}</p>
-            <p style={{ fontSize: 12, color: '#B0B8C1', marginBottom: 10 }}>{fmtDist(selectedMapCafe.distance)} · 리뷰 {selectedMapCafe.reviewCount}</p>
-
-            {/* 태그 */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
-              {selectedMapCafe.tags.map(t => (
-                <span key={t} style={{ padding: '2px 8px', background: '#F2F4F6', borderRadius: 4, fontSize: 11, color: '#4E5968' }}>{t}</span>
-              ))}
-            </div>
-
-            {/* 자세히 보기 CTA */}
-            <button
-              onClick={() => { onDetailOpen(selectedMapCafe.id); setSelectedMapCafe(null); }}
-              style={{ height: 48, borderRadius: 12, background: '#252525', color: '#fff', fontSize: 15, fontWeight: 600, border: 'none', cursor: 'pointer', flexShrink: 0 }}
-            >
-              자세히 보기
-            </button>
-            <p style={{ textAlign: 'center', fontSize: 11, color: '#B0B8C1', marginTop: 8 }}>위로 스와이프하면 상세 페이지로 이동해요</p>
+          /* ── 지도 마커 클릭 시 임베드 상세 ── */
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <DetailPage
+              embedded
+              cafeId={selectedMapCafe.id}
+              onBack={() => { setSelectedMapCafe(null); setPanelExpanded(false); }}
+              onClose={() => { setSelectedMapCafe(null); setPanelExpanded(false); }}
+            />
           </div>
         ) : (
           <>

@@ -762,6 +762,7 @@ interface DetailPageProps {
   scrollToReview?: boolean;
   openDirections?: boolean;
   onGoToCollection?: (collection: { id: string; name: string }) => void;
+  embedded?: boolean; // 바텀시트 임베드 모드: 하트버튼/backEvent 등록 스킵
 }
 
 // 아바타 색상 (user_id 기반 고정 색)
@@ -787,7 +788,7 @@ function rowToReviewItem(row: ReviewRow): ReviewItem {
   };
 }
 
-export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections }: DetailPageProps) {
+export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false }: DetailPageProps) {
   const cafe = getCafeDetail(cafeId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
@@ -816,15 +817,16 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 공통 내비게이션 백버튼 → onBack 연결
+  // 공통 내비게이션 백버튼 → onBack 연결 (임베드 모드에서는 패널이 처리)
   useEffect(() => {
+    if (embedded) return undefined;
     try {
       return graniteEvent.addEventListener('backEvent', {
         onEvent: () => onBack(),
         onError: (err) => console.error(err),
       });
     } catch { return undefined; }
-  }, [onBack]);
+  }, [onBack, embedded]);
 
   // 리뷰 섹션으로 자동 스크롤
   useEffect(() => {
@@ -879,6 +881,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     }
   };
   useEffect(() => {
+    if (embedded) return undefined;
     try {
       partner.addAccessoryButton({ id: 'heart', title: '하트', icon: { name: 'icon-heart-mono' } });
       const cleanup = tdsEvent.addEventListener('navigationAccessoryEvent', {
@@ -893,7 +896,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       return undefined;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [embedded]);
 
   const [copyToastVisible, setCopyToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
