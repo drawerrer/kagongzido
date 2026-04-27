@@ -876,7 +876,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const scrollRef = useRef<HTMLDivElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
   const cafeInfoRef = useRef<HTMLDivElement>(null);
-  const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed, userId } = useFavorites();
+  const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed, userId, collections } = useFavorites();
 
   // ── DB 리뷰 로딩 ──────────────────────────────────────────
   const [dbReviews, setDbReviews] = useState<ReviewItem[]>([]);
@@ -940,9 +940,16 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
   // ── 네비바 하트 아이콘 (카페 상세페이지 전용) ──────────────
   const heartHandlerRef = useRef<() => void>(() => {});
+  const isInAnyCollection = collections.some(col => col.storeIds.includes(cafeId));
+
   heartHandlerRef.current = () => {
     if (isFavorited(cafeId)) {
-      setShowUnfavoriteDialog(true);
+      if (isInAnyCollection) {
+        setShowUnfavoriteDialog(true);
+      } else {
+        removeFavorite(cafeId);
+        showFavoriteSnackbar('removed');
+      }
     } else {
       addFavorite({
         id: cafe.id,
@@ -1016,7 +1023,12 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const handleFavorite = () => {
     if (!isLoggedIn) { setShowLoginSheet(true); return; }
     if (isFavorite) {
-      setShowUnfavoriteDialog(true);
+      if (isInAnyCollection) {
+        setShowUnfavoriteDialog(true);
+      } else {
+        removeFavorite(cafeId);
+        showFavoriteSnackbar('removed');
+      }
     } else {
       addFavorite({
         id: cafe.id,
