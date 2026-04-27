@@ -245,6 +245,7 @@ function GuideBookDetailView({
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRepositioning = useRef(false);
+  const isSnapping = useRef(false);
   const isFirstMount = useRef(true);
 
   // ── 데스크탑 마우스 드래그 ───────────────────────────────────
@@ -286,10 +287,28 @@ function GuideBookDetailView({
   const snapTo = useCallback((targetIdx: number) => {
     const el = scrollRef.current;
     if (!el) return;
+    isSnapping.current = true;
     el.style.scrollBehavior = 'smooth';
     el.scrollLeft = targetIdx * itemW;
-    setTimeout(() => { if (scrollRef.current) scrollRef.current.style.scrollBehavior = 'auto'; }, 400);
-  }, [itemW]);
+    setTimeout(() => {
+      if (!scrollRef.current) { isSnapping.current = false; return; }
+      scrollRef.current.style.scrollBehavior = 'auto';
+      isSnapping.current = false;
+      // 스냅 완료 후 경계 구간이면 순간이동으로 중간 구간 복귀
+      const curAbs = Math.round(scrollRef.current.scrollLeft / itemW);
+      if (curAbs < stores.length) {
+        isRepositioning.current = true;
+        scrollRef.current.scrollLeft += stores.length * itemW;
+        setAbsIndex(prev => prev + stores.length);
+        setTimeout(() => { isRepositioning.current = false; }, 80);
+      } else if (curAbs >= stores.length * 2) {
+        isRepositioning.current = true;
+        scrollRef.current.scrollLeft -= stores.length * itemW;
+        setAbsIndex(prev => prev - stores.length);
+        setTimeout(() => { isRepositioning.current = false; }, 80);
+      }
+    }, 400);
+  }, [itemW, stores.length]);
 
   const onCarouselTouchStart = useCallback((e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
@@ -360,7 +379,7 @@ function GuideBookDetailView({
 
     if (scrollTimer.current) clearTimeout(scrollTimer.current);
     scrollTimer.current = setTimeout(() => {
-      if (!scrollRef.current || isRepositioning.current) return;
+      if (!scrollRef.current || isRepositioning.current || isSnapping.current) return;
       const curAbs = Math.round(scrollRef.current.scrollLeft / itemW);
       if (curAbs < stores.length) {
         isRepositioning.current = true;
