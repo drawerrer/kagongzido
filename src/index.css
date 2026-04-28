@@ -44,6 +44,11 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
+/* TDS BottomCTA 배경색 오버라이드 — 서비스 배경(#F3F3F3)에 맞춤 */
+:root {
+  --bottom-cta-background: #F3F3F3;
+}
+
 /* 기본 리셋 */
 *, *::before, *::after {
   box-sizing: border-box;
