@@ -742,24 +742,31 @@ export default function GuidebookPage({
 }) {
   const { addFavorite, isFavorited } = useFavorites();
   const [view, setView] = useState<GuideView>(initialView ?? 'main');
+  const [previousView, setPreviousView] = useState<GuideView>('main');
   const [activeGuidebook, setActiveGuidebook] = useState<MockGuidebook>(FEATURED);
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const dismissSnackbar = useCallback(() => setSnackbar(null), []);
   const [showShareSheet, setShowShareSheet] = useState(false);
 
   const changeView = (v: GuideView) => {
+    setPreviousView(view);
     setView(v);
     onViewChange?.(v);
   };
 
   const handleBack = useCallback(() => {
-    if (view !== 'main') {
-      changeView('main');
+    if (view === 'detail') {
+      // detail에서는 진입 전 화면(main or past)으로 복귀
+      setView(previousView);
+      onViewChange?.(previousView);
+    } else if (view !== 'main') {
+      setView('main');
+      onViewChange?.('main');
     } else {
       onBack?.();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
+  }, [view, previousView]);
 
   // SDK 네이티브 백 이벤트 등록 (Toss 앱 외부 환경에서는 무시)
   useEffect(() => {
