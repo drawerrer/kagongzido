@@ -1057,7 +1057,7 @@ export default function CollectionPage({
         <ConfirmDialog
           open={true}
           title={<ConfirmDialog.Title>컬렉션을 삭제할까요?</ConfirmDialog.Title>}
-          description={<ConfirmDialog.Description>만들어둔 컬렉션이 사라져요.{'\n'}담아둔 매장은 전체 모음집에서 계속 볼 수 있어요.</ConfirmDialog.Description>}
+          description={<ConfirmDialog.Description>담아둔 카페는 모음집에서 계속 볼 수 있어요.</ConfirmDialog.Description>}
           cancelButton={<ConfirmDialog.CancelButton onClick={() => { setShowColDeleteConfirm(false); setColActionTargetId(null); }}>닫기</ConfirmDialog.CancelButton>}
           confirmButton={
             <ConfirmDialog.ConfirmButton
