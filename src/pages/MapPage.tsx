@@ -701,7 +701,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           bottom: 0,
           left: 0,
           right: 0,
-          zIndex: 10,
+          zIndex: panelExpanded ? 25 : 10,
           background: '#f3f3f3',
           borderRadius: '16px 16px 0 0',
           height: panelExpanded ? 'calc(100% - 8px)' : '50vh',
@@ -815,6 +815,14 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
               onScroll={(e) => {
                 if (!panelExpanded && e.currentTarget.scrollTop > 0) {
                   setPanelExpanded(true);
+                }
+              }}
+              onTouchStart={(e) => { touchStartYRef.current = e.touches[0].clientY; }}
+              onTouchEnd={(e) => {
+                const el = e.currentTarget;
+                const delta = e.changedTouches[0].clientY - touchStartYRef.current;
+                if (panelExpanded && el.scrollTop === 0 && delta > 60) {
+                  setPanelExpanded(false);
                 }
               }}
             >
