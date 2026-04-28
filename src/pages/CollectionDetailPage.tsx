@@ -1303,7 +1303,7 @@ export default function CollectionDetailPage({
             position: 'fixed', bottom: 0, left: 0, right: 0,
             padding: '12px 20px',
             paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-            background: '#fff',
+            background: '#F3F3F3',
             zIndex: 1000,
           }}>
             <CTAButton color="dark" variant="weak" onClick={exitEditMode}>완료</CTAButton>
