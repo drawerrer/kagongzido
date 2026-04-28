@@ -465,55 +465,6 @@ export default function PhotoReviewPage({
   return (
     <div style={{ height: '100%', background: '#f3f3f3', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── 헤더 ── */}
-      <header style={{
-        display: 'flex', alignItems: 'center',
-        padding: '12px 16px',
-        borderBottom: '1px solid #F2F4F6',
-        flexShrink: 0,
-        background: '#f3f3f3',
-      }}>
-        {/* 뒤로가기 */}
-        <button onClick={onBack} style={hdrBtn}>
-          <BackIcon />
-        </button>
-
-        <span style={{ flex: 1 }} />
-
-        {/* 우측: 하트 pill + More+Close pill (DetailPage 동일 스펙) */}
-        <div style={{ display: 'flex', gap: 4 }}>
-          {/* 하트 pill: 44×34, r=99 */}
-          <button
-            onClick={onFavoriteToggle}
-            style={{
-              width: 44, height: 34, borderRadius: 99, flexShrink: 0,
-              background: 'rgba(0,23,51,0.02)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: 'none', cursor: 'pointer',
-            }}
-          >
-            <HeartIcon filled={isFavorite} color={isFavorite ? '#252525' : '#697482'} />
-          </button>
-          {/* More+Close pill: 93×34, r=99, 구분선 포함 */}
-          <div style={{
-            width: 93, height: 34, borderRadius: 99, flexShrink: 0,
-            background: 'rgba(0,23,51,0.02)',
-            display: 'flex', alignItems: 'center', overflow: 'hidden',
-          }}>
-            <button style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'pointer' }}>
-              <MoreDotsIcon color="#697482" />
-            </button>
-            <div style={{ width: 1, height: 16, background: 'rgba(0,27,55,0.1)', flexShrink: 0 }} />
-            <button
-              onClick={onClose}
-              style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'pointer' }}
-            >
-              <CloseIcon color="rgba(0,19,43,0.58)" />
-            </button>
-          </div>
-        </div>
-      </header>
-
       {/* info_2 섹션: '포토리뷰 전체보기' */}
       <div style={{
         height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center',

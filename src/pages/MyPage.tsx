@@ -1055,7 +1055,8 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
 
         {/* 제보하기 버튼 */}
         {(() => {
-          const canSubmit = reviewText.trim().length >= 10;
+          const allChipsSelected = Object.keys(CHIP_OPTIONS).every(cat => !!chips[cat]);
+          const canSubmit = allChipsSelected && reviewText.trim().length >= 10;
           return (
             <div style={{ padding: '0 20px 20px', background: '#f3f3f3' }}>
               <button
