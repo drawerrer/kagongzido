@@ -741,12 +741,14 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
   const [photos, setPhotos] = useState<string[]>([]);
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [directName, setDirectName] = useState<string | null>(null);
+  const [directAddress, setDirectAddress] = useState('');
 
   const results = query.trim()
     ? MOCK_CAFE_SEARCH.filter(c => c.name.includes(query.trim()))
     : [];
-  const isSearching = !selectedCafe && query.trim().length > 0 && results.length > 0;
-  const isNoResult = !selectedCafe && query.trim().length > 0 && results.length === 0;
+  const isSearching = !selectedCafe && !directName && query.trim().length > 0 && results.length > 0;
+  const isNoResult = !selectedCafe && !directName && query.trim().length > 0 && results.length === 0;
 
   const toggleChip = (category: string, option: string) => {
     setChips(prev => prev[category] === option ? { ...prev, [category]: '' } : { ...prev, [category]: option });
@@ -768,7 +770,7 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
         <div style={{ padding: '0 16px 20px', background: '#f3f3f3' }}>
           <span style={{ display: 'block', fontSize: 14, fontWeight: 590, color: '#000000', lineHeight: '25.5px', marginBottom: 8 }}>카페명</span>
 
-          {/* 검색 인풋 / 선택 완료 표시 */}
+          {/* 인풋 1: 카페명 검색 / 선택완료 / 직접입력 */}
           <div style={{
             background: '#ffffff', borderRadius: 12, height: 44,
             display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10, gap: 6,
@@ -785,9 +787,25 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
                 }}>
                   {selectedCafe.address}
                 </span>
-                {/* 선택 해제 버튼 */}
                 <button
-                  onClick={() => { setSelectedCafe(null); setQuery(''); }}
+                  onClick={() => { setSelectedCafe(null); setQuery(''); setDirectName(null); setDirectAddress(''); }}
+                  style={{ padding: 0, lineHeight: 0, flexShrink: 0 }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" fill="#E5E8EB" />
+                    <line x1="15" y1="9" x2="9" y2="15" stroke="#6B7684" strokeWidth="1.5" strokeLinecap="round" />
+                    <line x1="9" y1="9" x2="15" y2="15" stroke="#6B7684" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </>
+            ) : directName !== null ? (
+              /* 직접 입력 모드: 카페명 표시 + X */
+              <>
+                <span style={{ fontSize: 14, fontWeight: 510, color: '#252525', lineHeight: '17.5px', flex: 1 }}>
+                  {directName}
+                </span>
+                <button
+                  onClick={() => { setDirectName(null); setDirectAddress(''); setQuery(''); }}
                   style={{ padding: 0, lineHeight: 0, flexShrink: 0 }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -811,7 +829,41 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
             )}
           </div>
 
-          {/* 검색 결과 */}
+          {/* 인풋 2: 주소 입력 (직접 입력 모드) */}
+          {directName !== null && (
+            <div style={{
+              marginTop: 8,
+              background: '#ffffff', borderRadius: 12, height: 44,
+              display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10, gap: 6,
+            }}>
+              <input
+                autoFocus
+                value={directAddress}
+                onChange={e => setDirectAddress(e.target.value)}
+                placeholder="제보하시려는 카페의 주소를 알려주세요"
+                style={{
+                  flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                  fontSize: 14, fontWeight: 510, color: '#191f28', fontFamily: 'inherit',
+                }}
+              />
+              <button
+                onClick={() => {
+                  setSelectedCafe({ id: `manual-${directName}`, name: directName, address: directAddress });
+                  setDirectName(null);
+                  setDirectAddress('');
+                }}
+                style={{
+                  flexShrink: 0, height: 28, padding: '0 10px', borderRadius: 8,
+                  background: '#252525', color: '#ffffff',
+                  fontSize: 13, fontWeight: 590, border: 'none', cursor: 'pointer',
+                }}
+              >
+                저장
+              </button>
+            </div>
+          )}
+
+          {/* 검색 결과 없음 */}
           {isNoResult && (
             <div style={{
               marginTop: 16, padding: '32px 0',
@@ -821,7 +873,7 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
                 찾으시는 카페가 아직 없어요!
               </span>
               <button
-                onClick={() => { setQuery(''); setSelectedCafe(null); }}
+                onClick={() => { setDirectName(query); setQuery(''); }}
                 style={{
                   height: 38, borderRadius: 10,
                   backgroundColor: 'rgba(211,211,223,0.19)',
