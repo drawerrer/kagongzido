@@ -426,6 +426,7 @@ export default function CollectionPage({
   onPhotoMore,
   deletedCollection,
   onClearDeletedCollection,
+  onEditModeChange,
 }: {
   onDetailOpen?: (id: string) => void;
   onCollectionOpen?: (id: string, name: string) => void;
@@ -435,6 +436,7 @@ export default function CollectionPage({
   onPhotoMore?: (storeId: string, photos: string[], cafeName: string) => void;
   deletedCollection?: { id: string; name: string; storeIds: string[] } | null;
   onClearDeletedCollection?: () => void;
+  onEditModeChange?: (active: boolean) => void;
 }) {
   const {
     favorites, addFavorite: addFavoriteFromContext, removeFavorite: removeFavoriteFromContext,
@@ -455,6 +457,11 @@ export default function CollectionPage({
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [isOrganizeMode, setIsOrganizeMode] = useState(false); // 컬렉션 선택 모드
+
+  // 편집모드 진입/종료 시 부모에 알림 (탭바 숨김/표시)
+  useEffect(() => {
+    onEditModeChange?.(isEditMode || isOrganizeMode);
+  }, [isEditMode, isOrganizeMode]);
   const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
 
   // ── 드래그 순서 변경 ──

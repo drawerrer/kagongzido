@@ -81,6 +81,7 @@ function AppInner() {
   const [collectionDetail, setCollectionDetail] = useState<{ id: string; name: string } | null>(null);
   const [photoReview, setPhotoReview] = useState<{ storeId: string; cafeName: string; photos: string[] } | null>(null);
   const [deletedCollectionData, setDeletedCollectionData] = useState<{ id: string; name: string; storeIds: string[] } | null>(null);
+  const [isCollectionEditMode, setIsCollectionEditMode] = useState(false);
   const { isFavorited, addFavorite, removeFavorite, favorites } = useFavorites();
   const [myPageSubPage, setMyPageSubPage] = useState<string | null>(null);
   const [guidebookView, setGuidebookView] = useState<string | null>(null);
@@ -166,6 +167,7 @@ function AppInner() {
                 onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
                 onCollectionDeleted={(data) => { setCollectionDetail(null); setDeletedCollectionData(data); }}
                 onGoHome={() => { setCollectionDetail(null); setActiveTab('home'); }}
+                onEditModeChange={setIsCollectionEditMode}
               />
             ) : (
               <>
@@ -200,6 +202,7 @@ function AppInner() {
                       onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
                       deletedCollection={deletedCollectionData}
                       onClearDeletedCollection={() => setDeletedCollectionData(null)}
+                      onEditModeChange={setIsCollectionEditMode}
                     />
                   </PageErrorBoundary>
                 )}
@@ -214,7 +217,7 @@ function AppInner() {
             )}
           </div>
 
-          {/* ── 탭 바 (Toss 플로팅 형태) ── */}
+          {/* ── 탭 바 (Toss 플로팅 형태) — 편집모드 진입 시 숨김 ── */}
           <nav
             style={{
               position: 'fixed',
@@ -222,7 +225,7 @@ function AppInner() {
               right: 16,
               bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
               height: 56,
-              display: 'flex',
+              display: isCollectionEditMode ? 'none' : 'flex',
               alignItems: 'center',
               background: '#ffffff',
               borderRadius: 28,

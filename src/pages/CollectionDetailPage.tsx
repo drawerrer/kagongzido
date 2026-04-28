@@ -651,6 +651,7 @@ export default function CollectionDetailPage({
   onPhotoMore,
   onCollectionDeleted,
   onGoHome,
+  onEditModeChange,
 }: {
   collectionName: string;
   collectionId: string;
@@ -660,6 +661,7 @@ export default function CollectionDetailPage({
   onPhotoMore?: (storeId: string, photos: string[], cafeName: string) => void;
   onCollectionDeleted?: (data: { id: string; name: string; storeIds: string[] }) => void;
   onGoHome?: () => void;
+  onEditModeChange?: (active: boolean) => void;
 }) {
   const {
     recentlyViewed, favorites, collections,
@@ -671,6 +673,11 @@ export default function CollectionDetailPage({
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // 편집모드 진입/종료 시 부모에 알림 (탭바 숨김/표시)
+  useEffect(() => {
+    onEditModeChange?.(isEditMode);
+  }, [isEditMode]);
   const [showDeleteCollectionDialog, setShowDeleteCollectionDialog] = useState(false);
   const [showDeleteStoreId, setShowDeleteStoreId] = useState<string | null>(null);
   const [showAddStoreSheet, setShowAddStoreSheet] = useState(false);
