@@ -818,7 +818,7 @@ export default function CollectionPage({
           />
         ) : (
           <BottomCTA.Single fixed>
-            <CTAButton color="dark" variant="weak" onClick={exitEditMode}>완료</CTAButton>
+            <CTAButton onClick={exitEditMode}>완료</CTAButton>
           </BottomCTA.Single>
         )
       )}

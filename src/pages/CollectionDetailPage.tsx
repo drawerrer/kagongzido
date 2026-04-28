@@ -1306,7 +1306,7 @@ export default function CollectionDetailPage({
             background: '#F3F3F3',
             zIndex: 1000,
           }}>
-            <CTAButton color="dark" variant="weak" onClick={exitEditMode}>완료</CTAButton>
+            <CTAButton onClick={exitEditMode}>완료</CTAButton>
           </div>
         )
       )}
