@@ -145,12 +145,12 @@ function SortPopup({
 function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => void; onFavoriteChange?: (type: 'added' | 'removed', cafe: Cafe) => void }) {
   const { isFavorited, addFavorite, removeFavorite } = useFavorites();
   const favorited = isFavorited(cafe.id);
-  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
 
   const handleHeartClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (favorited) {
-      setShowRemoveDialog(true);
+      removeFavorite(cafe.id);
+      onFavoriteChange?.('removed', cafe);
     } else {
       addFavorite({
         id: cafe.id,
@@ -165,60 +165,8 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
     }
   };
 
-  const handleConfirmRemove = () => {
-    setShowRemoveDialog(false);
-    removeFavorite(cafe.id);
-    onFavoriteChange?.('removed', cafe);
-  };
-
   return (
     <>
-    {/* 삭제 확인 다이얼로그 */}
-    {showRemoveDialog && (
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      >
-        <div
-          onClick={() => setShowRemoveDialog(false)}
-          style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }}
-        />
-        <div style={{
-          position: 'relative',
-          background: '#fff',
-          borderRadius: 16,
-          padding: '28px 24px 20px',
-          width: 'calc(100% - 64px)',
-          maxWidth: 320,
-          zIndex: 1,
-        }}>
-          <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 8 }}>카페를 삭제할까요?</p>
-          <p style={{ fontSize: 14, color: '#6B7684', marginBottom: 24 }}>담아둔 컬렉션에서도 함께 지워져요</p>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={() => setShowRemoveDialog(false)}
-              style={{
-                flex: 1, height: 48, borderRadius: 12,
-                background: 'rgba(0,12,30,0.05)', border: 'none',
-                fontSize: 15, fontWeight: 600, color: '#4E5968', cursor: 'pointer',
-              }}
-            >
-              닫기
-            </button>
-            <button
-              onClick={handleConfirmRemove}
-              style={{
-                flex: 1, height: 48, borderRadius: 12,
-                background: '#252525', border: 'none',
-                fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer',
-              }}
-            >
-              삭제하기
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
     <div
       onClick={onTap}
       style={{
