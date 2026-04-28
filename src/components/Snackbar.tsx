@@ -30,7 +30,7 @@ export default function Snackbar({
       transition: 'opacity 0.25s, transform 0.25s',
       width: actionLabel ? 319 : 303,
       height: 59, borderRadius: 9999,
-      background: '#FDFDFE',
+      background: '#FDFDFD',
       display: 'flex', alignItems: 'center',
       paddingLeft: 16, paddingRight: 16, gap: 12,
       zIndex: 300, pointerEvents: 'auto',
