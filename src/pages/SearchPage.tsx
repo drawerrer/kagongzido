@@ -418,20 +418,23 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
                 <p style={{ fontSize: 16, fontWeight: 600, color: '#191F28', textAlign: 'center' }}>
                   찾으시는 카페가 아직 없어요!
                 </p>
-                <p style={{ fontSize: 13, color: '#8B95A1', textAlign: 'center', lineHeight: 1.5, marginTop: -8 }}>
-                  카페를 직접 제보하면<br />지도에 등록할 수 있어요
-                </p>
                 <button
                   onClick={onReportCafe}
                   style={{
                     marginTop: 4,
-                    width: '100%', height: 48, borderRadius: 12,
-                    background: '#252525', color: '#ffffff',
-                    fontSize: 15, fontWeight: 600,
+                    height: 38, borderRadius: 10,
+                    backgroundColor: 'rgba(211,211,223,0.19)',
                     border: 'none', cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center',
+                    padding: '0 16px', gap: 6, flexShrink: 0,
                   }}
                 >
-                  카페 제보하기
+                  <span style={{ fontWeight: 590, fontSize: 15, color: '#252525', whiteSpace: 'nowrap' }}>
+                    &ldquo;{query}&rdquo; 직접 입력하기
+                  </span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                    <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
                 </button>
               </div>
             );
