@@ -763,6 +763,7 @@ interface DetailPageProps {
   openDirections?: boolean;
   onGoToCollection?: (collection: { id: string; name: string }) => void;
   embedded?: boolean; // 바텀시트 임베드 모드: 하트버튼/backEvent 등록 스킵
+  onSwipeDown?: () => void; // embedded 풀스크린 상태에서 아래 스와이프 시 지도 복귀
 }
 
 // 아바타 색상 (user_id 기반 고정 색)
@@ -788,7 +789,7 @@ function rowToReviewItem(row: ReviewRow): ReviewItem {
   };
 }
 
-export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false }: DetailPageProps) {
+export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false, onSwipeDown }: DetailPageProps) {
   const cafe = getCafeDetail(cafeId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
@@ -1083,6 +1084,14 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       <div
         ref={scrollRef}
         onScroll={handleScroll}
+        onTouchStart={(e) => { (scrollRef.current as any).__touchStartY = e.touches[0].clientY; }}
+        onTouchEnd={(e) => {
+          const startY = (scrollRef.current as any).__touchStartY ?? e.changedTouches[0].clientY;
+          const delta = e.changedTouches[0].clientY - startY;
+          if (onSwipeDown && scrollRef.current?.scrollTop === 0 && delta > 60) {
+            onSwipeDown();
+          }
+        }}
         style={{ height: '100%', overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
       >
         {/* 포토 히어로 */}

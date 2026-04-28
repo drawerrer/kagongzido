@@ -684,8 +684,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           const delta = e.changedTouches[0].clientY - touchStartYRef.current;
           if (selectedMapCafe) {
             if (panelExpanded) {
-              // 확장 상태: 아래로 세게 → 기본형으로 복귀
-              if (delta > 60) setPanelExpanded(false);
+              // 확장(풀스크린) 상태: 아래로 세게 → 지도로 복귀
+              if (delta > 60) { setPanelExpanded(false); setSelectedMapCafe(null); }
             } else {
               // 기본형 상태: 위로 → 확장, 아래로 → 닫기
               if (delta < -60) setPanelExpanded(true);
@@ -703,8 +703,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           right: 0,
           zIndex: panelExpanded ? 25 : 10,
           background: '#f3f3f3',
-          borderRadius: '16px 16px 0 0',
-          height: panelExpanded ? 'calc(100% - 8px)' : '50vh',
+          borderRadius: (selectedMapCafe && panelExpanded) ? 0 : '16px 16px 0 0',
+          height: panelExpanded ? '100%' : '50vh',
           transition: 'height 0.3s ease',
           display: 'flex',
           flexDirection: 'column',
@@ -712,19 +712,21 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
           ...(selectedMapCafe ? { transform: 'translateZ(0)', willChange: 'transform' } : {}),
         }}
       >
-        {/* 핸들 */}
-        <div
-          onClick={() => setPanelExpanded(e => !e)}
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            padding: '12px 0 4px',
-            flexShrink: 0,
-            cursor: 'pointer',
-          }}
-        >
-          <div style={{ width: 48, height: 4, borderRadius: 2, background: '#E5E8EB' }} />
-        </div>
+        {/* 핸들 — 풀스크린 상세 모드에서는 숨김 */}
+        {!(selectedMapCafe && panelExpanded) && (
+          <div
+            onClick={() => setPanelExpanded(e => !e)}
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              padding: '12px 0 4px',
+              flexShrink: 0,
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{ width: 48, height: 4, borderRadius: 2, background: '#E5E8EB' }} />
+          </div>
+        )}
 
         {selectedMapCafe ? (
           /* ── 지도 마커 클릭 시 임베드 상세 ── */
@@ -734,6 +736,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
               cafeId={selectedMapCafe.id}
               onBack={() => { setSelectedMapCafe(null); setPanelExpanded(false); }}
               onClose={() => { setSelectedMapCafe(null); setPanelExpanded(false); }}
+              onSwipeDown={() => { setSelectedMapCafe(null); setPanelExpanded(false); }}
             />
           </div>
         ) : (
