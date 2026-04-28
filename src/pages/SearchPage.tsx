@@ -13,15 +13,16 @@ interface SearchPageProps {
 
 // ── 아이콘 ────────────────────────────────────────────────────
 
-/** SearchField 내 돋보기 — 24×24, stroke rgba(3,24,50,0.46) */
-function SearchIcon() {
+/** SearchField 내 뒤로가기 — 24×24 */
+function ChevronLeftIcon({ onClick }: { onClick: () => void }) {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-      stroke="rgba(3,24,50,0.46)" strokeWidth="2"
-      strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
+    <button onClick={onClick} style={{ padding: 0, lineHeight: 0, background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="rgba(3,24,50,0.7)" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+    </button>
   );
 }
 
@@ -360,7 +361,7 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
             background: '#ffffff', borderRadius: 12, height: 44,
             paddingLeft: 10, paddingRight: 10,
           }}>
-            <SearchIcon />
+            <ChevronLeftIcon onClick={_onClose} />
             <input
               ref={inputRef}
               value={query}
