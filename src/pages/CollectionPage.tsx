@@ -1080,8 +1080,8 @@ export default function CollectionPage({
       {showRemoveStoreConfirm && (
         <ConfirmDialog
           open={true}
-          title={<ConfirmDialog.Title>매장을 삭제할까요?</ConfirmDialog.Title>}
-          description={<ConfirmDialog.Description>모음집에서 매장이 사라져요.{'\n'}담아둔 컬렉션에서도 함께 지워져요.</ConfirmDialog.Description>}
+          title={<ConfirmDialog.Title>카페를 삭제할까요?</ConfirmDialog.Title>}
+          description={<ConfirmDialog.Description>담아둔 컬렉션에서도 함께 지워져요.</ConfirmDialog.Description>}
           cancelButton={
             <ConfirmDialog.CancelButton onClick={() => { setShowRemoveStoreConfirm(false); setRemoveStoreTarget(null); }}>
               닫기
