@@ -823,13 +823,19 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
               <button
                 onClick={() => { setQuery(''); setSelectedCafe(null); }}
                 style={{
-                  height: 38, padding: '0 20px', borderRadius: 10,
-                  background: '#252525', border: 'none',
-                  fontSize: 14, fontWeight: 590, color: '#ffffff',
-                  cursor: 'pointer',
+                  height: 38, borderRadius: 10,
+                  backgroundColor: 'rgba(211,211,223,0.19)',
+                  border: 'none', cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center',
+                  padding: '0 16px', gap: 6, flexShrink: 0,
                 }}
               >
-                카페 제보하기
+                <span style={{ fontWeight: 590, fontSize: 15, color: '#252525', whiteSpace: 'nowrap' }}>
+                  &ldquo;{query}&rdquo; 직접 입력하기
+                </span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                  <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
               </button>
             </div>
           )}
