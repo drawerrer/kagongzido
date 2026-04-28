@@ -1278,8 +1278,8 @@ export default function CollectionDetailPage({
               />
             </div>
           ))}
-          {/* 탭바 가림 방지 spacer */}
-          <div style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }} />
+          {/* 하단 여백 — 탭바/CTA 가림 방지 */}
+          <div style={{ height: `calc(env(safe-area-inset-bottom, 0px) + ${isEditMode ? 164 : 76}px)` }} />
         </div>
       )}
 

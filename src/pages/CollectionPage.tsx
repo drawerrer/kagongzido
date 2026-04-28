@@ -798,7 +798,7 @@ export default function CollectionPage({
         </div>
 
         {/* 하단 여백 — 탭바/CTA 가림 방지 */}
-        <div style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }} />
+        <div style={{ height: `calc(env(safe-area-inset-bottom, 0px) + ${(isEditMode || isOrganizeMode) ? 164 : 76}px)` }} />
       </div>
 
       {/* ── 편집 모드 Bottom CTA ── */}
