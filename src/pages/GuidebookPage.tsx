@@ -351,6 +351,7 @@ function GuideBookDetailView({
 
   // 이미지 스와이프 (transform 기반 — touch-action:none으로 외부 캐러셀 차단)
   const imgTouchStartX = useRef(0);
+  const imgTouchStartTime = useRef(0); // 빠른 플릭 속도 계산용
 
   // 마운트 시 초기 스크롤
   useEffect(() => {
@@ -486,10 +487,29 @@ function GuideBookDetailView({
                   onTouchStart={isActive ? (e) => {
                     e.stopPropagation();
                     imgTouchStartX.current = e.touches[0].clientX;
+                    imgTouchStartTime.current = Date.now();
+                    // 카드 스냅에 필요한 시작 스크롤 위치 캡처
+                    if (scrollRef.current) touchScrollLeft.current = scrollRef.current.scrollLeft;
                   } : undefined}
                   onTouchEnd={isActive ? (e) => {
                     e.stopPropagation();
-                    const dx = e.changedTouches[0].clientX - imgTouchStartX.current;
+                    const endX = e.changedTouches[0].clientX;
+                    const dx = endX - imgTouchStartX.current;
+                    const dt = Math.max(1, Date.now() - imgTouchStartTime.current);
+                    const vel = dx / dt; // px/ms (음수=왼쪽, 양수=오른쪽)
+                    const startCard = Math.round(touchScrollLeft.current / itemW);
+
+                    // 빠른 플릭 또는 충분히 넓은 스와이프 → 카드 이동
+                    if (vel < -0.5 || dx < -(itemW * 0.35)) {
+                      snapTo(startCard + 1);
+                      return;
+                    }
+                    if (vel > 0.5 || dx > itemW * 0.35) {
+                      snapTo(startCard - 1);
+                      return;
+                    }
+
+                    // 일반 포토 스와이프 or 탭
                     if (Math.abs(dx) < 10) {
                       onDetailOpen?.(s.id); // 탭 → 상세보기
                     } else if (dx < -40 && photoIndex < s.photos.length - 1) {
@@ -507,7 +527,7 @@ function GuideBookDetailView({
                     display: 'flex',
                     width: cardW * s.photos.length,
                     transform: `translateX(${isActive ? -photoIndex * cardW : 0}px)`,
-                    transition: 'transform 0.25s ease',
+                    transition: isActive ? 'transform 0.25s ease' : 'none',
                   }}>
                     {s.photos.map((photo, pi) => (
                       <div

@@ -818,16 +818,20 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 공통 내비게이션 백버튼 → onBack 연결 (임베드 모드에서는 패널이 처리)
+  // 공통 내비게이션 백버튼 — ref 패턴으로 단일 리스너 유지
+  // showPhotoReview / showWriteReview 가 state 선언 이후에 있으므로
+  // deps에 넣으면 TDZ 에러 → ref를 통해 항상 최신 핸들러를 참조
+  const backHandlerRef = useRef<() => void>(() => onBack());
   useEffect(() => {
     if (embedded) return undefined;
     try {
       return graniteEvent.addEventListener('backEvent', {
-        onEvent: () => onBack(),
+        onEvent: () => backHandlerRef.current(),
         onError: (err) => console.error(err),
       });
     } catch { return undefined; }
-  }, [onBack, embedded]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embedded]);
 
   // 리뷰 섹션으로 자동 스크롤
   useEffect(() => {
@@ -902,6 +906,14 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [copyToastVisible, setCopyToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
+
+  // backHandlerRef 업데이트 — 항상 최신 상태 반영
+  backHandlerRef.current = () => {
+    if (showPhotoReview) { setShowPhotoReview(false); return; }
+    if (showWriteReview) { setShowWriteReview(false); return; }
+    onBack();
+  };
+
   const [reviewSort, setReviewSort] = useState<'최신순' | '추천순' | '포토리뷰'>('최신순');
   const [reviewSortPopupOpen, setReviewSortPopupOpen] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);

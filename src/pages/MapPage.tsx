@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getCurrentLocation, Accuracy } from '@apps-in-toss/web-framework';
+import { getCurrentLocation, Accuracy, graniteEvent } from '@apps-in-toss/web-framework';
 import { Toast } from '@toss/tds-mobile';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
@@ -309,6 +309,20 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
   const [panelExpanded, setPanelExpanded] = useState(initialState?.panelExpanded ?? false);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
   const [selectedMapCafe, setSelectedMapCafe] = useState<Cafe | null>(null);
+
+  // 지도 패널 열린 상태에서 네이티브 뒤로가기 → 패널 닫기
+  useEffect(() => {
+    if (!selectedMapCafe) return;
+    try {
+      const unsubscribe = graniteEvent.addEventListener('backEvent', {
+        onEvent: () => { setSelectedMapCafe(null); setPanelExpanded(false); },
+        onError: (err) => console.error(err),
+      });
+      return unsubscribe;
+    } catch {
+      return undefined;
+    }
+  }, [selectedMapCafe]);
 
   // 설정값이 DEFAULT와 다르면 true (아이콘 검정), 동일하면 false (아이콘 회색)
   const filterApplied =
