@@ -696,7 +696,7 @@ function WrittenReviewPage({
       {/* 삭제 완료 토스트 */}
       <Toast
         open={deleteToast}
-        position="bottom"
+        position="top"
         text="리뷰가 삭제되었어요"
         onClose={() => setDeleteToast(false)}
       />
@@ -1245,7 +1245,7 @@ export default function MyPage({
       {/* 버전 토스트 */}
       <Toast
         open={versionToast}
-        position="bottom"
+        position="top"
         text="현재 최신 버전을 사용 중입니다"
         onClose={() => setVersionToast(false)}
       />

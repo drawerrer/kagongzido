@@ -2,7 +2,7 @@
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites, FavoritedStore } from '../context/FavoritesContext';
-import { BottomSheet, BottomCTA, CTAButton, Button, ConfirmDialog } from '@toss/tds-mobile';
+import { BottomSheet, BottomCTA, CTAButton, Button, ConfirmDialog, Toast } from '@toss/tds-mobile';
 import IcDelete from '../assets/icons/icon_delete.svg?react';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
 import IcArrowUpDown from '../assets/icons/icon_arrowupdown.svg?react';
@@ -1109,7 +1109,7 @@ export default function CollectionPage({
 
       {/* ── 스낵바 ── */}
       {snackbar === 'deleted' && (
-        <Snackbar type="negative" message="매장을 삭제했어요" actionLabel="되돌리기"
+        <Snackbar type="negative" message="카페를 모음집에서 꺼냈어요" actionLabel="되돌리기"
           onAction={() => {
             deletedStores.forEach(s => addFavoriteFromContext(s));
             setDeletedStores([]);
@@ -1117,16 +1117,13 @@ export default function CollectionPage({
           }}
           onDismiss={dismissSnackbar} />
       )}
-      {snackbar === 'added' && (
-        <Snackbar type="positive" message="컬렉션에 담았어요" actionLabel="보러가기"
-          onAction={() => {
-            const firstId = addedToCollectionIds[0];
-            const col = collections.find(c => c.id === firstId);
-            if (col) onCollectionOpen?.(col.id, col.name);
-            setSnackbar(null);
-          }}
-          onDismiss={dismissSnackbar} />
-      )}
+      <Toast
+        open={snackbar === 'added'}
+        position="top"
+        text="카페를 컬렉션에 담았어요"
+        duration={3000}
+        onClose={() => setSnackbar(null)}
+      />
       {snackbar === 'collection-deleted' && (
         <Snackbar type="negative" message="컬렉션을 삭제했어요" actionLabel="되돌리기"
           onAction={() => {
@@ -1143,19 +1140,13 @@ export default function CollectionPage({
       )}
 
       {/* ── 이름 변경 토스트 (Collection/Main_Toast_Rename) ── */}
-      {renameToast && (
-        <div style={{
-          position: 'absolute', top: 60, left: '50%', transform: 'translateX(-50%)',
-          backgroundColor: '#ffffff', borderRadius: 9999,
-          padding: '10px 20px', boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
-          zIndex: 200, whiteSpace: 'nowrap', pointerEvents: 'none',
-        }}>
-          <span style={{
-            fontWeight: 590, fontSize: 15,
-            color: 'rgba(0,12,30,0.8)', lineHeight: '22.5px',
-          }}>{renameToast}</span>
-        </div>
-      )}
+      <Toast
+        open={!!renameToast}
+        position="top"
+        text="컬렉션 이름을 바꿨어요"
+        duration={2500}
+        onClose={() => setRenameToast(null)}
+      />
 
       {/* 공유 바텀시트 */}
       <ShareSheet

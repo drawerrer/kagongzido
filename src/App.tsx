@@ -175,6 +175,7 @@ function AppInner() {
                   <MapPage
                     onSearchOpen={() => setShowSearch(true)}
                     onDetailOpen={(id) => setDetailCafeId(id)}
+                    onGoToFavorites={() => setActiveTab('collection')}
                   />
                 )}
                 {activeTab === 'guidebook'  && (
@@ -184,6 +185,7 @@ function AppInner() {
                       onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
                       onBack={() => setActiveTab('home')}
                       onClose={() => setActiveTab('home')}
+                      onGoToFavorites={() => setActiveTab('collection')}
                       initialView={(guidebookView as any) ?? 'main'}
                       onViewChange={(v) => setGuidebookView(v)}
                       initialStoreIndex={guidebookStoreIndex}

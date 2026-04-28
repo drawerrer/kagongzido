@@ -1455,7 +1455,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       {/* ── 복사 완료 토스트 ── */}
       <Toast
         open={copyToastVisible}
-        position="bottom"
+        position="top"
         text="전화번호가 복사됐어요"
         onClose={() => setCopyToastVisible(false)}
       />
@@ -1464,6 +1464,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         <Snackbar
           type="positive"
           message="카페를 모음집에 담았어요"
+          actionLabel="보러가기"
+          onAction={() => { onTabChange?.('collection'); setFavoriteSnackbar(null); }}
           onDismiss={() => setFavoriteSnackbar(null)}
         />
       )}
@@ -1524,8 +1526,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       {showUnfavoriteDialog && (
         <ConfirmDialog
           open={true}
-          title={<ConfirmDialog.Title>매장을 삭제할까요?</ConfirmDialog.Title>}
-          description={<ConfirmDialog.Description>모음집에서 매장이 사라져요.{'\n'}담아둔 컬렉션에서도 함께 지워져요.</ConfirmDialog.Description>}
+          title={<ConfirmDialog.Title>카페를 삭제할까요?</ConfirmDialog.Title>}
+          description={<ConfirmDialog.Description>담아둔 컬렉션에서도 함께 지워져요.</ConfirmDialog.Description>}
           cancelButton={
             <ConfirmDialog.CancelButton onClick={() => setShowUnfavoriteDialog(false)}>
               닫기

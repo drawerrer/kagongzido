@@ -864,7 +864,7 @@ export default function CollectionDetailPage({
         removeFavorite(storeId);
         if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
         setSnackbar({
-          msg: '매장을 삭제했어요',
+          msg: '카페를 모음집에서 꺼냈어요',
           actionLabel: '되돌리기',
           type: 'negative',
           undoFn: () => {
@@ -878,7 +878,7 @@ export default function CollectionDetailPage({
         const store = stores.find(s => s.id === storeId);
         if (store) {
           addFavorite({ id: store.id, name: store.name, address: store.address, rating: store.rating, reviewCount: store.reviewCount, photos: store.photos });
-          showSnackbar('모음집에 저장했어요', '보러가기', onBack);
+          showSnackbar('카페를 모음집에 담았어요', '보러가기', onBack);
         }
       }
     } else {
@@ -896,7 +896,7 @@ export default function CollectionDetailPage({
 
     if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
     setSnackbar({
-      msg: '1개의 매장을 삭제했어요',
+      msg: '카페를 모음집에서 꺼냈어요',
       actionLabel: '되돌리기',
       type: 'negative',
       undoFn: () => {
@@ -1064,7 +1064,7 @@ export default function CollectionDetailPage({
     updateCollection(renameTabId, { name: renameValue.trim() });
     setRenameTabId(null);
     setRenameValue('');
-    showToast('컬렉션 이름을 변경했어요');
+    showToast('컬렉션 이름을 바꿨어요');
   };
 
   const currentMemo = memoTargetId ? (activeCollection?.memos?.[memoTargetId] ?? '') : '';

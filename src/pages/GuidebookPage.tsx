@@ -724,6 +724,7 @@ export default function GuidebookPage({
   onDetailOpenToReview,
   onBack,
   onClose: _onClose,
+  onGoToFavorites,
   initialView,
   onViewChange,
   initialStoreIndex,
@@ -733,6 +734,7 @@ export default function GuidebookPage({
   onDetailOpenToReview?: (id: string) => void;
   onBack?: () => void;
   onClose?: () => void;
+  onGoToFavorites?: () => void;
   initialView?: GuideView;
   onViewChange?: (view: GuideView) => void;
   initialStoreIndex?: number;
@@ -783,7 +785,7 @@ export default function GuidebookPage({
         photos: [],
       });
     }
-    setSnackbar('모음집에 담았어요');
+    setSnackbar('카페를 모음집에 담았어요');
   };
 
 
@@ -828,7 +830,15 @@ export default function GuidebookPage({
         shareTitle="카페인덱스 가이드북"
       />
 
-      {snackbar && <Snackbar type="positive" message={snackbar} onDismiss={dismissSnackbar} />}
+      {snackbar && (
+        <Snackbar
+          type="positive"
+          message={snackbar}
+          actionLabel="보러가기"
+          onAction={() => { onGoToFavorites?.(); setSnackbar(null); }}
+          onDismiss={dismissSnackbar}
+        />
+      )}
     </div>
   );
 }

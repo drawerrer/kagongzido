@@ -192,8 +192,8 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
           maxWidth: 320,
           zIndex: 1,
         }}>
-          <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 8 }}>매장을 삭제할까요?</p>
-          <p style={{ fontSize: 14, color: '#6B7684', marginBottom: 24 }}>모음집에서 매장이 사라져요.</p>
+          <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 8 }}>카페를 삭제할까요?</p>
+          <p style={{ fontSize: 14, color: '#6B7684', marginBottom: 24 }}>담아둔 컬렉션에서도 함께 지워져요</p>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => setShowRemoveDialog(false)}
@@ -203,7 +203,7 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
                 fontSize: 15, fontWeight: 600, color: '#4E5968', cursor: 'pointer',
               }}
             >
-              취소
+              닫기
             </button>
             <button
               onClick={handleConfirmRemove}
@@ -213,7 +213,7 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
                 fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer',
               }}
             >
-              삭제
+              삭제하기
             </button>
           </div>
         </div>
@@ -341,14 +341,17 @@ export interface MapPageState {
 interface MapPageProps {
   onSearchOpen: () => void;
   onDetailOpen: (cafeId: string) => void;
+  onGoToFavorites?: () => void;
   initialState?: MapPageState;
   onStateChange?: (state: MapPageState) => void;
 }
 
-export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onStateChange }: MapPageProps) {
+export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, initialState, onStateChange }: MapPageProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
   const touchStartYRef = useRef<number>(0);
+  const [mapDebug, setMapDebug] = useState<string>('초기화 중...');
+  const { addFavorite } = useFavorites();
 
   const [activeChip, setActiveChip] = useState<string | null>(initialState?.activeChip ?? null);
   const [sortType, setSortType] = useState<SortType>(initialState?.sortType ?? '조회순');
@@ -377,8 +380,10 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
   const [locSheet, setLocSheet] = useState<LocationSheetType | null>(null);
   const [gpsToast, setGpsToast] = useState(false); // GPS 신호 실패 토스트
   const [favoriteSnackbar, setFavoriteSnackbar] = useState<'added' | 'removed' | null>(null);
+  const [removedCafe, setRemovedCafe] = useState<Cafe | null>(null);
 
-  const showFavoriteSnackbar = (type: 'added' | 'removed') => {
+  const showFavoriteSnackbar = (type: 'added' | 'removed', cafe?: Cafe) => {
+    if (type === 'removed' && cafe) setRemovedCafe(cafe);
     setFavoriteSnackbar(type);
   };
 
@@ -466,8 +471,14 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
     script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&libraries=services&autoload=false`;
     document.head.appendChild(script);
 
+    script.onerror = () => {
+      setMapDebug('❌ SDK 로드 실패 (도메인 인증 오류)');
+    };
+
     script.onload = () => {
+      setMapDebug('✅ SDK 로드됨, maps.load 호출 중...');
       window.kakao.maps.load(() => {
+        setMapDebug('✅ maps.load 콜백 실행됨');
         if (!mapRef.current) return;
 
         const defaultCenter = new window.kakao.maps.LatLng(37.4979, 127.0276);
@@ -541,6 +552,11 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
 
       {/* ── 카카오 지도 배경 ── */}
       <div ref={mapRef} style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 72px)', bottom: 0, left: 0, right: 0, background: '#E8EAED' }}>
+        {import.meta.env.VITE_KAKAO_MAP_KEY && (
+          <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 99, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '4px 8px', borderRadius: 6, maxWidth: '90%', wordBreak: 'break-all' }}>
+            {mapDebug}
+          </div>
+        )}
         {!import.meta.env.VITE_KAKAO_MAP_KEY && (
           /* API 키 미설정 시 목업 지도 */
           <div style={{ position: 'relative', height: '100%', background: '#E8EAED', overflow: 'hidden' }}>
@@ -835,8 +851,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
                     key={cafe.id}
                     cafe={cafe}
                     onTap={() => onDetailOpen(cafe.id)}
-                    onFavoriteChange={(type) => {
-                      showFavoriteSnackbar(type);
+                    onFavoriteChange={(type, cafe) => {
+                      showFavoriteSnackbar(type, cafe);
                     }}
                   />
                 ))
@@ -890,7 +906,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
       {/* ── GPS 실패 토스트 ── */}
       <Toast
         open={gpsToast}
-        position="bottom"
+        position="top"
         text="현재 위치를 가져오지 못했어요. 다시 시도해주세요"
         onClose={() => setGpsToast(false)}
       />
@@ -900,6 +916,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         <Snackbar
           type="positive"
           message="카페를 모음집에 담았어요"
+          actionLabel="보러가기"
+          onAction={() => { onGoToFavorites?.(); setFavoriteSnackbar(null); }}
           onDismiss={() => setFavoriteSnackbar(null)}
         />
       )}
@@ -907,6 +925,11 @@ export default function MapPage({ onSearchOpen, onDetailOpen, initialState, onSt
         <Snackbar
           type="negative"
           message="카페를 모음집에서 꺼냈어요"
+          actionLabel="되돌리기"
+          onAction={() => {
+            if (removedCafe) addFavorite({ id: removedCafe.id, name: removedCafe.name, address: removedCafe.address, rating: removedCafe.rating, reviewCount: removedCafe.reviewCount, photos: [], distance: removedCafe.distance });
+            setFavoriteSnackbar(null);
+          }}
           onDismiss={() => setFavoriteSnackbar(null)}
         />
       )}
