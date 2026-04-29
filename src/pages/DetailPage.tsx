@@ -904,6 +904,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   }, [embedded]);
 
   const [copyToastVisible, setCopyToastVisible] = useState(false);
+  const [reviewToastVisible, setReviewToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
 
@@ -1034,7 +1035,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         userId={userId}
         onBack={() => setShowWriteReview(false)}
         onClose={onClose}
-        onReviewSubmitted={() => { setShowWriteReview(false); loadReviews(); }}
+        onReviewSubmitted={() => { setShowWriteReview(false); loadReviews(); setReviewToastVisible(true); }}
       />
     );
   }
@@ -1470,6 +1471,12 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         position="top"
         text="전화번호가 복사됐어요"
         onClose={() => setCopyToastVisible(false)}
+      />
+      <Toast
+        open={reviewToastVisible}
+        position="top"
+        text="리뷰를 등록했어요"
+        onClose={() => setReviewToastVisible(false)}
       />
       {/* ── 저장/해제 스낵바 ── */}
       {favoriteSnackbar === 'added' && (

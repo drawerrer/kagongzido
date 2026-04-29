@@ -130,8 +130,12 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
       noise: evalState.noise,
       images: photos,
     });
-    setPageState(success ? 'success' : 'fail');
-    if (success) onReviewSubmitted?.();
+    if (success) {
+      onReviewSubmitted?.();
+      onBack();
+    } else {
+      setPageState('fail');
+    }
   };
 
   // ── 재시도 ────────────────────────────────────────────────
