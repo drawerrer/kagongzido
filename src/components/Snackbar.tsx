@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import type { ReactNode } from 'react';
 import CheckConfirmIcon from '../assets/icons/icon_check_confirm.svg?react';
 import CloseIcon from '../assets/icons/icon_close.svg?react';
 
@@ -9,10 +10,13 @@ interface SnackbarProps {
   onDismiss: () => void;
   type?: 'positive' | 'negative';
   duration?: number;
+  position?: 'top' | 'bottom';
+  icon?: ReactNode;
 }
 
 export default function Snackbar({
   message, actionLabel, onAction, onDismiss, type = 'positive', duration = 3000,
+  position = 'bottom', icon,
 }: SnackbarProps) {
   const isPositive = type === 'positive';
 
@@ -22,13 +26,18 @@ export default function Snackbar({
     return () => clearTimeout(t);
   }, [onDismiss, duration]);
 
+  const positionStyle = position === 'top'
+    ? { top: 'calc(env(safe-area-inset-top, 0px) + 16px)', bottom: undefined }
+    : { bottom: 76, top: undefined };
+
   return (
     <div style={{
-      position: 'fixed', bottom: 76, left: '50%',
+      position: 'fixed', left: '50%',
+      ...positionStyle,
       transform: 'translateX(-50%) translateY(0px)',
       opacity: 1,
       transition: 'opacity 0.25s, transform 0.25s',
-      width: actionLabel ? 319 : 303,
+      width: 'fit-content',
       height: 59, borderRadius: 9999,
       background: '#FDFDFD',
       display: 'flex', alignItems: 'center',
@@ -39,7 +48,7 @@ export default function Snackbar({
     }}>
       {/* 아이콘 */}
       <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {isPositive ? <CheckConfirmIcon width={24} height={24} /> : <CloseIcon width={24} height={24} />}
+        {icon ?? (isPositive ? <CheckConfirmIcon width={24} height={24} /> : <CloseIcon width={24} height={24} />)}
       </div>
 
       {/* 텍스트 */}

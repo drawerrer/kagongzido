@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { graniteEvent, fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
-import { Toast } from '@toss/tds-mobile';
+import { Toast, BottomSheet, Button, ConfirmDialog } from '@toss/tds-mobile';
 import { useFavorites } from '../context/FavoritesContext';
+import { insertCafeReport } from '../services/db';
 
 // ─────────────────────────────────────────────────────────────
 // 타입
@@ -733,7 +734,7 @@ const CHIP_OPTIONS: Record<string, string[]> = {
   소음: ['시끄러움', '적당', '조용'],
 };
 
-function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => void; onClose: () => void }) {
+function ReportCafePage({ onBack: _onBack, onClose }: { onBack: () => void; onClose: () => void }) {
   const [query, setQuery] = useState('');
   const [selectedCafe, setSelectedCafe] = useState<{ id: string; name: string; address: string } | null>(null);
   const [chips, setChips] = useState<Record<string, string>>({});
@@ -743,6 +744,7 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [directName, setDirectName] = useState<string | null>(null);
   const [directAddress, setDirectAddress] = useState('');
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
 
   const results = query.trim()
     ? MOCK_CAFE_SEARCH.filter(c => c.name.includes(query.trim()))
@@ -1061,6 +1063,7 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
             <div style={{ padding: '0 20px 20px', background: '#f3f3f3' }}>
               <button
                 disabled={!canSubmit}
+                onClick={() => canSubmit && setShowSubmitDialog(true)}
                 style={{
                   width: '100%', height: 52, borderRadius: 12,
                   background: canSubmit ? '#252525' : '#e5e8eb', border: 'none',
@@ -1076,6 +1079,33 @@ function ReportCafePage({ onBack: _onBack, onClose: _onClose }: { onBack: () => 
           );
         })()}
       </div>
+
+      {/* 제보 접수 확인 다이얼로그 */}
+      <ConfirmDialog
+        open={showSubmitDialog}
+        title={<ConfirmDialog.Title>카페가 접수되었어요!</ConfirmDialog.Title>}
+        description={
+          <ConfirmDialog.Description>
+            {`운영진의 검토 후 영업일 3일 내로\n카페가 등록될 예정이에요`}
+          </ConfirmDialog.Description>
+        }
+        cancelButton={<ConfirmDialog.CancelButton onClick={() => setShowSubmitDialog(false)}>제보 취소</ConfirmDialog.CancelButton>}
+        confirmButton={<ConfirmDialog.ConfirmButton onClick={async () => {
+          await insertCafeReport({
+            cafe_name: selectedCafe?.name ?? directName ?? '',
+            cafe_address: selectedCafe?.address ?? directAddress,
+            cafe_id: selectedCafe?.id ?? null,
+            outlet: chips['콘센트'] || null,
+            seat: chips['좌석'] || null,
+            noise: chips['소음'] || null,
+            review: reviewText,
+            photos,
+          });
+          setShowSubmitDialog(false);
+          onClose();
+        }}>확인</ConfirmDialog.ConfirmButton>}
+        onClose={() => setShowSubmitDialog(false)}
+      />
     </div>
   );
 }
@@ -1102,6 +1132,9 @@ export default function MyPage({
   const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
   const [versionToast, setVersionToast] = useState(false);
   const [showMoreSheet, setShowMoreSheet] = useState(false);
+  const [displayName, setDisplayName] = useState('김카페');
+  const [showNameSheet, setShowNameSheet] = useState(false);
+  const [draftName, setDraftName] = useState('');
 
 
   const showVersionToast = () => {
@@ -1161,7 +1194,17 @@ export default function MyPage({
           </div>
           {/* 이름 + 정보 + 제보하기 배지 */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 18, fontWeight: 510, color: '#101010', lineHeight: '23px' }}>김카페</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 18, fontWeight: 510, color: '#101010', lineHeight: '23px' }}>{displayName}</span>
+              <button
+                onClick={() => { setDraftName(displayName); setShowNameSheet(true); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path fill="#9b9b9b" fillRule="evenodd" d="m12.335 5.454-9.062 9.062-1.236 4.61-.813 3.037a.501.501 0 0 0 .613.613l3.035-.814 4.61-1.236h.002l9.062-9.062zm9.958 1.05-4.796-4.797a1 1 0 0 0-1.414 0l-2.475 2.474 6.21 6.211 2.475-2.475a1 1 0 0 0 0-1.414" clipRule="evenodd"/>
+                </svg>
+              </button>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div
                 onClick={() => changeSubPage('reported')}
@@ -1295,6 +1338,49 @@ export default function MyPage({
           </div>
         </>
       )}
+
+      {/* 이름 변경 바텀시트 */}
+      <BottomSheet
+        open={showNameSheet}
+        header={<BottomSheet.Header>변경할 이름</BottomSheet.Header>}
+        onClose={() => setShowNameSheet(false)}
+        hasTextField
+        disableDrag
+      >
+        <div style={{ padding: '8px 20px 16px' }}>
+          <input
+            autoFocus
+            value={draftName}
+            onChange={e => { if (e.target.value.length <= 45) setDraftName(e.target.value); }}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && draftName.trim() && draftName.trim() !== displayName) {
+                setDisplayName(draftName.trim());
+                setShowNameSheet(false);
+              }
+            }}
+            maxLength={45}
+            placeholder={displayName}
+            style={{
+              width: '100%', height: 48, borderRadius: 10,
+              border: '1px solid rgba(0,0,0,0.12)',
+              padding: '0 14px', fontSize: 17, outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+            <span style={{ fontSize: 12, color: 'rgba(0,19,43,0.38)' }}>{draftName.length}/45</span>
+          </div>
+        </div>
+        <Button
+          color="primary"
+          size="xlarge"
+          style={{ width: '100%' }}
+          onClick={() => { setDisplayName(draftName.trim()); setShowNameSheet(false); }}
+          disabled={!draftName.trim() || draftName.trim() === displayName}
+        >
+          적용하기
+        </Button>
+      </BottomSheet>
     </div>
   );
 }

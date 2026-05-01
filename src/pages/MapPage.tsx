@@ -426,19 +426,10 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
 
   // ── Kakao 지도 초기화 ──────────────────
   useEffect(() => {
-    const key = import.meta.env.VITE_KAKAO_MAP_KEY;
-    if (!key) return;
+    if (!import.meta.env.VITE_KAKAO_MAP_KEY) return;
 
-    const script = document.createElement('script');
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&libraries=services&autoload=false`;
-    document.head.appendChild(script);
-
-    script.onerror = () => {
-      setMapDebug('❌ SDK 로드 실패 (도메인 인증 오류)');
-    };
-
-    script.onload = () => {
-      setMapDebug('✅ SDK 로드됨, maps.load 호출 중...');
+    const initMap = () => {
+      setMapDebug('✅ maps.load 호출 중...');
       window.kakao.maps.load(() => {
         setMapDebug('✅ maps.load 콜백 실행됨');
         if (!mapRef.current) return;
@@ -476,9 +467,12 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
       });
     };
 
-    return () => {
-      if (document.head.contains(script)) document.head.removeChild(script);
-    };
+    // index.html에서 이미 로드된 경우 바로 실행, 아직 로딩 중이면 대기
+    if (window.kakao?.maps) {
+      initMap();
+    } else {
+      setMapDebug('❌ kakao.maps 객체 없음 (SDK 로드 실패)');
+    }
   }, []);
 
   // ── 현재 위치로 돌아가기 (SDK) ─────────
@@ -715,6 +709,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
               onBack={() => { setSelectedMapCafe(null); setPanelExpanded(false); }}
               onClose={() => { setSelectedMapCafe(null); setPanelExpanded(false); }}
               onSwipeDown={() => { setSelectedMapCafe(null); setPanelExpanded(false); }}
+              showHero={panelExpanded}
             />
           </div>
         ) : (

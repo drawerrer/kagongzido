@@ -242,6 +242,38 @@ export async function fetchReviews(cafeId: string): Promise<ReviewRow[]> {
   return data ?? [];
 }
 
+// ─────────────────────────────────────────────────────────────
+// 카페 제보
+// ─────────────────────────────────────────────────────────────
+
+export interface CafeReportRow {
+  cafe_name: string;
+  cafe_address: string;
+  cafe_id?: string | null;
+  outlet?: string | null;
+  seat?: string | null;
+  noise?: string | null;
+  review: string;
+  photos?: string[];
+}
+
+export async function insertCafeReport(report: CafeReportRow): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('cafe_reports').insert({
+    cafe_name: report.cafe_name,
+    cafe_address: report.cafe_address,
+    cafe_id: report.cafe_id ?? null,
+    outlet: report.outlet ?? null,
+    seat: report.seat ?? null,
+    noise: report.noise ?? null,
+    review: report.review,
+    photos: report.photos ?? [],
+  });
+
+  if (error) { console.error('insertCafeReport:', error); return false; }
+  return true;
+}
+
 export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' | 'created_at'>): Promise<boolean> {
   if (!supabase) return false;
   const { error } = await supabase.from('reviews').insert({

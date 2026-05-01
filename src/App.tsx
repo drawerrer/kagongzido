@@ -1,4 +1,4 @@
-import { useState, Component } from 'react';
+import { useState, useRef, Component } from 'react';
 import type { ReactNode, ErrorInfo } from 'react';
 
 // ── 페이지 단위 에러바운더리 ─────────────────────────────────
@@ -76,6 +76,8 @@ export default function App() {
 // FavoritesProvider 안에서 렌더링 — useFavorites를 DetailPage에서 안전하게 사용 가능
 function AppInner() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
+  const [tabKeys, setTabKeys] = useState<Record<TabId, number>>({ home: 0, guidebook: 0, collection: 0, mypage: 0 });
+  const lastTabTapRef = useRef<{ id: TabId; time: number } | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [detailCafeId, setDetailCafeId] = useState<string | null>(null);
   const [collectionDetail, setCollectionDetail] = useState<{ id: string; name: string } | null>(null);
@@ -173,13 +175,14 @@ function AppInner() {
               <>
                 {activeTab === 'home'       && (
                   <MapPage
+                    key={tabKeys.home}
                     onSearchOpen={() => setShowSearch(true)}
                     onDetailOpen={(id) => setDetailCafeId(id)}
                     onGoToFavorites={() => setActiveTab('collection')}
                   />
                 )}
                 {activeTab === 'guidebook'  && (
-                  <PageErrorBoundary>
+                  <PageErrorBoundary key={tabKeys.guidebook}>
                     <GuidebookPage
                       onDetailOpen={(id) => setDetailCafeId(id)}
                       onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
@@ -194,7 +197,7 @@ function AppInner() {
                   </PageErrorBoundary>
                 )}
                 {activeTab === 'collection' && (
-                  <PageErrorBoundary>
+                  <PageErrorBoundary key={tabKeys.collection}>
                     <CollectionPage
                       onDetailOpen={(id) => setDetailCafeId(id)}
                       onCollectionOpen={(id, name) => setCollectionDetail({ id, name })}
@@ -210,6 +213,7 @@ function AppInner() {
                 )}
                 {activeTab === 'mypage'     && (
                   <MyPage
+                    key={tabKeys.mypage}
                     onDetailOpen={(id) => setDetailCafeId(id)}
                     initialSubPage={myPageSubPage as any}
                     onSubPageChange={setMyPageSubPage}
@@ -240,7 +244,21 @@ function AppInner() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => { setCollectionDetail(null); setActiveTab(tab.id); }}
+                  onClick={() => {
+                    const now = Date.now();
+                    const last = lastTabTapRef.current;
+                    if (last?.id === tab.id && now - last.time < 400) {
+                      // 더블탭: 해당 탭 첫 화면으로 리셋
+                      lastTabTapRef.current = null;
+                      setCollectionDetail(null);
+                      setActiveTab(tab.id);
+                      setTabKeys(k => ({ ...k, [tab.id]: k[tab.id] + 1 }));
+                    } else {
+                      lastTabTapRef.current = { id: tab.id, time: now };
+                      setCollectionDetail(null);
+                      setActiveTab(tab.id);
+                    }
+                  }}
                   style={{
                     flex: 1,
                     display: 'flex',

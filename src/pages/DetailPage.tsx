@@ -554,19 +554,67 @@ function PhotoMosaic({
   );
 }
 
+// ── 신고/차단 사유 ────────────────────────────────────────────
+const REPORT_REASONS = ['스팸/광고', '욕설/혐오 표현', '부적절한 사진', '기타'];
+const BLOCK_REASONS = ['불쾌한 내용을 게시해요', '스팸 또는 광고성 글을 올려요', '욕설 또는 혐오 표현을 사용해요', '허위 정보를 올려요', '기타'];
+
 // ── 리뷰 카드 (강화) ─────────────────────────────────────────
 function ReviewCard({ review }: { review: ReviewItem }) {
   const [textExpanded, setTextExpanded] = useState(false);
   const [expandedImgIdx, setExpandedImgIdx] = useState<number | null>(null);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(review.likeCount ?? 0);
+  const [showMoreSheet, setShowMoreSheet] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [showBlock, setShowBlock] = useState(false);
+  const [reportDone, setReportDone] = useState(false);
+  const [blockDone, setBlockDone] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
   const CONTENT_THRESHOLD = 50; // 띄어쓰기 포함 50자
   const isLong = review.content.length > CONTENT_THRESHOLD;
 
-  return (
-    <div style={{ padding: '16px 0', borderBottom: '1px solid #F2F4F6' }}>
+  const handleReport = () => {
+    setShowReport(false);
+    setReportDone(true);
+    setTimeout(() => setReportDone(false), 2000);
+  };
 
-      {/* 헤더: 아바타 + 닉네임 + 날짜 */}
+  const handleBlock = () => {
+    setShowBlock(false);
+    setIsBlocked(true);
+    setBlockDone(true);
+    setTimeout(() => setBlockDone(false), 2500);
+  };
+
+  return (
+    <div style={{ padding: '16px 0', borderBottom: '1px solid #F2F4F6', position: 'relative' }}>
+
+      {/* 차단된 사용자 오버레이 */}
+      {isBlocked && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'rgba(243,243,243,0.88)',
+          backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 10,
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            border: '1px solid #E5E8EB', borderRadius: 12,
+            background: 'white', padding: '10px 18px',
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B0B8C1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
+            <span style={{ fontSize: 14, color: '#8B95A1', fontWeight: 500 }}>
+              차단된 사용자의 댓글입니다
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* 헤더: 아바타 + 닉네임 + 날짜 + 더보기 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
         <div style={{
           width: 32, height: 32, borderRadius: 100,
@@ -594,6 +642,52 @@ function ReviewCard({ review }: { review: ReviewItem }) {
             )}
           </div>
           <span style={{ fontSize: 12, color: '#777777' }}>{review.date}</span>
+        </div>
+        {/* 미트볼 메뉴 */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowMoreSheet(v => !v)}
+            style={{
+              display: 'flex', alignItems: 'center',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+            }}
+          >
+            <svg width="16" height="4" viewBox="0 0 16 4" fill="none">
+              <circle cx="2" cy="2" r="2" fill="#B0B8C1"/>
+              <circle cx="8" cy="2" r="2" fill="#B0B8C1"/>
+              <circle cx="14" cy="2" r="2" fill="#B0B8C1"/>
+            </svg>
+          </button>
+          {showMoreSheet && (
+            <>
+              <div onClick={() => setShowMoreSheet(false)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
+              <div style={{
+                position: 'absolute', bottom: 40, right: 0, zIndex: 200,
+                background: 'rgba(253,253,254,0.89)',
+                backdropFilter: 'blur(11px)', WebkitBackdropFilter: 'blur(11px)',
+                borderRadius: 20, border: '1px solid rgba(253,253,255,0.75)',
+                boxShadow: '0 16px 60px rgba(0,27,55,0.10)',
+                minWidth: 160, padding: 4,
+              }}>
+                <div style={{ padding: '10px 14px 6px', fontSize: 12, fontWeight: 600, color: 'rgba(3,18,40,0.35)' }}>메뉴</div>
+                {[
+                  { label: '신고하기', action: () => { setShowMoreSheet(false); setShowReport(true); } },
+                  { label: '차단하기', action: () => { setShowMoreSheet(false); setShowBlock(true); } },
+                ].map(item => (
+                  <button key={item.label} onClick={item.action} style={{
+                    display: 'flex', alignItems: 'center', width: '100%',
+                    padding: '12px 14px', borderRadius: 12,
+                    textAlign: 'left', background: 'transparent',
+                    border: 'none', cursor: 'pointer',
+                  }}>
+                    <span style={{ fontSize: 15, fontWeight: 500, color: 'rgba(3,18,40,0.70)', whiteSpace: 'nowrap' }}>
+                      {item.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -688,6 +782,94 @@ function ReviewCard({ review }: { review: ReviewItem }) {
           </span>
         </button>
       </div>
+
+      {/* ── 신고 사유 바텀시트 ── */}
+      {showReport && (
+        <BottomSheet isOpen onClose={() => setShowReport(false)}>
+          <div style={{ padding: '4px 20px 0', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#191F28', marginBottom: 12 }}>
+              신고 사유를 선택해주세요
+            </p>
+            {REPORT_REASONS.map(reason => (
+              <button
+                key={reason}
+                onClick={handleReport}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  width: '100%', padding: '15px 4px',
+                  textAlign: 'left', border: 'none', borderBottom: '1px solid #F2F4F6',
+                  background: 'none', cursor: 'pointer',
+                }}
+              >
+                <span style={{ fontSize: 15, color: '#191F28' }}>{reason}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B0B8C1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            ))}
+          </div>
+        </BottomSheet>
+      )}
+
+      {/* ── 차단 사유 바텀시트 ── */}
+      {showBlock && (
+        <BottomSheet isOpen onClose={() => setShowBlock(false)}>
+          <div style={{ padding: '4px 20px 0', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#191F28', marginBottom: 12 }}>
+              차단 사유를 선택해주세요
+            </p>
+            {BLOCK_REASONS.map(reason => (
+              <button
+                key={reason}
+                onClick={handleBlock}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  width: '100%', padding: '15px 4px',
+                  textAlign: 'left', border: 'none', borderBottom: '1px solid #F2F4F6',
+                  background: 'none', cursor: 'pointer',
+                }}
+              >
+                <span style={{ fontSize: 15, color: '#191F28' }}>{reason}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B0B8C1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            ))}
+          </div>
+        </BottomSheet>
+      )}
+
+      {/* 신고 완료 스낵바 */}
+      {reportDone && (
+        <Snackbar
+          message="신고가 접수됐어요"
+          position="top"
+          duration={2000}
+          onDismiss={() => setReportDone(false)}
+          icon={
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B0B8C1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
+          }
+        />
+      )}
+
+      {/* 차단 완료 스낵바 */}
+      {blockDone && (
+        <Snackbar
+          message={`이제 ${review.author}님의 글은 볼 수 없게 됩니다`}
+          position="top"
+          duration={2500}
+          onDismiss={() => setBlockDone(false)}
+          icon={
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B0B8C1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
+          }
+        />
+      )}
     </div>
   );
 }
@@ -764,6 +946,7 @@ interface DetailPageProps {
   onGoToCollection?: (collection: { id: string; name: string }) => void;
   embedded?: boolean; // 바텀시트 임베드 모드: 하트버튼/backEvent 등록 스킵
   onSwipeDown?: () => void; // embedded 풀스크린 상태에서 아래 스와이프 시 지도 복귀
+  showHero?: boolean; // false면 포토 히어로 영역 숨김 (MapPage 기본 바텀시트 상태)
 }
 
 // 아바타 색상 (user_id 기반 고정 색)
@@ -789,7 +972,7 @@ function rowToReviewItem(row: ReviewRow): ReviewItem {
   };
 }
 
-export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false, onSwipeDown }: DetailPageProps) {
+export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false, onSwipeDown, showHero = true }: DetailPageProps) {
   const cafe = getCafeDetail(cafeId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
@@ -1108,7 +1291,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         style={{ height: '100%', overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
       >
         {/* 포토 히어로 */}
-        {(() => {
+        {showHero && (() => {
           const heroImages = [
             { bg: 'linear-gradient(160deg, #6B7684 0%, #4E5968 40%, #252525 100%)' },
             { bg: 'linear-gradient(160deg, #7B6874 0%, #684E5E 40%, #251525 100%)' },
