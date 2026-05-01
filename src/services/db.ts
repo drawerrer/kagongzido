@@ -220,26 +220,31 @@ export async function updateStoreMemo(collectionId: string, storeId: string, mem
 export interface ReviewRow {
   id: string;
   user_id: string;
-  cafe_id: string;
+  store_id: string;
   content: string;
-  outlet?: string;
-  seat?: string;
-  noise?: string;
-  images?: string[];
-  like_count: number;
+  outlet_status: string;
+  seat_status: string;
+  noise_status: string;
+  photo_urls?: string[];
+  like_count: number;  // reviews_likes COUNT 집계값 (DB 컬럼 아님)
   created_at: string;
+  updated_at: string;
 }
 
-export async function fetchReviews(cafeId: string): Promise<ReviewRow[]> {
+export async function fetchReviews(storeId: string): Promise<ReviewRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('reviews')
-    .select('*')
-    .eq('cafe_id', cafeId)
+    .select('*, reviews_likes(count)')
+    .eq('store_id', storeId)
     .order('created_at', { ascending: false });
 
   if (error) { console.error('fetchReviews:', error); return []; }
-  return data ?? [];
+
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    ...(row as Omit<ReviewRow, 'like_count'>),
+    like_count: (row.reviews_likes as { count: number }[])?.[0]?.count ?? 0,
+  }));
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -274,16 +279,16 @@ export async function insertCafeReport(report: CafeReportRow): Promise<boolean> 
   return true;
 }
 
-export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' | 'created_at'>): Promise<boolean> {
+export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' | 'created_at' | 'updated_at'>): Promise<boolean> {
   if (!supabase) return false;
   const { error } = await supabase.from('reviews').insert({
     user_id: review.user_id,
-    cafe_id: review.cafe_id,
+    store_id: review.store_id,
     content: review.content,
-    outlet: review.outlet ?? null,
-    seat: review.seat ?? null,
-    noise: review.noise ?? null,
-    images: review.images ?? [],
+    outlet_status: review.outlet_status,
+    seat_status: review.seat_status,
+    noise_status: review.noise_status,
+    photo_urls: review.photo_urls ?? [],
   });
 
   if (error) { console.error('insertReview:', error); return false; }

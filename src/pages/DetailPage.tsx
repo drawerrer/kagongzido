@@ -112,7 +112,7 @@ interface ReviewItem {
   avatarColor: string;
   date: string;
   content: string;
-  images?: string[];      // gradient 문자열 배열 (플레이스홀더)
+  photo_urls?: string[];  // 리뷰 사진 URL 배열
   isReporter?: boolean;   // 카페 제보자 여부 → 항상 최상단
   likeCount?: number;     // 좋아요 수
 }
@@ -692,10 +692,10 @@ function ReviewCard({ review }: { review: ReviewItem }) {
       </div>
 
       {/* 첨부 이미지 – 확장 뷰 */}
-      {expandedImgIdx !== null && review.images && (
+      {expandedImgIdx !== null && review.photo_urls && (
         <div style={{
           width: 343, maxWidth: '100%', aspectRatio: '4/3',
-          background: review.images[expandedImgIdx],
+          background: review.photo_urls[expandedImgIdx],
           borderRadius: 10, overflow: 'hidden',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           position: 'relative', marginBottom: 10,
@@ -715,12 +715,12 @@ function ReviewCard({ review }: { review: ReviewItem }) {
       )}
 
       {/* 첨부 이미지 – 썸네일 가로 스크롤 */}
-      {expandedImgIdx === null && review.images && review.images.length > 0 && (
+      {expandedImgIdx === null && review.photo_urls && review.photo_urls.length > 0 && (
         <div style={{
           display: 'flex', gap: 6, marginBottom: 10,
           overflowX: 'auto', scrollbarWidth: 'none',
         }}>
-          {review.images.map((bg, i) => (
+          {review.photo_urls.map((bg, i) => (
             <div key={i} onClick={() => setExpandedImgIdx(i)} style={{ cursor: 'pointer' }}>
               <PhotoCell bg={bg} size={80} radius={8} />
             </div>
@@ -967,7 +967,7 @@ function rowToReviewItem(row: ReviewRow): ReviewItem {
     avatarColor: avatarColor(row.user_id),
     date: formatDate(row.created_at),
     content: row.content,
-    images: row.images ?? [],
+    photo_urls: row.photo_urls ?? [],
     likeCount: row.like_count,
   };
 }
@@ -1190,11 +1190,11 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   })();
 
   // 포토 모아보기: 모든 리뷰 이미지 수집 (제보자 리뷰 사진 먼저)
-  const allReviewPhotos = sortedReviews.flatMap(r => r.images ?? []);
+  const allReviewPhotos = sortedReviews.flatMap(r => r.photo_urls ?? []);
 
   // PhotoReviewPage용 ReviewPhoto[] (각 사진에 리뷰 메타데이터 포함)
   const allReviewPhotosFull: ReviewPhoto[] = sortedReviews.flatMap(r =>
-    (r.images ?? []).map(bg => ({
+    (r.photo_urls ?? []).map(bg => ({
       bg,
       reviewId: r.id,
       reviewAuthor: r.author,
@@ -1615,7 +1615,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               {/* 리뷰 카드 목록 */}
               {(() => {
                 const ordered = reviewSort === '포토리뷰'
-                  ? sortedReviews.filter(r => r.images && r.images.length > 0)
+                  ? sortedReviews.filter(r => r.photo_urls && r.photo_urls.length > 0)
                   : sortedReviews;
                 const visible = showAllReviews ? ordered : ordered.slice(0, 3);
                 return (

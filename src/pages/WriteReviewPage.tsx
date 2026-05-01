@@ -21,23 +21,23 @@ interface WriteReviewPageProps {
 // ────────── 평가 칩 데이터 ────────────────────────────────────
 const EVAL_CATEGORIES = [
   {
-    id: 'outlet' as const,
+    id: 'outlet_status' as const,
     label: '콘센트',
     options: ['부족', '적당', '넉넉'],
   },
   {
-    id: 'seat' as const,
+    id: 'seat_status' as const,
     label: '좌석',
     options: ['불편', '적당', '편안'],
   },
   {
-    id: 'noise' as const,
+    id: 'noise_status' as const,
     label: '소음',
     options: ['시끄러움', '적당', '조용'],
   },
 ];
 
-type CategoryId = 'outlet' | 'seat' | 'noise';
+type CategoryId = 'outlet_status' | 'seat_status' | 'noise_status';
 type EvalState = Partial<Record<CategoryId, string>>;
 
 // ────────── 페이지 상태 ───────────────────────────────────────
@@ -123,12 +123,12 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
     setPageState('loading');
     const success = await insertReview({
       user_id: userId,
-      cafe_id: cafeId,
+      store_id: cafeId,
       content: text.trim(),
-      outlet: evalState.outlet,
-      seat: evalState.seat,
-      noise: evalState.noise,
-      images: photos,
+      outlet_status: evalState.outlet_status ?? '',
+      seat_status: evalState.seat_status ?? '',
+      noise_status: evalState.noise_status ?? '',
+      photo_urls: photos,
     });
     if (success) {
       onReviewSubmitted?.();
