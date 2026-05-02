@@ -6,6 +6,7 @@ import LocationPermissionSheet, { LocationSheetType } from '../components/Locati
 import { useFavorites } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
 import DetailPage from './DetailPage';
+import { fetchAllStores, type StoreRow } from '../services/db';
 
 // ── 타입 ─────────────────────────────────
 interface Cafe {
@@ -28,17 +29,30 @@ type SortType = '조회순' | '거리순' | '평점순';
 // ── 상수 ─────────────────────────────────
 const CATEGORY_CHIPS = ['카공', '두쫀쿠', '버터떡', '조용한', '넓은', '가성비'];
 
-const MOCK_CAFES: Cafe[] = [
-  { id: '1', name: '블루보틀 강남', address: '서울 강남구 논현로 508', distance: 150, rating: 4.8, reviewCount: 523, tags: ['카공', '넓은'], mood: '모던한', priceRange: 7000, options: ['콘센트 충분', '소음 적당'], lat: 37.5242, lng: 127.0397 },
-  { id: '2', name: '스타벅스 역삼역점', address: '서울 강남구 역삼로 123', distance: 280, rating: 4.5, reviewCount: 1200, tags: ['넓은'], mood: '개방적인', priceRange: 6000, options: ['콘센트 충분', '단체 방문 가능', '주차 가능'], lat: 37.5006, lng: 127.0363 },
-  { id: '3', name: '모노 커피', address: '서울 강남구 언주로 234', distance: 410, rating: 4.9, reviewCount: 87, tags: ['조용한', '카공'], mood: '조용한', priceRange: 8000, options: ['콘센트 충분', '조용', '시간제한 없음'], lat: 37.5057, lng: 127.0493 },
-  { id: '4', name: '카페 베이커리', address: '서울 강남구 역삼동 567', distance: 590, rating: 4.3, reviewCount: 342, tags: ['가성비'], mood: '아늑한', priceRange: 5500, options: ['조용', '내부 화장실'], lat: 37.4932, lng: 127.0341 },
-  { id: '5', name: '브런치 팩토리', address: '서울 강남구 선릉로 890', distance: 720, rating: 4.6, reviewCount: 156, tags: ['두쫀쿠'], mood: '따뜻한', priceRange: 9000, options: ['단체 방문 가능', '반려동물 동반 가능'], lat: 37.5023, lng: 127.0433 },
-  { id: '6', name: '더 로스터리', address: '서울 강남구 도곡로 321', distance: 950, rating: 4.7, reviewCount: 98, tags: ['카공', '버터떡'], mood: '빈티지', priceRange: 10000, options: ['시간제한 없음', '주차 가능', '콘센트 충분'], lat: 37.4888, lng: 127.0413 },
-];
-
 // ── 유틸 ──────────────────────────────────
 const fmtDist = (m: number) => (m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`);
+
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000; // 지구 반지름 (미터)
+  const rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad;
+  const dLng = (lng2 - lng1) * rad;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+function storeToOptions(store: StoreRow): string[] {
+  const opts: string[] = [];
+  if (store.outlet_status === '충분해요') opts.push('콘센트 충분');
+  if (store.noise_status === '조용해요') opts.push('조용');
+  if (store.amenities.includes('parking')) opts.push('주차 가능');
+  if (store.amenities.includes('noTimeLimit')) opts.push('시간제한 없음');
+  if (store.amenities.includes('pets')) opts.push('반려동물 동반 가능');
+  return opts;
+}
 
 // GPS 권한 상태는 SDK getCurrentLocation.getPermission() 으로 관리
 
@@ -297,9 +311,13 @@ interface MapPageProps {
 export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, initialState, onStateChange }: MapPageProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
+  const markersRef = useRef<KakaoMarker[]>([]);
   const touchStartYRef = useRef<number>(0);
   const [mapDebug, setMapDebug] = useState<string>('초기화 중...');
   const { addFavorite } = useFavorites();
+
+  const [cafes, setCafes] = useState<Cafe[]>([]);
+  const [mapReady, setMapReady] = useState(false);
 
   const [activeChip, setActiveChip] = useState<string | null>(initialState?.activeChip ?? null);
   const [sortType, setSortType] = useState<SortType>(initialState?.sortType ?? '조회순');
@@ -350,10 +368,10 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
   };
 
   // 카테고리 필터 + appliedFilters + 정렬 적용
-  const cafes = (() => {
+  const filteredCafes = (() => {
     let filtered = activeChip
-      ? MOCK_CAFES.filter(c => c.tags.includes(activeChip))
-      : [...MOCK_CAFES];
+      ? cafes.filter(c => c.tags.includes(activeChip))
+      : [...cafes];
 
     // 분위기 필터
     if (appliedFilters.moods.length > 0) {
@@ -374,6 +392,62 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
     if (sortType === '거리순') return filtered.slice().sort((a, b) => a.distance - b.distance);
     return filtered; // 조회순: 기본 순서
   })();
+
+  // ── Supabase stores 데이터 fetch ──────────────────────────
+  useEffect(() => {
+    const load = async () => {
+      const stores = await fetchAllStores();
+      let userLat: number | null = null;
+      let userLng: number | null = null;
+      try {
+        const loc = await getCurrentLocation({ accuracy: Accuracy.Balanced });
+        userLat = loc.coords.latitude;
+        userLng = loc.coords.longitude;
+      } catch { /* 위치 미허용 시 거리 0으로 처리 */ }
+
+      const mapped: Cafe[] = stores.map(store => ({
+        id: store.api_place_id,
+        name: store.name,
+        address: store.address_road,
+        distance: (userLat !== null && userLng !== null)
+          ? haversineDistance(userLat, userLng, store.latitude, store.longitude)
+          : 0,
+        rating: 0,
+        reviewCount: 0,
+        tags: store.vibe_tags,
+        mood: store.vibe_tags[0] || '모던한',
+        priceRange: store.base_price,
+        options: storeToOptions(store),
+        lat: store.latitude,
+        lng: store.longitude,
+      }));
+
+      mapped.sort((a, b) => a.distance - b.distance);
+      setCafes(mapped);
+    };
+    load();
+  }, []);
+
+  // ── 맵 마커 effect ─────────────────────────────────────────
+  useEffect(() => {
+    if (!mapReady || !mapInstanceRef.current) return;
+    // 기존 마커 제거
+    markersRef.current.forEach(m => m.setMap(null));
+    markersRef.current = [];
+    // 새 마커 추가
+    cafes.forEach(cafe => {
+      if (!cafe.lat || !cafe.lng) return;
+      const marker = new window.kakao.maps.Marker({
+        position: new window.kakao.maps.LatLng(cafe.lat, cafe.lng),
+        map: mapInstanceRef.current!,
+      });
+      window.kakao.maps.event.addListener(marker, 'click', () => {
+        setSelectedMapCafe(cafe);
+        setPanelExpanded(false);
+      });
+      markersRef.current.push(marker);
+    });
+  }, [cafes, mapReady]);
 
   // ── 앱 실행 시 SDK 위치 권한 상태만 조회 (시트 자동 노출 없음) ──
   useEffect(() => {
@@ -440,19 +514,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
           level: 4,
         });
         mapInstanceRef.current = map;
-
-        // 카페 마커 추가
-        MOCK_CAFES.forEach(cafe => {
-          if (!cafe.lat || !cafe.lng) return;
-          const marker = new window.kakao.maps.Marker({
-            position: new window.kakao.maps.LatLng(cafe.lat, cafe.lng),
-            map,
-          });
-          window.kakao.maps.event.addListener(marker, 'click', () => {
-            setSelectedMapCafe(cafe);
-            setPanelExpanded(false);
-          });
-        });
+        setMapReady(true);
 
         // 현재 위치로 이동 (SDK)
         getCurrentLocation({ accuracy: Accuracy.Balanced })
@@ -528,15 +590,17 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
             <div style={{ position: 'absolute', top: '38%', left: '50%', width: 70, height: 30, background: '#D8DBE0', borderRadius: 4 }} />
             <div style={{ position: 'absolute', top: '62%', left: '15%', width: 55, height: 34, background: '#D8DBE0', borderRadius: 4 }} />
             <div style={{ position: 'absolute', top: '62%', left: '75%', width: 40, height: 44, background: '#D8DBE0', borderRadius: 4 }} />
-            {/* 목업 카페 핀 — MOCK_CAFES 일부를 상대 위치로 배치 */}
+            {/* 목업 카페 핀 — cafes 앞 6개를 상대 위치로 배치 */}
             {[
-              { cafe: MOCK_CAFES[0], top: '18%', left: '20%' },
-              { cafe: MOCK_CAFES[1], top: '22%', left: '58%' },
-              { cafe: MOCK_CAFES[2], top: '44%', left: '25%' },
-              { cafe: MOCK_CAFES[3], top: '42%', left: '62%' },
-              { cafe: MOCK_CAFES[4], top: '68%', left: '32%' },
-              { cafe: MOCK_CAFES[5], top: '66%', left: '78%' },
-            ].map(({ cafe, top, left }) => (
+              { top: '18%', left: '20%' },
+              { top: '22%', left: '58%' },
+              { top: '44%', left: '25%' },
+              { top: '42%', left: '62%' },
+              { top: '68%', left: '32%' },
+              { top: '66%', left: '78%' },
+            ].slice(0, cafes.length).map(({ top, left }, idx) => {
+              const cafe = cafes[idx];
+              return (
               <button
                 key={cafe.id}
                 onClick={() => { setSelectedMapCafe(cafe); setPanelExpanded(false); }}
@@ -563,7 +627,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
               >
                 ☕ {cafe.name.split(' ').slice(-1)[0]}
               </button>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -759,7 +824,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
               }}
             >
               <span style={{ fontSize: 14, color: '#6B7684' }}>
-                총 <strong style={{ color: '#191F28' }}>{cafes.length}</strong>개
+                총 <strong style={{ color: '#191F28' }}>{filteredCafes.length}</strong>개
               </span>
               <button
                 onClick={() => setSortPopupOpen(o => !o)}
@@ -802,8 +867,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
                 }
               }}
             >
-              {cafes.length > 0 ? (
-                cafes.map(cafe => (
+              {filteredCafes.length > 0 ? (
+                filteredCafes.map(cafe => (
                   <CafeRow
                     key={cafe.id}
                     cafe={cafe}

@@ -294,3 +294,47 @@ export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' |
   if (error) { console.error('insertReview:', error); return false; }
   return true;
 }
+
+// ─────────────────────────────────────────────────────────────
+// stores 테이블
+// ─────────────────────────────────────────────────────────────
+
+export interface StoreRow {
+  id: string;           // UUID
+  api_place_id: string;
+  name: string;
+  category: string;
+  address_road: string;
+  latitude: number;
+  longitude: number;
+  phone_number: string | null;
+  thumbnail_url: string;
+  photo_urls: string[];
+  business_hours: Record<string, { open: string; close: string }> | null;
+  website_url: string | null;
+  seat_status: string;
+  outlet_status: string;
+  noise_status: string;
+  vibe_tags: string[];
+  base_price: number;
+  amenities: string[];
+  badges: string[];
+}
+
+export async function fetchAllStores(): Promise<StoreRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from('stores').select('*');
+  if (error) { console.error('fetchAllStores:', error); return []; }
+  return (data ?? []) as StoreRow[];
+}
+
+export async function fetchStoreByPlaceId(apiPlaceId: string): Promise<StoreRow | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('stores')
+    .select('*')
+    .eq('api_place_id', apiPlaceId)
+    .single();
+  if (error) { console.error('fetchStoreByPlaceId:', error); return null; }
+  return data as StoreRow;
+}

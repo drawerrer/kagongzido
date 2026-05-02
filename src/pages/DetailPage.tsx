@@ -8,7 +8,7 @@ import ShareSheet from '../components/ShareSheet';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
 import WriteReviewPage from './WriteReviewPage';
 import { useFavorites } from '../context/FavoritesContext';
-import { fetchReviews, type ReviewRow } from '../services/db';
+import { fetchReviews, fetchStoreByPlaceId, type ReviewRow } from '../services/db';
 
 // ── 편의시설 SVG 아이콘 ──────────────────────────────────────
 function IcParking() {
@@ -973,7 +973,47 @@ function rowToReviewItem(row: ReviewRow): ReviewItem {
 }
 
 export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false, onSwipeDown, showHero = true }: DetailPageProps) {
-  const cafe = getCafeDetail(cafeId);
+  const [storeData, setStoreData] = useState<CafeDetailData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const store = await fetchStoreByPlaceId(cafeId);
+      if (store) {
+        setStoreData({
+          id: store.api_place_id,
+          name: store.name,
+          address: store.address_road,
+          photos: store.photo_urls.length > 0 ? store.photo_urls : [],
+          hours: (store.business_hours ?? {}) as CafeDetailData['hours'],
+          regularHoliday: [],
+          seats: store.seat_status,
+          outlets: store.outlet_status,
+          vibe: store.vibe_tags.join(', '),
+          priceRange: store.base_price > 0 ? `${store.base_price.toLocaleString()}원~` : undefined,
+          phone: store.phone_number ?? undefined,
+          snsUrl: store.website_url ?? undefined,
+          amenities: {
+            parking: store.amenities.includes('parking'),
+            pets: store.amenities.includes('pets'),
+            noTimeLimit: store.amenities.includes('noTimeLimit'),
+            separateRestroom: store.amenities.includes('separateRestroom'),
+            indoorRestroom: store.amenities.includes('indoorRestroom'),
+            groupVisit: store.amenities.includes('groupVisit'),
+            decafFree: store.amenities.includes('decafFree'),
+          },
+          reviews: [],
+        });
+      } else {
+        setStoreData(null);
+      }
+      setLoading(false);
+    };
+    load();
+  }, [cafeId]);
+
+  const cafe = storeData ?? getCafeDetail(cafeId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
   const cafeInfoRef = useRef<HTMLDivElement>(null);
@@ -1208,6 +1248,21 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   // 오늘 영업시간
   const todayHours = cafe.hours[todayKey];
   const hasHoursData = todayHours !== undefined;
+
+  // 로딩 중 스피너
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#f3f3f3' }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: '50%',
+          border: '3px solid #E5E8EB',
+          borderTopColor: '#191F28',
+          animation: 'spin 0.7s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   // 리뷰 남기기 페이지
   if (showWriteReview) {
