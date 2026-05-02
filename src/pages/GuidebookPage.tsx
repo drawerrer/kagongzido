@@ -495,27 +495,27 @@ function GuideBookDetailView({
                     e.stopPropagation();
                     const endX = e.changedTouches[0].clientX;
                     const dx = endX - imgTouchStartX.current;
-                    const dt = Math.max(1, Date.now() - imgTouchStartTime.current);
-                    const vel = dx / dt; // px/ms (음수=왼쪽, 양수=오른쪽)
                     const startCard = Math.round(touchScrollLeft.current / itemW);
 
-                    // 빠른 플릭 또는 충분히 넓은 스와이프 → 카드 이동
-                    if (vel < -0.5 || dx < -(itemW * 0.35)) {
-                      snapTo(startCard + 1);
-                      return;
-                    }
-                    if (vel > 0.5 || dx > itemW * 0.35) {
-                      snapTo(startCard - 1);
+                    // 탭 → 상세보기
+                    if (Math.abs(dx) < 10) {
+                      onDetailOpen?.(s.id);
                       return;
                     }
 
-                    // 일반 포토 스와이프 or 탭
-                    if (Math.abs(dx) < 10) {
-                      onDetailOpen?.(s.id); // 탭 → 상세보기
-                    } else if (dx < -40 && photoIndex < s.photos.length - 1) {
-                      setPhotoIndex(p => p + 1);
-                    } else if (dx > 40 && photoIndex > 0) {
-                      setPhotoIndex(p => p - 1);
+                    // 포토 스와이프 우선 — 마지막/첫 장일 때만 카드 이동
+                    if (dx < -30) {
+                      if (photoIndex < s.photos.length - 1) {
+                        setPhotoIndex(p => p + 1); // 다음 사진
+                      } else {
+                        snapTo(startCard + 1); // 마지막 사진 → 다음 카드
+                      }
+                    } else if (dx > 30) {
+                      if (photoIndex > 0) {
+                        setPhotoIndex(p => p - 1); // 이전 사진
+                      } else {
+                        snapTo(startCard - 1); // 첫 사진 → 이전 카드
+                      }
                     }
                   } : undefined}
                   onClick={isActive ? () => onDetailOpen?.(s.id) : undefined}
