@@ -47,11 +47,14 @@ function HeartIconMd() {
   );
 }
 
-/** 칩 내부 하트 — 12×12 */
-function HeartIconXs({ color }: { color: string }) {
+/** 칩 내부 모음집 아이콘 — 12×12 */
+function CollectionIconXs({ color }: { color: string }) {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill={color}>
-      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1" fill={color} stroke="none" />
+      <rect x="14" y="3" width="7" height="7" rx="1" fill={color} stroke="none" />
+      <rect x="3" y="14" width="7" height="7" rx="1" fill={color} stroke="none" />
+      <rect x="14" y="14" width="7" height="7" rx="1" fill={color} stroke="none" />
     </svg>
   );
 }
@@ -273,8 +276,7 @@ function Chip({
         transition: 'background 0.15s',
       }}
     >
-      {/* Figma: icon-heart-mono 12×12 */}
-      <HeartIconXs color={iconColor} />
+      <CollectionIconXs color={iconColor} />
       <span style={{
         fontSize: 13, fontWeight: 590,
         color: selected ? '#ffffff' : '#4f5969',
@@ -391,7 +393,7 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
             padding: '16px 0 16px 16px',
             flexShrink: 0, scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
           }}>
-            <Chip label="즐겨찾기" selected={activeChip === '즐겨찾기'} onPress={() => handleChipPress('즐겨찾기')} />
+            <Chip label="모음집" selected={activeChip === '즐겨찾기'} onPress={() => handleChipPress('즐겨찾기')} />
             {userCollections.map(col => (
               <Chip key={col.id} label={col.name} selected={activeChip === col.id} onPress={() => handleChipPress(col.id)} />
             ))}
@@ -473,20 +475,14 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
                 <button
                   onClick={_onClose}
                   style={{
-                    marginTop: 52,
-                    height: 38,
-                    borderRadius: 10,
-                    backgroundColor: 'rgba(211,211,223,0.19)',
-                    border: 'none', cursor: 'pointer',
-                    display: 'inline-flex', alignItems: 'center',
-                    padding: '0 16px',
-                    gap: 6,
-                    flexShrink: 0,
+                    marginTop: 52, height: 38, borderRadius: 10,
+                    backgroundColor: 'rgba(211,211,223,0.19)', border: 'none', cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', padding: '0 16px', gap: 6, flexShrink: 0,
                   }}
                 >
                   <span style={{ fontWeight: 590, fontSize: 15, color: '#252525', whiteSpace: 'nowrap' }}>매장 추가하기</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                    <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round"/>
+                    <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round" />
                   </svg>
                 </button>
               </div>

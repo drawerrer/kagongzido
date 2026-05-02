@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "preview (rsbuild)",
+      "name": "kagongzido-dev",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "dist", "-p", "4173", "-s"],
+      "runtimeArgs": ["rsbuild", "dev", "--port", "4173"],
       "port": 4173
     }
   ]
