@@ -6,3 +6,4 @@ dist/
 .env.local
 .DS_Store
 granite.config.ts
+.granite/
