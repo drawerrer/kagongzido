@@ -325,7 +325,14 @@ export async function fetchAllStores(): Promise<StoreRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.from('stores').select('*');
   if (error) { console.error('fetchAllStores:', error); return []; }
-  return (data ?? []) as StoreRow[];
+  // Supabase에서 배열 컬럼이 null로 내려올 수 있으므로 빈 배열로 정규화
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    ...(row as StoreRow),
+    photo_urls:  (row.photo_urls  as string[] | null) ?? [],
+    vibe_tags:   (row.vibe_tags   as string[] | null) ?? [],
+    amenities:   (row.amenities   as string[] | null) ?? [],
+    badges:      (row.badges      as string[] | null) ?? [],
+  }));
 }
 
 export async function fetchStoreByPlaceId(apiPlaceId: string): Promise<StoreRow | null> {

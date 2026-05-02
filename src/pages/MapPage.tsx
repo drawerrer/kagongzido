@@ -48,9 +48,9 @@ function storeToOptions(store: StoreRow): string[] {
   const opts: string[] = [];
   if (store.outlet_status === '충분해요') opts.push('콘센트 충분');
   if (store.noise_status === '조용해요') opts.push('조용');
-  if (store.amenities.includes('parking')) opts.push('주차 가능');
-  if (store.amenities.includes('noTimeLimit')) opts.push('시간제한 없음');
-  if (store.amenities.includes('pets')) opts.push('반려동물 동반 가능');
+  if (store.amenities?.includes('parking')) opts.push('주차 가능');
+  if (store.amenities?.includes('noTimeLimit')) opts.push('시간제한 없음');
+  if (store.amenities?.includes('pets')) opts.push('반려동물 동반 가능');
   return opts;
 }
 
@@ -414,8 +414,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
           : 0,
         rating: 0,
         reviewCount: 0,
-        tags: store.vibe_tags,
-        mood: store.vibe_tags[0] || '모던한',
+        tags: store.vibe_tags ?? [],
+        mood: (store.vibe_tags ?? [])[0] || '모던한',
         priceRange: store.base_price,
         options: storeToOptions(store),
         lat: store.latitude,
