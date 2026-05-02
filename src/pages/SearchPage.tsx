@@ -467,9 +467,26 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
         {!isTyping && activeChip === '즐겨찾기' && (
           <div style={{ paddingTop: 10, paddingLeft: 10, paddingRight: 10 }}>
             {favRows.length === 0 ? (
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginTop:80, color:'rgba(3,18,40,0.30)' }}>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:16, marginTop:80 }}>
                 <span style={{ fontSize: 32 }}>🤍</span>
-                <p style={{ fontSize: 14 }}>즐겨찾기한 카페가 없어요</p>
+                <p style={{ fontSize: 14, color:'rgba(3,18,40,0.30)', margin: 0 }}>즐겨찾기한 카페가 없어요</p>
+                <button
+                  onClick={_onClose}
+                  style={{
+                    marginTop: 8,
+                    background: '#252525',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: 12,
+                    height: 48,
+                    padding: '0 24px',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  매장 추가하러 가기
+                </button>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
