@@ -1345,7 +1345,6 @@ export default function MyPage({
         header={<BottomSheet.Header>변경할 이름</BottomSheet.Header>}
         onClose={() => setShowNameSheet(false)}
         hasTextField
-        disableDrag
       >
         <div style={{ padding: '8px 20px 16px' }}>
           <input
