@@ -467,25 +467,27 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
         {!isTyping && activeChip === '즐겨찾기' && (
           <div style={{ paddingTop: 10, paddingLeft: 10, paddingRight: 10 }}>
             {favRows.length === 0 ? (
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:16, marginTop:80 }}>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginTop:80, color:'rgba(3,18,40,0.30)' }}>
                 <span style={{ fontSize: 32 }}>🤍</span>
-                <p style={{ fontSize: 14, color:'rgba(3,18,40,0.30)', margin: 0 }}>즐겨찾기한 카페가 없어요</p>
+                <p style={{ fontSize: 14 }}>즐겨찾기한 카페가 없어요</p>
                 <button
                   onClick={_onClose}
                   style={{
-                    marginTop: 8,
-                    background: '#252525',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: 12,
-                    height: 48,
-                    padding: '0 24px',
-                    fontSize: 15,
-                    fontWeight: 600,
-                    cursor: 'pointer',
+                    marginTop: 52,
+                    height: 38,
+                    borderRadius: 10,
+                    backgroundColor: 'rgba(211,211,223,0.19)',
+                    border: 'none', cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center',
+                    padding: '0 16px',
+                    gap: 6,
+                    flexShrink: 0,
                   }}
                 >
-                  매장 추가하러 가기
+                  <span style={{ fontWeight: 590, fontSize: 15, color: '#252525', whiteSpace: 'nowrap' }}>매장 추가하기</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                    <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round"/>
+                  </svg>
                 </button>
               </div>
             ) : (
