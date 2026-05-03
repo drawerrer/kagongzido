@@ -724,8 +724,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
               // 확장(풀스크린) 상태: 아래로 세게 → 지도로 복귀
               if (delta > 60) { setPanelExpanded(false); setSelectedMapCafe(null); }
             } else {
-              // 기본형 상태: 위로 → 확장, 아래로 → 닫기
-              if (delta < -60) setPanelExpanded(true);
+              // 기본형 상태: 위로 → 풀스크린 상세 페이지로 바로 이동, 아래로 → 닫기
+              if (delta < -60) onDetailOpen(selectedMapCafe.id);
               else if (delta > 60) setSelectedMapCafe(null);
             }
           } else {
@@ -749,10 +749,13 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
           ...(selectedMapCafe ? { transform: 'translateZ(0)', willChange: 'transform' } : {}),
         }}
       >
-        {/* 핸들 — 풀스크린 상세 모드에서는 숨김 */}
+        {/* 핸들 — selectedMapCafe 있을 때: 탭 → 풀스크린 상세로 이동 */}
         {!(selectedMapCafe && panelExpanded) && (
           <div
-            onClick={() => setPanelExpanded(e => !e)}
+            onClick={() => {
+              if (selectedMapCafe) onDetailOpen(selectedMapCafe.id);
+              else setPanelExpanded(e => !e);
+            }}
             style={{
               display: 'flex',
               justifyContent: 'center',
