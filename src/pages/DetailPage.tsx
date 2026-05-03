@@ -1084,6 +1084,13 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [heroIdx, setHeroIdx] = useState(0);
   const heroScrollRef = useRef<HTMLDivElement>(null);
 
+  // 바텀시트 확장 시 (showHero false→true) 스크롤 최상단 고정
+  useEffect(() => {
+    if (showHero && scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [showHero]);
+
   // ── 네비바 하트 아이콘 (카페 상세페이지 전용) ──────────────
   const heartHandlerRef = useRef<() => void>(() => {});
   const isInAnyCollection = collections.some(col => col.storeIds.includes(cafeId));
