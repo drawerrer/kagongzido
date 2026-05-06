@@ -5,6 +5,7 @@ import { ConfirmDialog, Toast } from '@toss/tds-mobile';
 import BottomSheet from '../components/BottomSheet';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
+import SectionHeader from '../components/SectionHeader';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
 import WriteReviewPage from './WriteReviewPage';
 import { useFavorites } from '../context/FavoritesContext';
@@ -1398,7 +1399,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
         {/* ── 카페 정보 섹션 ── */}
         <div style={{ padding: '20px 20px 4px' }}>
-          <h2 style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 16 }}>카페 정보</h2>
+          <SectionHeader title="카페 정보" marginBottom={16} />
 
           {/* 좌석 | 콘센트 (가로 배치) */}
           <div style={{
@@ -1423,7 +1424,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         {hasAmenities && (
           <>
             <div style={{ padding: '20px 16px' }}>
-              <h2 style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 14 }}>편의시설</h2>
+              <SectionHeader title="편의시설" marginBottom={14} />
               {/* 피그마: 343×128 fill=#f3f3f3, 20px inner pad, 4열 그리드, 서비스 아이템 50×50 */}
               <div style={{
                 background: '#f3f3f3',
@@ -1449,25 +1450,28 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         {/* ── 리뷰 섹션 ── */}
         <div ref={reviewSectionRef} style={{ padding: '20px' }}>
           {/* 헤더: "리뷰 (n)" + 정렬 드롭다운 */}
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, position: 'relative' }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: '#191F28', flex: 1 }}>
-              리뷰&nbsp;<span style={{ color: '#252525' }}>({reviews.length})</span>
-            </h2>
-            <button
-              onClick={() => reviews.length > 0 && setReviewSortPopupOpen(v => !v)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                background: 'none', padding: 0,
-                opacity: reviews.length === 0 ? 0.35 : 1,
-                cursor: reviews.length === 0 ? 'default' : 'pointer',
-                fontSize: 14, color: '#6B7684', fontWeight: 400,
-              }}
-            >
-              {reviewSort}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
+          <div style={{ position: 'relative' }}>
+            <SectionHeader
+              title={<>리뷰&nbsp;<span style={{ color: '#252525' }}>({reviews.length})</span></>}
+              right={
+                <button
+                  onClick={() => reviews.length > 0 && setReviewSortPopupOpen(v => !v)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    background: 'none', padding: 0,
+                    opacity: reviews.length === 0 ? 0.35 : 1,
+                    cursor: reviews.length === 0 ? 'default' : 'pointer',
+                    fontSize: 14, color: '#6B7684', fontWeight: 400,
+                  }}
+                >
+                  {reviewSort}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+              }
+              marginBottom={16}
+            />
             {/* 정렬 팝업 */}
             {reviewSortPopupOpen && (
               <>

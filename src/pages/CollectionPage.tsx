@@ -9,6 +9,7 @@ import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
 import CollectionActionSheet from '../components/CollectionActionSheet';
 import PageHeader from '../components/PageHeader';
 import StoreCountBar from '../components/StoreCountBar';
+import SectionHeader from '../components/SectionHeader';
 import { useFavorites, FavoritedStore, haversineDistance } from '../context/FavoritesContext';
 import { BottomSheet, BottomCTA, CTAButton, Toast } from '@toss/tds-mobile';
 import { graniteEvent } from '@apps-in-toss/web-framework';
@@ -349,11 +350,7 @@ export default function CollectionPage({
             height: 41, display: 'flex', alignItems: 'flex-end',
             paddingLeft: 20, paddingRight: 20, paddingBottom: 4,
           }}>
-            <h2 style={{
-              fontWeight: 700, fontSize: 17,
-              lineHeight: '21.25px', color: '#191F28',
-              margin: 0,
-            }}>저장한 매장</h2>
+            <SectionHeader title="저장한 매장" />
           </div>
           <StoreCountBar count={orderedStores.length} />
 
