@@ -1,4 +1,4 @@
-import { useState, useRef, Component } from 'react';
+import { useState, useRef, useEffect, Component } from 'react';
 import type { ReactNode, ErrorInfo } from 'react';
 
 // ── 페이지 단위 에러바운더리 ─────────────────────────────────
@@ -91,201 +91,278 @@ function AppInner() {
   const [detailScrollToReview, setDetailScrollToReview] = useState(false);
   const [detailOpenDirections, setDetailOpenDirections] = useState(false);
 
-  // 포토리뷰 전체보기
-  if (photoReview) {
-    const store = favorites.find(f => f.id === photoReview.storeId);
-    return (
-      <div style={{ height: '100%' }}>
-        <PhotoReviewPage
-          photos={photoReview.photos.map((bg, i) => ({
-            bg, reviewId: `${photoReview.storeId}-${i}`,
-            reviewAuthor: '', reviewAvatarColor: '#e8edf4',
-            reviewDate: '', reviewContent: '', isReporter: false,
-          }))}
-          cafeName={photoReview.cafeName}
-          isFavorite={isFavorited(photoReview.storeId)}
-          onFavoriteToggle={() => {
-            if (!store) return;
-            isFavorited(photoReview.storeId) ? removeFavorite(photoReview.storeId) : addFavorite(store);
-          }}
-          onBack={() => setPhotoReview(null)}
-          onClose={() => setPhotoReview(null)}
-        />
-      </div>
-    );
-  }
+  // ── 왼쪽 엣지 스와이프 뒤로가기 (인터랙티브) ──────────────────
+  const swipeRef    = useRef<HTMLDivElement>(null);
+  const swipeStartX = useRef<number | null>(null);
+  const swipeDelta  = useRef<number>(0);
 
-  // 카페 상세페이지 (자체 탭바 포함)
-  if (detailCafeId) {
-    return (
-      <div style={{ height: '100%' }}>
-        <DetailPage
-          cafeId={detailCafeId}
-          onBack={() => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
-          onClose={() => { setDetailCafeId(null); setShowSearch(false); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
-          activeTab={activeTab}
-          onTabChange={(tab) => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); setActiveTab(tab as TabId); }}
-          scrollToReview={detailScrollToReview}
-          openDirections={detailOpenDirections}
-          onGoToCollection={(col) => {
-            setDetailCafeId(null);
-            setDetailScrollToReview(false);
-            if (col.id) {
-              setCollectionDetail({ id: col.id, name: col.name });
-            } else {
-              setActiveTab('collection');
-            }
-          }}
-        />
-      </div>
-    );
-  }
+  useEffect(() => {
+    const EDGE     = 24;  // 왼쪽 가장자리 감지 범위 (px)
+    const MIN_DIST = 70;  // 완료 인식 최소 거리 (px)
+
+    const getBackAction = (): (() => void) | null => {
+      if (photoReview)      return () => setPhotoReview(null);
+      if (detailCafeId)     return () => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); };
+      if (showSearch)       return () => setShowSearch(false);
+      if (collectionDetail) return () => setCollectionDetail(null);
+      return null;
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches[0].clientX > EDGE) return;
+      if (!getBackAction()) return;
+      swipeStartX.current = e.touches[0].clientX;
+      swipeDelta.current  = 0;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (swipeStartX.current === null) return;
+      const delta = Math.max(0, e.touches[0].clientX - swipeStartX.current);
+      swipeDelta.current = delta;
+      if (swipeRef.current) {
+        swipeRef.current.style.transition = 'none';
+        swipeRef.current.style.transform  = `translateX(${delta}px)`;
+      }
+    };
+
+    const onTouchEnd = () => {
+      if (swipeStartX.current === null) return;
+      swipeStartX.current = null;
+      const delta = swipeDelta.current;
+      swipeDelta.current  = 0;
+      const el = swipeRef.current;
+      if (!el) return;
+      const backAction = getBackAction();
+
+      if (delta > MIN_DIST && backAction) {
+        // 완료: 오른쪽으로 슬라이드 아웃
+        el.style.transition = 'transform 0.28s cubic-bezier(0.4,0,0.2,1)';
+        el.style.transform  = 'translateX(100%)';
+        setTimeout(() => backAction(), 280);
+      } else {
+        // 취소: 원위치로 스프링백
+        el.style.transition = 'transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)';
+        el.style.transform  = 'translateX(0)';
+        setTimeout(() => { if (swipeRef.current) swipeRef.current.style.transition = ''; }, 300);
+      }
+    };
+
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchmove',  onTouchMove,  { passive: true });
+    document.addEventListener('touchend',   onTouchEnd,   { passive: true });
+    return () => {
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('touchmove',  onTouchMove);
+      document.removeEventListener('touchend',   onTouchEnd);
+    };
+  }, [photoReview, detailCafeId, showSearch, collectionDetail]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── topOverlay: 현재 최상위 오버레이 결정 ───────────────────
+  const topOverlay = photoReview ? 'photo'
+    : detailCafeId ? 'detail'
+    : showSearch ? 'search'
+    : collectionDetail ? 'collection'
+    : null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
-      {showSearch ? (
-        /* ── 검색 화면 (탭바 숨김) ── */
-        <SearchPage
-          onClose={() => setShowSearch(false)}
-          onDetailOpen={(id) => { setDetailCafeId(id); }}
-          onReportCafe={() => {
-            setShowSearch(false);
-            setActiveTab('mypage');
-            setMyPageSubPage('report-cafe');
-          }}
-        />
-      ) : (
-        <>
-          {/* ── 화면 영역 ── */}
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            {collectionDetail ? (
-              <CollectionDetailPage
-                collectionId={collectionDetail.id}
-                collectionName={collectionDetail.name}
-                onBack={() => setCollectionDetail(null)}
-                onClose={() => { setCollectionDetail(null); setActiveTab('collection'); }}
-                onDetailOpen={(id) => setDetailCafeId(id)}
-                onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
-                onCollectionDeleted={(data) => { setCollectionDetail(null); setDeletedCollectionData(data); }}
-                onGoHome={() => { setCollectionDetail(null); setActiveTab('home'); }}
-                onEditModeChange={setIsCollectionEditMode}
-              />
-            ) : (
-              <>
-                {activeTab === 'home'       && (
-                  <MapPage
-                    key={tabKeys.home}
-                    onSearchOpen={() => setShowSearch(true)}
-                    onDetailOpen={(id) => setDetailCafeId(id)}
-                    onGoToFavorites={() => setActiveTab('collection')}
-                  />
-                )}
-                {activeTab === 'guidebook'  && (
-                  <PageErrorBoundary key={tabKeys.guidebook}>
-                    <GuidebookPage
-                      onDetailOpen={(id) => setDetailCafeId(id)}
-                      onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
-                      onBack={() => setActiveTab('home')}
-                      onClose={() => setActiveTab('home')}
-                      onGoToFavorites={() => setActiveTab('collection')}
-                      initialView={(guidebookView as any) ?? 'main'}
-                      onViewChange={(v) => setGuidebookView(v)}
-                      initialStoreIndex={guidebookStoreIndex}
-                      onStoreIndexChange={(i) => setGuidebookStoreIndex(i)}
-                    />
-                  </PageErrorBoundary>
-                )}
-                {activeTab === 'collection' && (
-                  <PageErrorBoundary key={tabKeys.collection}>
-                    <CollectionPage
-                      onDetailOpen={(id) => setDetailCafeId(id)}
-                      onCollectionOpen={(id, name) => setCollectionDetail({ id, name })}
-                      onGoHome={() => setActiveTab('home')}
-                      onBack={() => setActiveTab('home')}
-                      onClose={() => setActiveTab('home')}
-                      onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
-                      deletedCollection={deletedCollectionData}
-                      onClearDeletedCollection={() => setDeletedCollectionData(null)}
-                      onEditModeChange={setIsCollectionEditMode}
-                    />
-                  </PageErrorBoundary>
-                )}
-                {activeTab === 'mypage'     && (
-                  <MyPage
-                    key={tabKeys.mypage}
-                    onDetailOpen={(id) => setDetailCafeId(id)}
-                    initialSubPage={myPageSubPage as any}
-                    onSubPageChange={setMyPageSubPage}
-                  />
-                )}
-              </>
-            )}
-          </div>
+      {/* ── 베이스 탭 콘텐츠 (항상 렌더링 — 슬라이드아웃 시 배경으로 노출) ── */}
+      <div style={{ flex: 1, overflow: 'hidden' }}>
+        {activeTab === 'home' && (
+          <MapPage
+            key={tabKeys.home}
+            onSearchOpen={() => setShowSearch(true)}
+            onDetailOpen={(id) => setDetailCafeId(id)}
+            onGoToFavorites={() => setActiveTab('collection')}
+          />
+        )}
+        {activeTab === 'guidebook' && (
+          <PageErrorBoundary key={tabKeys.guidebook}>
+            <GuidebookPage
+              onDetailOpen={(id) => setDetailCafeId(id)}
+              onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
+              onBack={() => setActiveTab('home')}
+              onClose={() => setActiveTab('home')}
+              onGoToFavorites={() => setActiveTab('collection')}
+              initialView={(guidebookView as any) ?? 'main'}
+              onViewChange={(v) => setGuidebookView(v)}
+              initialStoreIndex={guidebookStoreIndex}
+              onStoreIndexChange={(i) => setGuidebookStoreIndex(i)}
+            />
+          </PageErrorBoundary>
+        )}
+        {activeTab === 'collection' && (
+          <PageErrorBoundary key={tabKeys.collection}>
+            <CollectionPage
+              onDetailOpen={(id) => setDetailCafeId(id)}
+              onCollectionOpen={(id, name) => setCollectionDetail({ id, name })}
+              onGoHome={() => setActiveTab('home')}
+              onBack={() => setActiveTab('home')}
+              onClose={() => setActiveTab('home')}
+              onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
+              deletedCollection={deletedCollectionData}
+              onClearDeletedCollection={() => setDeletedCollectionData(null)}
+              onEditModeChange={setIsCollectionEditMode}
+            />
+          </PageErrorBoundary>
+        )}
+        {activeTab === 'mypage' && (
+          <MyPage
+            key={tabKeys.mypage}
+            onDetailOpen={(id) => setDetailCafeId(id)}
+            initialSubPage={myPageSubPage as any}
+            onSubPageChange={setMyPageSubPage}
+          />
+        )}
+      </div>
 
-          {/* ── 탭 바 (Toss 플로팅 형태) — 편집모드 진입 시 숨김 ── */}
-          <nav
-            style={{
-              position: 'fixed',
-              left: 16,
-              right: 16,
-              bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
-              height: 56,
-              display: isCollectionEditMode ? 'none' : 'flex',
-              alignItems: 'center',
-              background: '#ffffff',
-              borderRadius: 28,
-              boxShadow: '0 4px 24px rgba(0, 27, 55, 0.14)',
-              zIndex: 100,
-            }}
-          >
-            {TABS.map(tab => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    const now = Date.now();
-                    const last = lastTabTapRef.current;
-                    if (last?.id === tab.id && now - last.time < 400) {
-                      // 더블탭: 해당 탭 첫 화면으로 리셋
-                      lastTabTapRef.current = null;
-                      setCollectionDetail(null);
-                      setActiveTab(tab.id);
-                      setTabKeys(k => ({ ...k, [tab.id]: k[tab.id] + 1 }));
-                    } else {
-                      lastTabTapRef.current = { id: tab.id, time: now };
-                      setCollectionDetail(null);
-                      setActiveTab(tab.id);
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 2,
-                    padding: '8px 0',
-                    color: isActive ? '#252525' : '#b0b8c1',
-                    fontSize: 11,
-                    fontWeight: isActive ? 600 : 400,
-                    transition: 'color 0.15s',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
-                    {tab.icon}
-                  </span>
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
-        </>
+      {/* ── 탭바 ── */}
+      <nav
+        style={{
+          position: 'fixed',
+          left: 16,
+          right: 16,
+          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+          height: 56,
+          display: isCollectionEditMode ? 'none' : 'flex',
+          alignItems: 'center',
+          background: '#ffffff',
+          borderRadius: 28,
+          boxShadow: '0 4px 24px rgba(0, 27, 55, 0.14)',
+          zIndex: 100,
+        }}
+      >
+        {TABS.map(tab => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                const now = Date.now();
+                const last = lastTabTapRef.current;
+                if (last?.id === tab.id && now - last.time < 400) {
+                  lastTabTapRef.current = null;
+                  setCollectionDetail(null);
+                  setActiveTab(tab.id);
+                  setTabKeys(k => ({ ...k, [tab.id]: k[tab.id] + 1 }));
+                } else {
+                  lastTabTapRef.current = { id: tab.id, time: now };
+                  setCollectionDetail(null);
+                  setActiveTab(tab.id);
+                }
+              }}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
+                padding: '8px 0',
+                color: isActive ? '#252525' : '#b0b8c1',
+                fontSize: 11,
+                fontWeight: isActive ? 600 : 400,
+                transition: 'color 0.15s',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>
+                {tab.icon}
+              </span>
+              {tab.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* ── 오버레이 페이지들 (절대 위치 — 슬라이드 시 베이스가 비침) ── */}
+      {collectionDetail && (
+        <div
+          ref={topOverlay === 'collection' ? swipeRef : undefined}
+          style={{ position: 'absolute', inset: 0, zIndex: 10, background: '#f3f3f3' }}
+        >
+          <CollectionDetailPage
+            collectionId={collectionDetail.id}
+            collectionName={collectionDetail.name}
+            onBack={() => setCollectionDetail(null)}
+            onClose={() => { setCollectionDetail(null); setActiveTab('collection'); }}
+            onDetailOpen={(id) => setDetailCafeId(id)}
+            onPhotoMore={(storeId, photos, cafeName) => setPhotoReview({ storeId, photos, cafeName })}
+            onCollectionDeleted={(data) => { setCollectionDetail(null); setDeletedCollectionData(data); }}
+            onGoHome={() => { setCollectionDetail(null); setActiveTab('home'); }}
+            onEditModeChange={setIsCollectionEditMode}
+          />
+        </div>
       )}
+      {showSearch && (
+        <div
+          ref={topOverlay === 'search' ? swipeRef : undefined}
+          style={{ position: 'absolute', inset: 0, zIndex: 20 }}
+        >
+          <SearchPage
+            onClose={() => setShowSearch(false)}
+            onDetailOpen={(id) => { setDetailCafeId(id); }}
+            onReportCafe={() => {
+              setShowSearch(false);
+              setActiveTab('mypage');
+              setMyPageSubPage('report-cafe');
+            }}
+          />
+        </div>
+      )}
+      {detailCafeId && (
+        <div
+          ref={topOverlay === 'detail' ? swipeRef : undefined}
+          style={{ position: 'absolute', inset: 0, zIndex: 30, background: '#ffffff' }}
+        >
+          <DetailPage
+            cafeId={detailCafeId}
+            onBack={() => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
+            onClose={() => { setDetailCafeId(null); setShowSearch(false); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
+            activeTab={activeTab}
+            onTabChange={(tab) => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); setActiveTab(tab as TabId); }}
+            scrollToReview={detailScrollToReview}
+            openDirections={detailOpenDirections}
+            onGoToCollection={(col) => {
+              setDetailCafeId(null);
+              setDetailScrollToReview(false);
+              if (col.id) {
+                setCollectionDetail({ id: col.id, name: col.name });
+              } else {
+                setActiveTab('collection');
+              }
+            }}
+          />
+        </div>
+      )}
+      {photoReview && (() => {
+        const store = favorites.find(f => f.id === photoReview.storeId);
+        return (
+          <div
+            ref={topOverlay === 'photo' ? swipeRef : undefined}
+            style={{ position: 'absolute', inset: 0, zIndex: 40, background: '#000000' }}
+          >
+            <PhotoReviewPage
+              photos={photoReview.photos.map((bg, i) => ({
+                bg, reviewId: `${photoReview.storeId}-${i}`,
+                reviewAuthor: '', reviewAvatarColor: '#e8edf4',
+                reviewDate: '', reviewContent: '', isReporter: false,
+              }))}
+              cafeName={photoReview.cafeName}
+              isFavorite={isFavorited(photoReview.storeId)}
+              onFavoriteToggle={() => {
+                if (!store) return;
+                isFavorited(photoReview.storeId) ? removeFavorite(photoReview.storeId) : addFavorite(store);
+              }}
+              onBack={() => setPhotoReview(null)}
+              onClose={() => setPhotoReview(null)}
+            />
+          </div>
+        );
+      })()}
     </div>
   );
 }
