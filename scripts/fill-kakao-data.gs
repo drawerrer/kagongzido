@@ -1,12 +1,15 @@
 /**
  * fill-kakao-data.gs
  * 구글 시트 "카페DB" → 카카오 키워드 검색 API → API 정보 자동 입력
+ *                    → Supabase stores 테이블 upsert
  *
  * 사용법:
  *   1. 구글 시트 상단 메뉴 → 확장 프로그램 → Apps Script
  *   2. 이 코드 전체 붙여넣기
- *   3. 상단 메뉴 → 실행 → setup() 한 번 실행 (카카오 REST 키 입력)
- *   4. 이후 매번 → 실행 → fillKakaoData() 실행
+ *   3. 실행 → setupKakao()   : 카카오 REST 키 저장
+ *      실행 → setupSupabase(): Supabase URL + anon key 저장
+ *   4. 실행 → fillKakaoData()    : 카카오 API 자동 입력
+ *      실행 → uploadToSupabase() : 시트 데이터 → Supabase 업로드
  */
 
 // ── 시트 설정 ──────────────────────────────────────────────────
@@ -41,7 +44,7 @@ const COL_NAME_KAKAO     = 20;  // U: name_kakao (카카오 검색 결과 이름
 const TOTAL_COLS = 21; // A~U
 
 // ── 1회 설정: 카카오 REST 키 저장 ─────────────────────────────
-function setup() {
+function setupKakao() {
   const ui = SpreadsheetApp.getUi();
   const result = ui.prompt(
     '카카오 REST API 키 입력',
@@ -57,11 +60,42 @@ function setup() {
   ui.alert('✅ 카카오 키 저장 완료!\n이제 fillKakaoData()를 실행하세요.');
 }
 
+// 하위 호환: 이전에 setup()으로 저장한 경우에도 동작
+function setup() { setupKakao(); }
+
+// ── 1회 설정: Supabase URL + anon key 저장 ────────────────────
+function setupSupabase() {
+  const ui = SpreadsheetApp.getUi();
+
+  const urlResult = ui.prompt(
+    'Supabase URL 입력',
+    'VITE_SUPABASE_URL 값을 입력하세요:\n(예: https://xxxx.supabase.co)',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (urlResult.getSelectedButton() !== ui.Button.OK) return;
+  const url = urlResult.getResponseText().trim();
+  if (!url) { ui.alert('URL을 입력해주세요.'); return; }
+
+  const keyResult = ui.prompt(
+    'Supabase Anon Key 입력',
+    'VITE_SUPABASE_ANON_KEY 값을 입력하세요:',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (keyResult.getSelectedButton() !== ui.Button.OK) return;
+  const key = keyResult.getResponseText().trim();
+  if (!key) { ui.alert('키를 입력해주세요.'); return; }
+
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('SUPABASE_URL',      url);
+  props.setProperty('SUPABASE_ANON_KEY', key);
+  ui.alert('✅ Supabase 설정 저장 완료!\n이제 uploadToSupabase()를 실행하세요.');
+}
+
 // ── 메인: 카카오 데이터 자동 입력 ─────────────────────────────
 function fillKakaoData() {
   const kakaoKey = PropertiesService.getScriptProperties().getProperty('KAKAO_REST_KEY');
   if (!kakaoKey) {
-    SpreadsheetApp.getUi().alert('먼저 setup()을 실행해서 카카오 REST 키를 저장해주세요.');
+    SpreadsheetApp.getUi().alert('먼저 setupKakao()을 실행해서 카카오 REST 키를 저장해주세요.');
     return;
   }
 
@@ -131,7 +165,6 @@ function fillKakaoData() {
 }
 
 // ── 카카오 키워드 검색 API ─────────────────────────────────────
-// categoryCode: 'CE7'(카페), ''(전체) 등
 function searchKakao(query, key, categoryCode) {
   let url = 'https://dapi.kakao.com/v2/local/search/keyword.json'
           + '?query=' + encodeURIComponent(query)
@@ -151,8 +184,105 @@ function searchKakao(query, key, categoryCode) {
   }
 }
 
-// ── Supabase CSV 내보내기 형식으로 변환 ──────────────────────────
-// 시트 데이터 → Supabase upsert용 JSON 출력 (Logger에서 확인)
+// ── Supabase upsert ───────────────────────────────────────────
+function uploadToSupabase() {
+  const props      = PropertiesService.getScriptProperties();
+  const supabaseUrl = props.getProperty('SUPABASE_URL');
+  const anonKey    = props.getProperty('SUPABASE_ANON_KEY');
+
+  if (!supabaseUrl || !anonKey) {
+    SpreadsheetApp.getUi().alert('먼저 setupSupabase()를 실행해서 Supabase 설정을 저장해주세요.');
+    return;
+  }
+
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  const data  = sheet.getDataRange().getValues();
+
+  // 업로드할 행 수집
+  const rows = [];
+  for (let i = 1; i < data.length; i++) {
+    const r = data[i];
+    if (!r[COL_NAME] || !r[COL_API_PLACE_ID]) continue; // api_place_id 없는 행 제외
+
+    rows.push({
+      api_place_id:   String(r[COL_API_PLACE_ID]),
+      name:           String(r[COL_NAME]),
+      region:         String(r[COL_REGION]         || ''),
+      category:       String(r[COL_CATEGORY]       || '카페'),
+      address_road:   String(r[COL_ADDRESS_ROAD]   || ''),
+      latitude:       Number(r[COL_LATITUDE])       || 0,
+      longitude:      Number(r[COL_LONGITUDE])      || 0,
+      phone_number:   r[COL_PHONE_NUMBER]  ? String(r[COL_PHONE_NUMBER])  : null,
+      thumbnail_url:  String(r[COL_THUMBNAIL_URL]  || ''),
+      photo_urls:     r[COL_PHOTO_URLS]
+                        ? String(r[COL_PHOTO_URLS]).split(',').map(s => s.trim()).filter(Boolean)
+                        : [],
+      business_hours: r[COL_BUSINESS_HOURS] ? String(r[COL_BUSINESS_HOURS]) : null,
+      website_url:    r[COL_WEBSITE_URL]    ? String(r[COL_WEBSITE_URL])    : null,
+      seat_status:    String(r[COL_SEAT_STATUS]    || '정보없음'),
+      outlet_status:  String(r[COL_OUTLET_STATUS]  || '정보없음'),
+      noise_status:   String(r[COL_NOISE_STATUS]   || '정보없음'),
+      vibe_tags:      r[COL_VIBE_TAGS]
+                        ? String(r[COL_VIBE_TAGS]).split(',').map(s => s.trim()).filter(Boolean)
+                        : [],
+      base_price:     Number(String(r[COL_BASE_PRICE]).replace(/[^0-9]/g, '')) || 0,
+      amenities:      r[COL_AMENITIES]
+                        ? String(r[COL_AMENITIES]).split(',').map(s => s.trim()).filter(Boolean)
+                        : [],
+      badges:         r[COL_BADGES]
+                        ? String(r[COL_BADGES]).split(',').map(s => s.trim()).filter(Boolean)
+                        : [],
+    });
+  }
+
+  if (rows.length === 0) {
+    SpreadsheetApp.getUi().alert('업로드할 데이터가 없어요. api_place_id가 채워진 행이 있는지 확인해주세요.');
+    return;
+  }
+
+  // 50개씩 나눠서 업로드 (Supabase 요청 크기 제한 대응)
+  const BATCH_SIZE = 50;
+  let success = 0, failed = 0;
+  const endpoint = supabaseUrl.replace(/\/$/, '') + '/rest/v1/stores';
+
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+
+    try {
+      const res = UrlFetchApp.fetch(endpoint, {
+        method:             'POST',
+        headers: {
+          'apikey':        anonKey,
+          'Authorization': 'Bearer ' + anonKey,
+          'Content-Type':  'application/json',
+          'Prefer':        'resolution=merge-duplicates',  // upsert
+        },
+        payload:            JSON.stringify(batch),
+        muteHttpExceptions: true,
+      });
+
+      const code = res.getResponseCode();
+      if (code === 200 || code === 201) {
+        success += batch.length;
+      } else {
+        Logger.log('Supabase 오류 [batch ' + i + ']: ' + res.getContentText());
+        failed += batch.length;
+      }
+    } catch (e) {
+      Logger.log('fetch 오류 [batch ' + i + ']: ' + e.message);
+      failed += batch.length;
+    }
+
+    Utilities.sleep(300); // 배치 간 딜레이
+  }
+
+  SpreadsheetApp.getUi().alert(
+    `Supabase 업로드 완료!\n✅ ${success}개 성공\n❌ ${failed}개 실패\n\n실패 항목은 Apps Script → 실행 로그에서 확인하세요.`
+  );
+}
+
+// ── (참고용) Logger에 JSON 출력 ────────────────────────────────
 function exportToJson() {
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEET_NAME);
@@ -161,7 +291,7 @@ function exportToJson() {
   const rows = [];
   for (let i = 1; i < data.length; i++) {
     const r = data[i];
-    if (!r[COL_NAME] || !r[COL_API_PLACE_ID]) continue; // api_place_id 없는 행 제외
+    if (!r[COL_NAME] || !r[COL_API_PLACE_ID]) continue;
 
     rows.push({
       api_place_id:  String(r[COL_API_PLACE_ID]),
