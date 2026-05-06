@@ -232,7 +232,7 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              marginBottom: 4,
+              marginBottom: 2,
             }}
           >
             {cafe.name}
@@ -244,12 +244,12 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              marginBottom: 2,
+              marginBottom: 0,
             }}
           >
             {cafe.address}
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 0 }}>
             <span style={{ fontSize: 12, color: '#6B7684' }}>
               {fmtDist(cafe.distance)} · 리뷰 {cafe.reviewCount}
             </span>
