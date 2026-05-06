@@ -100,11 +100,7 @@ function fillKakaoData() {
   }
 
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    SpreadsheetApp.getUi().alert('시트를 찾을 수 없어요: ' + SHEET_NAME);
-    return;
-  }
+  const sheet = ss.getActiveSheet();
 
   // P~U 헤더 자동 세팅 (비어있을 때만)
   const headerRange = sheet.getRange(1, 1, 1, TOTAL_COLS);
@@ -196,11 +192,17 @@ function uploadToSupabase() {
   }
 
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    SpreadsheetApp.getUi().alert('시트를 찾을 수 없어요: "' + SHEET_NAME + '"\n시트 탭 이름을 확인해주세요.');
-    return;
-  }
+  const sheet = ss.getActiveSheet();
+  const sheetName = sheet.getName();
+
+  const ui = SpreadsheetApp.getUi();
+  const confirm = ui.alert(
+    'Supabase 업로드',
+    '"' + sheetName + '" 시트를 Supabase에 업로드할까요?',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (confirm !== ui.Button.OK) return;
+
   const data  = sheet.getDataRange().getValues();
 
   // 업로드할 행 수집
@@ -289,7 +291,7 @@ function uploadToSupabase() {
 // ── (참고용) Logger에 JSON 출력 ────────────────────────────────
 function exportToJson() {
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(SHEET_NAME);
+  const sheet = ss.getActiveSheet();
   const data  = sheet.getDataRange().getValues();
 
   const rows = [];
