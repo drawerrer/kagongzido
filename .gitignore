@@ -7,3 +7,4 @@ dist/
 .DS_Store
 granite.config.ts
 .granite/
+images/
