@@ -122,6 +122,7 @@ interface CafeDetailData {
   name: string;
   address: string;
   distance?: number;
+  thumbnailUrl?: string;
   photos?: string[];
   hours: Partial<Record<DayKey, BusinessHour | null>>;
   regularHoliday: DayKey[];
@@ -985,6 +986,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           id: store.api_place_id,
           name: store.name,
           address: store.address_road,
+          thumbnailUrl: store.thumbnail_url || undefined,
           photos: store.photo_urls.length > 0 ? store.photo_urls : [],
           hours: (store.business_hours ?? {}) as CafeDetailData['hours'],
           regularHoliday: [],
@@ -1354,11 +1356,16 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       >
         {/* 포토 히어로 */}
         {showHero && (() => {
-          const heroImages = [
-            { bg: 'linear-gradient(160deg, #6B7684 0%, #4E5968 40%, #252525 100%)' },
-            { bg: 'linear-gradient(160deg, #7B6874 0%, #684E5E 40%, #251525 100%)' },
-            { bg: 'linear-gradient(160deg, #6B8474 0%, #4E6858 40%, #152525 100%)' },
+          // thumbnail_url + photo_urls 순서로 히어로 이미지 구성, 없으면 플레이스홀더
+          const realImages: string[] = [
+            ...(cafe.thumbnailUrl ? [cafe.thumbnailUrl] : []),
+            ...(cafe.photos ?? []),
           ];
+          const heroImages = realImages.length > 0
+            ? realImages.map(url => ({ url }))
+            : [
+                { url: '' },
+              ];
           return (
             <div style={{ height: 260, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
               {/* 수평 스크롤 */}
@@ -1379,12 +1386,12 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                     key={i}
                     style={{
                       flexShrink: 0, width: '100%', height: '100%',
-                      background: img.bg,
+                      background: img.url ? `url(${img.url}) center/cover no-repeat` : 'linear-gradient(160deg, #6B7684 0%, #4E5968 40%, #252525 100%)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       scrollSnapAlign: 'start',
                     }}
                   >
-                    <span style={{ fontSize: 72, opacity: 0.5 }}>☕</span>
+                    {!img.url && <span style={{ fontSize: 72, opacity: 0.5 }}>☕</span>}
                   </div>
                 ))}
               </div>
