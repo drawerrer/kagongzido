@@ -94,10 +94,19 @@ function fillKakaoData() {
     const alreadyDone = rowData[COL_API_PLACE_ID];
 
     // 이름 없거나 이미 api_place_id 채워진 행은 건너뜀
-    if (!name || alreadyDone) { skipped++; continue; }
+    // (❌ 검색 실패 표시된 행은 재시도)
+    if (!name || (alreadyDone && !String(rowData[COL_NAME_KAKAO]).startsWith('❌'))) { skipped++; continue; }
 
     const query  = region ? `${name} ${region}` : name;
-    const result = searchKakao(query, kakaoKey);
+
+    // 1차: 카페(CE7) 카테고리로 검색
+    let result = searchKakao(query, kakaoKey, 'CE7');
+
+    // 2차: 카페로 안 잡히면 카테고리 없이 재시도 (빵집·베이커리 등 다른 카테고리 매장 대응)
+    if (!result) {
+      Utilities.sleep(150);
+      result = searchKakao(query, kakaoKey, '');
+    }
 
     if (result) {
       sheet.getRange(row, COL_API_PLACE_ID + 1).setValue(result.id);
@@ -122,11 +131,12 @@ function fillKakaoData() {
 }
 
 // ── 카카오 키워드 검색 API ─────────────────────────────────────
-function searchKakao(query, key) {
-  const url = 'https://dapi.kakao.com/v2/local/search/keyword.json'
-            + '?query='               + encodeURIComponent(query)
-            + '&category_group_code=' + 'CE7'   // 카페만
-            + '&size=1';
+// categoryCode: 'CE7'(카페), ''(전체) 등
+function searchKakao(query, key, categoryCode) {
+  let url = 'https://dapi.kakao.com/v2/local/search/keyword.json'
+          + '?query=' + encodeURIComponent(query)
+          + '&size=1';
+  if (categoryCode) url += '&category_group_code=' + categoryCode;
 
   try {
     const res  = UrlFetchApp.fetch(url, {
