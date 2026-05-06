@@ -40,13 +40,13 @@ function loadEnv() {
 }
 
 const env = loadEnv();
-const SUPABASE_URL  = env.VITE_SUPABASE_URL;
-const SUPABASE_ANON = env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL     = env.VITE_SUPABASE_URL;
+const SUPABASE_SERVICE = env.SUPABASE_SERVICE_KEY;
 
-if (!SUPABASE_URL)  { console.error('❌ VITE_SUPABASE_URL이 .env에 없어요.');    process.exit(1); }
-if (!SUPABASE_ANON) { console.error('❌ VITE_SUPABASE_ANON_KEY가 .env에 없어요.'); process.exit(1); }
+if (!SUPABASE_URL)     { console.error('❌ VITE_SUPABASE_URL이 .env에 없어요.');   process.exit(1); }
+if (!SUPABASE_SERVICE) { console.error('❌ SUPABASE_SERVICE_KEY가 .env에 없어요.'); process.exit(1); }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE);
 
 const BUCKET     = 'cafe-images';
 const IMAGES_DIR = './images';
