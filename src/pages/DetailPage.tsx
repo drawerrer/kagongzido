@@ -143,17 +143,6 @@ interface CafeDetailData {
 const DAY_ORDER: DayKey[] = ['월', '화', '수', '목', '금', '토', '일'];
 const JS_TO_KR: DayKey[] = ['일', '월', '화', '수', '목', '금', '토'];
 
-/** 카페 분위기를 연상시키는 다크 그라디언트 플레이스홀더 */
-const PHOTO_BG = [
-  'linear-gradient(145deg,#1C1C1E 0%,#2C2C2E 100%)',
-  'linear-gradient(145deg,#1a1a2e 0%,#2d2d44 100%)',
-  'linear-gradient(145deg,#2d1b0e 0%,#4e3020 100%)',
-  'linear-gradient(145deg,#0f2530 0%,#1a3d50 100%)',
-  'linear-gradient(145deg,#1e1e1e 0%,#3a3a3a 100%)',
-  'linear-gradient(145deg,#1a2a1a 0%,#2d4a2d 100%)',
-  'linear-gradient(145deg,#2a1a2a 0%,#4a2a4a 100%)',
-  'linear-gradient(145deg,#2d2200 0%,#4a3800 100%)',
-];
 
 const AMENITY_CONFIG: Record<string, { icon: ReactNode; label: string }> = {
   parking:          { icon: <IcParking />,      label: '주차' },
@@ -165,140 +154,16 @@ const AMENITY_CONFIG: Record<string, { icon: ReactNode; label: string }> = {
   decafFree:        { icon: <IcCoffee />,        label: '디카페인 무료' },
 };
 
-// ────────── 목업 데이터 ──────────────────────────────────────
-const MOCK_DETAILS: Record<string, CafeDetailData> = {
-  default: {
-    id: 'default',
-    name: '무모아',
-    address: '서울 강남구 논현로 508',
-    distance: 20,
-    photos: [
-      'https://picsum.photos/seed/cafe-a/300/300',
-      'https://picsum.photos/seed/cafe-b/300/300',
-      'https://picsum.photos/seed/cafe-c/300/300',
-      'https://picsum.photos/seed/cafe-d/300/300',
-    ],
-    hours: {
-      월: { open: '09:00', close: '22:00' },
-      화: { open: '09:00', close: '22:00' },
-      수: { open: '09:00', close: '22:00' },
-      목: { open: '09:00', close: '22:00' },
-      금: { open: '09:00', close: '23:00' },
-      토: { open: '10:00', close: '23:00' },
-      일: null,
-    },
-    regularHoliday: ['일'],
-    seats: '여유로워요',
-    outlets: '적당해요',
-    vibe: '조용한, 모던한',
-    priceRange: '4,500원',
-    phone: '0507-2881-1679',
-    snsUrl: 'https://www.instagram.com/mumoa_cafe',
-    amenities: {
-      parking: true,
-      noTimeLimit: true,
-      separateRestroom: true,
-      indoorRestroom: true,
-      decafFree: true,
-    },
-    reviews: [
-      {
-        id: 'r_reporter',
-        author: '카공러버',
-        avatarColor: '#252525',
-        date: '2024.11.20',
-        content: '직접 제보한 카페예요! 서울 강남 최고의 카공 카페입니다. 콘센트가 모든 자리에 있고 조용한 편이에요. 커피도 맛있고 직원분들도 친절해서 자주 올 것 같아요. 2층 창가 자리 추천드려요 :)',
-        photo_urls: [PHOTO_BG[0], PHOTO_BG[1], PHOTO_BG[2]],
-        isReporter: true,
-        likeCount: 12,
-      },
-      {
-        id: 'r4',
-        author: '김지훈',
-        avatarColor: '#60A5FA',
-        date: '2024.12.01',
-        content: '조용하고 깔끔한 카페예요. 오래 앉아 있어도 눈치 안 보이고, 콘센트도 넉넉해서 노트북 작업하기에 딱이에요. 재방문 의사 100%입니다.',
-        likeCount: 2,
-      },
-      {
-        id: 'r5',
-        author: '윤혜원',
-        avatarColor: '#FB7185',
-        date: '2024.11.28',
-        content: '혼자 공부하러 왔는데 분위기가 정말 좋았어요. 음악도 잔잔하고 너무 시끄럽지 않아서 집중하기에 딱이었어요. 디카페인 옵션이 있어서 저 같은 카페인 예민한 분들께도 추천드려요!',
-        likeCount: 4,
-      },
-      {
-        id: 'r1',
-        author: '조은유',
-        avatarColor: '#A78BFA',
-        date: '2024.12.15',
-        content: '카페 분위기가 너무 좋아요. 조용하고 집중이 잘 되는 공간이에요. 커피도 맛있고 콘센트도 충분해서 자주 방문할 것 같아요!',
-        photo_urls: [PHOTO_BG[3], PHOTO_BG[4]],
-        likeCount: 5,
-      },
-      {
-        id: 'r2',
-        author: '이민준',
-        avatarColor: '#34D399',
-        date: '2024.12.10',
-        content: '콘센트도 충분하고 자리도 넓어서 카공하기 딱 좋아요!',
-        photo_urls: [PHOTO_BG[6], PHOTO_BG[7]],
-        likeCount: 3,
-      },
-      {
-        id: 'r3',
-        author: '박서연',
-        avatarColor: '#F59E0B',
-        date: '2024.12.08',
-        content: '분위기는 좋은데 주말에는 좀 붐벼요. 평일 오전에 오시면 정말 여유롭게 공부할 수 있어요. 아메리카노 맛도 기대 이상이에요.',
-        photo_urls: [PHOTO_BG[5]],
-        likeCount: 7,
-      },
-    ],
-  },
+// ────────── 빈 상태 fallback ────────────────────────────────
+const EMPTY_CAFE: CafeDetailData = {
+  id: '',
+  name: '',
+  address: '',
+  hours: {},
+  regularHoliday: [],
+  amenities: {},
+  reviews: [],
 };
-
-// 이름·주소만 다르고 나머지는 default 템플릿을 공유하는 카페 목록
-const CAFE_NAME_MAP: Record<string, { name: string; address: string }> = {
-  // MyPage - MOCK_REPORTED
-  r1:  { name: '우모에',          address: '서울 용산구 한강대로84길 21-17 1층' },
-  r2:  { name: '본지르본 연희',   address: '서울 서대문구 연희로 93-10' },
-  r3:  { name: '카페 온도',       address: '서울 마포구 와우산로 21' },
-  r4:  { name: '모노 커피',       address: '서울 강남구 언주로 234' },
-  // MyPage - MOCK_RECENT
-  rc1: { name: '블루보틀 강남',   address: '서울 강남구 논현로 508' },
-  rc2: { name: '스타벅스 역삼역점', address: '서울 강남구 역삼로 123' },
-  rc3: { name: '우모에',          address: '서울 용산구 한강대로84길 21-17 1층' },
-  rc4: { name: '더 로스터리',     address: '서울 강남구 도곡로 321' },
-  rc5: { name: '카페 베이커리',   address: '서울 강남구 역삼동 567' },
-  // MapPage - MOCK_CAFES (cafeId)
-  '1': { name: '블루보틀 강남',      address: '서울 강남구 논현로 508' },
-  '2': { name: '스타벅스 역삼역점',  address: '서울 강남구 역삼로 123' },
-  '3': { name: '모노 커피',          address: '서울 강남구 언주로 234' },
-  '4': { name: '카페 베이커리',      address: '서울 강남구 역삼동 567' },
-  '5': { name: '브런치 팩토리',      address: '서울 강남구 선릉로 890' },
-  '6': { name: '더 로스터리',        address: '서울 강남구 도곡로 321' },
-  // GuidebookPage - FEATURE_STORES
-  gs1: { name: '도트커피',        address: '서울 영등포구' },
-  gs2: { name: '프릳츠 커피',     address: '서울 마포구' },
-  gs3: { name: '어니언',          address: '서울 성동구' },
-  gs4: { name: '오르에르',        address: '서울 강남구' },
-  gs5: { name: '스탠딩커피',      address: '경기 성남시' },
-};
-
-// ─── 리뷰 없는 카페 목록 (reviews: [] 처리) ─────────────────────
-const EMPTY_REVIEW_CAFE_IDS = new Set(['gs5']);
-
-function getCafeDetail(cafeId: string): CafeDetailData {
-  if (MOCK_DETAILS[cafeId]) return MOCK_DETAILS[cafeId];
-  const meta = CAFE_NAME_MAP[cafeId];
-  const base = meta
-    ? { ...MOCK_DETAILS['default'], id: cafeId, name: meta.name, address: meta.address }
-    : { ...MOCK_DETAILS['default'], id: cafeId };
-  if (EMPTY_REVIEW_CAFE_IDS.has(cafeId)) return { ...base, reviews: [] };
-  return base;
-}
 
 // ────────── 유틸 함수 ────────────────────────────────────────
 function getTodayKey(): DayKey {
@@ -1015,7 +880,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     load();
   }, [cafeId]);
 
-  const cafe = storeData ?? getCafeDetail(cafeId);
+  const cafe = storeData ?? EMPTY_CAFE;
   const scrollRef = useRef<HTMLDivElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
   const cafeInfoRef = useRef<HTMLDivElement>(null);
@@ -1029,19 +894,20 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   }, [cafeId]);
   useEffect(() => { loadReviews(); }, [loadReviews]);
 
-  const reviews = dbReviews.length > 0 ? dbReviews : cafe.reviews;
+  const reviews = dbReviews;
 
   const [scrolled, setScrolled] = useState(false);
 
-  // 상세 화면 진입 시 최근 본 카페에 추가
+  // 상세 화면 진입 시 최근 본 카페에 추가 (실데이터 로딩 후)
   useEffect(() => {
+    if (!storeData) return;
     addRecentlyViewed({
-      id: cafe.id,
-      name: cafe.name,
-      photo: cafe.photos?.[0] ?? '',
+      id: storeData.id,
+      name: storeData.name,
+      photo: storeData.thumbnailUrl ?? storeData.photos?.[0] ?? '',
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [storeData]);
 
   // 공통 내비게이션 백버튼 — ref 패턴으로 단일 리스너 유지
   // showPhotoReview / showWriteReview 가 state 선언 이후에 있으므로
@@ -1257,6 +1123,17 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   // 오늘 영업시간
   const todayHours = cafe.hours[todayKey];
   const hasHoursData = todayHours !== undefined;
+
+  // 매장 없음
+  if (!loading && !storeData) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12, color: '#6B7684' }}>
+        <span style={{ fontSize: 48 }}>☕</span>
+        <p style={{ fontSize: 16, fontWeight: 600, color: '#191F28' }}>매장 정보를 찾을 수 없어요</p>
+        <p style={{ fontSize: 14 }}>삭제되었거나 존재하지 않는 매장이에요</p>
+      </div>
+    );
+  }
 
   // 로딩 중 스피너
   if (loading) {

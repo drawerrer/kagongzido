@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useFavorites } from '../context/FavoritesContext';
 import { graniteEvent } from '@apps-in-toss/web-framework';
+import { fetchAllStores, type StoreRow } from '../services/db';
 
 interface SearchPageProps {
   onClose: () => void;
@@ -81,22 +82,6 @@ function CloseIconSm() {
   );
 }
 
-// ── 목업 데이터 ───────────────────────────────────────────────
-const MOCK_RECENT = [
-  { keyword: '대형카페',       date: '03.19' },
-  { keyword: '브런치카페',     date: '03.18' },
-  { keyword: '조용한 카페',    date: '03.15' },
-  { keyword: '노트북 되는 카페', date: '03.10' },
-];
-
-const MOCK_SUGGESTIONS = ['대형카페', '브런치카페'];
-
-const MOCK_RESULTS = [
-  { id: '1', name: '블루보틀 강남',  address: '서울 강남구 논현로 508',  distance: '150m',  rating: 4.8, reviewCount: 523, tags: ['카공'] },
-  { id: '3', name: '모노 커피',      address: '서울 강남구 언주로 234',  distance: '410m',  rating: 4.9, reviewCount: 87,  tags: ['조용한'] },
-  { id: '5', name: '브런치 팩토리', address: '서울 강남구 선릉로 890',  distance: '800m',  rating: 4.6, reviewCount: 142, tags: ['브런치'] },
-  { id: '6', name: '더 로스터리',   address: '서울 강남구 도곡로 321',  distance: '9.7km', rating: 4.7, reviewCount: 201, tags: ['가성비'] },
-];
 
 // ── 공통 서브컴포넌트 ─────────────────────────────────────────
 
@@ -204,20 +189,27 @@ function FavoriteRow({
   );
 }
 
-/** 검색 결과 카페 행 — MapPage CafeRow 동일 스펙 */
-function SearchCafeRow({ r, onTap }: { r: typeof MOCK_RESULTS[0]; onTap?: () => void }) {
+/** 검색 결과 카페 행 */
+function SearchCafeRow({ store, onTap }: { store: StoreRow; onTap?: () => void }) {
+  const badge = (store.badges ?? []).filter(b => b !== '해당없음' && b !== '해당 없음')[0];
   return (
     <div onClick={onTap} style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid #F2F4F6', cursor: 'pointer' }}>
-      <div style={{ width: 80, height: 80, borderRadius: 10, flexShrink: 0, background: '#F2F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 28 }}>☕</span>
+      <div style={{
+        width: 80, height: 80, borderRadius: 10, flexShrink: 0,
+        background: store.thumbnail_url
+          ? `url(${store.thumbnail_url}) center/cover no-repeat`
+          : '#F2F4F6',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {!store.thumbnail_url && <span style={{ fontSize: 28 }}>☕</span>}
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4, minWidth: 0 }}>
-        <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</p>
-        <p style={{ fontSize: 12, color: '#6B7684', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.address}</p>
-        <span style={{ fontSize: 12, color: '#6B7684' }}>{r.distance} · 리뷰 {r.reviewCount}</span>
-        {r.tags[0] && (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2, minWidth: 0 }}>
+        <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{store.name}</p>
+        <p style={{ fontSize: 12, color: '#6B7684', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{store.address_road}</p>
+        <span style={{ fontSize: 12, color: '#6B7684' }}>리뷰 0</span>
+        {badge && (
           <span style={{ display: 'inline-block', padding: '2px 8px', background: '#F2F4F6', borderRadius: 4, fontSize: 11, color: '#4E5968', alignSelf: 'flex-start' }}>
-            {r.tags[0]}
+            {badge}
           </span>
         )}
       </div>
@@ -291,8 +283,13 @@ function Chip({
 export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCafe }: SearchPageProps) {
   const [query, setQuery]           = useState('');
   const [activeChip, setActiveChip] = useState<string | null>(null);
-  const [recentSearches, setRecentSearches] = useState(MOCK_RECENT);
+  const [recentSearches, setRecentSearches] = useState<{ keyword: string; date: string }[]>([]);
+  const [allStores, setAllStores]   = useState<StoreRow[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetchAllStores().then(setAllStores);
+  }, []);
   const { favorites, collections }  = useFavorites();
 
   // 'recent' 기본 컬렉션 제외, 사용자 생성 컬렉션만
@@ -404,10 +401,10 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
 
         {/* ① 타이핑 중 — Figma: search_typing */}
         {isTyping && (() => {
-          const filteredResults = MOCK_RESULTS.filter(r =>
-            r.name.includes(query.trim()) || r.address.includes(query.trim())
+          const filteredResults = allStores.filter(s =>
+            s.name.includes(query.trim()) || (s.address_road ?? '').includes(query.trim())
           );
-          const suggestions = MOCK_SUGGESTIONS.filter(s => s.includes(query) && s !== query.trim());
+          const suggestions: string[] = [];
 
           if (filteredResults.length === 0 && suggestions.length === 0) {
             /* ── 검색 결과 없음 ── */
@@ -454,8 +451,8 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
                   <div style={{ padding: '8px 16px 4px', fontSize: 13, color: '#6B7684' }}>
                     총 <strong style={{ color: '#191F28' }}>{filteredResults.length}</strong>개
                   </div>
-                  {filteredResults.map(r => (
-                    <SearchCafeRow key={r.id} r={r} onTap={() => onDetailOpen?.(r.id)} />
+                  {filteredResults.map(s => (
+                    <SearchCafeRow key={s.api_place_id} store={s} onTap={() => onDetailOpen?.(s.api_place_id)} />
                   ))}
                 </div>
               )}
