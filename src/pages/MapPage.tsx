@@ -429,7 +429,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
         lat: store.latitude,
         lng: store.longitude,
         thumbnailUrl: store.thumbnail_url || undefined,
-        badges: (store.badges ?? []).filter(b => b !== '해당없음'),
+        badges: (store.badges ?? []).filter(b => b !== '해당없음' && b !== '해당 없음'),
       }));
 
       mapped.sort((a, b) => a.distance - b.distance);
