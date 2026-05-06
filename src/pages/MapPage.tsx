@@ -223,7 +223,7 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
         }}
       >
         {/* 텍스트 블록 (이름·주소·거리·배지) */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
           <p
             style={{
               fontSize: 15,
@@ -232,6 +232,7 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              marginBottom: 4,
             }}
           >
             {cafe.name}
@@ -243,11 +244,12 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              marginBottom: 2,
             }}
           >
             {cafe.address}
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
             <span style={{ fontSize: 12, color: '#6B7684' }}>
               {fmtDist(cafe.distance)} · 리뷰 {cafe.reviewCount}
             </span>
