@@ -9,6 +9,8 @@ import CollectionNameSheet from '../components/CollectionNameSheet';
 import EmptyState from '../components/EmptyState';
 import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
 import CollectionActionSheet from '../components/CollectionActionSheet';
+import PageHeader from '../components/PageHeader';
+import StoreCountBar from '../components/StoreCountBar';
 import { BottomCTA, CTAButton, Toast } from '@toss/tds-mobile';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
@@ -493,17 +495,12 @@ export default function CollectionDetailPage({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
-      {/* ── info_2 (46px) — 항상 "컬렉션명 + 편집" 고정 ── */}
-      <div style={{ height: 46, backgroundColor: '#f3f3f3', display: 'flex', alignItems: 'center', position: 'relative', flexShrink: 0, borderBottom: '1px solid #F2F4F6' }}>
-        <span style={{ flex: 1, textAlign: 'center', fontWeight: 600, fontSize: 14, color: '#191F28', letterSpacing: -0.2 }}>
-          {isEditMode ? '편집모드' : '컬렉션'}
-        </span>
-        {/* 편집 버튼 — 일반 모드 항상 고정 노출 */}
-        {!isEditMode && (
+      <PageHeader
+        title={isEditMode ? '편집모드' : '컬렉션'}
+        rightButton={!isEditMode ? (
           <button
             onClick={() => enterEditMode()}
             style={{
-              position: 'absolute', right: 16,
               background: 'none', border: 'none', cursor: 'pointer',
               fontWeight: 510, fontSize: 13,
               color: 'rgba(0,19,43,0.55)',
@@ -512,8 +509,8 @@ export default function CollectionDetailPage({
           >
             편집
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* ── 탭 칩 (가로 스크롤) ── */}
       <style>{`
@@ -601,17 +598,7 @@ export default function CollectionDetailPage({
         })}
       </div>
 
-      {/* ── 총 N개 ── */}
-      <div style={{
-        height: 32, display: 'flex', alignItems: 'center',
-        paddingLeft: 20, paddingRight: 20,
-      }}>
-        <span style={{ fontWeight: 600, fontSize: 12, lineHeight: '16.2px' }}>
-          <span style={{ color: '#6B7684' }}>총 </span>
-          <span style={{ color: '#4E5968' }}>{stores.length}</span>
-          <span style={{ color: '#6B7684' }}>개</span>
-        </span>
-      </div>
+      <StoreCountBar count={stores.length} />
 
       {/* ── 편집 모드 — 매장 추가하기 행 ── */}
       {isEditMode && !isActiveRecent && (

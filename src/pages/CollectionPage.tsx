@@ -7,6 +7,8 @@ import EmptyState from '../components/EmptyState';
 import CollectionNameSheet from '../components/CollectionNameSheet';
 import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
 import CollectionActionSheet from '../components/CollectionActionSheet';
+import PageHeader from '../components/PageHeader';
+import StoreCountBar from '../components/StoreCountBar';
 import { useFavorites, FavoritedStore, haversineDistance } from '../context/FavoritesContext';
 import { BottomSheet, BottomCTA, CTAButton, Toast } from '@toss/tds-mobile';
 import { graniteEvent } from '@apps-in-toss/web-framework';
@@ -287,18 +289,7 @@ export default function CollectionPage({
       display: 'flex', flexDirection: 'column',
       height: '100%', backgroundColor: '#F3F3F3', position: 'relative',
     }}>
-      {/* ── info_2 bar (Figma: 46px, Medium 510 14px centered) ── */}
-      <div style={{
-        height: 46, backgroundColor: '#f3f3f3',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, position: 'relative',
-        borderBottom: '1px solid #F2F4F6',
-      }}>
-        <span style={{
-          fontWeight: 600, fontSize: 14,
-          color: '#191F28', letterSpacing: -0.2,
-        }}>{isEditMode ? '편집모드' : isOrganizeMode ? '컬렉션 선택' : '모음집'}</span>
-      </div>
+      <PageHeader title={isEditMode ? '편집모드' : isOrganizeMode ? '컬렉션 선택' : '모음집'} />
 
       {/* ── 스크롤 본문 ── */}
       <div
@@ -364,16 +355,7 @@ export default function CollectionPage({
               margin: 0,
             }}>저장한 매장</h2>
           </div>
-          <div style={{
-            height: 32, display: 'flex', alignItems: 'center',
-            paddingLeft: 20, paddingRight: 20,
-          }}>
-            <span style={{ fontWeight: 600, fontSize: 12, lineHeight: '16.2px' }}>
-              <span style={{ color: '#6B7684' }}>총 </span>
-              <span style={{ color: '#4E5968' }}>{orderedStores.length}</span>
-              <span style={{ color: '#6B7684' }}>개</span>
-            </span>
-          </div>
+          <StoreCountBar count={orderedStores.length} />
 
           {isEmpty ? (
             <EmptyState
