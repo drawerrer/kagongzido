@@ -4,6 +4,7 @@ import ShareSheet from '../components/ShareSheet';
 import StoreCard from '../components/StoreCard';
 import CollectionCard from '../components/CollectionCard';
 import EmptyState from '../components/EmptyState';
+import CollectionNameSheet from '../components/CollectionNameSheet';
 import { useFavorites, FavoritedStore, haversineDistance } from '../context/FavoritesContext';
 import { BottomSheet, BottomCTA, CTAButton, Button, ConfirmDialog, Toast } from '@toss/tds-mobile';
 import IcDelete from '../assets/icons/icon_delete.svg?react';
@@ -462,72 +463,25 @@ export default function CollectionPage({
       )}
 
       {/* ─────────── BottomSheet: 새 컬렉션 생성 ─────────── */}
-      <BottomSheet
+      <CollectionNameSheet
         open={bottomSheet === 'create'}
-        header={<BottomSheet.Header>컬렉션명</BottomSheet.Header>}
-        onClose={() => {
-          setNewCollectionName('');
-          setBottomSheet(isOrganizeMode ? 'select-collection' : null);
-        }}
-        hasTextField
-      >
-        <style>{`.bs-input::placeholder { color: #8b95a1; }`}</style>
-        <div style={{ padding: '16px 24px 14px' }}>
-          <div style={{ borderBottom: '1px solid #f2f4f6' }}>
-            <input
-              className="bs-input"
-              value={newCollectionName}
-              onChange={e => setNewCollectionName(e.target.value)}
-              placeholder="노트북 열기 좋은 곳, 딥워크 존 등"
-              maxLength={10}
-              autoFocus
-              style={{
-                width: '100%', padding: '4px 0 8px',
-                border: 'none', outline: 'none',
-                fontWeight: 590, fontSize: 22,
-                color: '#191F28', backgroundColor: 'transparent',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
-            <span style={{ fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.38)' }}>{newCollectionName.length}/10</span>
-          </div>
-        </div>
-        <Button color="primary" size="xlarge" style={{ width: '100%' }} onClick={createCollection} disabled={!newCollectionName.trim()}>적용하기</Button>
-      </BottomSheet>
+        title="컬렉션명"
+        value={newCollectionName}
+        onChange={setNewCollectionName}
+        onConfirm={createCollection}
+        onClose={() => { setNewCollectionName(''); setBottomSheet(isOrganizeMode ? 'select-collection' : null); }}
+        placeholder="노트북 열기 좋은 곳, 딥워크 존 등"
+      />
 
       {/* ─────────── BottomSheet: 컬렉션명 변경 ─────────── */}
-      <BottomSheet
+      <CollectionNameSheet
         open={bottomSheet === 'rename'}
-        header={<BottomSheet.Header>{renameTargetName}</BottomSheet.Header>}
+        title={renameTargetName}
+        value={renameValue}
+        onChange={setRenameValue}
+        onConfirm={applyRename}
         onClose={() => { setBottomSheet(null); setRenameTargetId(null); setRenameValue(''); }}
-        hasTextField
-      >
-        <div style={{ padding: '16px 24px 14px' }}>
-          <div style={{ borderBottom: '1px solid #f2f4f6' }}>
-            <input
-              className="bs-input"
-              value={renameValue}
-              onChange={e => setRenameValue(e.target.value)}
-              placeholder="컬렉션명"
-              maxLength={10}
-              autoFocus
-              style={{
-                width: '100%', padding: '4px 0 8px',
-                border: 'none', outline: 'none',
-                fontWeight: 590, fontSize: 22,
-                color: '#191F28', backgroundColor: 'transparent',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
-            <span style={{ fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.38)' }}>{renameValue.length}/10</span>
-          </div>
-        </div>
-        <Button color="primary" size="xlarge" style={{ width: '100%' }} onClick={applyRename} disabled={!renameValue.trim()}>적용하기</Button>
-      </BottomSheet>
+      />
 
       {/* ─────────── BottomSheet: 컬렉션 선택 ─────────── */}
       <BottomSheet

@@ -5,6 +5,7 @@ import ShareSheet from '../components/ShareSheet';
 import StoreCard, { type StoreItem } from '../components/StoreCard';
 import MemoSheet from '../components/MemoSheet';
 import AddStoreSheet from '../components/AddStoreSheet';
+import CollectionNameSheet from '../components/CollectionNameSheet';
 import EmptyState from '../components/EmptyState';
 import { BottomSheet, ConfirmDialog, BottomCTA, CTAButton, Button, Toast } from '@toss/tds-mobile';
 import { graniteEvent } from '@apps-in-toss/web-framework';
@@ -848,46 +849,15 @@ export default function CollectionDetailPage({
       )}
 
       {/* 컬렉션명 변경 바텀시트 */}
-      <BottomSheet
+      <CollectionNameSheet
         open={!!renameTabId}
-        header={<BottomSheet.Header>컬렉션명 변경</BottomSheet.Header>}
+        title="컬렉션명 변경"
+        value={renameValue}
+        onChange={setRenameValue}
+        onConfirm={handleTabRenameConfirm}
         onClose={() => { setRenameTabId(null); setRenameValue(''); }}
-        hasTextField
-      >
-        <style>{`.detail-rename-input::placeholder { color: #8b95a1; }`}</style>
-        <div style={{ padding: '16px 24px 14px' }}>
-          <div style={{ borderBottom: '1px solid #f2f4f6' }}>
-            <input
-              className="detail-rename-input"
-              autoFocus
-              value={renameValue}
-              onChange={e => setRenameValue(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleTabRenameConfirm(); }}
-              maxLength={10}
-              placeholder="컬렉션명"
-              style={{
-                width: '100%', padding: '4px 0 8px',
-                border: 'none', outline: 'none',
-                fontWeight: 590, fontSize: 22,
-                color: '#191F28', backgroundColor: 'transparent',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
-            <span style={{ fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.38)' }}>{renameValue.length}/10</span>
-          </div>
-        </div>
-        <Button
-          color="primary"
-          size="xlarge"
-          style={{ width: '100%' }}
-          onClick={handleTabRenameConfirm}
-          disabled={!renameValue.trim()}
-        >
-          변경하기
-        </Button>
-      </BottomSheet>
+        confirmLabel="변경하기"
+      />
 
       {/* 토스트 (메모/추가 후) — TDS Toast */}
       <Toast
