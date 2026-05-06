@@ -197,6 +197,10 @@ function uploadToSupabase() {
 
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    SpreadsheetApp.getUi().alert('시트를 찾을 수 없어요: "' + SHEET_NAME + '"\n시트 탭 이름을 확인해주세요.');
+    return;
+  }
   const data  = sheet.getDataRange().getValues();
 
   // 업로드할 행 수집
