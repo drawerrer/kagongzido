@@ -214,7 +214,6 @@ function uploadToSupabase() {
     rows.push({
       api_place_id:   String(r[COL_API_PLACE_ID]),
       name:           String(r[COL_NAME]),
-      region:         String(r[COL_REGION]         || ''),
       category:       String(r[COL_CATEGORY]       || '카페'),
       address_road:   String(r[COL_ADDRESS_ROAD]   || ''),
       latitude:       Number(r[COL_LATITUDE])       || 0,
