@@ -1,420 +1,17 @@
 ﻿import { useState, useCallback, useRef, useEffect } from 'react';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
-import { useFavorites, FavoritedStore } from '../context/FavoritesContext';
+import StoreCard from '../components/StoreCard';
+import CollectionCard from '../components/CollectionCard';
+import EmptyState from '../components/EmptyState';
+import { useFavorites, FavoritedStore, haversineDistance } from '../context/FavoritesContext';
 import { BottomSheet, BottomCTA, CTAButton, Button, ConfirmDialog, Toast } from '@toss/tds-mobile';
 import IcDelete from '../assets/icons/icon_delete.svg?react';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
-import IcArrowUpDown from '../assets/icons/icon_arrowupdown.svg?react';
 import { graniteEvent } from '@apps-in-toss/web-framework';
-
-// ─── 타입 ────────────────────────────────────────────────────
-interface Store {
-  id: string;
-  name: string;
-  address: string;
-  rating: number;
-  reviewCount: number;
-  badge?: string;
-  photos?: string[];
-  distance?: number;
-}
 
 type BottomSheetType = null | 'create' | 'select-collection' | 'rename' | 'col-action';
 type SnackbarType = null | 'deleted' | 'added' | 'renamed' | 'collection-deleted';
-
-// ─── 컬렉션 카드 (Figma: 121×121px card, 6px gap, 23px label) ─
-function CollectionCard({
-  label,
-  size = 121,
-  isNew = false,
-  isEditMode = false,
-  isDragging = false,
-  isDragOver = false,
-  wiggleDelay = 0,
-  onPress,
-  onLongPress,
-  onRename,
-  onHandlePointerDown,
-  previewPhotos = [],
-}: {
-  label: string;
-  size?: number;
-  isNew?: boolean;
-  isEditMode?: boolean;
-  isDragging?: boolean;
-  isDragOver?: boolean;
-  wiggleDelay?: number;
-  onPress?: () => void;
-  onLongPress?: () => void;
-  onRename?: () => void;
-  onHandlePointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
-  previewPhotos?: string[];
-}) {
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handlePointerDown = (_e: React.PointerEvent<HTMLButtonElement>) => {
-    if (!onLongPress || isEditMode || isNew) return;
-    longPressTimer.current = setTimeout(() => { onLongPress(); }, 500);
-  };
-  const cancelLongPress = () => {
-    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
-  };
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0,
-      opacity: isDragging ? 0.4 : isEditMode ? 0.7 : 1,
-      borderLeft: isDragOver ? '2px solid #252525' : '2px solid transparent',
-      transition: 'opacity 0.15s',
-    }}>
-      <button
-        onClick={onPress}
-        onPointerDown={handlePointerDown}
-        onPointerUp={cancelLongPress}
-        onPointerLeave={cancelLongPress}
-        onPointerCancel={cancelLongPress}
-        style={{
-          width: size,
-          background: 'none', border: 'none', padding: 0,
-          cursor: 'pointer', position: 'relative',
-        }}
-      >
-        {/* 이미지 카드 size×size */}
-        <div style={{
-          width: size, height: size,
-          border: isNew ? '1px dashed #c5c5c5' : 'none',
-          borderRadius: 4, overflow: 'hidden',
-          backgroundColor: '#F3F3F3', position: 'relative',
-        }}>
-          {isNew ? (
-            /* 새 컬렉션 */
-            <div style={{
-              width: '100%', height: '100%',
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center', gap: 4,
-            }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M12 5v14M5 12h14" stroke="#b0b8c1" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <span style={{
-                fontWeight: 590, fontSize: 12,
-                color: 'rgba(3,24,50,0.46)', lineHeight: '22.5px',
-              }}>새 컬렉션</span>
-            </div>
-          ) : (
-            /* 2×2 이미지 그리드 (gap 1px) */
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gridTemplateRows: '1fr 1fr',
-              gap: 1,
-              width: size, height: size,
-            }}>
-              {[0, 1, 2, 3].map((i) => {
-                const photo = previewPhotos[i];
-                const cellRadius = {
-                  0: { borderTopLeftRadius: 4 },
-                  1: { borderTopRightRadius: 4 },
-                  2: { borderBottomLeftRadius: 4 },
-                  3: { borderBottomRightRadius: 4 },
-                }[i];
-                return (
-                  <div key={i} style={{
-                    backgroundColor: '#E8EDF4',
-                    overflow: 'hidden',
-                    ...cellRadius,
-                  }}>
-                    {photo ? (
-                      <img src={photo} alt=""
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* 편집 모드: 드래그 소트 오버레이 (최근 제외) */}
-          {isEditMode && !isNew && label !== '최근' && (
-            <div
-              onPointerDown={onHandlePointerDown}
-              style={{
-                position: 'absolute', inset: 0,
-                backgroundColor: 'rgba(232,232,253,0.36)',
-                borderRadius: 4,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'grab', touchAction: 'none',
-              }}
-            >
-              {/* 아이콘 90도 회전 → ←→ 수평 방향 */}
-              <svg width="24" height="24" viewBox="0 0 20 20" fill="none"
-                style={{ transform: 'rotate(90deg)' }}>
-                <g fill="rgba(0,19,43,0.3)" fillRule="evenodd" clipRule="evenodd">
-                  <path d="M10.293 7.707a1 1 0 0 1 0-1.414l3-3a1 1 0 1 1 1.414 1.414l-3 3a1 1 0 0 1-1.414 0"/>
-                  <path d="M17.707 7.707a1 1 0 0 1-1.414 0l-3-3a1 1 0 0 1 1.414-1.414l3 3a1 1 0 0 1 0 1.414"/>
-                  <path d="M14 5a1 1 0 0 1 1 1v8a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1m-4.293 7.293a1 1 0 0 1 0 1.414l-3 3a1 1 0 0 1-1.414-1.414l3-3a1 1 0 0 1 1.414 0"/>
-                  <path d="M2.293 12.293a1 1 0 0 1 1.414 0l3 3a1 1 0 1 1-1.414 1.414l-3-3a1 1 0 0 1 0-1.414"/>
-                  <path d="M6 15a1 1 0 0 1-1-1V6a1 1 0 1 1 2 0v8a1 1 0 0 1-1 1"/>
-                </g>
-              </svg>
-            </div>
-          )}
-        </div>
-      </button>
-
-      {/* 라벨 (새 컬렉션 제외) */}
-      {!isNew && (
-        isEditMode && label !== '최근' ? (
-          /* 편집모드: 텍스트+연필 전체 터치 가능 */
-          <button
-            type="button"
-            aria-label={`${label} 이름 변경`}
-            onClick={onRename}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4, width: size,
-              background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
-            }}
-          >
-            <span
-              className="collection-name-wiggle"
-              style={{
-                fontWeight: 590, fontSize: 15,
-                color: '#191f28', lineHeight: '22.5px',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1,
-                ['--wiggle-delay' as string]: wiggleDelay,
-              }}
-            >
-              {label}
-            </span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="rgba(0,19,43,0.45)" strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-          </button>
-        ) : (
-          /* 일반모드: 텍스트만 */
-          <div style={{ display: 'flex', alignItems: 'center', width: size }}>
-            <span style={{
-              fontWeight: 590, fontSize: 15,
-              color: '#191f28', lineHeight: '22.5px',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {label}
-            </span>
-          </div>
-        )
-      )}
-    </div>
-  );
-}
-
-// ─── 매장 카드 ────────────────────────────────────────────────
-function StoreCard({
-  store,
-  isEditMode = false,
-  isSelected = false,
-  isDragging = false,
-  isDragOver = false,
-  onSelect,
-  onPress,
-  onHandlePointerDown,
-  onRemoveFavorite,
-  onPhotoMore,
-}: {
-  store: Store;
-  isEditMode?: boolean;
-  isSelected?: boolean;
-  isDragging?: boolean;
-  isDragOver?: boolean;
-  onSelect?: () => void;
-  onPress?: () => void;
-  onHandlePointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
-  onRemoveFavorite?: () => void;
-  onPhotoMore?: () => void;
-}) {
-  return (
-    <div
-      onClick={isEditMode ? onSelect : onPress}
-      style={{
-        border: isDragOver ? '2px solid #252525' : '2px solid transparent',
-        cursor: 'pointer',
-        paddingTop: 20,
-        opacity: isDragging ? 0.4 : (isEditMode && !isSelected ? 0.7 : 1),
-        transition: 'opacity 0.15s',
-        userSelect: 'none',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'flex-start', paddingLeft: 16, paddingRight: 16 }}>
-        {/* 편집 모드 체크박스 */}
-        {isEditMode && (
-          <button
-            type="button"
-            aria-label={isSelected ? '선택 해제' : '선택'}
-            aria-pressed={isSelected}
-            onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
-            style={{
-              width: 24, height: 24, flexShrink: 0,
-              marginRight: 10, marginTop: 1,
-              background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 0,
-            }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              {isSelected ? (
-                <>
-                  <circle cx="12" cy="12" r="12" fill="#252525" />
-                  <path d="M7 12l3.5 3.5L17 8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </>
-              ) : (
-                <>
-                  <circle cx="12" cy="12" r="11" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
-                  <path d="M7 12l3.5 3.5L17 8" stroke="rgba(0,0,0,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </>
-              )}
-            </svg>
-          </button>
-        )}
-
-        {/* 텍스트 콘텐츠 */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Info + 아이콘 */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{
-                fontWeight: 600, fontSize: 16,
-                lineHeight: '22.95px', color: '#191F28',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                marginBottom: 2,
-              }}>{store.name}</p>
-
-              <p style={{
-                fontWeight: 510, fontSize: 13,
-                lineHeight: '17.55px', color: '#6B7684',
-                marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>{store.address}</p>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ fontWeight: 510, fontSize: 13, color: '#6B7684' }}>
-                  {`리뷰 ${store.reviewCount.toLocaleString()}`}
-                </span>
-                {store.badge && (
-                  <span style={{
-                    fontWeight: 590, fontSize: 10, lineHeight: '15px',
-                    color: 'rgba(3,18,40,0.7)',
-                    backgroundColor: 'rgba(0,27,55,0.1)',
-                    borderRadius: 9, padding: '3px 7px',
-                  }}>{store.badge}</span>
-                )}
-              </div>
-            </div>
-
-            {onHandlePointerDown ? (
-              <div
-                onPointerDown={onHandlePointerDown}
-                style={{ width: 44, height: 44, flexShrink: 0, marginLeft: 4, marginTop: -11, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab', touchAction: 'none' }}
-              >
-                <IcArrowUpDown width={22} height={22} style={{ color: 'rgba(0,29,58,0.18)' }} />
-              </div>
-            ) : !isEditMode ? (
-              <button
-                type="button"
-                aria-label="즐겨찾기 해제"
-                onClick={(e) => { e.stopPropagation(); onRemoveFavorite?.(); }}
-                style={{ width: 44, height: 44, flexShrink: 0, marginLeft: 4, marginTop: -11, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path fillRule="evenodd" clipRule="evenodd"
-                    d="M10.9038 21.2884C11.5698 21.7284 12.4288 21.7284 13.0938 21.2884C15.2088 19.8924 19.8138 16.5554 21.7978 12.8214C24.4128 7.89542 21.3418 2.98242 17.2818 2.98242C14.9678 2.98242 13.5758 4.19142 12.8058 5.23042C12.4818 5.67542 11.8588 5.77442 11.4128 5.45042C11.3278 5.38942 11.2538 5.31442 11.1928 5.23042C10.4228 4.19142 9.03076 2.98242 6.71676 2.98242C2.65676 2.98242 -0.414244 7.89542 2.20176 12.8214C4.18376 16.5554 8.79076 19.8924 10.9038 21.2884Z"
-                    fill="#252525"
-                  />
-                </svg>
-              </button>
-            ) : null}
-          </div>
-
-          {/* 이미지 10장 — 가로 스크롤 */}
-          <div
-            style={{ overflowX: 'auto', scrollbarWidth: 'none' }}
-            onWheel={(e) => { e.preventDefault(); (e.currentTarget as HTMLDivElement).scrollLeft += e.deltaY; }}
-          >
-            <div style={{ display: 'flex', gap: 8, width: 'max-content' }}>
-              {Array.from({ length: 10 }, (_, i) => {
-                const photo = store.photos?.[i];
-                const isLast = i === 9;
-                const showOverlay = isLast && !isEditMode;
-                return (
-                  <div
-                    key={i}
-                    onClick={!isLast && !isEditMode ? (e) => { e.stopPropagation(); onPress?.(); } : undefined}
-                    style={{
-                      position: 'relative', width: 80, height: 80, borderRadius: 4,
-                      backgroundColor: '#E8EDF4', flexShrink: 0, overflow: 'hidden',
-                      cursor: !isLast && !isEditMode ? 'pointer' : 'default',
-                    }}
-                  >
-                    {photo && <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                    {showOverlay && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onPhotoMore?.(); }}
-                        style={{
-                          position: 'absolute', inset: 0,
-                          backgroundColor: 'rgba(0,0,0,0.6)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          border: 'none', cursor: 'pointer', borderRadius: 4,
-                        }}
-                      >
-                        <span style={{ fontWeight: 510, fontSize: 14, color: '#ffffff', lineHeight: '25.5px' }}>더보기</span>
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div style={{ paddingBottom: 20 }} />
-    </div>
-  );
-}
-
-// ─── 빈 상태 ─────────────────────────────────────────────────
-function EmptyState({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', paddingTop: 52, paddingBottom: 48,
-    }}>
-      <p style={{ fontWeight: 590, fontSize: 13, lineHeight: '22.5px', color: '#4e5968', margin: 0, textAlign: 'center' }}>
-        아직 저장한 매장이 없어요
-      </p>
-      <p style={{ fontWeight: 590, fontSize: 13, lineHeight: '22.5px', color: '#4e5968', margin: 0, textAlign: 'center' }}>
-        방문하고 싶은 매장을 편하게 관리하세요
-      </p>
-      <button
-        onClick={onAdd}
-        style={{
-          marginTop: 52,
-          height: 38,
-          borderRadius: 10,
-          backgroundColor: 'rgba(211,211,223,0.19)',
-          border: 'none', cursor: 'pointer',
-          display: 'inline-flex', alignItems: 'center',
-          padding: '0 16px',
-          gap: 6,
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ fontWeight: 590, fontSize: 15, color: '#252525', whiteSpace: 'nowrap' }}>매장 추가하기</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-          <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round"/>
-        </svg>
-      </button>
-    </div>
-  );
-}
-
 
 // ─── 메인 페이지 ──────────────────────────────────────────────
 export default function CollectionPage({
@@ -443,6 +40,7 @@ export default function CollectionPage({
     reorderFavorites,
     recentlyViewed, collections, addCollection, updateCollection, removeCollection, addStoresToCollection,
     reorderCollections,
+    allStores, userLocation,
   } = useFavorites();
 
 
@@ -458,10 +56,6 @@ export default function CollectionPage({
   const [isEditMode, setIsEditMode] = useState(false);
   const [isOrganizeMode, setIsOrganizeMode] = useState(false); // 컬렉션 선택 모드
 
-  // 편집모드 진입/종료 시 부모에 알림 (탭바 숨김/표시)
-  useEffect(() => {
-    onEditModeChange?.(isEditMode || isOrganizeMode);
-  }, [isEditMode, isOrganizeMode]);
   const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
 
   // ── 드래그 순서 변경 ──
@@ -522,6 +116,12 @@ export default function CollectionPage({
   }, [colDragIndex, colDragOverIndex, reorderCollections]);
 
   const [bottomSheet, setBottomSheet] = useState<BottomSheetType>(null);
+
+  // 편집모드·오거나이즈모드·바텀시트 진입/종료 시 부모에 알림 (탭바 숨김/표시)
+  // ※ bottomSheet 선언 이후에 위치해야 TDZ 에러 없음
+  useEffect(() => {
+    onEditModeChange?.(isEditMode || isOrganizeMode || bottomSheet !== null);
+  }, [isEditMode, isOrganizeMode, bottomSheet]);
   const [snackbar, setSnackbar] = useState<SnackbarType>(null);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
@@ -656,12 +256,13 @@ export default function CollectionPage({
   const renameTargetName = collections.find(c => c.id === renameTargetId)?.name ?? '';
 
   // SDK 네이티브 백 이벤트 등록 (Toss 앱 외부 환경에서는 무시)
+  // ※ 편집/오거나이즈 모드만 처리. 일반 모드에서는 무시 — CollectionDetailPage가
+  //    열려 있을 때 두 리스너가 동시 발화해 홈으로 이동하는 버그 방지
   useEffect(() => {
     const handleBack = () => {
       if (isEditMode) { exitEditMode(); return; }
       if (isOrganizeMode) { exitOrganizeMode(); return; }
-      if (onBack) { onBack(); return; }
-      onGoHome?.();
+      // 일반 모드: 처리 안 함 (CollectionDetailPage가 있으면 그쪽에서 처리)
     };
     try {
       const unsubscribe = graniteEvent.addEventListener('backEvent', {
@@ -770,7 +371,19 @@ export default function CollectionPage({
           </div>
 
           {isEmpty ? (
-            <EmptyState onAdd={() => onGoHome?.()} />
+            <EmptyState
+              flex={false}
+              paddingBottom={48}
+              title="아직 저장한 매장이 없어요"
+              subtitle="방문하고 싶은 매장을 편하게 관리하세요"
+              buttonLabel="매장 추가하기"
+              buttonIcon={
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                  <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round"/>
+                </svg>
+              }
+              onButtonClick={() => onGoHome?.()}
+            />
           ) : (
             <div
               ref={storeListRef}
@@ -778,28 +391,38 @@ export default function CollectionPage({
               onPointerUp={isEditMode ? onListPointerUp : undefined}
               onPointerCancel={isEditMode ? onListPointerUp : undefined}
             >
-              {orderedStores.map((store, index) => (
+              {orderedStores.map((store, index) => {
+                // stores 테이블에서 photo_urls·좌표 조회 (api_place_id or id 기준)
+                const storeRow = allStores.find(r => r.api_place_id === store.id || r.id === store.id);
+                const enrichedPhotos = storeRow
+                  ? [storeRow.thumbnail_url, ...(storeRow.photo_urls ?? [])].filter(Boolean) as string[]
+                  : store.photos ?? [];
+                const distance = userLocation && storeRow
+                  ? haversineDistance(userLocation.lat, userLocation.lng, storeRow.latitude, storeRow.longitude)
+                  : undefined;
+                return (
                 <div
                   key={store.id}
                   ref={el => { itemRefsArr.current[index] = el; }}
                 >
                   <StoreCard
-                    store={store}
+                    store={{ ...store, photos: enrichedPhotos, distance }}
                     isEditMode={isEditMode || isOrganizeMode}
                     isSelected={selectedStoreIds.has(store.id)}
                     isDragging={isEditMode && dragIndex === index}
                     isDragOver={isEditMode && dragOverIndex === index && dragIndex !== index}
-                    onHandlePointerDown={isEditMode ? (e) => onHandlePointerDown(e, index) : undefined}
+                    onHandleDrag={isEditMode ? (e) => onHandlePointerDown(e, index) : undefined}
                     onSelect={() => { if (dragIndex === -1) toggleSelectStore(store.id); }}
                     onPress={() => onDetailOpen?.(store.id)}
-                    onRemoveFavorite={() => {
+                    onHeartTap={() => {
                       setRemoveStoreTarget(store);
                       setShowRemoveStoreConfirm(true);
                     }}
-                    onPhotoMore={() => onPhotoMore?.(store.id, store.photos ?? [], store.name)}
+                    onPhotoMore={() => onPhotoMore?.(store.id, enrichedPhotos, store.name)}
                   />
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -867,6 +490,9 @@ export default function CollectionPage({
               }}
             />
           </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+            <span style={{ fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.38)' }}>{newCollectionName.length}/10</span>
+          </div>
         </div>
         <Button color="primary" size="xlarge" style={{ width: '100%' }} onClick={createCollection} disabled={!newCollectionName.trim()}>적용하기</Button>
       </BottomSheet>
@@ -895,6 +521,9 @@ export default function CollectionPage({
                 boxSizing: 'border-box',
               }}
             />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+            <span style={{ fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.38)' }}>{renameValue.length}/10</span>
           </div>
         </div>
         <Button color="primary" size="xlarge" style={{ width: '100%' }} onClick={applyRename} disabled={!renameValue.trim()}>적용하기</Button>

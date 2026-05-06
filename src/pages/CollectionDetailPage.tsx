@@ -1,26 +1,17 @@
 ﻿import { useState, useRef, useEffect, useCallback } from 'react';
-import { useFavorites, FavoritedStore, RecentCafe } from '../context/FavoritesContext';
+import { useFavorites, FavoritedStore, RecentCafe, haversineDistance } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
+import StoreCard, { type StoreItem } from '../components/StoreCard';
+import MemoSheet from '../components/MemoSheet';
+import AddStoreSheet from '../components/AddStoreSheet';
+import EmptyState from '../components/EmptyState';
 import { BottomSheet, ConfirmDialog, BottomCTA, CTAButton, Button, Toast } from '@toss/tds-mobile';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
 import IcDelete from '../assets/icons/icon_delete.svg?react';
-import IcArrowUpDown from '../assets/icons/icon_arrowupdown.svg?react';
+import { type StoreRow } from '../services/db';
 
-
-// ─── 타입 ─────────────────────────────────────────────────────
-interface CollectionStore {
-  id: string;
-  name: string;
-  address: string;
-  rating: number;
-  reviewCount: number;
-  distance?: number;
-  timeLimit: string;
-  photos: string[];
-  memo: string;
-}
 
 // ─── 팝오버 메뉴 ──────────────────────────────────────────────
 
@@ -66,575 +57,12 @@ function DeleteStoreDialog({ onConfirm, onCancel }: { onConfirm: () => void; onC
   );
 }
 
-// ─── 메모 바텀시트 ─────────────────────────────────────────────
-function MemoSheet({ initialMemo, onApply, onClose }: { initialMemo: string; onApply: (memo: string) => void; onClose: () => void }) {
-  const [value, setValue] = useState(initialMemo);
-  const MAX = 45;
-  const isActive = value.trim().length > 0;
-
-  return (
-    <div
-      style={{
-        position: 'absolute', inset: 0, zIndex: 200,
-        backgroundColor: 'rgba(0,0,0,0.2)',
-        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-      }}
-      onClick={onClose}
-    >
-      <div style={{ margin: '0 10px' }} onClick={e => e.stopPropagation()}>
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '28px 28px 0 0', overflow: 'hidden' }}>
-          {/* 핸들 */}
-          <div style={{ height: 41, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: 48, height: 4, borderRadius: 40, backgroundColor: '#e5e8eb' }} />
-          </div>
-          {/* 제목 */}
-          <div style={{ padding: '0 24px 16px' }}>
-            <span style={{ fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)' }}>메모</span>
-          </div>
-          {/* 입력 */}
-          <div style={{ padding: '0 24px 16px' }}>
-            <div style={{ borderBottom: '1px solid #f2f4f6', paddingBottom: 4 }}>
-              <input
-                value={value}
-                onChange={e => setValue(e.target.value.slice(0, MAX))}
-                placeholder="남기고 싶은 메모를 적을 수 있어요"
-                style={{
-                  width: '100%', border: 'none', outline: 'none',
-                  fontWeight: 590, fontSize: 17,
-                  color: '#191f28', backgroundColor: 'transparent',
-                } as React.CSSProperties}
-                autoFocus
-              />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
-              <span style={{ fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.38)' }}>{value.length}/{MAX}</span>
-            </div>
-          </div>
-          {/* 적용하기 버튼 */}
-          <Button color="primary" size="xlarge" style={{ width: '100%' }} onClick={() => isActive && onApply(value)} disabled={!isActive}>적용하기</Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── 토스트 ────────────────────────────────────────────────────
-
-// ─── 매장 추가 바텀시트 ─────────────────────────────────────────
-function AddStoreSheet({
-  availableStores,
-  onConfirm,
-  onClose,
-  onGoHome,
-}: {
-  availableStores: FavoritedStore[];
-  onConfirm: (ids: string[]) => void;
-  onClose: () => void;
-  onGoHome?: () => void;
-}) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [expanded, setExpanded] = useState(false);
-  const touchStartY = useRef(0);
-  const dragStartScrollTop = useRef(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const hasSelection = selectedIds.size > 0;
-
-  const scrollToTop = () => {
-    requestAnimationFrame(() => {
-      if (scrollRef.current) scrollRef.current.scrollTop = 0;
-    });
-  };
-
-  const toggle = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  // 핸들 터치 드래그 (위: 확장, 아래: 축소)
-  const onHandleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-  const onHandleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    const dy = touchStartY.current - e.changedTouches[0].clientY;
-    if (dy > 30) { setExpanded(true); scrollToTop(); }
-    else if (dy < -30) setExpanded(false);
-  };
-
-  // 콘텐츠 터치 — 스크롤 최상단일 때만 시트 확장/축소로 인식
-  const onContentTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    touchStartY.current = e.touches[0].clientY;
-    dragStartScrollTop.current = scrollRef.current?.scrollTop ?? 0;
-  };
-  const onContentTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    const dy = touchStartY.current - e.changedTouches[0].clientY;
-    const wasAtTop = dragStartScrollTop.current === 0;
-    if (!expanded && wasAtTop && dy > 50) { setExpanded(true); scrollToTop(); }
-    else if (expanded && wasAtTop && dy < -50) setExpanded(false);
-  };
-
-  return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1200,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 0, left: 0, right: 0,
-          height: expanded ? '92%' : '55%',
-          backgroundColor: '#ffffff',
-          borderRadius: '20px 20px 0 0',
-          display: 'flex', flexDirection: 'column',
-          transition: 'height 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-          overflow: 'hidden',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* 드래그 핸들 */}
-        <div
-          onTouchStart={onHandleTouchStart}
-          onTouchEnd={onHandleTouchEnd}
-          style={{
-            height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, cursor: 'grab', touchAction: 'pan-x',
-          }}
-        >
-          <div style={{ width: 36, height: 4, borderRadius: 40, backgroundColor: '#e5e8eb' }} />
-        </div>
-
-        {/* 타이틀 */}
-        <div style={{ padding: '4px 20px 0', flexShrink: 0 }}>
-          <p style={{ fontWeight: 700, fontSize: 20, color: 'rgba(0,12,30,0.8)', marginBottom: 0 }}>
-            어떤 매장을 추가할까요?
-          </p>
-          {hasSelection && (
-            <p style={{ fontWeight: 510, fontSize: 14, color: 'rgba(0,19,43,0.45)', marginTop: 4, marginBottom: 0 }}>
-              {selectedIds.size}개의 매장을 선택했어요
-            </p>
-          )}
-        </div>
-
-        {/* 매장 리스트 */}
-        <div
-          ref={scrollRef}
-          style={{ flex: 1, overflowY: 'auto', marginTop: 12 }}
-          onTouchStart={onContentTouchStart}
-          onTouchEnd={onContentTouchEnd}
-        >
-          {availableStores.length === 0 ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-              <p style={{ fontWeight: 590, fontSize: 14, color: 'rgba(0,19,43,0.45)' }}>
-                저장한 매장이 없어요
-              </p>
-            </div>
-          ) : (
-            availableStores.map(store => {
-              const isSelected = selectedIds.has(store.id);
-              return (
-                <div
-                  key={store.id}
-                  onClick={() => toggle(store.id)}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  style={{ padding: '20px 16px 0', cursor: 'pointer' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-                    {/* 이름·주소·별점 */}
-                    <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
-                      <p style={{ fontWeight: 600, fontSize: 16, color: '#191F28', lineHeight: '23px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {store.name}
-                      </p>
-                      <p style={{ fontWeight: 510, fontSize: 13, color: '#6B7684', lineHeight: '17.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {store.address}
-                      </p>
-                      <span style={{ fontWeight: 510, fontSize: 13, color: '#6B7684' }}>
-                        {`리뷰 ${store.reviewCount.toLocaleString()}`}
-                      </span>
-                    </div>
-                    {/* 체크 서클 */}
-                    <div style={{ flexShrink: 0 }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        {isSelected ? (
-                          <>
-                            <circle cx="12" cy="12" r="12" fill="#252525" />
-                            <path d="M7 12l3.5 3.5L17 8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </>
-                        ) : (
-                          <>
-                            <circle cx="12" cy="12" r="11" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
-                            <path d="M7 12l3.5 3.5L17 8" stroke="rgba(0,0,0,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </>
-                        )}
-                      </svg>
-                    </div>
-                  </div>
-                  {/* 사진 10장 — 가로 스크롤 */}
-                  <div
-                    style={{ overflowX: 'auto', scrollbarWidth: 'none' }}
-                    onWheel={(e) => { e.preventDefault(); (e.currentTarget as HTMLDivElement).scrollLeft += e.deltaY; }}
-                  >
-                    <div style={{ display: 'flex', gap: 8, width: 'max-content' }}>
-                      {Array.from({ length: 10 }, (_, idx) => {
-                        const isLast = idx === 9;
-                        return (
-                          <div key={idx} style={{
-                            position: 'relative', width: 80, height: 80, borderRadius: 4, flexShrink: 0, overflow: 'hidden',
-                            backgroundColor: store.photos[idx] ? undefined : ['#D4C4B0','#C4B4A0','#B4A490','#A49480'][idx % 4],
-                          }}>
-                            {store.photos[idx] && (
-                              <img src={store.photos[idx]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            )}
-                            {isLast && (
-                              <div style={{
-                                position: 'absolute', inset: 0,
-                                backgroundColor: 'rgba(0,0,0,0.6)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                borderRadius: 4,
-                              }}>
-                                <span style={{ fontWeight: 510, fontSize: 14, color: '#ffffff' }}>더보기</span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div style={{ paddingBottom: 16 }} />
-                </div>
-              );
-            })
-          )}
-
-          {/* 새로운 매장 찾아보기 */}
-          <div
-            onClick={(e) => { e.stopPropagation(); onGoHome?.(); }}
-            style={{
-              padding: '12px 16px 20px',
-              display: 'flex', alignItems: 'center', gap: 12,
-              cursor: 'pointer',
-            }}
-          >
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-              backgroundColor: 'rgba(0,27,55,0.06)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 3v10M3 8h10" stroke="rgba(0,12,30,0.8)" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-            </div>
-            <span style={{ fontWeight: 590, fontSize: 17, color: 'rgba(0,12,30,0.8)' }}>새로운 매장 찾아보기</span>
-          </div>
-        </div>
-
-        {/* 하단 버튼 */}
-        <div style={{
-          flexShrink: 0,
-          padding: '12px 20px',
-          paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-          backgroundColor: '#ffffff',
-        }}>
-          {!hasSelection ? (
-            /* 선택 없음: 완료 버튼(비활성 스타일, 탭 시 닫힘) */
-            <button
-              onClick={onClose}
-              style={{
-                width: '100%', height: 52, borderRadius: 12,
-                backgroundColor: 'rgba(0,23,51,0.06)',
-                border: 'none', cursor: 'pointer',
-                fontWeight: 700, fontSize: 17,
-                color: 'rgba(0,12,30,0.25)',
-              }}
-            >완료</button>
-          ) : (
-            /* 선택됨: 닫기 + 확인 */
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={onClose}
-                style={{
-                  flex: 1, height: 52, borderRadius: 12,
-                  backgroundColor: 'rgba(0,23,51,0.06)',
-                  border: 'none', cursor: 'pointer',
-                  fontWeight: 700, fontSize: 17,
-                  color: 'rgba(0,12,30,0.8)',
-                }}
-              >닫기</button>
-              <button
-                onClick={() => onConfirm([...selectedIds])}
-                style={{
-                  flex: 1, height: 52, borderRadius: 12,
-                  backgroundColor: '#252525',
-                  border: 'none', cursor: 'pointer',
-                  fontWeight: 700, fontSize: 17,
-                  color: '#ffffff',
-                }}
-              >확인</button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── 카드 아이템 ──────────────────────────────────────────────
-function StoreCard({
-  store,
-  isEditMode,
-  isSelected,
-  heartFilled,
-  showHeart = true,
-  showMemo = true,
-  isDragging = false,
-  isDragOver = false,
-  onToggleSelect,
-  onMemoTap,
-  onDetailOpen,
-  onHeartTap,
-  onPhotoMore,
-  onHandleDrag,
-}: {
-  store: CollectionStore;
-  isEditMode: boolean;
-  isSelected: boolean;
-  heartFilled: boolean;
-  showHeart?: boolean;
-  showMemo?: boolean;
-  isDragging?: boolean;
-  isDragOver?: boolean;
-  onToggleSelect: (id: string) => void;
-  onMemoTap: (id: string) => void;
-  onDetailOpen?: (id: string) => void;
-  onHeartTap?: (id: string) => void;
-  onPhotoMore?: () => void;
-  onHandleDrag?: (e: React.PointerEvent<HTMLDivElement>) => void;
-}) {
-  const placeholderColors = ['#E8EDF4', '#E8EDF4', '#E8EDF4', '#E8EDF4'];
-
-  return (
-    <div
-      onClick={() => isEditMode && onToggleSelect(store.id)}
-      style={{
-        cursor: isEditMode ? 'pointer' : 'default',
-        opacity: isDragging ? 0.4 : 1,
-        borderTop: isDragOver ? '2px solid #252525' : '2px solid transparent',
-        transition: 'opacity 0.15s',
-      }}
-    >
-      <div style={{ padding: '20px 16px 0', display: 'flex', alignItems: 'flex-start' }}>
-        {/* 체크박스 (편집모드) */}
-        {isEditMode && (
-          <button
-            type="button"
-            aria-label={isSelected ? '선택 해제' : '선택'}
-            aria-pressed={isSelected}
-            onClick={(e) => { e.stopPropagation(); onToggleSelect(store.id); }}
-            style={{ width: 24, height: 24, flexShrink: 0, marginRight: 10, marginTop: 2, background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 0 }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              {isSelected ? (
-                <>
-                  <circle cx="12" cy="12" r="12" fill="#252525" />
-                  <path d="M7 12l3.5 3.5L17 8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </>
-              ) : (
-                <>
-                  <circle cx="12" cy="12" r="11" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
-                  <path d="M7 12l3.5 3.5L17 8" stroke="rgba(0,0,0,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </>
-              )}
-            </svg>
-          </button>
-        )}
-
-        {/* 메인 콘텐츠 */}
-        <div
-          style={{ flex: 1, minWidth: 0, cursor: isEditMode ? 'default' : 'pointer' }}
-          onClick={(e) => { if (!isEditMode) { e.stopPropagation(); onDetailOpen?.(store.id); } }}
-        >
-          {/* Info + 아이콘 */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontWeight: 600, fontSize: 16, color: '#191F28', lineHeight: '23px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {store.name}
-              </p>
-              <p style={{ fontWeight: 510, fontSize: 13, color: '#6B7684', lineHeight: '17.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {store.address}
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ fontWeight: 510, fontSize: 13, color: '#6B7684' }}>
-                  {`리뷰 ${store.reviewCount.toLocaleString()}`}
-                </span>
-                {store.timeLimit && (
-                  <div style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: 'rgba(0,27,55,0.1)', borderRadius: 9, padding: '3px 7px' }}>
-                    <span style={{ fontWeight: 590, fontSize: 10, color: 'rgba(3,18,40,0.7)' }}>{store.timeLimit}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* 편집모드: 순서 핸들 / 기본: 하트(최근 탭만) */}
-            {isEditMode ? (
-              <div
-                onPointerDown={onHandleDrag}
-                style={{ width: 44, height: 44, flexShrink: 0, marginLeft: 4, marginTop: -11, cursor: 'grab', touchAction: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <IcArrowUpDown width={22} height={22} style={{ color: 'rgba(0,29,58,0.18)' }} />
-              </div>
-            ) : showHeart ? (
-              <button
-                type="button"
-                aria-label={heartFilled ? '즐겨찾기 해제' : '즐겨찾기 추가'}
-                aria-pressed={heartFilled}
-                onClick={(e) => { e.stopPropagation(); onHeartTap?.(store.id); }}
-                style={{ width: 44, height: 44, flexShrink: 0, marginLeft: 4, marginTop: -11, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path fillRule="evenodd" clipRule="evenodd"
-                    d="M10.9038 21.2884C11.5698 21.7284 12.4288 21.7284 13.0938 21.2884C15.2088 19.8924 19.8138 16.5554 21.7978 12.8214C24.4128 7.89542 21.3418 2.98242 17.2818 2.98242C14.9678 2.98242 13.5758 4.19142 12.8058 5.23042C12.4818 5.67542 11.8588 5.77442 11.4128 5.45042C11.3278 5.38942 11.2538 5.31442 11.1928 5.23042C10.4228 4.19142 9.03076 2.98242 6.71676 2.98242C2.65676 2.98242 -0.414244 7.89542 2.20176 12.8214C4.18376 16.5554 8.79076 19.8924 10.9038 21.2884Z"
-                    fill={heartFilled ? '#252525' : '#D1D6DB'}
-                  />
-                </svg>
-              </button>
-            ) : null}
-          </div>
-
-          {/* 이미지 10장 — 가로 스크롤 */}
-          <div
-            style={{ overflowX: 'auto', scrollbarWidth: 'none' }}
-            onWheel={(e) => { e.preventDefault(); (e.currentTarget as HTMLDivElement).scrollLeft += e.deltaY; }}
-          >
-            <div style={{ display: 'flex', gap: 8, width: 'max-content' }}>
-              {Array.from({ length: 10 }, (_, idx) => {
-                const isLast = idx === 9;
-                const showOverlay = isLast && !isEditMode;
-                return (
-                  <div
-                    key={idx}
-                    onClick={!isLast && !isEditMode ? (e) => { e.stopPropagation(); onDetailOpen?.(store.id); } : undefined}
-                    style={{
-                      position: 'relative', width: 80, height: 80, borderRadius: 4, flexShrink: 0, overflow: 'hidden',
-                      backgroundColor: store.photos[idx] ? undefined : placeholderColors[idx % 4],
-                      cursor: !isLast && !isEditMode ? 'pointer' : 'default',
-                    }}
-                  >
-                    {store.photos[idx] && (
-                      <img src={store.photos[idx]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    )}
-                    {showOverlay && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onPhotoMore?.(); }}
-                        style={{
-                          position: 'absolute', inset: 0,
-                          backgroundColor: 'rgba(0,0,0,0.6)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          border: 'none', cursor: 'pointer', borderRadius: 4,
-                        }}
-                      >
-                        <span style={{ fontWeight: 510, fontSize: 14, color: '#ffffff' }}>더보기</span>
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 메모 영역 (최근 탭·편집모드에서는 숨김) */}
-      {showMemo && !isEditMode && (
-        <div
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '10px 16px 20px',
-            minHeight: 40,
-            cursor: isEditMode ? 'default' : 'pointer',
-          }}
-          onClick={(e) => { if (!isEditMode) { e.stopPropagation(); onMemoTap(store.id); } }}
-        >
-          <IcPencil width={12} height={12} style={{ flexShrink: 0, color: 'rgba(0,19,43,0.38)' }} />
-          {store.memo ? (
-            <span style={{
-              fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.58)',
-              lineHeight: '16.2px', flex: 1,
-              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-            } as React.CSSProperties}>{store.memo}</span>
-          ) : (
-            <span style={{
-              fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.25)',
-              lineHeight: '16.2px',
-            }}>이곳을 기억하고 싶은 특별한 이유를 적어두세요</span>
-          )}
-        </div>
-      )}
-      {(!showMemo || isEditMode) && <div style={{ paddingBottom: 20 }} />}
-    </div>
-  );
-}
-
-// ─── 빈 상태 ──────────────────────────────────────────────────
-function EmptyState({
-  title,
-  subtitle,
-  buttonLabel,
-  buttonIcon,
-  onButtonClick,
-}: {
-  title: string;
-  subtitle: string;
-  buttonLabel: string;
-  buttonIcon: React.ReactNode;
-  onButtonClick?: () => void;
-}) {
-  return (
-    <div style={{
-      flex: 1, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', paddingTop: 52,
-    }}>
-      <p style={{
-        fontWeight: 590, fontSize: 13, color: '#4e5968',
-        textAlign: 'center', lineHeight: '22.5px', margin: 0,
-      }}>
-        {title}
-      </p>
-      <p style={{
-        fontWeight: 590, fontSize: 13, color: '#4e5968',
-        textAlign: 'center', lineHeight: '22.5px', margin: 0,
-      }}>
-        {subtitle}
-      </p>
-      <button
-        onClick={onButtonClick}
-        style={{
-          marginTop: 52,
-          height: 38,
-          borderRadius: 10,
-          backgroundColor: 'rgba(211,211,223,0.19)',
-          border: 'none', cursor: 'pointer',
-          display: 'inline-flex', alignItems: 'center',
-          padding: '0 16px',
-          gap: 6,
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ fontWeight: 590, fontSize: 15, color: '#252525', whiteSpace: 'nowrap' }}>{buttonLabel}</span>
-        {buttonIcon}
-      </button>
-    </div>
-  );
-}
-
+// ─── 빈 상태 아이콘 (EmptyState buttonIcon 전용) ──────────────
 const IconPlus = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
     <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round"/>
   </svg>
 );
-
 const IconArrow = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
     <path d="M5 12h14M13 6l6 6-6 6" stroke="#252525" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -664,24 +92,30 @@ export default function CollectionDetailPage({
   onEditModeChange?: (active: boolean) => void;
 }) {
   const {
-    recentlyViewed, favorites, collections,
+    recentlyViewed, allStores, userLocation, favorites, collections,
     removeCollection, removeFavorite, addFavorite, isFavorited,
     addStoresToCollection, removeStoresFromCollection, updateCollectionMemo, updateCollection,
     reorderCollections,
   } = useFavorites();
 
+  // allStores는 FavoritesContext에서 앱 시작 시 로드된 데이터 사용
+  const storeRows: StoreRow[] = allStores;
+
+
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // 편집모드 진입/종료 시 부모에 알림 (탭바 숨김/표시)
-  useEffect(() => {
-    onEditModeChange?.(isEditMode);
-  }, [isEditMode]);
   const [showDeleteCollectionDialog, setShowDeleteCollectionDialog] = useState(false);
   const [showDeleteStoreId, setShowDeleteStoreId] = useState<string | null>(null);
   const [showAddStoreSheet, setShowAddStoreSheet] = useState(false);
+
   const [memoTargetId, setMemoTargetId] = useState<string | null>(null);
+
+  // 편집모드·매장추가시트·메모시트 진입/종료 시 부모에 알림 (탭바 숨김/표시)
+  useEffect(() => {
+    onEditModeChange?.(isEditMode || showAddStoreSheet || memoTargetId !== null);
+  }, [isEditMode, showAddStoreSheet, memoTargetId]);
   const [snackbar, setSnackbar] = useState<{ msg: string; actionLabel?: string; undoFn?: () => void; type?: 'positive' | 'negative' } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -727,31 +161,38 @@ export default function CollectionDetailPage({
     }
   }, [activeCollection?.storeIds, dragIndex, isActiveRecent]);
 
-  const stores: CollectionStore[] = isActiveRecent
-    ? recentlyViewed.map((r: RecentCafe) => ({
+  const stores: StoreItem[] = isActiveRecent
+    ? recentlyViewed.map((r: RecentCafe): StoreItem => ({
         id: r.id,
         name: r.name,
-        address: '주소 정보 없음',
+        address: r.address ?? '',
         rating: 0,
         reviewCount: 0,
-        timeLimit: '',
-        photos: r.photo ? [r.photo] : [],
+        photos: r.photos && r.photos.length > 0
+          ? r.photos
+          : r.photo ? [r.photo] : [],
         memo: '',
       }))
     : orderedStoreIds
-        .map((id) => favorites.find((f: FavoritedStore) => f.id === id))
-        .filter((f): f is FavoritedStore => !!f)
-        .map((f: FavoritedStore) => ({
-          id: f.id,
-          name: f.name,
-          address: f.address,
-          rating: f.rating,
-          reviewCount: f.reviewCount,
-          distance: f.distance,
-          timeLimit: '',
-          photos: f.photos ?? [],
-          memo: activeCollection?.memos?.[f.id] ?? '',
-        }));
+        .map((id): StoreItem | null => {
+          // collection_stores.store_id = stores.api_place_id → stores 테이블에서 조회
+          // collection_stores.store_id가 UUID인지 api_place_id인지 모두 커버
+          const row = storeRows.find(r => r.id === id || r.api_place_id === id);
+          if (!row) return null;
+          return {
+            id: row.api_place_id,
+            name: row.name,
+            address: row.address_road,
+            rating: 0,
+            reviewCount: 0,
+            distance: userLocation
+              ? haversineDistance(userLocation.lat, userLocation.lng, row.latitude, row.longitude)
+              : undefined,
+            photos: [row.thumbnail_url, ...(row.photo_urls ?? [])].filter(Boolean) as string[],
+            memo: activeCollection?.memos?.[id] ?? '',
+          };
+        })
+        .filter((s): s is StoreItem => s !== null);
 
 
   const onHandlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>, index: number) => {
@@ -911,7 +352,7 @@ export default function CollectionDetailPage({
   const handleAddStoreConfirm = (selectedStoreIds: string[]) => {
     addStoresToCollection(activeTab, selectedStoreIds);
     setShowAddStoreSheet(false);
-    showToast('매장을 추가했어요');
+    showToast('카페를 컬렉션에 담았어요');
   };
 
   // ── 메모 저장 ──
@@ -1276,9 +717,9 @@ export default function CollectionDetailPage({
                 showMemo={!isActiveRecent}
                 isDragging={isEditMode && dragIndex === index}
                 isDragOver={isEditMode && dragOverIndex === index && dragIndex !== index}
-                onToggleSelect={toggleSelect}
+                onSelect={toggleSelect}
                 onMemoTap={(id) => setMemoTargetId(id)}
-                onDetailOpen={onDetailOpen}
+                onPress={onDetailOpen}
                 onHeartTap={handleHeartTap}
                 onPhotoMore={() => onPhotoMore?.(store.id, store.photos, store.name)}
                 onHandleDrag={isEditMode && !isActiveRecent ? (e) => onHandlePointerDown(e, index) : undefined}
@@ -1341,7 +782,17 @@ export default function CollectionDetailPage({
       {/* 매장 추가 바텀시트 */}
       {showAddStoreSheet && (
         <AddStoreSheet
-          availableStores={favorites.filter(f => !activeCollection?.storeIds.includes(f.id))}
+          availableStores={favorites
+            .filter(f => !activeCollection?.storeIds.includes(f.id))
+            .map(f => {
+              const row = storeRows.find(r => r.api_place_id === f.id);
+              return {
+                ...f,
+                photos: row
+                  ? [row.thumbnail_url, ...(row.photo_urls ?? [])].filter(Boolean) as string[]
+                  : f.photos ?? [],
+              };
+            })}
           onConfirm={handleAddStoreConfirm}
           onClose={() => setShowAddStoreSheet(false)}
           onGoHome={() => { setShowAddStoreSheet(false); onGoHome?.(); }}
@@ -1396,28 +847,36 @@ export default function CollectionDetailPage({
         />
       )}
 
-      {/* 컬렉션 이름 변경 바텀시트 */}
+      {/* 컬렉션명 변경 바텀시트 */}
       <BottomSheet
         open={!!renameTabId}
-        header={<BottomSheet.Header>컬렉션 이름 변경</BottomSheet.Header>}
+        header={<BottomSheet.Header>컬렉션명 변경</BottomSheet.Header>}
         onClose={() => { setRenameTabId(null); setRenameValue(''); }}
         hasTextField
       >
-        <div style={{ padding: '8px 20px 16px' }}>
-          <input
-            autoFocus
-            value={renameValue}
-            onChange={e => setRenameValue(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleTabRenameConfirm(); }}
-            maxLength={20}
-            placeholder="컬렉션 이름"
-            style={{
-              width: '100%', height: 48, borderRadius: 10,
-              border: '1px solid rgba(0,0,0,0.12)',
-              padding: '0 14px', fontSize: 17, outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
+        <style>{`.detail-rename-input::placeholder { color: #8b95a1; }`}</style>
+        <div style={{ padding: '16px 24px 14px' }}>
+          <div style={{ borderBottom: '1px solid #f2f4f6' }}>
+            <input
+              className="detail-rename-input"
+              autoFocus
+              value={renameValue}
+              onChange={e => setRenameValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleTabRenameConfirm(); }}
+              maxLength={10}
+              placeholder="컬렉션명"
+              style={{
+                width: '100%', padding: '4px 0 8px',
+                border: 'none', outline: 'none',
+                fontWeight: 590, fontSize: 22,
+                color: '#191F28', backgroundColor: 'transparent',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+            <span style={{ fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.38)' }}>{renameValue.length}/10</span>
+          </div>
         </div>
         <Button
           color="primary"

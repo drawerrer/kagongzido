@@ -709,7 +709,6 @@ function ReviewCard({ review }: { review: ReviewItem }) {
       {reportDone && (
         <Snackbar
           message="신고가 접수됐어요"
-          position="top"
           duration={2000}
           onDismiss={() => setReportDone(false)}
           icon={
@@ -725,7 +724,6 @@ function ReviewCard({ review }: { review: ReviewItem }) {
       {blockDone && (
         <Snackbar
           message={`이제 ${review.author}님의 글은 볼 수 없게 됩니다`}
-          position="top"
           duration={2500}
           onDismiss={() => setBlockDone(false)}
           icon={
@@ -898,13 +896,19 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
   const [scrolled, setScrolled] = useState(false);
 
-  // 상세 화면 진입 시 최근 본 카페에 추가 (실데이터 로딩 후)
+  // 상세 화면 진입 시 최근 본 카페 추가 + 즐겨찾기 사진 갱신 (실데이터 로딩 후)
   useEffect(() => {
     if (!storeData) return;
+    const allPhotos = [
+      ...(storeData.thumbnailUrl ? [storeData.thumbnailUrl] : []),
+      ...(storeData.photos ?? []),
+    ];
     addRecentlyViewed({
       id: storeData.id,
       name: storeData.name,
       photo: storeData.thumbnailUrl ?? storeData.photos?.[0] ?? '',
+      photos: allPhotos.length > 0 ? allPhotos : undefined,
+      address: storeData.address,
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeData]);
@@ -968,8 +972,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       if (isInAnyCollection) {
         setShowUnfavoriteDialog(true);
       } else {
-        removeFavorite(cafeId);
-        showFavoriteSnackbar('removed');
+        doRemoveFavorite();
       }
     } else {
       addFavorite({
@@ -1017,6 +1020,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [reviewSortPopupOpen, setReviewSortPopupOpen] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [favoriteSnackbar, setFavoriteSnackbar] = useState<'added' | 'removed' | null>(null);
+  const removedFavoriteRef = useRef<Parameters<typeof addFavorite>[0] | null>(null);
 
   const isFavorite = isFavorited(cafeId);
 
@@ -1035,14 +1039,23 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     setFavoriteSnackbar(type);
   };
 
+  // 즐겨찾기 제거 + 되돌리기용 데이터 저장
+  const doRemoveFavorite = () => {
+    removedFavoriteRef.current = {
+      id: cafe.id, name: cafe.name, address: cafe.address,
+      rating: 0, reviewCount: cafe.reviews.length, photos: cafe.photos ?? [],
+    };
+    removeFavorite(cafeId);
+    showFavoriteSnackbar('removed');
+  };
+
   const handleFavorite = () => {
     if (!isLoggedIn) { setShowLoginSheet(true); return; }
     if (isFavorite) {
       if (isInAnyCollection) {
         setShowUnfavoriteDialog(true);
       } else {
-        removeFavorite(cafeId);
-        showFavoriteSnackbar('removed');
+        doRemoveFavorite();
       }
     } else {
       addFavorite({
@@ -1059,8 +1072,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   };
 
   const handleConfirmUnfavorite = () => {
-    removeFavorite(cafeId);
-    showFavoriteSnackbar('removed');
+    doRemoveFavorite();
     setShowUnfavoriteDialog(false);
   };
 
@@ -1621,6 +1633,14 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         <Snackbar
           type="negative"
           message="카페를 모음집에서 꺼냈어요"
+          actionLabel="되돌리기"
+          onAction={() => {
+            if (removedFavoriteRef.current) {
+              addFavorite(removedFavoriteRef.current);
+              removedFavoriteRef.current = null;
+            }
+            setFavoriteSnackbar(null);
+          }}
           onDismiss={() => setFavoriteSnackbar(null)}
         />
       )}

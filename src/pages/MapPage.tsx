@@ -174,7 +174,7 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
         address: cafe.address,
         rating: cafe.rating,
         reviewCount: cafe.reviewCount,
-        photos: [],
+        photos: cafe.thumbnailUrl ? [cafe.thumbnailUrl] : [],
         distance: cafe.distance,
       });
       onFavoriteChange?.('added', cafe);

@@ -1,10 +1,28 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { getCurrentLocation, Accuracy } from '@apps-in-toss/web-framework';
 import {
   fetchFavorites, insertFavorite, deleteFavorite, updateFavoritesOrder,
   fetchCollections, insertCollection, updateCollectionDB, deleteCollectionDB,
   updateCollectionsOrder, addStoresToCollectionDB, removeStoresFromCollectionDB,
-  updateStoreMemo,
+  updateStoreMemo, fetchAllStores, type StoreRow,
 } from '../services/db';
+
+// ─── 거리 계산 유틸 (Haversine) ───────────────────────────────
+export function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad;
+  const dLng = (lng2 - lng1) * rad;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+export function fmtDist(m: number): string {
+  return m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`;
+}
 
 // ─── 찜한 매장 타입 ───────────────────────────────────────────
 export interface FavoritedStore {
@@ -23,6 +41,8 @@ export interface RecentCafe {
   id: string;
   name: string;
   photo: string;
+  photos?: string[];
+  address?: string;
 }
 
 // ─── 컬렉션 타입 ─────────────────────────────────────────────
@@ -55,6 +75,8 @@ function lsSet(key: string, value: unknown) {
 interface FavoritesContextType {
   userId: string;
   isLoading: boolean;
+  allStores: StoreRow[];
+  userLocation: { lat: number; lng: number } | null;
   favorites: FavoritedStore[];
   isFavorited: (id: string) => boolean;
   addFavorite: (store: FavoritedStore) => void;
@@ -84,6 +106,17 @@ export function FavoritesProvider({
 }) {
   // localStorage에서 즉시 초기값 로드 → 새로고침 후에도 데이터 즉시 표시
   const [isLoading, setIsLoading] = useState(true);
+
+  // 전체 매장 데이터 (앱 시작 시 1회 로드, 컬렉션·검색 등에서 공유)
+  const [allStores, setAllStores] = useState<StoreRow[]>([]);
+
+  // 사용자 현재 위치 (거리 계산용)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    getCurrentLocation({ accuracy: Accuracy.Balanced })
+      .then(loc => setUserLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude }))
+      .catch(() => {}); // 위치 권한 거부 시 null 유지
+  }, []);
 
   // 앱 실행 시 마지막 접속 시간 기록
   useEffect(() => {
@@ -120,10 +153,13 @@ export function FavoritesProvider({
     if (!userId) return;
     const sync = async () => {
       setIsLoading(true);
-      const [favs, cols] = await Promise.all([
+      const [favs, cols, stores] = await Promise.all([
         fetchFavorites(userId),
         fetchCollections(userId),
+        fetchAllStores(),
       ]);
+
+      setAllStores(stores);
 
       // favorites — 항상 Supabase 결과로 덮어씀 (빈 배열 포함)
       setFavorites(favs);
@@ -274,6 +310,7 @@ export function FavoritesProvider({
   return (
     <FavoritesContext.Provider value={{
       userId, isLoading,
+      allStores, userLocation,
       favorites, isFavorited, addFavorite, removeFavorite, reorderFavorites,
       recentlyViewed, addRecentlyViewed,
       collections, addCollection, updateCollection, removeCollection,

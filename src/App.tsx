@@ -85,6 +85,11 @@ function AppInner() {
   const [deletedCollectionData, setDeletedCollectionData] = useState<{ id: string; name: string; storeIds: string[] } | null>(null);
   const [isCollectionEditMode, setIsCollectionEditMode] = useState(false);
   const { isFavorited, addFavorite, removeFavorite, favorites } = useFavorites();
+
+  // CollectionDetailPage가 닫힐 때(collectionDetail → null) 편집모드 상태 리셋
+  useEffect(() => {
+    if (!collectionDetail) setIsCollectionEditMode(false);
+  }, [collectionDetail]);
   const [myPageSubPage, setMyPageSubPage] = useState<string | null>(null);
   const [guidebookView, setGuidebookView] = useState<string | null>(null);
   const [guidebookStoreIndex, setGuidebookStoreIndex] = useState(0);
@@ -239,16 +244,26 @@ function AppInner() {
             <button
               key={tab.id}
               onClick={() => {
+                // 탭 이동 시 모든 오버레이 닫기
+                const closeAllOverlays = () => {
+                  setDetailCafeId(null);
+                  setShowSearch(false);
+                  setPhotoReview(null);
+                  setCollectionDetail(null);
+                  setDetailScrollToReview(false);
+                  setDetailOpenDirections(false);
+                };
                 const now = Date.now();
                 const last = lastTabTapRef.current;
                 if (last?.id === tab.id && now - last.time < 400) {
+                  // 같은 탭 빠르게 두 번 탭 → 루트로 리셋
                   lastTabTapRef.current = null;
-                  setCollectionDetail(null);
+                  closeAllOverlays();
                   setActiveTab(tab.id);
                   setTabKeys(k => ({ ...k, [tab.id]: k[tab.id] + 1 }));
                 } else {
                   lastTabTapRef.current = { id: tab.id, time: now };
-                  setCollectionDetail(null);
+                  closeAllOverlays();
                   setActiveTab(tab.id);
                 }
               }}
