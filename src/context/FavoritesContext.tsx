@@ -85,13 +85,26 @@ export function FavoritesProvider({
   // localStorage에서 즉시 초기값 로드 → 새로고침 후에도 데이터 즉시 표시
   const [isLoading, setIsLoading] = useState(true);
 
+  // 앱 실행 시 마지막 접속 시간 기록
+  useEffect(() => {
+    lsSet('lastVisitTime', Date.now());
+  }, []);
+
   const [favorites, setFavorites] = useState<FavoritedStore[]>(() =>
     lsGet<FavoritedStore[]>(`favorites_${userId}`, [])
   );
 
-  const [recentlyViewed, setRecentlyViewed] = useState<RecentCafe[]>(() =>
-    lsGet<RecentCafe[]>('recentlyViewed', [])
-  );
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentCafe[]>(() => {
+    // 2일 이상 앱 미사용 시 최근 본 카페 자동 삭제
+    const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+    const lastVisit = lsGet<number>('lastVisitTime', 0);
+    const now = Date.now();
+    if (lastVisit > 0 && now - lastVisit > TWO_DAYS_MS) {
+      lsSet('recentlyViewed', []);
+      return [];
+    }
+    return lsGet<RecentCafe[]>('recentlyViewed', []);
+  });
 
   const [collections, setCollections] = useState<Collection[]>(() => {
     const cached = lsGet<Collection[]>(`collections_${userId}`, []);
