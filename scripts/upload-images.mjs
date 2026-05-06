@@ -91,13 +91,13 @@ async function main() {
     process.exit(1);
   }
 
-  // Supabase에서 이미 thumbnail_url이 있는 매장 목록 가져오기
+  // Supabase에서 thumbnail_url이 있는 매장 목록 가져오기
   const { data: uploaded } = await supabase
     .from('stores')
     .select('api_place_id')
     .not('thumbnail_url', 'is', null)
     .neq('thumbnail_url', '');
-  const uploadedIds = new Set((uploaded ?? []).map(r => r.api_place_id));
+  const thumbnailDoneIds = new Set((uploaded ?? []).map(r => r.api_place_id));
 
   console.log(`🚀 이미지 업로드 시작 — ${folders.length}개 매장\n`);
   let successCount = 0;
@@ -108,33 +108,41 @@ async function main() {
     const folderPath = join(IMAGES_DIR, placeId);
     const files = readdirSync(folderPath)
       .filter(f => IMG_EXTS.includes(extname(f).toLowerCase()))
-      .sort(); // 1.jpg, 2.jpg, thumbnail.jpg 순 정렬
+      .sort();
 
     if (files.length === 0) {
       console.log(`⏭️  ${placeId}: 이미지 없음 — 건너뜀`);
       continue;
     }
 
-    // 이미 업로드된 매장은 건너뜀
-    if (uploadedIds.has(placeId)) {
-      console.log(`⏭️  ${placeId}: 이미 업로드됨 — 건너뜀`);
-      skippedCount++;
-      continue;
+    // thumbnail 보호: 이미 있으면 thumbnail 파일은 건너뛰고 photo_urls만 업데이트
+    const thumbnailProtected = thumbnailDoneIds.has(placeId);
+    if (thumbnailProtected) {
+      console.log(`📂 ${placeId} — thumbnail 보호됨, 추가 사진만 업로드`);
+    } else {
+      console.log(`📂 ${placeId} (${files.length}개 파일)`);
     }
-
-    console.log(`📂 ${placeId} (${files.length}개 파일)`);
 
     let thumbnailUrl = '';
     const photoUrls  = [];
 
     for (const file of files) {
+      const isThumbnail = file.toLowerCase().startsWith('thumbnail');
+
+      // thumbnail 이미 있으면 thumbnail 파일 스킵
+      if (isThumbnail && thumbnailProtected) {
+        console.log(`  ⏭️  thumbnail: 이미 등록됨 — 건너뜀`);
+        skippedCount++;
+        continue;
+      }
+
       const localPath   = join(folderPath, file);
       const storagePath = `${placeId}/${file}`;
 
       try {
         const url = await uploadFile(localPath, storagePath);
 
-        if (file.toLowerCase().startsWith('thumbnail')) {
+        if (isThumbnail) {
           thumbnailUrl = url;
           console.log(`  ✅ thumbnail: ${url}`);
         } else {
@@ -148,7 +156,7 @@ async function main() {
     }
 
     // thumbnail이 없으면 첫 번째 photo를 thumbnail로 사용
-    if (!thumbnailUrl && photoUrls.length > 0) {
+    if (!thumbnailUrl && photoUrls.length > 0 && !thumbnailProtected) {
       thumbnailUrl = photoUrls[0];
     }
 
