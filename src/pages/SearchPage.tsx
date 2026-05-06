@@ -47,14 +47,14 @@ function HeartIconMd() {
   );
 }
 
-/** 칩 내부 모음집 아이콘 — 12×12 */
+/** 칩 내부 모음집 아이콘 — 북마크 모양 (탭바와 동일) */
 function CollectionIconXs({ color }: { color: string }) {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1" fill={color} stroke="none" />
-      <rect x="14" y="3" width="7" height="7" rx="1" fill={color} stroke="none" />
-      <rect x="3" y="14" width="7" height="7" rx="1" fill={color} stroke="none" />
-      <rect x="14" y="14" width="7" height="7" rx="1" fill={color} stroke="none" />
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+      <path fillRule="evenodd" clipRule="evenodd"
+        d="M3.5 3.9998C3.5 3.2998 4 2.7998 4.7 2.7998H19.3C20 2.7998 20.5 3.2998 20.5 3.9998V21.1998C20.5 21.6998 20 21.9998 19.6 21.6998L12.6 17.6998C12.2 17.4998 11.8 17.4998 11.4 17.6998L4.4 21.6998C4 21.8998 3.5 21.5998 3.5 21.1998V3.9998Z"
+        fill={color}
+      />
     </svg>
   );
 }
@@ -276,7 +276,6 @@ function Chip({
         transition: 'background 0.15s',
       }}
     >
-      <CollectionIconXs color={iconColor} />
       <span style={{
         fontSize: 13, fontWeight: 590,
         color: selected ? '#ffffff' : '#4f5969',
