@@ -100,6 +100,18 @@ async function main() {
 
     const folderPath = join(IMAGES_DIR, store.api_place_id);
 
+    // 로컬 폴더에 이미 이미지가 있으면 건너뜀 (직접 찍은 사진 보호)
+    if (existsSync(folderPath)) {
+      const { readdirSync: rd } = await import('fs');
+      const existingImages = rd(folderPath).filter(f =>
+        ['.jpg', '.jpeg', '.png', '.webp'].includes(f.toLowerCase().slice(f.lastIndexOf('.')))
+      );
+      if (existingImages.length > 0) {
+        console.log(`  ⏭️  로컬에 이미지 있음 — 건너뜀\n`);
+        continue;
+      }
+    }
+
     try {
       // 1. 구글 Places 검색
       const photos = await searchGooglePlace(store.name, store.address_road);
