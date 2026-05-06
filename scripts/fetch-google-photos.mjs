@@ -47,7 +47,7 @@ if (!GOOGLE_KEY)       { console.error('❌ GOOGLE_PLACES_KEY가 .env에 없어�
 
 const supabase   = createClient(SUPABASE_URL, SUPABASE_SERVICE);
 const IMAGES_DIR = './images';
-const MAX_PHOTOS = 5; // thumbnail 1 + 추가 사진 4
+const MAX_PHOTOS = 10; // 구글 Places API 최대 제공 수
 
 // ── 구글 Places 텍스트 검색 → photo_references ─────────────────
 async function searchGooglePlace(name, address) {
