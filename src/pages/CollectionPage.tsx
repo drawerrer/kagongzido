@@ -5,10 +5,10 @@ import StoreCard from '../components/StoreCard';
 import CollectionCard from '../components/CollectionCard';
 import EmptyState from '../components/EmptyState';
 import CollectionNameSheet from '../components/CollectionNameSheet';
+import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
+import CollectionActionSheet from '../components/CollectionActionSheet';
 import { useFavorites, FavoritedStore, haversineDistance } from '../context/FavoritesContext';
-import { BottomSheet, BottomCTA, CTAButton, Button, ConfirmDialog, Toast } from '@toss/tds-mobile';
-import IcDelete from '../assets/icons/icon_delete.svg?react';
-import IcPencil from '../assets/icons/icon_pencil.svg?react';
+import { BottomSheet, BottomCTA, CTAButton, Toast } from '@toss/tds-mobile';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 
 type BottomSheetType = null | 'create' | 'select-collection' | 'rename' | 'col-action';
@@ -25,6 +25,7 @@ export default function CollectionPage({
   deletedCollection,
   onClearDeletedCollection,
   onEditModeChange,
+  hasOverlay = false,
 }: {
   onDetailOpen?: (id: string) => void;
   onCollectionOpen?: (id: string, name: string) => void;
@@ -35,6 +36,8 @@ export default function CollectionPage({
   deletedCollection?: { id: string; name: string; storeIds: string[] } | null;
   onClearDeletedCollection?: () => void;
   onEditModeChange?: (active: boolean) => void;
+  /** CollectionDetailPage 등 오버레이가 열려 있을 때 true — backEvent 리스너 등록 억제 */
+  hasOverlay?: boolean;
 }) {
   const {
     favorites, addFavorite: addFavoriteFromContext, removeFavorite: removeFavoriteFromContext,
@@ -257,13 +260,14 @@ export default function CollectionPage({
   const renameTargetName = collections.find(c => c.id === renameTargetId)?.name ?? '';
 
   // SDK 네이티브 백 이벤트 등록 (Toss 앱 외부 환경에서는 무시)
-  // ※ 편집/오거나이즈 모드만 처리. 일반 모드에서는 무시 — CollectionDetailPage가
-  //    열려 있을 때 두 리스너가 동시 발화해 홈으로 이동하는 버그 방지
+  // ※ CollectionDetailPage 등 오버레이가 열려 있으면 리스너를 등록하지 않는다.
+  //    두 리스너가 동시에 등록되면 SDK가 순서대로 하나씩 처리하여 뒤로가기를
+  //    두 번 눌러야 동작하는 버그가 발생하기 때문.
   useEffect(() => {
+    if (hasOverlay) return;
     const handleBack = () => {
       if (isEditMode) { exitEditMode(); return; }
       if (isOrganizeMode) { exitOrganizeMode(); return; }
-      // 일반 모드: 처리 안 함 (CollectionDetailPage가 있으면 그쪽에서 처리)
     };
     try {
       const unsubscribe = graniteEvent.addEventListener('backEvent', {
@@ -275,7 +279,7 @@ export default function CollectionPage({
       return undefined;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode, isOrganizeMode]);
+  }, [isEditMode, isOrganizeMode, hasOverlay]);
 
 
   return (
@@ -597,96 +601,48 @@ export default function CollectionPage({
       </BottomSheet>
 
       {/* ─────────── BottomSheet: 컬렉션 편집/삭제 ─────────── */}
-      <BottomSheet
+      <CollectionActionSheet
         open={bottomSheet === 'col-action'}
-        header={<BottomSheet.Header>{collections.find(c => c.id === colActionTargetId)?.name}</BottomSheet.Header>}
+        collectionName={collections.find(c => c.id === colActionTargetId)?.name ?? ''}
+        onEdit={() => {
+          setBottomSheet(null);
+          if (colActionTargetId) openRename(colActionTargetId);
+        }}
+        onDelete={() => {
+          setBottomSheet(null);
+          setTimeout(() => setShowColDeleteConfirm(true), 200);
+        }}
         onClose={() => { setBottomSheet(null); setColActionTargetId(null); }}
-      >
-        {/* 편집 */}
-        <button
-          onClick={() => {
-            setBottomSheet(null);
-            if (colActionTargetId) openRename(colActionTargetId);
-          }}
-          style={{
-            width: '100%', height: 56, display: 'flex', alignItems: 'center', gap: 12,
-            paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
-            fontWeight: 510, fontSize: 17, color: '#000C1E',
-          }}
-        >
-          <IcPencil width={20} height={20} color="#333D4B" style={{ display: 'block', flexShrink: 0 }} />
-          <span style={{ lineHeight: '20px' }}>편집</span>
-        </button>
-        {/* 삭제 */}
-        <button
-          onClick={() => {
-            setBottomSheet(null);
-            setTimeout(() => setShowColDeleteConfirm(true), 200);
-          }}
-          style={{
-            width: '100%', height: 56, display: 'flex', alignItems: 'center', gap: 12,
-            paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
-            fontWeight: 510, fontSize: 17, color: '#000C1E',
-          }}
-        >
-          <IcDelete width={20} height={20} color="#333D4B" style={{ display: 'block', flexShrink: 0 }} />
-          <span style={{ lineHeight: '20px' }}>삭제</span>
-        </button>
-        <div style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} />
-      </BottomSheet>
+      />
 
       {/* ── 컬렉션 삭제 확인 다이얼로그 (롱프레스 → 삭제) ── */}
       {showColDeleteConfirm && (
-        <ConfirmDialog
-          open={true}
-          title={<ConfirmDialog.Title>컬렉션을 삭제할까요?</ConfirmDialog.Title>}
-          description={<ConfirmDialog.Description>담아둔 카페는 모음집에서 계속 볼 수 있어요.</ConfirmDialog.Description>}
-          cancelButton={<ConfirmDialog.CancelButton onClick={() => { setShowColDeleteConfirm(false); setColActionTargetId(null); }}>닫기</ConfirmDialog.CancelButton>}
-          confirmButton={
-            <ConfirmDialog.ConfirmButton
-              color="danger"
-              variant="weak"
-              onClick={() => {
-                if (!colActionTargetId) return;
-                removeCollection(colActionTargetId);
-                setShowColDeleteConfirm(false);
-                setColActionTargetId(null);
-                setSnackbar('collection-deleted');
-              }}
-            >삭제하기</ConfirmDialog.ConfirmButton>
-          }
-          onClose={() => { setShowColDeleteConfirm(false); setColActionTargetId(null); }}
+        <DeleteConfirmDialog
+          type="collection"
+          onConfirm={() => {
+            if (!colActionTargetId) return;
+            removeCollection(colActionTargetId);
+            setShowColDeleteConfirm(false);
+            setColActionTargetId(null);
+            setSnackbar('collection-deleted');
+          }}
+          onCancel={() => { setShowColDeleteConfirm(false); setColActionTargetId(null); }}
         />
       )}
 
       {/* ── 매장 즐겨찾기 해제 확인 다이얼로그 ── */}
       {showRemoveStoreConfirm && (
-        <ConfirmDialog
-          open={true}
-          title={<ConfirmDialog.Title>카페를 삭제할까요?</ConfirmDialog.Title>}
-          description={<ConfirmDialog.Description>담아둔 컬렉션에서도 함께 지워져요.</ConfirmDialog.Description>}
-          cancelButton={
-            <ConfirmDialog.CancelButton onClick={() => { setShowRemoveStoreConfirm(false); setRemoveStoreTarget(null); }}>
-              닫기
-            </ConfirmDialog.CancelButton>
-          }
-          confirmButton={
-            <ConfirmDialog.ConfirmButton
-              color="danger"
-              variant="weak"
-              onClick={() => {
-                if (!removeStoreTarget) return;
-                setDeletedStores([removeStoreTarget]);
-                removeFavoriteFromContext(removeStoreTarget.id);
-                setSnackbar('deleted');
-                setShowRemoveStoreConfirm(false);
-                setRemoveStoreTarget(null);
-              }}
-            >
-              삭제하기
-            </ConfirmDialog.ConfirmButton>
-          }
-          onClose={() => { setShowRemoveStoreConfirm(false); setRemoveStoreTarget(null); }}
+        <DeleteConfirmDialog
+          type="store"
+          onConfirm={() => {
+            if (!removeStoreTarget) return;
+            setDeletedStores([removeStoreTarget]);
+            removeFavoriteFromContext(removeStoreTarget.id);
+            setSnackbar('deleted');
+            setShowRemoveStoreConfirm(false);
+            setRemoveStoreTarget(null);
+          }}
+          onCancel={() => { setShowRemoveStoreConfirm(false); setRemoveStoreTarget(null); }}
         />
       )}
 

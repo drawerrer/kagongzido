@@ -209,6 +209,7 @@ function AppInner() {
               deletedCollection={deletedCollectionData}
               onClearDeletedCollection={() => setDeletedCollectionData(null)}
               onEditModeChange={setIsCollectionEditMode}
+              hasOverlay={!!collectionDetail}
             />
           </PageErrorBoundary>
         )}

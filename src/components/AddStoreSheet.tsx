@@ -134,7 +134,7 @@ export default function AddStoreSheet({
                       }}>
                         {store.address}
                       </p>
-                      <span style={{ fontWeight: 510, fontSize: 13, color: '#6B7684' }}>
+                      <span style={{ fontWeight: 510, fontSize: 13, color: '#6B7684', lineHeight: '17.6px' }}>
                         {store.distance != null
                           ? `${fmtDist(store.distance)} · 리뷰 ${store.reviewCount.toLocaleString()}`
                           : `리뷰 ${store.reviewCount.toLocaleString()}`}

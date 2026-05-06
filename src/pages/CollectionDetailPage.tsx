@@ -1,5 +1,5 @@
 ﻿import { useState, useRef, useEffect, useCallback } from 'react';
-import { useFavorites, FavoritedStore, RecentCafe, haversineDistance } from '../context/FavoritesContext';
+import { useFavorites, RecentCafe, haversineDistance } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import StoreCard, { type StoreItem } from '../components/StoreCard';
@@ -7,56 +7,15 @@ import MemoSheet from '../components/MemoSheet';
 import AddStoreSheet from '../components/AddStoreSheet';
 import CollectionNameSheet from '../components/CollectionNameSheet';
 import EmptyState from '../components/EmptyState';
-import { BottomSheet, ConfirmDialog, BottomCTA, CTAButton, Button, Toast } from '@toss/tds-mobile';
+import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
+import CollectionActionSheet from '../components/CollectionActionSheet';
+import { BottomCTA, CTAButton, Toast } from '@toss/tds-mobile';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
-import IcDelete from '../assets/icons/icon_delete.svg?react';
 import { type StoreRow } from '../services/db';
 
 
 // ─── 팝오버 메뉴 ──────────────────────────────────────────────
-
-// ─── 컬렉션 삭제 다이얼로그 ───────────────────────────────────
-function DeleteCollectionDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
-  return (
-    <ConfirmDialog
-      open={true}
-      title={<ConfirmDialog.Title>컬렉션을 삭제할까요?</ConfirmDialog.Title>}
-      description={<ConfirmDialog.Description>담아둔 카페는 모음집에서 계속 볼 수 있어요.</ConfirmDialog.Description>}
-      cancelButton={<ConfirmDialog.CancelButton onClick={onCancel}>닫기</ConfirmDialog.CancelButton>}
-      confirmButton={<ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={onConfirm}>삭제하기</ConfirmDialog.ConfirmButton>}
-      onClose={onCancel}
-    />
-  );
-}
-
-// ─── 탭(컬렉션) 삭제 다이얼로그 ──────────────────────────────
-function DeleteTabDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
-  return (
-    <ConfirmDialog
-      open={true}
-      title={<ConfirmDialog.Title>컬렉션을 삭제할까요?</ConfirmDialog.Title>}
-      description={<ConfirmDialog.Description>담아둔 카페는 모음집에서 계속 볼 수 있어요.</ConfirmDialog.Description>}
-      cancelButton={<ConfirmDialog.CancelButton onClick={onCancel}>닫기</ConfirmDialog.CancelButton>}
-      confirmButton={<ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={onConfirm}>삭제하기</ConfirmDialog.ConfirmButton>}
-      onClose={onCancel}
-    />
-  );
-}
-
-// ─── 매장 삭제 다이얼로그 ─────────────────────────────────────
-function DeleteStoreDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
-  return (
-    <ConfirmDialog
-      open={true}
-      title={<ConfirmDialog.Title>카페를 삭제할까요?</ConfirmDialog.Title>}
-      description={<ConfirmDialog.Description>담아둔 컬렉션에서도 함께 지워져요.</ConfirmDialog.Description>}
-      cancelButton={<ConfirmDialog.CancelButton onClick={onCancel}>닫기</ConfirmDialog.CancelButton>}
-      confirmButton={<ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={onConfirm}>삭제하기</ConfirmDialog.ConfirmButton>}
-      onClose={onCancel}
-    />
-  );
-}
 
 // ─── 빈 상태 아이콘 (EmptyState buttonIcon 전용) ──────────────
 const IconPlus = () => (
@@ -741,15 +700,9 @@ export default function CollectionDetailPage({
             rightButton={<CTAButton onClick={exitEditMode}>완료</CTAButton>}
           />
         ) : (
-          <div style={{
-            position: 'fixed', bottom: 0, left: 0, right: 0,
-            padding: '12px 20px',
-            paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-            background: '#F3F3F3',
-            zIndex: 1000,
-          }}>
+          <BottomCTA.Single fixed>
             <CTAButton onClick={exitEditMode}>완료</CTAButton>
-          </div>
+          </BottomCTA.Single>
         )
       )}
 
@@ -757,7 +710,8 @@ export default function CollectionDetailPage({
 
       {/* 컬렉션 삭제 다이얼로그 */}
       {showDeleteCollectionDialog && (
-        <DeleteCollectionDialog
+        <DeleteConfirmDialog
+          type="collection"
           onConfirm={handleDeleteCollection}
           onCancel={() => setShowDeleteCollectionDialog(false)}
         />
@@ -765,7 +719,8 @@ export default function CollectionDetailPage({
 
       {/* 매장 삭제 다이얼로그 */}
       {showDeleteStoreId && (
-        <DeleteStoreDialog
+        <DeleteConfirmDialog
+          type="store"
           onConfirm={handleStoreDeleteConfirm}
           onCancel={() => setShowDeleteStoreId(null)}
         />
@@ -801,48 +756,27 @@ export default function CollectionDetailPage({
       )}
 
       {/* 탭 관리 바텀시트 (롱프레스) */}
-      <BottomSheet
+      <CollectionActionSheet
         open={!!tabManageTargetId}
-        header={<BottomSheet.Header>{collections.find(c => c.id === tabManageTargetId)?.name}</BottomSheet.Header>}
+        collectionName={collections.find(c => c.id === tabManageTargetId)?.name ?? ''}
+        onEdit={() => {
+          const targetId = tabManageTargetId!;
+          setTabManageTargetId(null);
+          setActiveTab(targetId);
+          enterEditMode(targetId);
+        }}
+        onDelete={() => {
+          const id = tabManageTargetId;
+          setTabManageTargetId(null);
+          setTimeout(() => setDeleteTabTargetId(id), 200);
+        }}
         onClose={() => setTabManageTargetId(null)}
-      >
-        <button
-          onClick={() => {
-            const targetId = tabManageTargetId!;
-            setTabManageTargetId(null);
-            setActiveTab(targetId);
-            enterEditMode(targetId);
-          }}
-          style={{
-            width: '100%', height: 56, display: 'flex', alignItems: 'center', gap: 12,
-            paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
-            fontWeight: 510, fontSize: 17, color: '#000C1E',
-          }}
-        >
-          <IcPencil width={20} height={20} color="#333D4B" style={{ display: 'block', flexShrink: 0 }} />
-          <span style={{ lineHeight: '20px' }}>편집</span>
-        </button>
-        <button
-          onClick={() => {
-            const id = tabManageTargetId;
-            setTabManageTargetId(null);
-            setTimeout(() => setDeleteTabTargetId(id), 200);
-          }}
-          style={{
-            width: '100%', height: 56, display: 'flex', alignItems: 'center', gap: 12,
-            paddingLeft: 20, background: 'none', border: 'none', cursor: 'pointer',
-            fontWeight: 510, fontSize: 17, color: '#000C1E',
-          }}
-        >
-          <IcDelete width={20} height={20} color="#333D4B" style={{ display: 'block', flexShrink: 0 }} />
-          <span style={{ lineHeight: '20px' }}>삭제</span>
-        </button>
-        <div style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} />
-      </BottomSheet>
+      />
 
       {/* 탭 삭제 확인 다이얼로그 */}
       {deleteTabTargetId && (
-        <DeleteTabDialog
+        <DeleteConfirmDialog
+          type="collection"
           onConfirm={() => { handleTabDelete(deleteTabTargetId); setDeleteTabTargetId(null); }}
           onCancel={() => setDeleteTabTargetId(null)}
         />

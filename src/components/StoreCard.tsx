@@ -102,18 +102,18 @@ export default function StoreCard({
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{
                 fontWeight: 600, fontSize: 16, color: '#191F28', lineHeight: '23px',
-                marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {store.name}
               </p>
               <p style={{
                 fontWeight: 510, fontSize: 13, color: '#6B7684', lineHeight: '17.6px',
-                marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {store.address}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ fontWeight: 510, fontSize: 13, color: '#6B7684' }}>
+                <span style={{ fontWeight: 510, fontSize: 13, color: '#6B7684', lineHeight: '17.6px' }}>
                   {store.distance != null
                     ? `${fmtDist(store.distance)} · 리뷰 ${store.reviewCount.toLocaleString()}`
                     : `리뷰 ${store.reviewCount.toLocaleString()}`}
