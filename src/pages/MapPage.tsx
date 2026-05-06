@@ -22,6 +22,7 @@ interface Cafe {
   options: string[];
   lat?: number;
   lng?: number;
+  thumbnailUrl?: string;
 }
 
 type SortType = '조회순' | '거리순' | '평점순';
@@ -198,14 +199,16 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
           height: 80,
           borderRadius: 10,
           flexShrink: 0,
-          background: '#F2F4F6',
+          background: cafe.thumbnailUrl
+            ? `url(${cafe.thumbnailUrl}) center/cover no-repeat`
+            : '#F2F4F6',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'hidden',
         }}
       >
-        <span style={{ fontSize: 28 }}>☕</span>
+        {!cafe.thumbnailUrl && <span style={{ fontSize: 28 }}>☕</span>}
       </div>
 
       {/* 카페 정보 */}
@@ -420,6 +423,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
         options: storeToOptions(store),
         lat: store.latitude,
         lng: store.longitude,
+        thumbnailUrl: store.thumbnail_url || undefined,
       }));
 
       mapped.sort((a, b) => a.distance - b.distance);
