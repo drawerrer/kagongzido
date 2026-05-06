@@ -91,9 +91,18 @@ async function main() {
     process.exit(1);
   }
 
+  // Supabase에서 이미 thumbnail_url이 있는 매장 목록 가져오기
+  const { data: uploaded } = await supabase
+    .from('stores')
+    .select('api_place_id')
+    .not('thumbnail_url', 'is', null)
+    .neq('thumbnail_url', '');
+  const uploadedIds = new Set((uploaded ?? []).map(r => r.api_place_id));
+
   console.log(`🚀 이미지 업로드 시작 — ${folders.length}개 매장\n`);
   let successCount = 0;
   let failCount    = 0;
+  let skippedCount = 0;
 
   for (const placeId of folders) {
     const folderPath = join(IMAGES_DIR, placeId);
@@ -103,6 +112,13 @@ async function main() {
 
     if (files.length === 0) {
       console.log(`⏭️  ${placeId}: 이미지 없음 — 건너뜀`);
+      continue;
+    }
+
+    // 이미 업로드된 매장은 건너뜀
+    if (uploadedIds.has(placeId)) {
+      console.log(`⏭️  ${placeId}: 이미 업로드됨 — 건너뜀`);
+      skippedCount++;
       continue;
     }
 
@@ -160,7 +176,7 @@ async function main() {
   }
 
   console.log('─'.repeat(50));
-  console.log(`🎉 완료! ✅ ${successCount}개 성공  ❌ ${failCount}개 실패`);
+  console.log(`🎉 완료! ✅ ${successCount}개 성공  ❌ ${failCount}개 실패  ⏭️  ${skippedCount}개 이미 업로드됨`);
   console.log(`\n📋 다음 단계:`);
   console.log(`  - 앱에서 이미지 확인 (실기기 또는 프리뷰)`);
   console.log(`  - 실패한 항목은 Supabase Dashboard에서 직접 업로드`);
