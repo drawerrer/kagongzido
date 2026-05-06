@@ -23,6 +23,7 @@ interface Cafe {
   lat?: number;
   lng?: number;
   thumbnailUrl?: string;
+  badges: string[];
 }
 
 type SortType = '조회순' | '거리순' | '평점순';
@@ -252,20 +253,24 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
             </span>
           </div>
           {/* 배지 */}
-          {cafe.tags[0] && (
-            <span
-              style={{
-                display: 'inline-block',
-                padding: '2px 8px',
-                background: '#F2F4F6',
-                borderRadius: 4,
-                fontSize: 11,
-                color: '#4E5968',
-                alignSelf: 'flex-start',
-              }}
-            >
-              {cafe.tags[0]}
-            </span>
+          {cafe.badges.length > 0 && (
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {cafe.badges.map((badge, i) => (
+                <span
+                  key={i}
+                  style={{
+                    display: 'inline-block',
+                    padding: '2px 8px',
+                    background: '#F2F4F6',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    color: '#4E5968',
+                  }}
+                >
+                  {badge}
+                </span>
+              ))}
+            </div>
           )}
         </div>
 
@@ -424,6 +429,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
         lat: store.latitude,
         lng: store.longitude,
         thumbnailUrl: store.thumbnail_url || undefined,
+        badges: store.badges ?? [],
       }));
 
       mapped.sort((a, b) => a.distance - b.distance);
