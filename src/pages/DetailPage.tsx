@@ -363,7 +363,7 @@ function InfoRow({
   onCopy?: () => void;
   isLink?: boolean;
 }) {
-  const displayValue = value ?? '?';
+  const displayValue = value ?? '-';
 
   return (
     <div style={{
