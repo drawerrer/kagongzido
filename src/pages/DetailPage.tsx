@@ -1136,9 +1136,9 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     }))
   );
 
-  // 오늘 영업시간
+  // 오늘 영업시간 — business_hours 객체 자체가 있으면 표시
   const todayHours = cafe.hours[todayKey];
-  const hasHoursData = todayHours !== undefined;
+  const hasHoursData = Object.keys(cafe.hours).length > 0;
 
   // 매장 없음
   if (!loading && !storeData) {
@@ -1415,16 +1415,6 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           </div>
 
           {/* 기타 정보 세로 나열 */}
-          <InfoRow
-            label="영업시간"
-            value={
-              hasHoursData && todayHours
-                ? `${statusLabel}  ${todayHours.open} - ${todayHours.close}`
-                : hasHoursData
-                ? statusLabel
-                : undefined
-            }
-          />
           <InfoRow label="분위기" value={cafe.vibe} />
           <InfoRow label="가격대" value={cafe.priceRange} />
           <InfoRow label="연락처" value={cafe.phone} onCopy={handleCopyPhone} />
