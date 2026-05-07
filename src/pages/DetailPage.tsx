@@ -989,15 +989,21 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           priceRange: store.base_price > 0 ? `${store.base_price.toLocaleString()}원~` : undefined,
           phone: store.phone_number ?? undefined,
           snsUrl: store.website_url ?? undefined,
-          amenities: {
-            parking:          amenities.includes('parking'),
-            pets:             amenities.includes('pets'),
-            noTimeLimit:      amenities.includes('noTimeLimit'),
-            separateRestroom: amenities.includes('separateRestroom'),
-            indoorRestroom:   amenities.includes('indoorRestroom'),
-            groupVisit:       amenities.includes('groupVisit'),
-            decafFree:        amenities.includes('decafFree'),
-          },
+          amenities: (() => {
+            console.log('[amenities] raw:', JSON.stringify(amenities));
+            const has = (v: string) => amenities.some(a =>
+              typeof a === 'string' && a.toLowerCase().replace(/\s/g, '') === v.toLowerCase().replace(/\s/g, '')
+            );
+            return {
+            parking:          has('parking'),
+            pets:             has('pets'),
+            noTimeLimit:      has('noTimeLimit'),
+            separateRestroom: has('separateRestroom'),
+            indoorRestroom:   has('indoorRestroom'),
+            groupVisit:       has('groupVisit'),
+            decafFree:        has('decafFree'),
+            };
+          })(),
           reviews: [],
         });
       } else {
