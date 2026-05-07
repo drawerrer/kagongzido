@@ -1,10 +1,11 @@
-﻿import { useState, useRef, useCallback, useEffect, useMemo, useId } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo, useId, type RefObject } from 'react';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import { openURL, graniteEvent } from '@apps-in-toss/web-framework';
 import { CTAButton } from '@toss/tds-mobile';
 import SubButton from '../components/SubButton';
+import { fetchPublishedGuidebooks, fetchGuidebookItems } from '../services/db';
 
 // ─── 아이콘 ────────────────────────────────────────────────────
 function IcSeat() {
@@ -40,61 +41,51 @@ function IcOutlet() {
 
 // ─── 타입 ─────────────────────────────────────────────────────
 interface MockStore {
-  id: string;
+  id: string;           // api_place_id
   district: string;
   name: string;
   message?: string;
-  seats: number;
-  outlet: '충분' | '보통' | '적음';
+  seatStatus: string;
+  outletStatus: string;
   gradient: [string, string];
-  photos: string[]; // CSS background 값 (mock)
+  photos: string[];     // 실제 이미지 URL 배열
 }
 
 interface MockGuidebook {
   id: string;
   title: string;
-  subtitle: string;
+  coverUrl?: string;    // 대표 이미지 URL (첫 번째 매장 thumbnail)
   gradient: [string, string];
   stores: MockStore[];
 }
 
 type GuideView = 'main' | 'detail' | 'past';
 
-// 목 이미지: 그라디언트 색상 기반으로 10장 생성
-function mkPhotos(c1: string, c2: string): string[] {
-  const angles = [160, 200, 140, 180, 220, 150, 170, 190, 135, 165];
-  return angles.map((a, i) =>
-    i % 2 === 0
-      ? `linear-gradient(${a}deg, ${c1}, ${c2})`
-      : `linear-gradient(${a}deg, ${c2}, ${c1})`
-  );
+// ─── 유틸 ─────────────────────────────────────────────────────
+const FALLBACK_GRADIENTS: [string, string][] = [
+  ['#C4A882', '#7A5A3C'],
+  ['#A89276', '#5E4030'],
+  ['#9B8B7A', '#4A3A2C'],
+  ['#C8B8A2', '#6E5E4C'],
+  ['#B0A090', '#5A4A3C'],
+  ['#87CEEB', '#3A80C0'],
+  ['#D4B8A0', '#7A5A42'],
+  ['#4A4042', '#1A181C'],
+];
+
+function pickGradient(seed: string): [string, string] {
+  const hash = seed.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return FALLBACK_GRADIENTS[hash % FALLBACK_GRADIENTS.length];
 }
 
-// ─── 목 데이터 ────────────────────────────────────────────────
-const FEATURE_STORES: MockStore[] = [
-  { id: 'gs1', district: '서울 영등포구', name: '도트커피', message: '감각적인 공간에서 즐기는 스페셜티 커피. 조용하고 넓은 좌석이 카공하기 딱 좋아요.', seats: 15, outlet: '충분', gradient: ['#C4A882', '#7A5A3C'], photos: mkPhotos('#C4A882', '#7A5A3C') },
-  { id: 'gs2', district: '서울 마포구', name: '프릳츠 커피', message: '도넛과 커피의 완벽한 조화. 아늑한 분위기 속에서 오래 머물고 싶은 공간이에요.', seats: 20, outlet: '보통', gradient: ['#A89276', '#5E4030'], photos: mkPhotos('#A89276', '#5E4030') },
-  { id: 'gs3', district: '서울 성동구', name: '어니언', message: '빈티지한 건물을 개조한 복합 문화 공간. 넓은 실내와 루프탑이 매력적이에요.', seats: 30, outlet: '충분', gradient: ['#9B8B7A', '#4A3A2C'], photos: mkPhotos('#9B8B7A', '#4A3A2C') },
-  { id: 'gs4', district: '서울 강남구', name: '오르에르', message: '미니멀한 인테리어와 정성 가득한 브런치. 조용한 분위기 덕분에 집중하기 좋아요.', seats: 25, outlet: '충분', gradient: ['#C8B8A2', '#6E5E4C'], photos: mkPhotos('#C8B8A2', '#6E5E4C') },
-  { id: 'gs5', district: '경기 성남시', name: '스탠딩커피', message: '로스터리 감성의 작은 카페. 핸드드립 커피 한 잔의 여유를 느낄 수 있는 곳이에요.', seats: 10, outlet: '적음', gradient: ['#B0A090', '#5A4A3C'], photos: mkPhotos('#B0A090', '#5A4A3C') },
-];
-
-const FEATURED: MockGuidebook = {
-  id: 'featured',
-  title: '서울 근교\n신상 카페',
-  subtitle: '커피에 진심인 바리스타의 스페셜티 로스터리',
-  gradient: ['#C4A882', '#5A3C24'],
-  stores: FEATURE_STORES,
-};
-
-const PAST_GUIDEBOOKS: MockGuidebook[] = [
-  { id: 'p1', title: '빵 냄새 가득\n포근한 분위기', subtitle: '따뜻하고 아늑한 베이커리 카페 모음', gradient: ['#C4A882', '#8B6B4A'], stores: FEATURE_STORES },
-  { id: 'p2', title: '햇볕은 쨍쨍\n바람은 살랑살랑', subtitle: '뷰 맛집 야외 테라스 카페', gradient: ['#87CEEB', '#3A80C0'], stores: FEATURE_STORES },
-  { id: 'p3', title: '나만 알고싶은\n카페', subtitle: '숨은 보석 같은 카페들', gradient: ['#D4B8A0', '#7A5A42'], stores: FEATURE_STORES },
-  { id: 'p4', title: '화이트와 우드톤의\n만남', subtitle: '감성 인테리어 카페 큐레이션', gradient: ['#E8DDD0', '#B0A090'], stores: FEATURE_STORES },
-  { id: 'p5', title: '집중력 가득', subtitle: '카공하기 딱 좋은 조용한 카페', gradient: ['#4A4042', '#1A181C'], stores: FEATURE_STORES },
-];
-
+function toDistrict(addressRoad: string): string {
+  const parts = addressRoad.split(' ');
+  const city = (parts[0] ?? '')
+    .replace(/특별시$/, '').replace(/광역시$/, '')
+    .replace(/특별자치시$/, '').replace(/특별자치도$/, '').replace(/도$/, '');
+  const district = parts[1] ?? '';
+  return `${city} ${district}`.trim();
+}
 
 // ─── GuideBook/Main — 메인 큐레이션 카드 화면 ─────────────────
 // Figma: card cornerRadius=6, height=500, padding=30px, title=28px/590
@@ -108,6 +99,10 @@ function GuideBookMainView({
   onCardPress: () => void;
   onPastPress: () => void;
 }) {
+  const cardBg: React.CSSProperties = guidebook.coverUrl
+    ? { backgroundImage: `url(${guidebook.coverUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { background: `linear-gradient(160deg, ${guidebook.gradient[0]}, ${guidebook.gradient[1]})` };
+
   return (
     <div style={{ flex: 1, overflow: 'hidden', backgroundColor: '#F3F3F3', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingLeft: 30, paddingRight: 30, paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
       {/* 카드 — 너비 100% 기준 4:3 비율 고정 */}
@@ -122,7 +117,7 @@ function GuideBookMainView({
             borderRadius: 6,
             overflow: 'hidden',
             position: 'relative',
-            background: `linear-gradient(160deg, ${guidebook.gradient[0]}, ${guidebook.gradient[1]})`,
+            ...cardBg,
           }}>
             {/* 딤 오버레이 */}
             <div style={{
@@ -353,7 +348,7 @@ function GuideBookDetailView({
 
   // 이미지 스와이프 (transform 기반 — touch-action:none으로 외부 캐러셀 차단)
   const imgTouchStartX = useRef(0);
-  const imgTouchStartTime = useRef(0); // 빠른 플릭 속도 계산용
+  const imgTouchStartTime = useRef(0);
 
   // 마운트 시 초기 스크롤
   useEffect(() => {
@@ -408,6 +403,7 @@ function GuideBookDetailView({
   }, [currentStoreIndex, onStoreIndexChange]);
 
   const store = stores[currentStoreIndex];
+  if (!store) return null;
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#f2f4f6', overflow: 'hidden' }}>
@@ -459,6 +455,11 @@ function GuideBookDetailView({
         >
           {loopedStores.map((s, i) => {
             const isActive = i === absIndex;
+            // 이미지 컨테이너 배경: 첫 번째 사진 URL 또는 그라디언트 폴백
+            const imgBg: React.CSSProperties = s.photos.length > 0
+              ? { backgroundImage: `url(${s.photos[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+              : { background: `linear-gradient(160deg, ${s.gradient[0]}, ${s.gradient[1]})` };
+
             return (
               <div
                 key={i}
@@ -471,7 +472,6 @@ function GuideBookDetailView({
                   flexDirection: 'column',
                   opacity: isActive ? 1 : 0.55,
                   transition: 'opacity 0.25s ease',
-                  // pointerEvents는 자식별로 제어 (정보영역은 비활성 카드도 스와이프 감지)
                 }}
               >
                 {/* 이미지 영역 — 비활성 카드는 터치 차단, 활성 카드만 transform 스와이프 */}
@@ -482,7 +482,7 @@ function GuideBookDetailView({
                     position: 'relative',
                     borderRadius: 6,
                     overflow: 'hidden',
-                    background: `linear-gradient(160deg, ${s.gradient[0]}, ${s.gradient[1]})`,
+                    ...imgBg,
                     touchAction: isActive ? 'none' : 'auto',
                     pointerEvents: isActive ? 'auto' : 'none',
                   }}
@@ -522,42 +522,46 @@ function GuideBookDetailView({
                   } : undefined}
                   onClick={isActive ? () => onDetailOpen?.(s.id) : undefined}
                 >
-                  {/* transform 기반 이미지 스트립 */}
-                  <div style={{
-                    position: 'absolute',
-                    top: 0, bottom: 0, left: 0,
-                    display: 'flex',
-                    width: cardW * s.photos.length,
-                    transform: `translateX(${isActive ? -photoIndex * cardW : 0}px)`,
-                    transition: isActive ? 'transform 0.25s ease' : 'none',
-                  }}>
-                    {s.photos.map((photo, pi) => (
-                      <div
-                        key={pi}
-                        style={{
-                          width: cardW,
-                          height: '100%',
-                          flexShrink: 0,
-                          background: photo,
-                          position: 'relative',
-                        }}
-                      >
-                        {pi === s.photos.length - 1 && (
-                          <div style={{
-                            position: 'absolute', inset: 0,
-                            background: 'rgba(0,0,0,0.52)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
-                            <span style={{ color: 'white', fontSize: 18, fontWeight: 590 }}>+{s.photos.length - 1}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  {/* transform 기반 이미지 스트립 — 사진이 있을 때만 렌더 */}
+                  {s.photos.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0, bottom: 0, left: 0,
+                      display: 'flex',
+                      width: cardW * s.photos.length,
+                      transform: `translateX(${isActive ? -photoIndex * cardW : 0}px)`,
+                      transition: isActive ? 'transform 0.25s ease' : 'none',
+                    }}>
+                      {s.photos.map((photo, pi) => (
+                        <div
+                          key={pi}
+                          style={{
+                            width: cardW,
+                            height: '100%',
+                            flexShrink: 0,
+                            backgroundImage: `url(${photo})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            position: 'relative',
+                          }}
+                        >
+                          {pi === s.photos.length - 1 && s.photos.length > 1 && (
+                            <div style={{
+                              position: 'absolute', inset: 0,
+                              background: 'rgba(0,0,0,0.52)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                              <span style={{ color: 'white', fontSize: 18, fontWeight: 590 }}>+{s.photos.length - 1}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {/* 그라디언트 오버레이 */}
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(23,20,20,0.56) 100%)', pointerEvents: 'none' }} />
                   {/* 페이지네이션 점 */}
-                  {isActive && (
+                  {isActive && s.photos.length > 1 && (
                     <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5, pointerEvents: 'none' }}>
                       {s.photos.map((_, di) => (
                         <div key={di} style={{
@@ -604,20 +608,21 @@ function GuideBookDetailView({
                       overflow: 'hidden',
                       paddingLeft: 8,
                       paddingRight: 8,
+                      whiteSpace: 'pre-line',
                     }}>
                       {s.message}
                     </p>
                   )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(0,0,0,0.45)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <IcSeat />
                       <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>좌석</span>
-                      <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{s.seats}석</span>
+                      <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{s.seatStatus}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(0,0,0,0.45)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <IcOutlet />
                       <span style={{ fontWeight: 510, fontSize: 14, color: '#000000' }}>콘센트</span>
-                      <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{s.outlet}</span>
+                      <span style={{ fontWeight: 400, fontSize: 14, color: '#777777' }}>{s.outletStatus}</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -659,49 +664,50 @@ function GuideBookPastView({
         gap: 16,
         padding: '20px 20px calc(env(safe-area-inset-bottom, 0px) + 76px)',
       }}>
-        {guidebooks.map((g) => (
-          <button
-            key={g.id}
-            onClick={() => onCardPress(g)}
-            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', display: 'block' }}
-          >
-            <div style={{
-              width: '100%',
-              aspectRatio: '159 / 232',
-              borderRadius: 4,
-              overflow: 'hidden',
-              position: 'relative',
-              background: `linear-gradient(160deg, ${g.gradient[0]}, ${g.gradient[1]})`,
-            }}>
-              {/* 딤 오버레이 */}
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0) 33%, rgba(23,20,20,0.56) 100%)' }} />
-              {/* 텍스트 — 피그마: bottom~16px, left 16px */}
-              <div style={{ position: 'absolute', bottom: 16, left: 16, right: 8 }}>
-                {/* 제목 — 16px/590 white */}
-                <p style={{
-                  
-                  fontWeight: 590,
-                  fontSize: 16,
-                  lineHeight: '19px',
-                  color: '#fff',
-                  whiteSpace: 'pre-line',
-                  marginBottom: 4,
-                }}>
-                  {g.title}
-                </p>
-                {/* count — 9px/400 white */}
-                <p style={{
-                  
-                  fontWeight: 400,
-                  fontSize: 9,
-                  color: '#fff',
-                }}>
-                  {g.stores.length} places
-                </p>
+        {guidebooks.map((g) => {
+          const cardBg: React.CSSProperties = g.coverUrl
+            ? { backgroundImage: `url(${g.coverUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            : { background: `linear-gradient(160deg, ${g.gradient[0]}, ${g.gradient[1]})` };
+          return (
+            <button
+              key={g.id}
+              onClick={() => onCardPress(g)}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', display: 'block' }}
+            >
+              <div style={{
+                width: '100%',
+                aspectRatio: '159 / 232',
+                borderRadius: 4,
+                overflow: 'hidden',
+                position: 'relative',
+                ...cardBg,
+              }}>
+                {/* 딤 오버레이 */}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0) 33%, rgba(23,20,20,0.56) 100%)' }} />
+                {/* 텍스트 — 피그마: bottom~16px, left 16px */}
+                <div style={{ position: 'absolute', bottom: 16, left: 16, right: 8 }}>
+                  <p style={{
+                    fontWeight: 590,
+                    fontSize: 16,
+                    lineHeight: '19px',
+                    color: '#fff',
+                    whiteSpace: 'pre-line',
+                    marginBottom: 4,
+                  }}>
+                    {g.title}
+                  </p>
+                  <p style={{
+                    fontWeight: 400,
+                    fontSize: 9,
+                    color: '#fff',
+                  }}>
+                    {g.stores.length} places
+                  </p>
+                </div>
               </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -718,6 +724,9 @@ export default function GuidebookPage({
   onViewChange,
   initialStoreIndex,
   onStoreIndexChange,
+  hasOverlay,
+  onRegisterBack,
+  subViewRef,
 }: {
   onDetailOpen?: (id: string) => void;
   onDetailOpenToReview?: (id: string) => void;
@@ -728,14 +737,70 @@ export default function GuidebookPage({
   onViewChange?: (view: GuideView) => void;
   initialStoreIndex?: number;
   onStoreIndexChange?: (index: number) => void;
+  hasOverlay?: boolean;
+  onRegisterBack?: (fn: (() => void) | null) => void;
+  subViewRef?: RefObject<HTMLDivElement> | null;
 }) {
   const { addFavorite, isFavorited } = useFavorites();
   const [view, setView] = useState<GuideView>(initialView ?? 'main');
   const [previousView, setPreviousView] = useState<GuideView>('main');
-  const [activeGuidebook, setActiveGuidebook] = useState<MockGuidebook>(FEATURED);
+  const [guidebooks, setGuidebooks] = useState<MockGuidebook[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeGuidebook, setActiveGuidebook] = useState<MockGuidebook | null>(null);
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const dismissSnackbar = useCallback(() => setSnackbar(null), []);
   const [showShareSheet, setShowShareSheet] = useState(false);
+
+  // ── Supabase 데이터 불러오기 ─────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      const rows = await fetchPublishedGuidebooks();
+      if (cancelled) return;
+
+      const mapped: MockGuidebook[] = await Promise.all(
+        rows.map(async (row) => {
+          const items = await fetchGuidebookItems(row.id);
+          const stores: MockStore[] = items.map((item) => {
+            const s = item.store;
+            return {
+              id: s.api_place_id,
+              district: toDistrict(s.address_road),
+              name: s.name,
+              message: item.comment ?? undefined,
+              seatStatus: s.seat_status,
+              outletStatus: s.outlet_status,
+              gradient: pickGradient(s.id),
+              photos: [
+                ...(s.thumbnail_url ? [s.thumbnail_url] : []),
+                ...s.photo_urls,
+              ],
+            };
+          });
+          // 커버 이미지: 첫 번째 매장의 thumbnail
+          const coverUrl = items[0]?.store.thumbnail_url || undefined;
+          return {
+            id: row.id,
+            title: row.title,
+            coverUrl,
+            gradient: pickGradient(row.id),
+            stores,
+          };
+        })
+      );
+
+      if (cancelled) return;
+      setGuidebooks(mapped);
+      if (mapped.length > 0) setActiveGuidebook(mapped[0]);
+      setLoading(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  const featuredGuidebook = guidebooks[0] ?? null;
+  const pastGuidebooks = guidebooks.slice(1);
 
   const changeView = (v: GuideView) => {
     setPreviousView(view);
@@ -757,8 +822,19 @@ export default function GuidebookPage({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, previousView]);
 
-  // SDK 네이티브 백 이벤트 등록 (Toss 앱 외부 환경에서는 무시)
+  // 부모(App.tsx)에 엣지스와이프용 back 핸들러 등록
   useEffect(() => {
+    if (view !== 'main') {
+      onRegisterBack?.(handleBack);
+    } else {
+      onRegisterBack?.(null);
+    }
+    return () => onRegisterBack?.(null);
+  }, [view, handleBack]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // SDK 네이티브 백 이벤트 등록 (오버레이가 열려 있으면 등록 안 함)
+  useEffect(() => {
+    if (hasOverlay) return;
     try {
       const unsubscribe = graniteEvent.addEventListener('backEvent', {
         onEvent: handleBack,
@@ -768,7 +844,7 @@ export default function GuidebookPage({
     } catch {
       return undefined;
     }
-  }, [handleBack]);
+  }, [handleBack, hasOverlay]);
 
   const handleSave = (store: MockStore) => {
     if (!isFavorited(store.id)) {
@@ -778,47 +854,60 @@ export default function GuidebookPage({
         address: store.district,
         rating: 0,
         reviewCount: 0,
-        photos: [],
+        photos: store.photos.slice(0, 1),
       });
     }
     setSnackbar('카페를 모음집에 담았어요');
   };
 
+  // ── 로딩 / 빈 상태 ──────────────────────────────────────────
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F3F3' }}>
+        <p style={{ fontSize: 14, color: '#8B95A1' }}>불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (!featuredGuidebook) {
+    return (
+      <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F3F3' }}>
+        <p style={{ fontSize: 14, color: '#8B95A1' }}>가이드북이 없어요</p>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
-      {import.meta.env.DEV && (
-        <button onClick={handleBack} style={{
-          position: 'absolute', top: 12, left: 8, zIndex: 999,
-          background: 'rgba(255,255,255,0.85)', border: 'none', borderRadius: 8,
-          cursor: 'pointer', fontSize: 14, color: '#4E5968', padding: '6px 10px',
-          backdropFilter: 'blur(4px)',
-        }}>← 뒤로</button>
-      )}
-      {view === 'main' && (
-        <GuideBookMainView
-          guidebook={FEATURED}
-          onCardPress={() => { setActiveGuidebook(FEATURED); changeView('detail'); }}
-          onPastPress={() => changeView('past')}
-        />
-      )}
-      {view === 'detail' && (
-        <GuideBookDetailView
-          guidebook={activeGuidebook}
-          onDetailOpen={onDetailOpen}
-          onDetailOpenToReview={onDetailOpenToReview}
-          onSave={handleSave}
-          initialStoreIndex={initialStoreIndex}
-          onStoreIndexChange={onStoreIndexChange}
-        />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative', overflow: 'hidden' }}>
+
+      {/* Main view always rendered as background (visible during sub-view swipe-back) */}
+      <GuideBookMainView
+        guidebook={featuredGuidebook}
+        onCardPress={() => { setActiveGuidebook(featuredGuidebook); changeView('detail'); }}
+        onPastPress={() => changeView('past')}
+      />
+
+      {/* Sub-views rendered as absolute overlays so main stays visible behind during swipe */}
+      {view === 'detail' && activeGuidebook && (
+        <div ref={subViewRef ?? undefined} style={{ position: 'absolute', inset: 0, backgroundColor: '#F3F3F3' }}>
+          <GuideBookDetailView
+            guidebook={activeGuidebook}
+            onDetailOpen={onDetailOpen}
+            onDetailOpenToReview={onDetailOpenToReview}
+            onSave={handleSave}
+            initialStoreIndex={initialStoreIndex}
+            onStoreIndexChange={onStoreIndexChange}
+          />
+        </div>
       )}
       {view === 'past' && (
-        <GuideBookPastView
-          guidebooks={PAST_GUIDEBOOKS}
-          onCardPress={(g) => { setActiveGuidebook(g); changeView('detail'); }}
-        />
+        <div ref={subViewRef ?? undefined} style={{ position: 'absolute', inset: 0, backgroundColor: '#F3F3F3' }}>
+          <GuideBookPastView
+            guidebooks={pastGuidebooks}
+            onCardPress={(g) => { setActiveGuidebook(g); changeView('detail'); }}
+          />
+        </div>
       )}
-
 
       <ShareSheet
         isOpen={showShareSheet}

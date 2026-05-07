@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_SERVICE_KEY,
+  import.meta.env.VITE_SUPABASE_URL as string,
+  import.meta.env.VITE_SUPABASE_SERVICE_KEY as string,
 );
 
 const ADMIN_PASSWORD = 'kagong2024';
 
+// ─── 타입 ─────────────────────────────────────────────────────
 interface Report {
   id: string;
   store_name: string;
@@ -20,6 +21,120 @@ interface Report {
   created_at: string;
 }
 
+interface Guidebook {
+  id: string;
+  title: string;
+  is_published: boolean;
+  created_at: string;
+}
+
+interface GuidebookItem {
+  id: string;
+  guidebook_id: string;
+  store_id: string;
+  comment: string | null;
+  sort_order: number;
+  store: {
+    id: string;
+    name: string;
+    address_road: string;
+    thumbnail_url: string;
+  };
+}
+
+interface StoreOption {
+  id: string;
+  name: string;
+  address_road: string;
+  thumbnail_url: string;
+}
+
+// ─── 코멘트 윗줄/아랫줄 입력 ─────────────────────────────────────
+function CommentFields({
+  itemId,
+  initialComment,
+  onSave,
+}: {
+  itemId: string;
+  initialComment: string | null;
+  onSave: (id: string, comment: string) => void;
+}) {
+  const parts = (initialComment ?? '').split('\n');
+  const [line1, setLine1] = useState(parts[0] ?? '');
+  const [line2, setLine2] = useState(parts[1] ?? '');
+
+  const save = (l1: string, l2: string) => {
+    const combined = l2.trim() ? `${l1}\n${l2}` : l1;
+    onSave(itemId, combined);
+  };
+
+  const inputStyle: React.CSSProperties = {
+    flex: 1, height: 34, borderRadius: 8, border: '1.5px solid #E5E8EB',
+    padding: '0 8px', fontSize: 13, outline: 'none',
+    boxSizing: 'border-box', fontFamily: 'inherit',
+  };
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11, fontWeight: 600, color: '#8B95A1', width: 30, flexShrink: 0,
+  };
+  const countStyle: React.CSSProperties = {
+    fontSize: 11, color: '#C4C9D0', width: 30, textAlign: 'right', flexShrink: 0,
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={labelStyle}>윗줄</span>
+        <input
+          value={line1}
+          onChange={e => setLine1(e.target.value)}
+          onBlur={() => save(line1, line2)}
+          maxLength={25}
+          placeholder="윗줄 텍스트"
+          style={inputStyle}
+        />
+        <span style={countStyle}>{line1.length}/25</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={labelStyle}>아랫줄</span>
+        <input
+          value={line2}
+          onChange={e => setLine2(e.target.value)}
+          onBlur={() => save(line1, line2)}
+          maxLength={25}
+          placeholder="아랫줄 텍스트 (선택)"
+          style={inputStyle}
+        />
+        <span style={countStyle}>{line2.length}/25</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── 공통 UI ──────────────────────────────────────────────────
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 44, height: 24, borderRadius: 12,
+        background: checked ? '#3182F6' : '#D9D9D9',
+        border: 'none', cursor: 'pointer', position: 'relative',
+        transition: 'background 0.2s', flexShrink: 0,
+      }}
+    >
+      <div style={{
+        position: 'absolute',
+        top: 2, left: checked ? 22 : 2,
+        width: 20, height: 20,
+        borderRadius: '50%', background: '#fff',
+        transition: 'left 0.2s',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+      }} />
+    </button>
+  );
+}
+
+// ─── 로그인 화면 ──────────────────────────────────────────────
 function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [pw, setPw] = useState('');
   const [error, setError] = useState(false);
@@ -63,6 +178,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
   );
 }
 
+// ─── 제보 관련 컴포넌트 ───────────────────────────────────────
 function StatusBadge({ label, value }: { label: string; value: string | null }) {
   if (!value) return null;
   return (
@@ -126,21 +242,535 @@ function ReportCard({ report }: { report: Report }) {
   );
 }
 
+// ─── 가이드북 상세 편집 ────────────────────────────────────────
+function GuidebookDetailView({
+  guidebook,
+  onBack,
+  onDeleted,
+}: {
+  guidebook: Guidebook;
+  onBack: () => void;
+  onDeleted: () => void;
+}) {
+  const [title, setTitle] = useState(guidebook.title);
+  const [isPublished, setIsPublished] = useState(guidebook.is_published);
+  const [items, setItems] = useState<GuidebookItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState(true);
+  const [allStores, setAllStores] = useState<StoreOption[]>([]);
+  const [storeSearch, setStoreSearch] = useState('');
+  const [showAddStore, setShowAddStore] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [selectedStoreIds, setSelectedStoreIds] = useState<Set<string>>(new Set());
+  const [addingStores, setAddingStores] = useState(false);
+
+  useEffect(() => {
+    loadItems();
+    loadAllStores();
+  }, []);
+
+  async function loadItems() {
+    setLoadingItems(true);
+    const { data: rawItems, error } = await supabase
+      .from('guidebook_items')
+      .select('id, guidebook_id, store_id, comment, sort_order')
+      .eq('guidebook_id', guidebook.id)
+      .order('sort_order', { ascending: true });
+    if (error || !rawItems?.length) {
+      setItems([]);
+      setLoadingItems(false);
+      return;
+    }
+    const storeIds = rawItems.map(i => i.store_id);
+    const { data: storeRows } = await supabase
+      .from('stores')
+      .select('id, name, address_road, thumbnail_url')
+      .in('id', storeIds);
+    const storeMap = new Map((storeRows ?? []).map(s => [s.id, s]));
+    const combined: GuidebookItem[] = rawItems.map(item => ({
+      ...item,
+      store: storeMap.get(item.store_id) ?? { id: item.store_id, name: '알 수 없음', address_road: '', thumbnail_url: '' },
+    }));
+    setItems(combined);
+    setLoadingItems(false);
+  }
+
+  async function loadAllStores() {
+    const { data } = await supabase
+      .from('stores')
+      .select('id, name, address_road, thumbnail_url')
+      .order('name', { ascending: true });
+    setAllStores((data ?? []) as StoreOption[]);
+  }
+
+  async function saveGuidebook() {
+    setSaving(true);
+    await supabase.from('guidebooks').update({ title, is_published: isPublished }).eq('id', guidebook.id);
+    setSaving(false);
+  }
+
+  async function deleteGuidebook() {
+    if (!window.confirm(`"${title}" 가이드북을 삭제할까요?\n포함된 매장 항목도 모두 삭제돼요.`)) return;
+    await supabase.from('guidebook_items').delete().eq('guidebook_id', guidebook.id);
+    await supabase.from('guidebooks').delete().eq('id', guidebook.id);
+    onDeleted();
+  }
+
+  async function addStore(store: StoreOption) {
+    const maxOrder = items.length > 0 ? Math.max(...items.map(i => i.sort_order)) : -1;
+    const { data, error } = await supabase
+      .from('guidebook_items')
+      .insert({
+        guidebook_id: guidebook.id,
+        store_id: store.id,
+        comment: null,
+        sort_order: maxOrder + 1,
+      })
+      .select('id, guidebook_id, store_id, comment, sort_order')
+      .single();
+    if (!error && data) {
+      const newItem: GuidebookItem = {
+        ...data,
+        store: {
+          id: store.id,
+          name: store.name,
+          address_road: store.address_road,
+          thumbnail_url: store.thumbnail_url,
+        },
+      };
+      setItems(prev => [...prev, newItem]);
+      setStoreSearch('');
+    }
+  }
+
+  async function addSelectedStores() {
+    if (selectedStoreIds.size === 0) return;
+    setAddingStores(true);
+    const maxOrder = items.length > 0 ? Math.max(...items.map(i => i.sort_order)) : -1;
+    const toAdd = allStores.filter(s => selectedStoreIds.has(s.id));
+    console.log('추가할 매장:', toAdd.map(s => s.name), 'guidebook_id:', guidebook.id);
+    const inserts = toAdd.map((s, idx) => ({
+      guidebook_id: guidebook.id,
+      store_id: s.id,
+      comment: null,
+      sort_order: maxOrder + 1 + idx,
+    }));
+    const { error: insertError } = await supabase.from('guidebook_items').insert(inserts);
+    if (insertError) {
+      console.error('❌ insert 오류:', insertError.message);
+    }
+    await loadItems();
+    setSelectedStoreIds(new Set());
+    setStoreSearch('');
+    setAddingStores(false);
+  }
+
+  async function removeItem(itemId: string) {
+    await supabase.from('guidebook_items').delete().eq('id', itemId);
+    setItems(prev => prev.filter(i => i.id !== itemId));
+  }
+
+  async function updateComment(itemId: string, comment: string) {
+    await supabase.from('guidebook_items').update({ comment: comment || null }).eq('id', itemId);
+  }
+
+  const addedStoreIds = new Set(items.map(i => i.store_id));
+  const filteredStores = allStores.filter(s =>
+    !addedStoreIds.has(s.id) &&
+    (storeSearch === '' || s.name.includes(storeSearch) || s.address_road.includes(storeSearch))
+  );
+
+  return (
+    <div>
+      {/* 헤더 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+        <button
+          onClick={onBack}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, padding: '4px 8px', color: '#4E5968', lineHeight: 1 }}
+        >
+          ←
+        </button>
+        <span style={{ fontSize: 16, fontWeight: 700, color: '#191F28' }}>가이드북 편집</span>
+      </div>
+
+      {/* 제목 + 공개 여부 + 저장/삭제 */}
+      <div style={{ background: '#fff', borderRadius: 14, padding: 20, marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+        <label style={{ fontSize: 12, fontWeight: 600, color: '#8B95A1', display: 'block', marginBottom: 6 }}>
+          제목 <span style={{ fontWeight: 400 }}>(줄바꿈은 Enter — 카드에서 2줄로 표시돼요)</span>
+        </label>
+        <textarea
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          placeholder="가이드북 제목"
+          rows={2}
+          style={{
+            width: '100%', borderRadius: 10, border: '1.5px solid #E5E8EB',
+            padding: '10px 12px', fontSize: 15, outline: 'none',
+            boxSizing: 'border-box', marginBottom: 16, resize: 'none',
+            fontFamily: 'inherit', lineHeight: 1.5,
+          }}
+        />
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div>
+            <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', marginBottom: 2 }}>앱에 공개</p>
+            <p style={{ fontSize: 12, color: '#8B95A1' }}>켜면 가이드북 탭에서 바로 보여요</p>
+          </div>
+          <Toggle checked={isPublished} onChange={setIsPublished} />
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={saveGuidebook}
+            disabled={saving}
+            style={{
+              flex: 1, height: 44, borderRadius: 10, background: '#191F28', border: 'none',
+              color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer',
+              opacity: saving ? 0.6 : 1,
+            }}
+          >
+            {saving ? '저장 중...' : '저장'}
+          </button>
+          <button
+            onClick={deleteGuidebook}
+            style={{
+              height: 44, padding: '0 18px', borderRadius: 10,
+              background: '#FFF0F0', border: 'none',
+              color: '#E53E3E', fontSize: 15, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            삭제
+          </button>
+        </div>
+      </div>
+
+      {/* 포함된 매장 */}
+      <h3 style={{ fontSize: 15, fontWeight: 700, color: '#191F28', marginBottom: 12 }}>
+        포함된 매장 <span style={{ color: '#3182F6' }}>{items.length}</span>
+      </h3>
+
+      {loadingItems ? (
+        <p style={{ color: '#8B95A1', fontSize: 14, marginBottom: 16 }}>불러오는 중...</p>
+      ) : items.length === 0 ? (
+        <p style={{ color: '#8B95A1', fontSize: 14, marginBottom: 16 }}>아직 매장이 없어요. 아래에서 추가하세요.</p>
+      ) : (
+        <div style={{ marginBottom: 16 }}>
+          {items.map((item) => (
+            <div key={item.id} style={{
+              background: '#fff', borderRadius: 14, padding: 16, marginBottom: 10,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+              display: 'flex', gap: 12, alignItems: 'flex-start',
+            }}>
+              {/* 썸네일 */}
+              <div style={{
+                width: 56, height: 56, borderRadius: 8, flexShrink: 0,
+                backgroundColor: '#E5E8EB',
+                backgroundImage: item.store.thumbnail_url ? `url(${item.store.thumbnail_url})` : undefined,
+                backgroundSize: 'cover', backgroundPosition: 'center',
+              }} />
+              {/* 정보 */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', marginBottom: 2 }}>{item.store.name}</p>
+                <p style={{ fontSize: 12, color: '#8B95A1', marginBottom: 8 }}>{item.store.address_road}</p>
+                <CommentFields
+                  itemId={item.id}
+                  initialComment={item.comment}
+                  onSave={updateComment}
+                />
+              </div>
+              {/* 삭제 버튼 */}
+              <button
+                onClick={() => removeItem(item.id)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#8B95A1', fontSize: 20, padding: '2px 4px', flexShrink: 0, lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 매장 추가 패널 */}
+      <div style={{ background: '#fff', borderRadius: 14, padding: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 40 }}>
+        <button
+          onClick={() => setShowAddStore(s => !s)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          }}
+        >
+          <span style={{ fontSize: 22, color: '#3182F6', lineHeight: 1, fontWeight: 400 }}>
+            {showAddStore ? '−' : '+'}
+          </span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#3182F6' }}>매장 추가</span>
+        </button>
+
+        {showAddStore && (
+          <div style={{ marginTop: 12 }}>
+            <input
+              value={storeSearch}
+              onChange={e => setStoreSearch(e.target.value)}
+              placeholder="매장 이름 또는 주소로 검색"
+              autoFocus
+              style={{
+                width: '100%', height: 40, borderRadius: 8, border: '1.5px solid #E5E8EB',
+                padding: '0 12px', fontSize: 14, outline: 'none',
+                boxSizing: 'border-box', marginBottom: 8, fontFamily: 'inherit',
+              }}
+            />
+            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+              {filteredStores.length === 0 ? (
+                <p style={{ fontSize: 13, color: '#8B95A1', padding: '8px 0' }}>
+                  {storeSearch ? '검색 결과가 없어요' : '추가할 수 있는 매장이 없어요'}
+                </p>
+              ) : (
+                filteredStores.slice(0, 40).map((store, idx) => {
+                  const checked = selectedStoreIds.has(store.id);
+                  return (
+                    <div
+                      key={store.id}
+                      onClick={() => setSelectedStoreIds(prev => {
+                        const next = new Set(prev);
+                        if (next.has(store.id)) next.delete(store.id);
+                        else next.add(store.id);
+                        return next;
+                      })}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                        cursor: 'pointer',
+                        padding: '10px 0', textAlign: 'left',
+                        borderBottom: idx < filteredStores.slice(0, 40).length - 1 ? '1px solid #F2F4F6' : 'none',
+                        background: checked ? '#EFF6FF' : 'transparent',
+                        borderRadius: checked ? 8 : 0,
+                        paddingLeft: checked ? 8 : 0,
+                        paddingRight: checked ? 8 : 0,
+                        transition: 'background 0.15s',
+                      }}
+                    >
+                      {/* 체크박스 */}
+                      <div style={{
+                        width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                        border: checked ? 'none' : '2px solid #D1D5DB',
+                        background: checked ? '#3182F6' : '#fff',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'background 0.15s, border 0.15s',
+                      }}>
+                        {checked && (
+                          <svg width="13" height="10" viewBox="0 0 13 10" fill="none">
+                            <path d="M1.5 5L5 8.5L11.5 1.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </div>
+                      {/* 썸네일 */}
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 6, flexShrink: 0,
+                        backgroundColor: '#E5E8EB',
+                        backgroundImage: store.thumbnail_url ? `url(${store.thumbnail_url})` : undefined,
+                        backgroundSize: 'cover', backgroundPosition: 'center',
+                      }} />
+                      {/* 정보 */}
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: '#191F28' }}>{store.name}</p>
+                        <p style={{ fontSize: 12, color: '#8B95A1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {store.address_road}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* 추가 확인 버튼 */}
+            {selectedStoreIds.size > 0 && (
+              <button
+                onClick={addSelectedStores}
+                disabled={addingStores}
+                style={{
+                  marginTop: 12, width: '100%', height: 46, borderRadius: 10,
+                  background: '#3182F6', border: 'none', color: '#fff',
+                  fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  opacity: addingStores ? 0.6 : 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}
+              >
+                {addingStores ? '추가 중...' : `${selectedStoreIds.size}개 매장 추가하기`}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── 가이드북 목록 ────────────────────────────────────────────
+function GuidebooksView() {
+  const [guidebooks, setGuidebooks] = useState<Guidebook[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Guidebook | null>(null);
+  const [newTitle, setNewTitle] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+
+  useEffect(() => { loadGuidebooks(); }, []);
+
+  async function loadGuidebooks() {
+    setLoading(true);
+    const { data } = await supabase
+      .from('guidebooks')
+      .select('*')
+      .order('created_at', { ascending: false });
+    setGuidebooks((data ?? []) as Guidebook[]);
+    setLoading(false);
+  }
+
+  async function createGuidebook() {
+    if (!newTitle.trim()) return;
+    setCreating(true);
+    const { data, error } = await supabase
+      .from('guidebooks')
+      .insert({ title: newTitle.trim(), is_published: false })
+      .select()
+      .single();
+    if (!error && data) {
+      setSelected(data as Guidebook);
+      setNewTitle('');
+      setShowCreate(false);
+    }
+    setCreating(false);
+  }
+
+  if (selected) {
+    return (
+      <GuidebookDetailView
+        guidebook={selected}
+        onBack={() => { setSelected(null); loadGuidebooks(); }}
+        onDeleted={() => { setSelected(null); loadGuidebooks(); }}
+      />
+    );
+  }
+
+  return (
+    <div>
+      {/* 새 가이드북 만들기 */}
+      <div style={{ background: '#fff', borderRadius: 14, padding: 16, marginBottom: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+        <button
+          onClick={() => setShowCreate(s => !s)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          }}
+        >
+          <span style={{ fontSize: 22, color: '#3182F6', lineHeight: 1, fontWeight: 400 }}>
+            {showCreate ? '−' : '+'}
+          </span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#3182F6' }}>새 가이드북 만들기</span>
+        </button>
+
+        {showCreate && (
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#8B95A1', display: 'block', marginBottom: 6 }}>
+              제목 <span style={{ fontWeight: 400 }}>(줄바꿈은 Enter — 카드에서 2줄로 표시돼요)</span>
+            </label>
+            <textarea
+              value={newTitle}
+              onChange={e => setNewTitle(e.target.value)}
+              placeholder={'예) 서울 근교\n신상 카페'}
+              rows={2}
+              autoFocus
+              style={{
+                width: '100%', borderRadius: 10, border: '1.5px solid #E5E8EB',
+                padding: '10px 12px', fontSize: 15, outline: 'none',
+                boxSizing: 'border-box', marginBottom: 10, resize: 'none',
+                fontFamily: 'inherit', lineHeight: 1.5,
+              }}
+            />
+            <button
+              onClick={createGuidebook}
+              disabled={creating || !newTitle.trim()}
+              style={{
+                width: '100%', height: 44, borderRadius: 10, background: '#191F28', border: 'none',
+                color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer',
+                opacity: creating || !newTitle.trim() ? 0.5 : 1,
+              }}
+            >
+              {creating ? '만드는 중...' : '만들기 →'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* 가이드북 목록 */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#191F28' }}>
+          가이드북 <span style={{ color: '#3182F6' }}>{guidebooks.length}</span>
+        </h2>
+      </div>
+
+      {loading ? (
+        <p style={{ color: '#8B95A1', textAlign: 'center', marginTop: 60 }}>불러오는 중...</p>
+      ) : guidebooks.length === 0 ? (
+        <p style={{ color: '#8B95A1', textAlign: 'center', marginTop: 60 }}>가이드북이 없어요</p>
+      ) : (
+        guidebooks.map(g => (
+          <button
+            key={g.id}
+            onClick={() => setSelected(g)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: '#fff', borderRadius: 14, padding: '16px 20px',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 10,
+              border: 'none', cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <p style={{
+                fontSize: 15, fontWeight: 600, color: '#191F28',
+                whiteSpace: 'pre-line', marginBottom: 4,
+              }}>
+                {g.title}
+              </p>
+              <p style={{ fontSize: 12, color: '#8B95A1' }}>
+                {new Date(g.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 12 }}>
+              <span style={{
+                fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 20,
+                background: g.is_published ? '#D4EDDA' : '#F2F4F6',
+                color: g.is_published ? '#155724' : '#6B7684',
+              }}>
+                {g.is_published ? '공개' : '비공개'}
+              </span>
+              <span style={{ color: '#C4C9CF', fontSize: 18 }}>›</span>
+            </div>
+          </button>
+        ))
+      )}
+    </div>
+  );
+}
+
+// ─── 메인 어드민 앱 ───────────────────────────────────────────
 export default function AdminApp() {
   const [authed, setAuthed] = useState(!!sessionStorage.getItem('admin_auth'));
   const [reports, setReports] = useState<Report[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [tab, setTab] = useState<'reports' | 'guidebooks'>('reports');
 
   useEffect(() => {
     if (!authed) return;
-    setLoading(true);
+    setLoadingReports(true);
     supabase
       .from('reports')
       .select('*')
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         setReports((data ?? []) as Report[]);
-        setLoading(false);
+        setLoadingReports(false);
       });
   }, [authed]);
 
@@ -149,7 +779,11 @@ export default function AdminApp() {
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Pretendard, sans-serif' }}>
       {/* 헤더 */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #E5E8EB', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{
+        background: '#fff', borderBottom: '1px solid #E5E8EB',
+        padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        position: 'sticky', top: 0, zIndex: 10,
+      }}>
         <h1 style={{ fontSize: 18, fontWeight: 700, color: '#191F28' }}>카공지도 어드민</h1>
         <button
           onClick={() => { sessionStorage.removeItem('admin_auth'); setAuthed(false); }}
@@ -159,21 +793,44 @@ export default function AdminApp() {
         </button>
       </div>
 
+      {/* 탭 */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #E5E8EB', display: 'flex', padding: '0 24px' }}>
+        {(['reports', 'guidebooks'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            style={{
+              padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 14, fontWeight: 600,
+              color: tab === t ? '#191F28' : '#8B95A1',
+              borderBottom: tab === t ? '2.5px solid #191F28' : '2.5px solid transparent',
+              marginBottom: -1,
+            }}
+          >
+            {t === 'reports' ? '제보 목록' : '가이드북'}
+          </button>
+        ))}
+      </div>
+
       {/* 본문 */}
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#191F28' }}>
-            제보 목록 <span style={{ color: '#3182F6' }}>{reports.length}</span>
-          </h2>
-        </div>
-
-        {loading ? (
-          <p style={{ color: '#8B95A1', textAlign: 'center', marginTop: 60 }}>불러오는 중...</p>
-        ) : reports.length === 0 ? (
-          <p style={{ color: '#8B95A1', textAlign: 'center', marginTop: 60 }}>제보가 없어요</p>
-        ) : (
-          reports.map(r => <ReportCard key={r.id} report={r} />)
+        {tab === 'reports' && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#191F28' }}>
+                제보 목록 <span style={{ color: '#3182F6' }}>{reports.length}</span>
+              </h2>
+            </div>
+            {loadingReports ? (
+              <p style={{ color: '#8B95A1', textAlign: 'center', marginTop: 60 }}>불러오는 중...</p>
+            ) : reports.length === 0 ? (
+              <p style={{ color: '#8B95A1', textAlign: 'center', marginTop: 60 }}>제보가 없어요</p>
+            ) : (
+              reports.map(r => <ReportCard key={r.id} report={r} />)
+            )}
+          </>
         )}
+        {tab === 'guidebooks' && <GuidebooksView />}
       </div>
     </div>
   );

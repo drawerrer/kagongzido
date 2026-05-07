@@ -1360,13 +1360,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#f3f3f3' }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: '50%',
-          border: '3px solid #E5E8EB',
-          borderTopColor: '#191F28',
-          animation: 'spin 0.7s linear infinite',
-        }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <p style={{ fontSize: 14, color: '#8B95A1' }}>불러오는 중...</p>
       </div>
     );
   }

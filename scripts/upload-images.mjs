@@ -3,15 +3,22 @@
  * 로컬 이미지 폴더 → Supabase Storage 업로드 + stores 테이블 URL 자동 업데이트
  *
  * 사용법:
- *   node scripts/upload-images.mjs
+ *   node scripts/upload-images.mjs                      ← images/ 전체 스캔
+ *   node scripts/upload-images.mjs --batch "05.1차"     ← 해당 배치만 업로드
  *
- * 로컬 폴더 구조:
+ * 로컬 폴더 구조 (두 가지 모두 지원):
  *   images/
- *     └── {api_place_id}/
- *           ├── thumbnail.jpg   ← thumbnail_url로 저장
- *           ├── 1.jpg
- *           ├── 2.jpg           ← photo_urls 배열로 저장
- *           └── 3.jpg
+ *     └── {api_place_id}/          ← 평면 구조 (기존)
+ *           ├── thumbnail.jpg
+ *           └── 1.jpg
+ *
+ *   images/
+ *     └── {배치명}/                ← 배치 폴더 구조 (신규)
+ *           └── {api_place_id}/
+ *                 ├── thumbnail.jpg
+ *                 └── 1.jpg
+ *
+ *   예) images/05.1차/{id}/, images/가이드북5월1차/{id}/
  *
  * 사전 준비:
  *   1. Supabase Dashboard → Storage → New bucket
@@ -22,6 +29,10 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join, extname } from 'path';
 import { createClient } from '@supabase/supabase-js';
+
+// ── --batch 인자 파싱 ──────────────────────────────────────────
+const batchIdx = process.argv.indexOf('--batch');
+const BATCH    = batchIdx !== -1 ? process.argv[batchIdx + 1] : null;
 
 // ── .env 파일 파싱 ──────────────────────────────────────────────
 function loadEnv() {
@@ -74,20 +85,66 @@ async function uploadFile(localPath, storagePath) {
   return data.publicUrl;
 }
 
+// ── images/ 하위에서 place_id 폴더 목록 수집 ──────────────────────
+// 평면 구조(images/{id}/)와 배치 구조(images/{배치명}/{id}/) 모두 지원
+// 판별 기준: 해당 폴더 안에 이미지 파일이 있으면 place_id 폴더, 없으면 배치 폴더
+function collectIdFolders(baseDir) {
+  const result = []; // [{ placeId, folderPath }]
+
+  const entries = readdirSync(baseDir).filter(name =>
+    statSync(join(baseDir, name)).isDirectory()
+  );
+
+  for (const name of entries) {
+    const dirPath = join(baseDir, name);
+    const contents = readdirSync(dirPath);
+    const hasImages = contents.some(f => IMG_EXTS.includes(extname(f).toLowerCase()));
+
+    if (hasImages) {
+      // 이미지 파일이 있다 → 이 폴더 자체가 place_id 폴더
+      result.push({ placeId: name, folderPath: dirPath });
+    } else {
+      // 이미지 파일이 없다 → 배치 폴더로 판단, 한 단계 더 내려감
+      const subDirs = contents.filter(f => statSync(join(dirPath, f)).isDirectory());
+      for (const subName of subDirs) {
+        result.push({ placeId: subName, folderPath: join(dirPath, subName) });
+      }
+      if (subDirs.length > 0) {
+        console.log(`📁 배치 폴더 감지: ${name}/ (${subDirs.length}개 매장)`);
+      }
+    }
+  }
+
+  return result;
+}
+
 // ── 메인 ──────────────────────────────────────────────────────────
 async function main() {
   if (!existsSync(IMAGES_DIR)) {
     console.error(`❌ images/ 폴더가 없어요. 프로젝트 루트에 만들어주세요.`);
-    console.error(`   구조: images/{api_place_id}/thumbnail.jpg, 1.jpg, 2.jpg ...`);
     process.exit(1);
   }
 
-  const folders = readdirSync(IMAGES_DIR).filter(name => {
-    return statSync(join(IMAGES_DIR, name)).isDirectory();
-  });
+  // --batch 지정 시 해당 배치 폴더만 스캔
+  let scanDir = IMAGES_DIR;
+  if (BATCH) {
+    const batchDir = join(IMAGES_DIR, BATCH);
+    if (!existsSync(batchDir)) {
+      console.error(`❌ 배치 폴더를 찾을 수 없어요: images/${BATCH}/`);
+      console.error(`   images/ 안에 있는 폴더 목록:`);
+      readdirSync(IMAGES_DIR).forEach(name => console.error(`     - ${name}`));
+      process.exit(1);
+    }
+    scanDir = batchDir;
+    console.log(`📦 배치: ${BATCH}`);
+  } else {
+    console.log(`📦 배치 미지정 — images/ 전체 스캔`);
+  }
 
-  if (folders.length === 0) {
-    console.error('❌ images/ 안에 폴더가 없어요. api_place_id 이름의 폴더를 만들어주세요.');
+  const idFolders = collectIdFolders(scanDir);
+
+  if (idFolders.length === 0) {
+    console.error('❌ 업로드할 폴더를 찾지 못했어요. 구조를 확인해주세요.');
     process.exit(1);
   }
 
@@ -99,13 +156,12 @@ async function main() {
     .neq('thumbnail_url', '');
   const thumbnailDoneIds = new Set((uploaded ?? []).map(r => r.api_place_id));
 
-  console.log(`🚀 이미지 업로드 시작 — ${folders.length}개 매장\n`);
+  console.log(`🚀 이미지 업로드 시작 — ${idFolders.length}개 매장\n`);
   let successCount = 0;
   let failCount    = 0;
   let skippedCount = 0;
 
-  for (const placeId of folders) {
-    const folderPath = join(IMAGES_DIR, placeId);
+  for (const { placeId, folderPath } of idFolders) {
     const files = readdirSync(folderPath)
       .filter(f => IMG_EXTS.includes(extname(f).toLowerCase()))
       .sort();
@@ -184,7 +240,7 @@ async function main() {
   }
 
   console.log('─'.repeat(50));
-  console.log(`🎉 완료! ✅ ${successCount}개 성공  ❌ ${failCount}개 실패  ⏭️  ${skippedCount}개 이미 업로드됨`);
+  console.log(`🎉 완료! ✅ ${successCount}개 성공  ❌ ${failCount}개 실패  ⏭️  ${skippedCount}개 건너뜀`);
   console.log(`\n📋 다음 단계:`);
   console.log(`  - 앱에서 이미지 확인 (실기기 또는 프리뷰)`);
   console.log(`  - 실패한 항목은 Supabase Dashboard에서 직접 업로드`);

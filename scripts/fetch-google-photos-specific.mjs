@@ -3,10 +3,11 @@
  * 특정 매장만 구글 Places API 사진 가져오기 → 로컬 images/ 폴더에 저장
  *
  * 사용법:
- *   node scripts/fetch-google-photos-specific.mjs 123456789 987654321 111222333
+ *   node scripts/fetch-google-photos-specific.mjs --batch "05.1차" 123456789 987654321
  *
  * 인자:
- *   api_place_id 값들을 스페이스로 구분해서 입력
+ *   --batch  배치 폴더 이름 (필수)
+ *   이후 api_place_id 값들을 스페이스로 구분해서 입력
  */
 
 import { readFileSync, mkdirSync, writeFileSync, existsSync, readdirSync, unlinkSync } from 'fs';
@@ -38,11 +39,19 @@ if (!SUPABASE_URL)     { console.error('❌ VITE_SUPABASE_URL이 .env에 없어�
 if (!SUPABASE_SERVICE) { console.error('❌ SUPABASE_SERVICE_KEY가 .env에 없어요.'); process.exit(1); }
 if (!GOOGLE_KEY)       { console.error('❌ GOOGLE_PLACES_KEY가 .env에 없어요.');    process.exit(1); }
 
-// api_place_id 인자 확인
-const targetIds = process.argv.slice(2);
+// ── 인자 파싱 ──────────────────────────────────────────────────
+const batchIdx = process.argv.indexOf('--batch');
+const BATCH    = batchIdx !== -1 ? process.argv[batchIdx + 1] : null;
+const targetIds = process.argv.slice(2).filter(a => a !== '--batch' && a !== BATCH);
+
+if (!BATCH) {
+  console.error('❌ 배치 이름을 입력해주세요.');
+  console.error('   사용법: node scripts/fetch-google-photos-specific.mjs --batch "05.1차" 123456789 987654321');
+  process.exit(1);
+}
 if (targetIds.length === 0) {
   console.error('❌ api_place_id를 입력해주세요.');
-  console.error('   사용법: node scripts/fetch-google-photos-specific.mjs 123456789 987654321');
+  console.error('   사용법: node scripts/fetch-google-photos-specific.mjs --batch "05.1차" 123456789 987654321');
   process.exit(1);
 }
 
@@ -93,7 +102,10 @@ async function main() {
     if (!foundIds.has(id)) console.log(`⚠️  ${id}: Supabase에서 찾을 수 없음`);
   });
 
+  // images/{배치}/ 폴더 생성
   if (!existsSync(IMAGES_DIR)) mkdirSync(IMAGES_DIR);
+  const batchDir = join(IMAGES_DIR, BATCH);
+  if (!existsSync(batchDir)) mkdirSync(batchDir);
 
   let successCount = 0;
   let failCount    = 0;
@@ -101,7 +113,7 @@ async function main() {
   for (const store of stores) {
     console.log(`📍 ${store.name} (${store.api_place_id})`);
 
-    const folderPath = join(IMAGES_DIR, store.api_place_id);
+    const folderPath = join(batchDir, store.api_place_id);
 
     try {
       const photos = await searchGooglePlace(store.name, store.address_road);
@@ -142,7 +154,7 @@ async function main() {
       }
 
       if (saved > 0) {
-        console.log(`  📁 images/${store.api_place_id}/ 에 ${saved}장 저장됨\n`);
+        console.log(`  📁 images/${BATCH}/${store.api_place_id}/ 에 ${saved}장 저장됨\n`);
         successCount++;
       } else {
         failCount++;
@@ -159,7 +171,7 @@ async function main() {
   console.log('─'.repeat(50));
   console.log(`🎉 완료! ✅ ${successCount}개 성공  ❌ ${failCount}개 실패`);
   console.log(`\n📋 다음 단계:`);
-  console.log(`  1. images/ 폴더 열어서 사진 확인 및 선택`);
+  console.log(`  1. images/${BATCH}/ 폴더 열어서 사진 확인 및 선택`);
   console.log(`  2. node scripts/upload-images.mjs 실행`);
 }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type RefObject } from 'react';
 import { graniteEvent, fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
 import { Toast, BottomSheet, Button, ConfirmDialog } from '@toss/tds-mobile';
 import { useFavorites } from '../context/FavoritesContext';
@@ -1110,10 +1110,14 @@ export default function MyPage({
   onDetailOpen,
   initialSubPage,
   onSubPageChange,
+  onRegisterBack,
+  subViewRef,
 }: {
   onDetailOpen?: (id: string) => void;
   initialSubPage?: SubPage | null;
   onSubPageChange?: (page: SubPage | null) => void;
+  onRegisterBack?: (fn: (() => void) | null) => void;
+  subViewRef?: RefObject<HTMLDivElement> | null;
 } = {}) {
   const [tab, setTab] = useState<MyTab>('내 활동');
   const [subPage, setSubPage] = useState<SubPage | null>(initialSubPage ?? null);
@@ -1122,7 +1126,21 @@ export default function MyPage({
     setSubPage(page);
     onSubPageChange?.(page);
   };
+
   const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
+
+  // 부모(App.tsx)에 엣지스와이프용 back 핸들러 등록
+  // 리뷰 작성·수정, 카페 제보, 리뷰 편집 중에는 폼 데이터 손실 방지를 위해 비활성화
+  const SWIPE_DISABLED_PAGES: SubPage[] = ['review-edit', 'report-cafe'];
+  useEffect(() => {
+    const disabled = subPage === null || SWIPE_DISABLED_PAGES.includes(subPage) || !!editingReview;
+    if (!disabled) {
+      onRegisterBack?.(() => changeSubPage(null));
+    } else {
+      onRegisterBack?.(null);
+    }
+    return () => onRegisterBack?.(null);
+  }, [subPage, editingReview]); // eslint-disable-line react-hooks/exhaustive-deps
   const [versionToast, setVersionToast] = useState(false);
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const [displayName, setDisplayName] = useState('김카페');
@@ -1135,42 +1153,14 @@ export default function MyPage({
     setTimeout(() => setVersionToast(false), 2000);
   };
 
-  // ── 서브페이지 렌더 ──────────────────────────────────────
-  if (editingReview) {
-    return (
-      <ReviewEditPage
-        review={editingReview}
-        onBack={() => setEditingReview(null)}
-        onClose={() => { setEditingReview(null); changeSubPage(null); }}
-        onSave={(_text, _photos) => setEditingReview(null)}
-      />
-    );
-  }
-
-  if (subPage === 'reported') {
-    return <ReportedCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} onDetailOpen={onDetailOpen} />;
-  }
-  if (subPage === 'recent') {
-    return <RecentCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} onDetailOpen={onDetailOpen} />;
-  }
-  if (subPage === 'reviews') {
-    return (
-      <WrittenReviewPage
-        onBack={() => changeSubPage(null)}
-        onClose={() => changeSubPage(null)}
-        onEdit={review => setEditingReview(review)}
-      />
-    );
-  }
-  if (subPage === 'report-cafe') {
-    return <ReportCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} />;
-  }
-
-  // ── 메인 마이페이지 ──────────────────────────────────────
+  // ── 메인 + 서브페이지 (absolute overlay 방식) ────────────
   return (
+    <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
+
+    {/* 메인 마이페이지 — 항상 렌더링 (서브페이지 스와이프백 시 배경으로 보임) */}
     <div style={{
       height: '100%', display: 'flex', flexDirection: 'column',
-      background: '#f3f3f3', position: 'relative', overflow: 'hidden',
+      background: '#f3f3f3', overflow: 'hidden',
     }}>
       {/* 스크롤 영역 */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
@@ -1373,6 +1363,43 @@ export default function MyPage({
           적용하기
         </Button>
       </BottomSheet>
+    </div>
+    {/* ── 서브페이지 오버레이 (스와이프 애니메이션 지원) ── */}
+    {subPage === 'reported' && (
+      <div ref={subViewRef ?? undefined} style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <ReportedCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} onDetailOpen={onDetailOpen} />
+      </div>
+    )}
+    {subPage === 'recent' && (
+      <div ref={subViewRef ?? undefined} style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <RecentCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} onDetailOpen={onDetailOpen} />
+      </div>
+    )}
+    {subPage === 'reviews' && (
+      <div ref={subViewRef ?? undefined} style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <WrittenReviewPage
+          onBack={() => changeSubPage(null)}
+          onClose={() => changeSubPage(null)}
+          onEdit={review => setEditingReview(review)}
+        />
+      </div>
+    )}
+    {/* 스와이프 비활성 페이지 — ref 없음 */}
+    {subPage === 'report-cafe' && (
+      <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <ReportCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} />
+      </div>
+    )}
+    {editingReview && (
+      <div style={{ position: 'absolute', inset: 0 }}>
+        <ReviewEditPage
+          review={editingReview}
+          onBack={() => setEditingReview(null)}
+          onClose={() => { setEditingReview(null); changeSubPage(null); }}
+          onSave={(_text, _photos) => setEditingReview(null)}
+        />
+      </div>
+    )}
     </div>
   );
 }

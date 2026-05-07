@@ -359,6 +359,77 @@ export async function fetchAllStores(): Promise<StoreRow[]> {
   }));
 }
 
+// ─────────────────────────────────────────────────────────────
+// 가이드북
+// ─────────────────────────────────────────────────────────────
+
+export interface GuidebookRow {
+  id: string;
+  title: string;
+  is_published: boolean;
+  created_at: string;
+}
+
+export interface GuidebookItemRow {
+  id: string;
+  guidebook_id: string;
+  store_id: string;
+  comment: string | null;
+  sort_order: number;
+}
+
+export async function fetchPublishedGuidebooks(): Promise<GuidebookRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('guidebooks')
+    .select('*')
+    .eq('is_published', true)
+    .order('created_at', { ascending: false });
+  if (error) { console.error('fetchPublishedGuidebooks:', error); return []; }
+  return (data ?? []) as GuidebookRow[];
+}
+
+export async function fetchGuidebookItems(guidebookId: string): Promise<(GuidebookItemRow & { store: StoreRow })[]> {
+  if (!supabase) return [];
+
+  // Step 1: guidebook_items 조회 (join 없이)
+  const { data: rawItems, error: itemsError } = await supabase
+    .from('guidebook_items')
+    .select('id, guidebook_id, store_id, comment, sort_order')
+    .eq('guidebook_id', guidebookId)
+    .order('sort_order', { ascending: true });
+  if (itemsError) { console.error('fetchGuidebookItems:', itemsError); return []; }
+  if (!rawItems?.length) return [];
+
+  // Step 2: 관련 stores 조회
+  const storeIds = rawItems.map(i => i.store_id);
+  const { data: storeRows, error: storesError } = await supabase
+    .from('stores')
+    .select('*')
+    .in('id', storeIds);
+  if (storesError) { console.error('fetchGuidebookItems stores:', storesError); return []; }
+
+  const storeMap = new Map((storeRows ?? []).map((s: Record<string, unknown>) => [s.id as string, s]));
+
+  return rawItems.map(item => {
+    const raw = storeMap.get(item.store_id) as Record<string, unknown> | undefined;
+    const store: StoreRow = raw ? {
+      ...(raw as StoreRow),
+      photo_urls: (raw.photo_urls as string[] | null) ?? [],
+      vibe_tags:  (raw.vibe_tags  as string[] | null) ?? [],
+      amenities:  (raw.amenities  as string[] | null) ?? [],
+      badges:     (raw.badges     as string[] | null) ?? [],
+    } : {
+      id: item.store_id, api_place_id: '', name: '알 수 없음', category: '',
+      address_road: '', latitude: 0, longitude: 0, phone_number: null,
+      thumbnail_url: '', photo_urls: [], business_hours: null, website_url: null,
+      seat_status: '', outlet_status: '', noise_status: '', vibe_tags: [],
+      base_price: 0, amenities: [], badges: [],
+    };
+    return { ...item, store };
+  });
+}
+
 export async function fetchStoreByPlaceId(apiPlaceId: string): Promise<StoreRow | null> {
   if (!supabase) return null;
   const { data, error } = await supabase

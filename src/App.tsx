@@ -97,9 +97,16 @@ function AppInner() {
   const [detailOpenDirections, setDetailOpenDirections] = useState(false);
 
   // ── 왼쪽 엣지 스와이프 뒤로가기 (인터랙티브) ──────────────────
-  const swipeRef    = useRef<HTMLDivElement>(null);
-  const swipeStartX = useRef<number | null>(null);
-  const swipeDelta  = useRef<number>(0);
+  const swipeRef            = useRef<HTMLDivElement>(null);
+  const swipeStartX         = useRef<number | null>(null);
+  const swipeDelta          = useRef<number>(0);
+  const guidebookBackRef    = useRef<(() => void) | null>(null);
+  const myPageBackRef       = useRef<(() => void) | null>(null);
+  const guidebookSubViewRef = useRef<HTMLDivElement>(null);
+  const myPageSubViewRef    = useRef<HTMLDivElement>(null);
+
+  const guidebookCanGoBack = !!guidebookView && guidebookView !== 'main';
+  const myPageCanGoBack    = !!myPageSubPage;
 
   useEffect(() => {
     const EDGE     = 24;  // 왼쪽 가장자리 감지 범위 (px)
@@ -110,6 +117,9 @@ function AppInner() {
       if (detailCafeId)     return () => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); };
       if (showSearch)       return () => setShowSearch(false);
       if (collectionDetail) return () => setCollectionDetail(null);
+      // 탭 레벨 내부 뷰 백
+      if (guidebookCanGoBack && guidebookBackRef.current) return guidebookBackRef.current;
+      if (myPageCanGoBack    && myPageBackRef.current)    return myPageBackRef.current;
       return null;
     };
 
@@ -120,13 +130,19 @@ function AppInner() {
       swipeDelta.current  = 0;
     };
 
+    // 현재 애니메이션할 엘리먼트 결정 (우선순위: 최상위 오버레이 → 탭 내부 서브뷰)
+    const getSwipeEl = () =>
+      swipeRef.current ?? guidebookSubViewRef.current ?? myPageSubViewRef.current;
+
     const onTouchMove = (e: TouchEvent) => {
       if (swipeStartX.current === null) return;
+      e.preventDefault(); // 스와이프 중 세로 스크롤 고정
       const delta = Math.max(0, e.touches[0].clientX - swipeStartX.current);
       swipeDelta.current = delta;
-      if (swipeRef.current) {
-        swipeRef.current.style.transition = 'none';
-        swipeRef.current.style.transform  = `translateX(${delta}px)`;
+      const el = getSwipeEl();
+      if (el) {
+        el.style.transition = 'none';
+        el.style.transform  = `translateX(${delta}px)`;
       }
     };
 
@@ -135,32 +151,36 @@ function AppInner() {
       swipeStartX.current = null;
       const delta = swipeDelta.current;
       swipeDelta.current  = 0;
-      const el = swipeRef.current;
-      if (!el) return;
+      const el = getSwipeEl();
       const backAction = getBackAction();
 
       if (delta > MIN_DIST && backAction) {
-        // 완료: 오른쪽으로 슬라이드 아웃
-        el.style.transition = 'transform 0.28s cubic-bezier(0.4,0,0.2,1)';
-        el.style.transform  = 'translateX(100%)';
-        setTimeout(() => backAction(), 280);
-      } else {
+        if (el) {
+          // 슬라이드 아웃 애니메이션 후 back
+          el.style.transition = 'transform 0.28s cubic-bezier(0.4,0,0.2,1)';
+          el.style.transform  = 'translateX(100%)';
+          setTimeout(() => backAction(), 280);
+        } else {
+          // 엘리먼트가 없으면 바로 back
+          backAction();
+        }
+      } else if (el) {
         // 취소: 원위치로 스프링백
         el.style.transition = 'transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)';
         el.style.transform  = 'translateX(0)';
-        setTimeout(() => { if (swipeRef.current) swipeRef.current.style.transition = ''; }, 300);
+        setTimeout(() => { el.style.transition = ''; }, 300);
       }
     };
 
     document.addEventListener('touchstart', onTouchStart, { passive: true });
-    document.addEventListener('touchmove',  onTouchMove,  { passive: true });
+    document.addEventListener('touchmove',  onTouchMove,  { passive: false });
     document.addEventListener('touchend',   onTouchEnd,   { passive: true });
     return () => {
       document.removeEventListener('touchstart', onTouchStart);
       document.removeEventListener('touchmove',  onTouchMove);
       document.removeEventListener('touchend',   onTouchEnd);
     };
-  }, [photoReview, detailCafeId, showSearch, collectionDetail]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [photoReview, detailCafeId, showSearch, collectionDetail, guidebookCanGoBack, myPageCanGoBack]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── topOverlay: 현재 최상위 오버레이 결정 ───────────────────
   const topOverlay = photoReview ? 'photo'
@@ -183,19 +203,24 @@ function AppInner() {
           />
         )}
         {activeTab === 'guidebook' && (
-          <PageErrorBoundary key={tabKeys.guidebook}>
-            <GuidebookPage
-              onDetailOpen={(id) => setDetailCafeId(id)}
-              onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
-              onBack={() => setActiveTab('home')}
-              onClose={() => setActiveTab('home')}
-              onGoToFavorites={() => setActiveTab('collection')}
-              initialView={(guidebookView as any) ?? 'main'}
-              onViewChange={(v) => setGuidebookView(v)}
-              initialStoreIndex={guidebookStoreIndex}
-              onStoreIndexChange={(i) => setGuidebookStoreIndex(i)}
-            />
-          </PageErrorBoundary>
+          <div style={{ height: '100%' }}>
+            <PageErrorBoundary key={tabKeys.guidebook}>
+              <GuidebookPage
+                onDetailOpen={(id) => setDetailCafeId(id)}
+                onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
+                onBack={() => setActiveTab('home')}
+                onClose={() => setActiveTab('home')}
+                onGoToFavorites={() => setActiveTab('collection')}
+                initialView={(guidebookView as any) ?? 'main'}
+                onViewChange={(v) => setGuidebookView(v)}
+                initialStoreIndex={guidebookStoreIndex}
+                onStoreIndexChange={(i) => setGuidebookStoreIndex(i)}
+                hasOverlay={!!detailCafeId}
+                onRegisterBack={(fn) => { guidebookBackRef.current = fn; }}
+                subViewRef={guidebookSubViewRef}
+              />
+            </PageErrorBoundary>
+          </div>
         )}
         {activeTab === 'collection' && (
           <PageErrorBoundary key={tabKeys.collection}>
@@ -214,12 +239,16 @@ function AppInner() {
           </PageErrorBoundary>
         )}
         {activeTab === 'mypage' && (
-          <MyPage
-            key={tabKeys.mypage}
-            onDetailOpen={(id) => setDetailCafeId(id)}
-            initialSubPage={myPageSubPage as any}
-            onSubPageChange={setMyPageSubPage}
-          />
+          <div style={{ height: '100%' }}>
+            <MyPage
+              key={tabKeys.mypage}
+              onDetailOpen={(id) => setDetailCafeId(id)}
+              initialSubPage={myPageSubPage as any}
+              onSubPageChange={setMyPageSubPage}
+              onRegisterBack={(fn) => { myPageBackRef.current = fn; }}
+              subViewRef={myPageSubViewRef}
+            />
+          </div>
         )}
       </div>
 
@@ -245,7 +274,6 @@ function AppInner() {
             <button
               key={tab.id}
               onClick={() => {
-                // 탭 이동 시 모든 오버레이 닫기
                 const closeAllOverlays = () => {
                   setDetailCafeId(null);
                   setShowSearch(false);
@@ -253,6 +281,12 @@ function AppInner() {
                   setCollectionDetail(null);
                   setDetailScrollToReview(false);
                   setDetailOpenDirections(false);
+                };
+                // 다른 탭으로 이동 시 각 페이지 내부 뷰 상태 초기화
+                const resetPageStates = () => {
+                  setGuidebookView(null);
+                  setGuidebookStoreIndex(0);
+                  setMyPageSubPage(null);
                 };
                 const now = Date.now();
                 const last = lastTabTapRef.current;
@@ -265,6 +299,7 @@ function AppInner() {
                 } else {
                   lastTabTapRef.current = { id: tab.id, time: now };
                   closeAllOverlays();
+                  if (tab.id !== activeTab) resetPageStates();
                   setActiveTab(tab.id);
                 }
               }}
