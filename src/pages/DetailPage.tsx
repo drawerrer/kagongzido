@@ -1465,32 +1465,22 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               background: '#F3F3F3', borderRadius: 12,
               padding: '12px 16px', marginBottom: 16,
             }}>
-              {cafe.hoursText ? (
-                /* 텍스트 원본 표시 (DB 문자열 스칼라 방식) */
-                cafe.hoursText.split('\n').map((line, i) => (
-                  <p key={i} style={{ fontSize: 14, color: '#4E5968', padding: '3px 0', lineHeight: 1.5 }}>
-                    {line}
-                  </p>
-                ))
-              ) : (
-                /* 구조화 객체 방식: 요일별 표 */
-                DAY_ORDER.map(day => {
-                  const h = cafe.hours[day];
-                  const isToday = day === todayKey;
-                  const isHoliday = cafe.regularHoliday.includes(day) || h === null || h === undefined;
-                  return (
-                    <div key={day} style={{
-                      display: 'flex', justifyContent: 'space-between',
-                      padding: '5px 0', fontSize: 14,
-                      fontWeight: isToday ? 700 : 400,
-                      color: isToday ? '#252525' : '#4E5968',
-                    }}>
-                      <span>{day}요일</span>
-                      <span>{isHoliday ? '휴무' : `${(h as BusinessHour).open} - ${(h as BusinessHour).close}`}</span>
-                    </div>
-                  );
-                })
-              )}
+              {DAY_ORDER.map(day => {
+                const h = cafe.hours[day];
+                const isToday = day === todayKey;
+                const isHoliday = cafe.regularHoliday.includes(day) || h === null || h === undefined;
+                return (
+                  <div key={day} style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    padding: '5px 0', fontSize: 14,
+                    fontWeight: isToday ? 700 : 400,
+                    color: isToday ? '#252525' : '#4E5968',
+                  }}>
+                    <span>{day}요일</span>
+                    <span>{isHoliday ? '정보 없음' : `${(h as BusinessHour).open} - ${(h as BusinessHour).close}`}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
