@@ -148,43 +148,16 @@ const WEEKDAYS: DayKey[] = ['월', '화', '수', '목', '금'];
 const WEEKEND:  DayKey[] = ['토', '일'];
 
 // ────────── 영업시간 정규화 ─────────────────────────────────
-// DB JSONB 가 문자열 스칼라로 저장된 경우 파싱
-// 예) "매일 9:00~23:00"  /  "주중 08:00~21:00\n주말 09:00~22:00"
-//     "매일 09:30~다음날 02:00"  /  "24 시간"
-function parseHoursText(text: string): Partial<Record<DayKey, BusinessHour | null>> {
-  const result: Partial<Record<DayKey, BusinessHour | null>> = {};
-
-  // "24 시간" → 항상 영업
-  if (/24\s*시간/i.test(text)) {
-    DAY_ORDER.forEach(d => { result[d] = { open: '00:00', close: '24:00' }; });
-    return result;
-  }
-
-  const lines = text.split('\n');
-  for (const line of lines) {
-    // 시간 범위 추출: "09:00 ~ 다음날 02:00" / "09:00~21:00" / "09:00 - 21:00"
-    const m = line.match(/(\d{1,2}:\d{2})\s*[~\-]\s*(다음날\s*)?(\d{1,2}:\d{2})/);
-    if (!m) continue;
-
-    const h: BusinessHour = {
-      open:  m[1].trim(),
-      close: (m[2] ? '다음날 ' : '') + m[3].trim(),
-    };
-
-    if      (/매일/.test(line))          DAY_ORDER.forEach(d => { result[d] = h; });
-    else if (/주중/.test(line))          WEEKDAYS.forEach(d => { result[d] = h; });
-    else if (/주말/.test(line))          WEEKEND.forEach(d  => { result[d] = h; });
-    else if (/토요일/.test(line))        result['토'] = h;
-    else if (/일요일/.test(line))        result['일'] = h;
-    else if (/월요일/.test(line))        result['월'] = h;
-    else if (/화요일/.test(line))        result['화'] = h;
-    else if (/수요일/.test(line))        result['수'] = h;
-    else if (/목요일/.test(line))        result['목'] = h;
-    else if (/금요일/.test(line))        result['금'] = h;
-  }
-
-  return result;
-}
+// 요일 매핑 테이블
+const DAY_PATTERNS: [RegExp, DayKey][] = [
+  [/월요일|월(?=요|,|$|\s)/, '월'],
+  [/화요일|화(?=요|,|$|\s)/, '화'],
+  [/수요일|수(?=요|,|$|\s)/, '수'],
+  [/목요일|목(?=요|,|$|\s)/, '목'],
+  [/금요일|금(?=요|,|$|\s)/, '금'],
+  [/토요일|토(?=요|,|$|\s)/, '토'],
+  [/일요일|일(?=요|,|$|\s)/, '일'],
+];
 
 // JSONB 값 → hours 구조 변환 (문자열 / 객체 모두 처리)
 function parseHourEntry(val: unknown): BusinessHour | null {
@@ -202,10 +175,67 @@ function parseHourEntry(val: unknown): BusinessHour | null {
   return null;
 }
 
+// 텍스트에서 언급된 요일 추출
+function extractDays(line: string): DayKey[] {
+  return DAY_PATTERNS.filter(([pat]) => pat.test(line)).map(([, day]) => day);
+}
+
+// 텍스트 파싱 → { hours, regularHoliday }
+function parseHoursText(text: string): {
+  hours: Partial<Record<DayKey, BusinessHour | null>>;
+  regularHoliday: DayKey[];
+} {
+  const hours: Partial<Record<DayKey, BusinessHour | null>> = {};
+  const regularHoliday: DayKey[] = [];
+
+  // "24 시간" / "연중무휴" → 항상 영업
+  if (/24\s*시간|연중무휴/i.test(text)) {
+    DAY_ORDER.forEach(d => { hours[d] = { open: '00:00', close: '24:00' }; });
+    return { hours, regularHoliday };
+  }
+
+  for (const line of text.split('\n')) {
+    const t = line.trim();
+    if (!t) continue;
+
+    // ── 정기휴무 라인 ──
+    if (/정기\s*휴무|정기\s*휴일|매주\s*(.*)\s*휴무|휴무일/.test(t)) {
+      const days = extractDays(t);
+      // 주중/주말 표기도 처리
+      if (days.length === 0) {
+        if (/주중/.test(t)) WEEKDAYS.forEach(d => regularHoliday.push(d));
+        if (/주말/.test(t)) WEEKEND.forEach(d  => regularHoliday.push(d));
+      } else {
+        days.forEach(d => regularHoliday.push(d));
+      }
+      continue;
+    }
+
+    // ── 영업시간 라인 ──
+    const m = t.match(/(\d{1,2}:\d{2})\s*[~\-]\s*(다음날\s*)?(\d{1,2}:\d{2})/);
+    if (!m) continue;
+
+    const h: BusinessHour = {
+      open:  m[1].trim(),
+      close: (m[2] ? '다음날 ' : '') + m[3].trim(),
+    };
+
+    if      (/매일/.test(t)) DAY_ORDER.forEach(d => { hours[d] = h; });
+    else if (/주중/.test(t)) WEEKDAYS.forEach(d  => { hours[d] = h; });
+    else if (/주말/.test(t)) WEEKEND.forEach(d   => { hours[d] = h; });
+    else {
+      const days = extractDays(t);
+      if (days.length > 0) days.forEach(d => { hours[d] = h; });
+    }
+  }
+
+  return { hours, regularHoliday };
+}
+
 function expandHours(
   raw: string | Record<string, unknown> | null
-): Partial<Record<DayKey, BusinessHour | null>> {
-  if (!raw) return {};
+): { hours: Partial<Record<DayKey, BusinessHour | null>>; regularHoliday: DayKey[] } {
+  if (!raw) return { hours: {}, regularHoliday: [] };
 
   // ── 문자열 스칼라 (현재 DB 저장 방식) ──
   if (typeof raw === 'string') return parseHoursText(raw);
@@ -221,7 +251,7 @@ function expandHours(
   if (raw['주말'] !== undefined) set(WEEKEND,   '주말');
   DAY_ORDER.forEach(d => { if (raw[d] !== undefined) result[d] = parseHourEntry(raw[d]); });
 
-  return result;
+  return { hours: result, regularHoliday: [] };
 }
 
 
@@ -942,9 +972,11 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           address: store.address_road,
           thumbnailUrl: store.thumbnail_url || undefined,
           photos: photoUrls.length > 0 ? photoUrls : [],
-          hours: expandHours(store.business_hours as string | Record<string, unknown> | null),
+          ...(() => {
+            const { hours, regularHoliday } = expandHours(store.business_hours as string | Record<string, unknown> | null);
+            return { hours, regularHoliday };
+          })(),
           hoursText: typeof store.business_hours === 'string' ? store.business_hours : undefined,
-          regularHoliday: [],
           seats: store.seat_status || undefined,
           outlets: store.outlet_status || undefined,
           vibe: vibeTags.length > 0 ? vibeTags.join(', ') : undefined,
@@ -1468,7 +1500,12 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               {DAY_ORDER.map(day => {
                 const h = cafe.hours[day];
                 const isToday = day === todayKey;
-                const isHoliday = cafe.regularHoliday.includes(day) || h === null || h === undefined;
+                const isRegularHoliday = cafe.regularHoliday.includes(day) || h === null;
+                const label = isRegularHoliday
+                  ? '정기휴무'
+                  : h === undefined
+                  ? '정보 없음'
+                  : `${h.open} - ${h.close}`;
                 return (
                   <div key={day} style={{
                     display: 'flex', justifyContent: 'space-between',
@@ -1477,7 +1514,9 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                     color: isToday ? '#252525' : '#4E5968',
                   }}>
                     <span>{day}요일</span>
-                    <span>{isHoliday ? '정보 없음' : `${(h as BusinessHour).open} - ${(h as BusinessHour).close}`}</span>
+                    <span style={{ color: isRegularHoliday ? '#8B95A1' : undefined }}>
+                      {label}
+                    </span>
                   </div>
                 );
               })}
