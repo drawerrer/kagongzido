@@ -143,6 +143,28 @@ interface CafeDetailData {
 // ────────── 상수 ────────────────────────────────────────────
 const DAY_ORDER: DayKey[] = ['월', '화', '수', '목', '금', '토', '일'];
 const JS_TO_KR: DayKey[] = ['일', '월', '화', '수', '목', '금', '토'];
+const WEEKDAYS: DayKey[] = ['월', '화', '수', '목', '금'];
+const WEEKEND:  DayKey[] = ['토', '일'];
+
+// ────────── 영업시간 정규화 ─────────────────────────────────
+// DB JSONB 형식: { "주중": { open, close }, "주말": { open, close } }
+//                { "매일": { open, close } }
+//                { "월": { open, close }, ... }  ← 개별 요일도 지원
+// "close"에 "다음날 03:30" 표기 허용
+function expandHours(
+  raw: Record<string, { open: string; close: string }> | null
+): Partial<Record<DayKey, BusinessHour | null>> {
+  if (!raw) return {};
+  const result: Partial<Record<DayKey, BusinessHour | null>> = {};
+
+  if (raw['매일']) DAY_ORDER.forEach(d => { result[d] = raw['매일']; });
+  if (raw['주중']) WEEKDAYS.forEach(d => { result[d] = raw['주중']; });
+  if (raw['주말']) WEEKEND.forEach(d =>  { result[d] = raw['주말']; });
+  // 개별 요일 키가 있으면 덮어쓰기
+  DAY_ORDER.forEach(d => { if (raw[d]) result[d] = raw[d]; });
+
+  return result;
+}
 
 
 const AMENITY_CONFIG: Record<string, { icon: ReactNode; label: string }> = {
@@ -171,6 +193,14 @@ function getTodayKey(): DayKey {
   return JS_TO_KR[new Date().getDay()];
 }
 
+// "다음날 03:30" → 1440 + 210 = 1650분, 일반 "21:00" → 1260분
+function parseTimeMinutes(timeStr: string): number {
+  const isNextDay = timeStr.startsWith('다음날');
+  const t = timeStr.replace('다음날', '').trim();
+  const [h, m] = t.split(':').map(Number);
+  return (isNextDay ? 24 * 60 : 0) + (h || 0) * 60 + (m || 0);
+}
+
 function getStatusInfo(cafe: CafeDetailData): { label: string; color: string } {
   const today = getTodayKey();
   const h = cafe.hours[today];
@@ -179,13 +209,11 @@ function getStatusInfo(cafe: CafeDetailData): { label: string; color: string } {
   }
   const now = new Date();
   const cur = now.getHours() * 60 + now.getMinutes();
-  const [oh, om] = h.open.split(':').map(Number);
-  const [ch, cm] = h.close.split(':').map(Number);
-  const open = oh * 60 + om;
-  const close = ch * 60 + cm;
+  const open  = parseTimeMinutes(h.open);
+  const close = parseTimeMinutes(h.close);
   if (cur < open - 30) return { label: '영업 종료', color: '#8B95A1' };
-  if (cur < open) return { label: '준비 중', color: '#F59E0B' };
-  if (cur >= close) return { label: '영업 종료', color: '#8B95A1' };
+  if (cur < open)      return { label: '준비 중',   color: '#F59E0B' };
+  if (cur >= close)    return { label: '영업 종료', color: '#8B95A1' };
   return { label: '영업 중', color: '#00B493' };
 }
 
@@ -855,7 +883,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           address: store.address_road,
           thumbnailUrl: store.thumbnail_url || undefined,
           photos: photoUrls.length > 0 ? photoUrls : [],
-          hours: (store.business_hours ?? {}) as CafeDetailData['hours'],
+          hours: expandHours(store.business_hours),
           regularHoliday: [],
           seats: store.seat_status || undefined,
           outlets: store.outlet_status || undefined,
