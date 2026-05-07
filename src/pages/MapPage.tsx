@@ -687,14 +687,12 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: '4px 16px 8px',
+                paddingRight: 16,
                 flexShrink: 0,
                 position: 'relative',
               }}
             >
-              <span style={{ fontSize: 14, color: '#6B7684' }}>
-                총 <strong style={{ color: '#191F28' }}>{filteredCafes.length}</strong>개
-              </span>
+              <StoreCountBar count={filteredCafes.length} />
               <button
                 onClick={() => setSortPopupOpen(o => !o)}
                 style={{

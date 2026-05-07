@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useFavorites } from '../context/FavoritesContext';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 import { fetchAllStores, type StoreRow } from '../services/db';
+import StoreCountBar from '../components/StoreCountBar';
 
 interface SearchPageProps {
   onClose: () => void;
@@ -448,9 +449,7 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
               {/* 카페/장소 결과 */}
               {filteredResults.length > 0 && (
                 <div>
-                  <div style={{ padding: '8px 16px 4px', fontSize: 13, color: '#6B7684' }}>
-                    총 <strong style={{ color: '#191F28' }}>{filteredResults.length}</strong>개
-                  </div>
+                  <StoreCountBar count={filteredResults.length} />
                   {filteredResults.map(s => (
                     <SearchCafeRow key={s.api_place_id} store={s} onTap={() => onDetailOpen?.(s.api_place_id)} />
                   ))}

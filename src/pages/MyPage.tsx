@@ -3,6 +3,7 @@ import { graniteEvent, fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-fr
 import { Toast, BottomSheet, Button, ConfirmDialog } from '@toss/tds-mobile';
 import { useFavorites } from '../context/FavoritesContext';
 import { insertCafeReport } from '../services/db';
+import StoreCountBar from '../components/StoreCountBar';
 
 // ─────────────────────────────────────────────────────────────
 // 타입
@@ -134,9 +135,7 @@ function SubHeader({
 function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (id: string) => void }) {
   return (
     <div style={{ padding: '16px 16px 0' }}>
-      <p style={{ fontSize: 13, color: '#8B95A1', marginBottom: 14 }}>
-        총 <strong style={{ color: '#191F28' }}>{cafes.length}</strong>개
-      </p>
+      <StoreCountBar count={cafes.length} />
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
@@ -567,12 +566,7 @@ function WrittenReviewPage({
       <SubHeader title="작성한 리뷰" onBack={onBack} onMore={() => {}} onClose={onClose} />
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
-        {/* 총 개수 */}
-        <div style={{ padding: '16px 20px 8px' }}>
-          <p style={{ fontSize: 13, color: '#8B95A1' }}>
-            총 <strong style={{ color: '#191F28' }}>{reviews.length}</strong>개
-          </p>
-        </div>
+        <StoreCountBar count={reviews.length} />
 
         {reviews.length === 0 ? (
           <div style={{
