@@ -1,7 +1,7 @@
 ﻿import { useState, useCallback, useRef, useEffect } from 'react';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
-import StoreCard from '../components/StoreCard';
+import StoreCard from '../components/StoreCard/Collection';
 import CollectionCard from '../components/CollectionCard';
 import EmptyState from '../components/EmptyState';
 import CollectionNameSheet from '../components/CollectionNameSheet';

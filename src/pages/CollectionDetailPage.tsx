@@ -2,7 +2,7 @@
 import { useFavorites, RecentCafe, haversineDistance } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
-import StoreCard, { type StoreItem } from '../components/StoreCard';
+import StoreCard, { type StoreItem } from '../components/StoreCard/Collection';
 import MemoSheet from '../components/MemoSheet';
 import AddStoreSheet from '../components/AddStoreSheet';
 import CollectionNameSheet from '../components/CollectionNameSheet';

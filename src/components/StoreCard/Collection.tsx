@@ -1,7 +1,7 @@
 import React from 'react';
-import IcPencil from '../assets/icons/icon_pencil.svg?react';
-import IcArrowUpDown from '../assets/icons/icon_arrowupdown.svg?react';
-import { fmtDist } from '../context/FavoritesContext';
+import IcPencil from '../../assets/icons/icon_pencil.svg?react';
+import IcArrowUpDown from '../../assets/icons/icon_arrowupdown.svg?react';
+import { fmtDist } from '../../context/FavoritesContext';
 
 // ─── 공통 매장 타입 ───────────────────────────────────────────
 export interface StoreItem {
@@ -36,7 +36,7 @@ interface StoreCardProps {
   onPhotoMore?: () => void;
 }
 
-export default function StoreCard({
+export default function StoreCardCollection({
   store,
   isEditMode = false,
   isSelected = false,
