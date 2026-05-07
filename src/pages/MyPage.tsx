@@ -734,7 +734,7 @@ const CHIP_OPTIONS: Record<string, string[]> = {
   소음: ['시끄러움', '적당', '조용'],
 };
 
-function ReportCafePage({ onBack: _onBack, onClose }: { onBack: () => void; onClose: () => void }) {
+function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
   const [query, setQuery] = useState('');
   const [selectedCafe, setSelectedCafe] = useState<{ id: string; name: string; address: string } | null>(null);
   const [chips, setChips] = useState<Record<string, string>>({});
@@ -758,6 +758,7 @@ function ReportCafePage({ onBack: _onBack, onClose }: { onBack: () => void; onCl
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative', overflow: 'hidden' }}>
+      <SubHeader onBack={onBack} />
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
 
         {/* 페이지 타이틀 */}
