@@ -343,5 +343,13 @@ export async function fetchStoreByPlaceId(apiPlaceId: string): Promise<StoreRow 
     .eq('api_place_id', apiPlaceId)
     .single();
   if (error) { console.error('fetchStoreByPlaceId:', error); return null; }
-  return data as StoreRow;
+  // fetchAllStores와 동일하게 null 배열 정규화
+  const row = data as unknown as StoreRow;
+  return {
+    ...row,
+    photo_urls: (row.photo_urls as string[] | null) ?? [],
+    vibe_tags:  (row.vibe_tags  as string[] | null) ?? [],
+    amenities:  (row.amenities  as string[] | null) ?? [],
+    badges:     (row.badges     as string[] | null) ?? [],
+  };
 }

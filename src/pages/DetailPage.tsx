@@ -846,28 +846,31 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       setLoading(true);
       const store = await fetchStoreByPlaceId(cafeId);
       if (store) {
+        const photoUrls  = store.photo_urls  ?? [];
+        const vibeTags   = store.vibe_tags   ?? [];
+        const amenities  = store.amenities   ?? [];
         setStoreData({
           id: store.api_place_id,
           name: store.name,
           address: store.address_road,
           thumbnailUrl: store.thumbnail_url || undefined,
-          photos: store.photo_urls.length > 0 ? store.photo_urls : [],
+          photos: photoUrls.length > 0 ? photoUrls : [],
           hours: (store.business_hours ?? {}) as CafeDetailData['hours'],
           regularHoliday: [],
-          seats: store.seat_status,
-          outlets: store.outlet_status,
-          vibe: store.vibe_tags.join(', '),
+          seats: store.seat_status || undefined,
+          outlets: store.outlet_status || undefined,
+          vibe: vibeTags.length > 0 ? vibeTags.join(', ') : undefined,
           priceRange: store.base_price > 0 ? `${store.base_price.toLocaleString()}원~` : undefined,
           phone: store.phone_number ?? undefined,
           snsUrl: store.website_url ?? undefined,
           amenities: {
-            parking: store.amenities.includes('parking'),
-            pets: store.amenities.includes('pets'),
-            noTimeLimit: store.amenities.includes('noTimeLimit'),
-            separateRestroom: store.amenities.includes('separateRestroom'),
-            indoorRestroom: store.amenities.includes('indoorRestroom'),
-            groupVisit: store.amenities.includes('groupVisit'),
-            decafFree: store.amenities.includes('decafFree'),
+            parking:          amenities.includes('parking'),
+            pets:             amenities.includes('pets'),
+            noTimeLimit:      amenities.includes('noTimeLimit'),
+            separateRestroom: amenities.includes('separateRestroom'),
+            indoorRestroom:   amenities.includes('indoorRestroom'),
+            groupVisit:       amenities.includes('groupVisit'),
+            decafFree:        amenities.includes('decafFree'),
           },
           reviews: [],
         });
@@ -1412,6 +1415,16 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           </div>
 
           {/* 기타 정보 세로 나열 */}
+          <InfoRow
+            label="영업시간"
+            value={
+              hasHoursData && todayHours
+                ? `${statusLabel}  ${todayHours.open} - ${todayHours.close}`
+                : hasHoursData
+                ? statusLabel
+                : undefined
+            }
+          />
           <InfoRow label="분위기" value={cafe.vibe} />
           <InfoRow label="가격대" value={cafe.priceRange} />
           <InfoRow label="연락처" value={cafe.phone} onCopy={handleCopyPhone} />
