@@ -126,6 +126,7 @@ interface CafeDetailData {
   thumbnailUrl?: string;
   photos?: string[];
   hours: Partial<Record<DayKey, BusinessHour | null>>;
+  hoursText?: string;   // DB에 텍스트로 저장된 원본 (표시용)
   regularHoliday: DayKey[];
   seats?: string;
   outlets?: string;
@@ -147,52 +148,79 @@ const WEEKDAYS: DayKey[] = ['월', '화', '수', '목', '금'];
 const WEEKEND:  DayKey[] = ['토', '일'];
 
 // ────────── 영업시간 정규화 ─────────────────────────────────
-// Supabase JSONB 값이 어떤 형태로 와도 { open, close } 로 변환
-// 지원 형식:
-//   { "open": "09:00", "close": "21:00" }          ← 완전 구조체
-//   "09:00 ~ 21:00"  /  "09:00~21:00"              ← 문자열
-//   "09:00 ~ 다음날 03:30"                          ← 다음날 표기
+// DB JSONB 가 문자열 스칼라로 저장된 경우 파싱
+// 예) "매일 9:00~23:00"  /  "주중 08:00~21:00\n주말 09:00~22:00"
+//     "매일 09:30~다음날 02:00"  /  "24 시간"
+function parseHoursText(text: string): Partial<Record<DayKey, BusinessHour | null>> {
+  const result: Partial<Record<DayKey, BusinessHour | null>> = {};
+
+  // "24 시간" → 항상 영업
+  if (/24\s*시간/i.test(text)) {
+    DAY_ORDER.forEach(d => { result[d] = { open: '00:00', close: '24:00' }; });
+    return result;
+  }
+
+  const lines = text.split('\n');
+  for (const line of lines) {
+    // 시간 범위 추출: "09:00 ~ 다음날 02:00" / "09:00~21:00" / "09:00 - 21:00"
+    const m = line.match(/(\d{1,2}:\d{2})\s*[~\-]\s*(다음날\s*)?(\d{1,2}:\d{2})/);
+    if (!m) continue;
+
+    const h: BusinessHour = {
+      open:  m[1].trim(),
+      close: (m[2] ? '다음날 ' : '') + m[3].trim(),
+    };
+
+    if      (/매일/.test(line))          DAY_ORDER.forEach(d => { result[d] = h; });
+    else if (/주중/.test(line))          WEEKDAYS.forEach(d => { result[d] = h; });
+    else if (/주말/.test(line))          WEEKEND.forEach(d  => { result[d] = h; });
+    else if (/토요일/.test(line))        result['토'] = h;
+    else if (/일요일/.test(line))        result['일'] = h;
+    else if (/월요일/.test(line))        result['월'] = h;
+    else if (/화요일/.test(line))        result['화'] = h;
+    else if (/수요일/.test(line))        result['수'] = h;
+    else if (/목요일/.test(line))        result['목'] = h;
+    else if (/금요일/.test(line))        result['금'] = h;
+  }
+
+  return result;
+}
+
+// JSONB 값 → hours 구조 변환 (문자열 / 객체 모두 처리)
 function parseHourEntry(val: unknown): BusinessHour | null {
   if (!val) return null;
-  // 객체 { open, close }
   if (typeof val === 'object' && !Array.isArray(val)) {
     const v = val as Record<string, unknown>;
     if (typeof v.open === 'string' && typeof v.close === 'string') {
       return { open: v.open.trim(), close: v.close.trim() };
     }
   }
-  // 문자열 "HH:MM ~ HH:MM" 또는 "HH:MM~HH:MM"
   if (typeof val === 'string') {
-    const parts = val.split('~').map(s => s.trim());
-    if (parts.length === 2 && parts[0] && parts[1]) {
-      return { open: parts[0], close: parts[1] };
-    }
+    const m = val.match(/(\d{1,2}:\d{2})\s*[~\-]\s*(다음날\s*)?(\d{1,2}:\d{2})/);
+    if (m) return { open: m[1], close: (m[2] ? '다음날 ' : '') + m[3] };
   }
   return null;
 }
 
 function expandHours(
-  raw: Record<string, unknown> | null
+  raw: string | Record<string, unknown> | null
 ): Partial<Record<DayKey, BusinessHour | null>> {
-  if (!raw || typeof raw !== 'object') return {};
+  if (!raw) return {};
 
-  console.log('[expandHours] raw business_hours:', JSON.stringify(raw));
+  // ── 문자열 스칼라 (현재 DB 저장 방식) ──
+  if (typeof raw === 'string') return parseHoursText(raw);
 
+  // ── 객체 형식 (구조화 포맷) ──
   const result: Partial<Record<DayKey, BusinessHour | null>> = {};
   const set = (days: DayKey[], key: string) => {
     const h = parseHourEntry(raw[key]);
     days.forEach(d => { result[d] = h; });
   };
-
   if (raw['매일'] !== undefined) set(DAY_ORDER, '매일');
-  if (raw['주중'] !== undefined) set(WEEKDAYS, '주중');
-  if (raw['주말'] !== undefined) set(WEEKEND, '주말');
-  // 개별 요일 키 덮어쓰기
-  DAY_ORDER.forEach(d => {
-    if (raw[d] !== undefined) result[d] = parseHourEntry(raw[d]);
-  });
+  if (raw['주중'] !== undefined) set(WEEKDAYS,  '주중');
+  if (raw['주말'] !== undefined) set(WEEKEND,   '주말');
+  DAY_ORDER.forEach(d => { if (raw[d] !== undefined) result[d] = parseHourEntry(raw[d]); });
 
-  console.log('[expandHours] result:', JSON.stringify(result));
   return result;
 }
 
@@ -213,6 +241,7 @@ const EMPTY_CAFE: CafeDetailData = {
   name: '',
   address: '',
   hours: {},
+  hoursText: undefined,
   regularHoliday: [],
   amenities: {},
   reviews: [],
@@ -913,7 +942,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           address: store.address_road,
           thumbnailUrl: store.thumbnail_url || undefined,
           photos: photoUrls.length > 0 ? photoUrls : [],
-          hours: expandHours(store.business_hours),
+          hours: expandHours(store.business_hours as string | Record<string, unknown> | null),
+          hoursText: typeof store.business_hours === 'string' ? store.business_hours : undefined,
           regularHoliday: [],
           seats: store.seat_status || undefined,
           outlets: store.outlet_status || undefined,
@@ -1194,9 +1224,9 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     }))
   );
 
-  // 오늘 영업시간 — business_hours 객체 자체가 있으면 표시
+  // 오늘 영업시간
   const todayHours = cafe.hours[todayKey];
-  const hasHoursData = Object.keys(cafe.hours).length > 0;
+  const hasHoursData = Object.keys(cafe.hours).length > 0 || !!cafe.hoursText;
 
   // 매장 없음
   if (!loading && !storeData) {
@@ -1435,23 +1465,32 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               background: '#F3F3F3', borderRadius: 12,
               padding: '12px 16px', marginBottom: 16,
             }}>
-              {DAY_ORDER.map(day => {
-                const h = cafe.hours[day];
-                const isToday = day === todayKey;
-                const isHoliday = cafe.regularHoliday.includes(day) || h === null || h === undefined;
-                return (
-                  <div key={day} style={{
-                    display: 'flex', justifyContent: 'space-between',
-                    padding: '5px 0',
-                    fontSize: 14,
-                    fontWeight: isToday ? 700 : 400,
-                    color: isToday ? '#252525' : '#4E5968',
-                  }}>
-                    <span>{day}요일</span>
-                    <span>{isHoliday ? '휴무' : `${(h as BusinessHour).open} - ${(h as BusinessHour).close}`}</span>
-                  </div>
-                );
-              })}
+              {cafe.hoursText ? (
+                /* 텍스트 원본 표시 (DB 문자열 스칼라 방식) */
+                cafe.hoursText.split('\n').map((line, i) => (
+                  <p key={i} style={{ fontSize: 14, color: '#4E5968', padding: '3px 0', lineHeight: 1.5 }}>
+                    {line}
+                  </p>
+                ))
+              ) : (
+                /* 구조화 객체 방식: 요일별 표 */
+                DAY_ORDER.map(day => {
+                  const h = cafe.hours[day];
+                  const isToday = day === todayKey;
+                  const isHoliday = cafe.regularHoliday.includes(day) || h === null || h === undefined;
+                  return (
+                    <div key={day} style={{
+                      display: 'flex', justifyContent: 'space-between',
+                      padding: '5px 0', fontSize: 14,
+                      fontWeight: isToday ? 700 : 400,
+                      color: isToday ? '#252525' : '#4E5968',
+                    }}>
+                      <span>{day}요일</span>
+                      <span>{isHoliday ? '휴무' : `${(h as BusinessHour).open} - ${(h as BusinessHour).close}`}</span>
+                    </div>
+                  );
+                })
+              )}
             </div>
           )}
         </div>
