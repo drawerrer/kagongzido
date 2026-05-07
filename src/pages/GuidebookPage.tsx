@@ -3,6 +3,7 @@ import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import { openURL, graniteEvent } from '@apps-in-toss/web-framework';
+import { CTAButton } from '@toss/tds-mobile';
 
 // ─── 아이콘 ────────────────────────────────────────────────────
 function IcSeat() {
@@ -656,18 +657,7 @@ function GuideBookDetailView({
 
       {/* 하단 CTA */}
       <div style={{ flexShrink: 0, padding: '12px 20px calc(env(safe-area-inset-bottom, 0px) + 76px)', backgroundColor: '#f2f4f6' }}>
-        <button
-          onClick={() => onDetailOpen?.(store.id)}
-          style={{
-            width: '100%', height: 52,
-            borderRadius: 16,
-            backgroundColor: '#252525',
-            border: 'none', cursor: 'pointer',
-            color: '#ffffff', fontWeight: 700, fontSize: 17,
-          }}
-        >
-          자세히보기
-        </button>
+        <CTAButton onClick={() => onDetailOpen?.(store.id)}>자세히보기</CTAButton>
       </div>
     </div>
   );
