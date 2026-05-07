@@ -310,7 +310,7 @@ export interface StoreRow {
   phone_number: string | null;
   thumbnail_url: string;
   photo_urls: string[];
-  business_hours: Record<string, { open: string; close: string }> | null;
+  business_hours: Record<string, unknown> | null;
   website_url: string | null;
   seat_status: string;
   outlet_status: string;

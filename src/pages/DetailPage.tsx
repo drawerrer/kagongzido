@@ -147,22 +147,52 @@ const WEEKDAYS: DayKey[] = ['월', '화', '수', '목', '금'];
 const WEEKEND:  DayKey[] = ['토', '일'];
 
 // ────────── 영업시간 정규화 ─────────────────────────────────
-// DB JSONB 형식: { "주중": { open, close }, "주말": { open, close } }
-//                { "매일": { open, close } }
-//                { "월": { open, close }, ... }  ← 개별 요일도 지원
-// "close"에 "다음날 03:30" 표기 허용
+// Supabase JSONB 값이 어떤 형태로 와도 { open, close } 로 변환
+// 지원 형식:
+//   { "open": "09:00", "close": "21:00" }          ← 완전 구조체
+//   "09:00 ~ 21:00"  /  "09:00~21:00"              ← 문자열
+//   "09:00 ~ 다음날 03:30"                          ← 다음날 표기
+function parseHourEntry(val: unknown): BusinessHour | null {
+  if (!val) return null;
+  // 객체 { open, close }
+  if (typeof val === 'object' && !Array.isArray(val)) {
+    const v = val as Record<string, unknown>;
+    if (typeof v.open === 'string' && typeof v.close === 'string') {
+      return { open: v.open.trim(), close: v.close.trim() };
+    }
+  }
+  // 문자열 "HH:MM ~ HH:MM" 또는 "HH:MM~HH:MM"
+  if (typeof val === 'string') {
+    const parts = val.split('~').map(s => s.trim());
+    if (parts.length === 2 && parts[0] && parts[1]) {
+      return { open: parts[0], close: parts[1] };
+    }
+  }
+  return null;
+}
+
 function expandHours(
-  raw: Record<string, { open: string; close: string }> | null
+  raw: Record<string, unknown> | null
 ): Partial<Record<DayKey, BusinessHour | null>> {
-  if (!raw) return {};
+  if (!raw || typeof raw !== 'object') return {};
+
+  console.log('[expandHours] raw business_hours:', JSON.stringify(raw));
+
   const result: Partial<Record<DayKey, BusinessHour | null>> = {};
+  const set = (days: DayKey[], key: string) => {
+    const h = parseHourEntry(raw[key]);
+    days.forEach(d => { result[d] = h; });
+  };
 
-  if (raw['매일']) DAY_ORDER.forEach(d => { result[d] = raw['매일']; });
-  if (raw['주중']) WEEKDAYS.forEach(d => { result[d] = raw['주중']; });
-  if (raw['주말']) WEEKEND.forEach(d =>  { result[d] = raw['주말']; });
-  // 개별 요일 키가 있으면 덮어쓰기
-  DAY_ORDER.forEach(d => { if (raw[d]) result[d] = raw[d]; });
+  if (raw['매일'] !== undefined) set(DAY_ORDER, '매일');
+  if (raw['주중'] !== undefined) set(WEEKDAYS, '주중');
+  if (raw['주말'] !== undefined) set(WEEKEND, '주말');
+  // 개별 요일 키 덮어쓰기
+  DAY_ORDER.forEach(d => {
+    if (raw[d] !== undefined) result[d] = parseHourEntry(raw[d]);
+  });
 
+  console.log('[expandHours] result:', JSON.stringify(result));
   return result;
 }
 
