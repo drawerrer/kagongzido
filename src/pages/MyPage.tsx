@@ -135,7 +135,7 @@ function SubHeader({
 function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (id: string) => void }) {
   return (
     <div style={{ padding: '16px 16px 0' }}>
-      <StoreCountBar count={cafes.length} />
+      <StoreCountBar count={cafes.length} style={{ paddingLeft: 0 }} />
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
