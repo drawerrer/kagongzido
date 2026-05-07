@@ -979,7 +979,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           hoursText: typeof store.business_hours === 'string' ? store.business_hours : undefined,
           seats: store.seat_status || undefined,
           outlets: store.outlet_status || undefined,
-          vibe: vibeTags.length > 0 ? vibeTags.join(', ') : undefined,
+          vibe: vibeTags.length > 0 ? vibeTags.join(' · ') : undefined,
           priceRange: store.base_price > 0 ? `${store.base_price.toLocaleString()}원~` : undefined,
           phone: store.phone_number ?? undefined,
           snsUrl: store.website_url ?? undefined,
