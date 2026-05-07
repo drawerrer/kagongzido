@@ -427,8 +427,9 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
         initMap();
       } else if (attempts >= 50) { // 100ms × 50 = 5초
         clearInterval(interval);
+        const scriptStatus = (window as any).__kakaoScriptStatus ?? 'not-injected';
         setMapDebug(
-          `❌ SDK 로드 실패 — kakao: ${typeof (window as any).kakao}, maps: ${typeof (window as any).kakao?.maps}`
+          `❌ 실패 — script:${scriptStatus}, kakao:${typeof (window as any).kakao}, maps:${typeof (window as any).kakao?.maps}`
         );
       }
     }, 100);
