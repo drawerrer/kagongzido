@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import GhostButton from './GhostButton';
 
 interface EmptyStateProps {
   title: string;
@@ -41,21 +42,9 @@ export default function EmptyState({
         </p>
       )}
       {buttonLabel && (
-        <button
-          onClick={onButtonClick}
-          style={{
-            marginTop: 52, height: 38, borderRadius: 10,
-            backgroundColor: 'rgba(211,211,223,0.19)',
-            border: 'none', cursor: 'pointer',
-            display: 'inline-flex', alignItems: 'center',
-            padding: '0 16px', gap: 6, flexShrink: 0,
-          }}
-        >
-          <span style={{ fontWeight: 590, fontSize: 15, color: '#252525', whiteSpace: 'nowrap' }}>
-            {buttonLabel}
-          </span>
-          {buttonIcon}
-        </button>
+        <div style={{ marginTop: 52 }}>
+          <GhostButton label={buttonLabel} icon={buttonIcon} onClick={onButtonClick} />
+        </div>
       )}
     </div>
   );
