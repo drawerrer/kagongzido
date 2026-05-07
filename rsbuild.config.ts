@@ -7,7 +7,9 @@ const { publicVars } = loadEnv({ prefixes: ['VITE_'] });
 export default defineConfig({
   plugins: [pluginReact(), pluginSvgr()],
   html: {
-    template: './index.html',
+    template({ entryName }) {
+      return entryName === 'admin' ? './admin.html' : './index.html';
+    },
   },
   server: {
     host: '0.0.0.0',
@@ -17,6 +19,7 @@ export default defineConfig({
     define: publicVars,
     entry: {
       index: './src/index.tsx',
+      admin: './src/admin.tsx',
     },
   },
 });

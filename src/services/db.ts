@@ -252,27 +252,51 @@ export async function fetchReviews(storeId: string): Promise<ReviewRow[]> {
 // ─────────────────────────────────────────────────────────────
 
 export interface CafeReportRow {
-  cafe_name: string;
-  cafe_address: string;
-  cafe_id?: string | null;
-  outlet?: string | null;
-  seat?: string | null;
-  noise?: string | null;
-  review: string;
+  store_name: string;
+  outlet_status?: string | null;
+  seat_status?: string | null;
+  noise_status?: string | null;
+  content: string;
   photos?: string[];
+}
+
+async function uploadReportPhotos(photos: string[]): Promise<string[]> {
+  if (!supabase || photos.length === 0) return [];
+  const urls: string[] = [];
+  const reportId = crypto.randomUUID();
+  for (let i = 0; i < photos.length; i++) {
+    try {
+      const res = await fetch(photos[i]);
+      const blob = await res.blob();
+      const path = `${reportId}/photo_${i + 1}.jpg`;
+      const { data, error } = await supabase.storage
+        .from('report-photos')
+        .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+      if (!error && data) {
+        const { data: urlData } = supabase.storage
+          .from('report-photos')
+          .getPublicUrl(data.path);
+        urls.push(urlData.publicUrl);
+      }
+    } catch (e) {
+      console.error('uploadReportPhotos:', e);
+    }
+  }
+  return urls;
 }
 
 export async function insertCafeReport(report: CafeReportRow): Promise<boolean> {
   if (!supabase) return false;
-  const { error } = await supabase.from('cafe_reports').insert({
-    cafe_name: report.cafe_name,
-    cafe_address: report.cafe_address,
-    cafe_id: report.cafe_id ?? null,
-    outlet: report.outlet ?? null,
-    seat: report.seat ?? null,
-    noise: report.noise ?? null,
-    review: report.review,
-    photos: report.photos ?? [],
+
+  const photoUrls = await uploadReportPhotos(report.photos ?? []);
+
+  const { error } = await supabase.from('reports').insert({
+    store_name: report.store_name,
+    outlet_status: report.outlet_status ?? null,
+    seat_status: report.seat_status ?? null,
+    noise_status: report.noise_status ?? null,
+    content: report.content,
+    photo_urls: photoUrls,
   });
 
   if (error) { console.error('insertCafeReport:', error); return false; }

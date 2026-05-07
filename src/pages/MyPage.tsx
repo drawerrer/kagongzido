@@ -1087,13 +1087,11 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
         cancelButton={<ConfirmDialog.CancelButton onClick={() => setShowSubmitDialog(false)}>제보 취소</ConfirmDialog.CancelButton>}
         confirmButton={<ConfirmDialog.ConfirmButton onClick={async () => {
           await insertCafeReport({
-            cafe_name: selectedCafe?.name ?? directName ?? '',
-            cafe_address: selectedCafe?.address ?? directAddress,
-            cafe_id: selectedCafe?.id ?? null,
-            outlet: chips['콘센트'] || null,
-            seat: chips['좌석'] || null,
-            noise: chips['소음'] || null,
-            review: reviewText,
+            store_name: selectedCafe?.name ?? directName ?? '',
+            outlet_status: chips['콘센트'] || null,
+            seat_status: chips['좌석'] || null,
+            noise_status: chips['소음'] || null,
+            content: reviewText,
             photos,
           });
           setShowSubmitDialog(false);
