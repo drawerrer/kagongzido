@@ -411,12 +411,29 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
       });
     };
 
-    // index.html에서 이미 로드된 경우 바로 실행, 아직 로딩 중이면 대기
+    // SDK가 이미 로드된 경우 즉시 실행
     if (window.kakao?.maps) {
       initMap();
-    } else {
-      setMapDebug('❌ kakao.maps 객체 없음 (SDK 로드 실패)');
+      return;
     }
+
+    // WebView 환경에서 외부 스크립트 로드가 늦을 수 있으므로 최대 5초 폴링
+    setMapDebug(`⏳ SDK 대기 중... (origin: ${window.location.origin})`);
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      if (window.kakao?.maps) {
+        clearInterval(interval);
+        initMap();
+      } else if (attempts >= 50) { // 100ms × 50 = 5초
+        clearInterval(interval);
+        setMapDebug(
+          `❌ SDK 로드 실패 — kakao: ${typeof (window as any).kakao}, maps: ${typeof (window as any).kakao?.maps}`
+        );
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
   }, []);
 
   // ── 현재 위치로 돌아가기 (SDK) ─────────
