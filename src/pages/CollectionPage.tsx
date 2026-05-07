@@ -399,8 +399,17 @@ export default function CollectionPage({
                     onSelect={() => { if (dragIndex === -1) toggleSelectStore(store.id); }}
                     onPress={() => onDetailOpen?.(store.id)}
                     onHeartTap={() => {
-                      setRemoveStoreTarget(store);
-                      setShowRemoveStoreConfirm(true);
+                      const isInCollection = collections.some(
+                        c => c.id !== 'recent' && c.storeIds.includes(store.id)
+                      );
+                      if (isInCollection) {
+                        setRemoveStoreTarget(store);
+                        setShowRemoveStoreConfirm(true);
+                      } else {
+                        setDeletedStores([store]);
+                        removeFavoriteFromContext(store.id);
+                        setSnackbar('deleted');
+                      }
                     }}
                     onPhotoMore={() => onPhotoMore?.(store.id, enrichedPhotos, store.name)}
                   />
