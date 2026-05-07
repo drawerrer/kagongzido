@@ -7,6 +7,7 @@ import { useFavorites } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
 import DetailPage from './DetailPage';
 import { fetchAllStores, type StoreRow } from '../services/db';
+import Chip from '../components/Chip';
 
 // ── 타입 ─────────────────────────────────
 interface Cafe {
@@ -803,24 +804,12 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
               }}
             >
               {CATEGORY_CHIPS.map(chip => (
-                <button
+                <Chip
                   key={chip}
+                  label={chip}
+                  isActive={activeChip === chip}
                   onClick={() => setActiveChip(activeChip === chip ? null : chip)}
-                  style={{
-                    flexShrink: 0,
-                    height: 32,
-                    padding: '0 14px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: activeChip === chip ? '#252525' : 'rgba(46,46,46,0.08)',
-                    color: activeChip === chip ? '#ffffff' : 'rgba(0,0,0,0.7)',
-                    fontSize: 13,
-                    fontWeight: 590,
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  {chip}
-                </button>
+                />
               ))}
             </div>
 
