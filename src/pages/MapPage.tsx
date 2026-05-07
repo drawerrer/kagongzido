@@ -9,6 +9,7 @@ import DetailPage from './DetailPage';
 import { fetchAllStores, type StoreRow } from '../services/db';
 import Chip from '../components/Chip';
 import StoreCardHome, { type HomeCafe } from '../components/StoreCard/Home';
+import StoreCountBar from '../components/StoreCountBar';
 
 // ── 타입 ─────────────────────────────────
 interface Cafe {
