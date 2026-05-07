@@ -303,16 +303,52 @@ export async function insertCafeReport(report: CafeReportRow): Promise<boolean> 
   return true;
 }
 
+// base64 URI → Supabase Storage(review-photos 버킷) 업로드 후 공개 URL 반환
+async function uploadReviewPhotos(photos: string[]): Promise<string[]> {
+  if (!supabase || photos.length === 0) return [];
+  const urls: string[] = [];
+  const folderId = crypto.randomUUID(); // 리뷰별 폴더 구분
+  for (let i = 0; i < photos.length; i++) {
+    const photo = photos[i];
+    // 이미 URL이면 그대로 사용 (재업로드 방지)
+    if (!photo.startsWith('data:')) { urls.push(photo); continue; }
+    try {
+      const res  = await fetch(photo);
+      const blob = await res.blob();
+      const ext  = blob.type === 'image/png' ? 'png' : 'jpg';
+      const path = `${folderId}/photo_${i + 1}.${ext}`;
+      const { data, error } = await supabase.storage
+        .from('review-photos')
+        .upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false });
+      if (!error && data) {
+        const { data: urlData } = supabase.storage
+          .from('review-photos')
+          .getPublicUrl(data.path);
+        urls.push(urlData.publicUrl);
+      } else if (error) {
+        console.error(`uploadReviewPhotos [${i}]:`, error.message);
+      }
+    } catch (e) {
+      console.error(`uploadReviewPhotos [${i}]:`, e);
+    }
+  }
+  return urls;
+}
+
 export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' | 'created_at' | 'updated_at'>): Promise<boolean> {
   if (!supabase) return false;
+
+  // 사진 Storage 업로드 (base64 → URL 변환)
+  const photoUrls = await uploadReviewPhotos(review.photo_urls ?? []);
+
   const { error } = await supabase.from('reviews').insert({
-    user_id: review.user_id,
-    store_id: review.store_id,
-    content: review.content,
-    outlet_status: review.outlet_status,
-    seat_status: review.seat_status,
-    noise_status: review.noise_status,
-    photo_urls: review.photo_urls ?? [],
+    user_id:        review.user_id,
+    store_id:       review.store_id,
+    content:        review.content,
+    outlet_status:  review.outlet_status,
+    seat_status:    review.seat_status,
+    noise_status:   review.noise_status,
+    photo_urls:     photoUrls,
   });
 
   if (error) { console.error('insertReview:', error); return false; }

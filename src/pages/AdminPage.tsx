@@ -50,22 +50,23 @@ interface StoreOption {
 }
 
 // ─── 코멘트 윗줄/아랫줄 입력 ─────────────────────────────────────
+// onBlur 시 부모에 현재 값 알림 (자동저장 X — 저장 버튼 통합)
 function CommentFields({
   itemId,
   initialComment,
-  onSave,
+  onChange,
 }: {
   itemId: string;
   initialComment: string | null;
-  onSave: (id: string, comment: string) => void;
+  onChange: (id: string, combined: string) => void;
 }) {
   const parts = (initialComment ?? '').split('\n');
   const [line1, setLine1] = useState(parts[0] ?? '');
   const [line2, setLine2] = useState(parts[1] ?? '');
 
-  const save = (l1: string, l2: string) => {
+  const notify = (l1: string, l2: string) => {
     const combined = l2.trim() ? `${l1}\n${l2}` : l1;
-    onSave(itemId, combined);
+    onChange(itemId, combined);
   };
 
   const inputStyle: React.CSSProperties = {
@@ -87,7 +88,7 @@ function CommentFields({
         <input
           value={line1}
           onChange={e => setLine1(e.target.value)}
-          onBlur={() => save(line1, line2)}
+          onBlur={() => notify(line1, line2)}
           maxLength={25}
           placeholder="윗줄 텍스트"
           style={inputStyle}
@@ -99,7 +100,7 @@ function CommentFields({
         <input
           value={line2}
           onChange={e => setLine2(e.target.value)}
-          onBlur={() => save(line1, line2)}
+          onBlur={() => notify(line1, line2)}
           maxLength={25}
           placeholder="아랫줄 텍스트 (선택)"
           style={inputStyle}
@@ -254,6 +255,12 @@ function GuidebookDetailView({
 }) {
   const [title, setTitle] = useState(guidebook.title);
   const [isPublished, setIsPublished] = useState(guidebook.is_published);
+  const [savedTitle, setSavedTitle] = useState(guidebook.title);
+  const [savedIsPublished, setSavedIsPublished] = useState(guidebook.is_published);
+  // 코멘트 변경 추적 (itemId → 현재 draft 값)
+  const [dirtyComments, setDirtyComments] = useState<Map<string, string>>(new Map());
+  const hasUnsavedChanges =
+    title !== savedTitle || isPublished !== savedIsPublished || dirtyComments.size > 0;
   const [items, setItems] = useState<GuidebookItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
   const [allStores, setAllStores] = useState<StoreOption[]>([]);
@@ -291,6 +298,7 @@ function GuidebookDetailView({
       store: storeMap.get(item.store_id) ?? { id: item.store_id, name: '알 수 없음', address_road: '', thumbnail_url: '' },
     }));
     setItems(combined);
+    setDirtyComments(new Map()); // 새 데이터 로드 시 draft 초기화
     setLoadingItems(false);
   }
 
@@ -305,6 +313,13 @@ function GuidebookDetailView({
   async function saveGuidebook() {
     setSaving(true);
     await supabase.from('guidebooks').update({ title, is_published: isPublished }).eq('id', guidebook.id);
+    // 변경된 코멘트 일괄 저장
+    for (const [itemId, comment] of dirtyComments) {
+      await updateComment(itemId, comment);
+    }
+    setSavedTitle(title);
+    setSavedIsPublished(isPublished);
+    setDirtyComments(new Map());
     setSaving(false);
   }
 
@@ -373,6 +388,20 @@ function GuidebookDetailView({
     await supabase.from('guidebook_items').update({ comment: comment || null }).eq('id', itemId);
   }
 
+  // CommentFields에서 blur 시 호출 — 원본과 다르면 dirty로 표시
+  function handleCommentDraft(itemId: string, combined: string) {
+    const original = items.find(i => i.id === itemId)?.comment ?? '';
+    setDirtyComments(prev => {
+      const next = new Map(prev);
+      if (combined !== original) {
+        next.set(itemId, combined);
+      } else {
+        next.delete(itemId); // 원본으로 되돌린 경우 dirty 해제
+      }
+      return next;
+    });
+  }
+
   const addedStoreIds = new Set(items.map(i => i.store_id));
   const filteredStores = allStores.filter(s =>
     !addedStoreIds.has(s.id) &&
@@ -421,11 +450,15 @@ function GuidebookDetailView({
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={saveGuidebook}
-            disabled={saving}
+            disabled={saving || !hasUnsavedChanges}
             style={{
-              flex: 1, height: 44, borderRadius: 10, background: '#191F28', border: 'none',
-              color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer',
+              flex: 1, height: 44, borderRadius: 10, border: 'none',
+              background: hasUnsavedChanges ? '#191F28' : '#E5E8EB',
+              color: hasUnsavedChanges ? '#fff' : '#ADB5BD',
+              fontSize: 15, fontWeight: 600,
+              cursor: hasUnsavedChanges ? 'pointer' : 'default',
               opacity: saving ? 0.6 : 1,
+              transition: 'background 0.15s, color 0.15s',
             }}
           >
             {saving ? '저장 중...' : '저장'}
@@ -474,7 +507,7 @@ function GuidebookDetailView({
                 <CommentFields
                   itemId={item.id}
                   initialComment={item.comment}
-                  onSave={updateComment}
+                  onChange={handleCommentDraft}
                 />
               </div>
               {/* 삭제 버튼 */}

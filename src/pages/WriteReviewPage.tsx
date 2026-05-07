@@ -152,7 +152,7 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
         background: '#f3f3f3', gap: 20,
       }}>
         <Spinner />
-        <p style={{ fontSize: 16, fontWeight: 600, color: '#191F28' }}>로딩중이에요</p>
+        <p style={{ fontSize: 16, fontWeight: 600, color: '#191F28' }}>리뷰를 등록하고 있어요</p>
       </div>
     );
   }
