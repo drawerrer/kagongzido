@@ -4,6 +4,7 @@ import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import { openURL, graniteEvent } from '@apps-in-toss/web-framework';
 import { CTAButton } from '@toss/tds-mobile';
+import SubButton from '../components/SubButton';
 
 // ─── 아이콘 ────────────────────────────────────────────────────
 function IcSeat() {
@@ -620,31 +621,9 @@ function GuideBookDetailView({
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    {(['길찾기', '리뷰보기', '저장하기'] as const).map((label) => (
-                      <button
-                        key={label}
-                        style={{
-                          height: 32,
-                          padding: '0 12px',
-                          borderRadius: 8,
-                          backgroundColor: '#E7E8EB',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontWeight: 590,
-                          fontSize: 13,
-                          color: 'rgba(3,18,40,0.7)',
-                          whiteSpace: 'nowrap',
-                        }}
-                        onClick={() => {
-                          if (label === '저장하기') onSave(s);
-                          else if (label === '리뷰보기') onDetailOpenToReview?.(s.id);
-                          else if (label === '길찾기') openKakaoMapWeb(s);
-                          else onDetailOpen?.(s.id);
-                        }}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                    <SubButton label="길찾기" onClick={() => openKakaoMapWeb(s)} />
+                    <SubButton label="리뷰보기" onClick={() => onDetailOpenToReview?.(s.id)} />
+                    <SubButton label="저장하기" onClick={() => onSave(s)} />
                   </div>
                   </div>{/* visibility wrapper */}
                 </div>
