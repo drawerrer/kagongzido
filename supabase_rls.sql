@@ -10,7 +10,7 @@
 --   ▸ 공개 테이블 (stores, guidebooks, guidebook_items, reviews)
 --     - SELECT: 누구나 가능 (앱 사용자)
 --     - INSERT/UPDATE/DELETE: 어드민 이메일만
---   ▸ 사용자 개인 테이블 (favorites, collections, cafe_reports)
+--   ▸ 사용자 개인 테이블 (favorites, collections, reports)
 --     - 본인 데이터만 SELECT/INSERT/UPDATE/DELETE
 --
 -- 어드민 이메일:
@@ -143,29 +143,29 @@ CREATE POLICY "reviews: admins can delete"
 
 
 -- ═════════════════════════════════════════════════════════════
--- 6. cafe_reports (사용자 제보) — 누구나 INSERT / 어드민만 조회·수정
+-- 6. reports (사용자 제보) — 누구나 INSERT / 어드민만 조회·수정
 -- ═════════════════════════════════════════════════════════════
-ALTER TABLE cafe_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "cafe_reports: anyone can insert" ON cafe_reports;
-CREATE POLICY "cafe_reports: anyone can insert"
-  ON cafe_reports FOR INSERT
+DROP POLICY IF EXISTS "reports: anyone can insert" ON reports;
+CREATE POLICY "reports: anyone can insert"
+  ON reports FOR INSERT
   WITH CHECK (true);
 
-DROP POLICY IF EXISTS "cafe_reports: admins can read" ON cafe_reports;
-CREATE POLICY "cafe_reports: admins can read"
-  ON cafe_reports FOR SELECT
+DROP POLICY IF EXISTS "reports: admins can read" ON reports;
+CREATE POLICY "reports: admins can read"
+  ON reports FOR SELECT
   USING (is_admin());
 
-DROP POLICY IF EXISTS "cafe_reports: admins can update" ON cafe_reports;
-CREATE POLICY "cafe_reports: admins can update"
-  ON cafe_reports FOR UPDATE
+DROP POLICY IF EXISTS "reports: admins can update" ON reports;
+CREATE POLICY "reports: admins can update"
+  ON reports FOR UPDATE
   USING (is_admin())
   WITH CHECK (is_admin());
 
-DROP POLICY IF EXISTS "cafe_reports: admins can delete" ON cafe_reports;
-CREATE POLICY "cafe_reports: admins can delete"
-  ON cafe_reports FOR DELETE
+DROP POLICY IF EXISTS "reports: admins can delete" ON reports;
+CREATE POLICY "reports: admins can delete"
+  ON reports FOR DELETE
   USING (is_admin());
 
 
@@ -193,5 +193,5 @@ CREATE POLICY "cafe_reports: admins can delete"
 -- SELECT schemaname, tablename, rowsecurity
 -- FROM pg_tables
 -- WHERE schemaname = 'public' AND tablename IN (
---   'stores', 'guidebooks', 'guidebook_items', 'reviews', 'cafe_reports'
+--   'stores', 'guidebooks', 'guidebook_items', 'reviews', 'reports'
 -- );
