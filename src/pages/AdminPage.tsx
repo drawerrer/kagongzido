@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type Session } from '@supabase/supabase-js';
 
+// ⚠️ 보안: 어드민 페이지는 사용자 인증(Supabase Auth) 기반으로 동작
+//   - ANON 키를 사용 (SERVICE 키는 브라우저 번들에 노출되므로 금지)
+//   - 데이터 쓰기 권한은 Supabase의 RLS 정책으로 ALLOWED_ADMIN_EMAILS 만 허용
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL as string,
-  import.meta.env.VITE_SUPABASE_SERVICE_KEY as string,
+  import.meta.env.VITE_SUPABASE_ANON_KEY as string,
 );
 
-const ADMIN_PASSWORD = 'kagong2024';
+const ALLOWED_ADMIN_EMAILS = [
+  'dsgj0024@gmail.com',
+  'juliesba1015@gmail.com',
+];
+
+function isAllowedAdmin(email: string | null | undefined): boolean {
+  return !!email && ALLOWED_ADMIN_EMAILS.includes(email.toLowerCase());
+}
 
 // ─── 타입 ─────────────────────────────────────────────────────
 interface Report {
@@ -136,43 +146,84 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 }
 
 // ─── 로그인 화면 ──────────────────────────────────────────────
-function LoginScreen({ onLogin }: { onLogin: () => void }) {
-  const [pw, setPw] = useState('');
-  const [error, setError] = useState(false);
+function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pw === ADMIN_PASSWORD) {
-      sessionStorage.setItem('admin_auth', '1');
-      onLogin();
-    } else {
-      setError(true);
-      setPw('');
+    if (loading) return;
+    setError('');
+    setLoading(true);
+
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
+    setLoading(false);
+
+    if (signInError) {
+      setError('이메일 또는 비밀번호가 올바르지 않아요');
+      setPassword('');
+      return;
     }
+    // 허용된 어드민 이메일이 아니면 즉시 로그아웃 (DB 접근 차단은 RLS에서 추가 보호)
+    if (!isAllowedAdmin(data.user?.email)) {
+      await supabase.auth.signOut();
+      setError('어드민 권한이 없는 계정이에요');
+      setPassword('');
+      return;
+    }
+    // 로그인 성공 — AdminApp의 onAuthStateChange가 세션 갱신을 감지해서 자동 진입
   };
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F9FAFB' }}>
       <form onSubmit={handleSubmit} style={{ background: '#fff', padding: 40, borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', width: 320 }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: '#191F28', marginBottom: 8 }}>카공지도 어드민</h2>
-        <p style={{ fontSize: 14, color: '#6B7684', marginBottom: 24 }}>비밀번호를 입력하세요</p>
+        <p style={{ fontSize: 14, color: '#6B7684', marginBottom: 24 }}>이메일과 비밀번호로 로그인하세요</p>
         <input
-          type="password"
-          value={pw}
-          onChange={e => { setPw(e.target.value); setError(false); }}
-          placeholder="비밀번호"
+          type="email"
+          value={email}
+          onChange={e => { setEmail(e.target.value); setError(''); }}
+          placeholder="이메일"
+          autoComplete="username"
           autoFocus
+          required
           style={{
-            width: '100%', height: 44, borderRadius: 10, border: error ? '1.5px solid #FF4D4F' : '1.5px solid #E5E8EB',
+            width: '100%', height: 44, borderRadius: 10,
+            border: error ? '1.5px solid #FF4D4F' : '1.5px solid #E5E8EB',
             padding: '0 12px', fontSize: 15, outline: 'none', boxSizing: 'border-box', marginBottom: 8,
           }}
         />
-        {error && <p style={{ fontSize: 13, color: '#FF4D4F', marginBottom: 8 }}>비밀번호가 틀렸어요</p>}
+        <input
+          type="password"
+          value={password}
+          onChange={e => { setPassword(e.target.value); setError(''); }}
+          placeholder="비밀번호"
+          autoComplete="current-password"
+          required
+          style={{
+            width: '100%', height: 44, borderRadius: 10,
+            border: error ? '1.5px solid #FF4D4F' : '1.5px solid #E5E8EB',
+            padding: '0 12px', fontSize: 15, outline: 'none', boxSizing: 'border-box', marginBottom: 8,
+          }}
+        />
+        {error && <p style={{ fontSize: 13, color: '#FF4D4F', marginBottom: 8 }}>{error}</p>}
         <button
           type="submit"
-          style={{ width: '100%', height: 44, borderRadius: 10, background: '#191F28', border: 'none', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginTop: 4 }}
+          disabled={loading}
+          style={{
+            width: '100%', height: 44, borderRadius: 10,
+            background: loading ? '#6B7684' : '#191F28',
+            border: 'none', color: '#fff', fontSize: 15, fontWeight: 600,
+            cursor: loading ? 'wait' : 'pointer', marginTop: 4,
+          }}
         >
-          로그인
+          {loading ? '로그인 중...' : '로그인'}
         </button>
       </form>
     </div>
@@ -789,10 +840,29 @@ function GuidebooksView() {
 
 // ─── 메인 어드민 앱 ───────────────────────────────────────────
 export default function AdminApp() {
-  const [authed, setAuthed] = useState(!!sessionStorage.getItem('admin_auth'));
+  const [session, setSession] = useState<Session | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [reports, setReports] = useState<Report[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
   const [tab, setTab] = useState<'reports' | 'guidebooks'>('reports');
+
+  // 세션 초기 로드 + 변경 구독 (로그인/로그아웃 시 자동 갱신)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setCheckingAuth(false);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const authed = !!session && isAllowedAdmin(session.user.email);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   useEffect(() => {
     if (!authed) return;
@@ -807,7 +877,14 @@ export default function AdminApp() {
       });
   }, [authed]);
 
-  if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />;
+  if (checkingAuth) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F9FAFB', color: '#6B7684', fontSize: 14 }}>
+        로그인 상태 확인 중...
+      </div>
+    );
+  }
+  if (!authed) return <LoginScreen />;
 
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'inherit' }}>
@@ -817,9 +894,12 @@ export default function AdminApp() {
         padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
-        <h1 style={{ fontSize: 18, fontWeight: 700, color: '#191F28' }}>카공지도 어드민</h1>
+        <div>
+          <h1 style={{ fontSize: 18, fontWeight: 700, color: '#191F28' }}>카공지도 어드민</h1>
+          <p style={{ fontSize: 12, color: '#8B95A1', marginTop: 2 }}>{session?.user?.email}</p>
+        </div>
         <button
-          onClick={() => { sessionStorage.removeItem('admin_auth'); setAuthed(false); }}
+          onClick={handleLogout}
           style={{ fontSize: 13, color: '#8B95A1', background: 'none', border: 'none', cursor: 'pointer' }}
         >
           로그아웃
