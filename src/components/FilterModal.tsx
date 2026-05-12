@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import SheetCTA from './SheetCTA';
 
 // ── 옵션 칩 TDS SVG 아이콘 ─────────────────────
 function FiOutlet() {
@@ -477,48 +478,20 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
           <div style={{ height: 16 }} />
         </div>
 
-        {/* ── 하단 고정: 초기화 + 적용하기 버튼 ── */}
+        {/* ── 하단 고정: 초기화 + 적용하기 (SheetCTA 비대칭 통일) — bg/top padding 제거 ── */}
         <div
           style={{
-            padding: `16px 20px calc(env(safe-area-inset-bottom, 0px) + 16px)`,
-            background: '#f3f3f3',
-            display: 'flex',
-            gap: 10,
+            padding: `0 20px calc(env(safe-area-inset-bottom, 0px) + 16px)`,
           }}
         >
-          <button
-            onClick={() => setFilters(DEFAULT_FILTERS)}
-            style={{
-              width: 88,
-              height: 56,
-              borderRadius: 16,
-              background: 'rgba(0,12,30,0.05)',
-              color: 'rgba(0,12,30,0.6)',
-              fontSize: 17,
-              fontWeight: 590,
-              cursor: 'pointer',
-              border: 'none',
-              flexShrink: 0,
-            }}
-          >
-            초기화
-          </button>
-          <button
-            onClick={handleApply}
-            style={{
-              flex: 1,
-              height: 56,
-              borderRadius: 16,
-              background: '#252525',
-              color: '#ffffff',
-              fontSize: 17,
-              fontWeight: 590,
-              cursor: 'pointer',
-              border: 'none',
-            }}
-          >
-            적용하기
-          </button>
+          <SheetCTA.Double
+            leftLabel="초기화"
+            leftOnClick={() => setFilters(DEFAULT_FILTERS)}
+            leftWidth={88}
+            rightLabel="적용하기"
+            rightOnClick={handleApply}
+            background="#F3F3F3"
+          />
         </div>
       </div>
 

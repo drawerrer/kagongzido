@@ -12,6 +12,7 @@ import StoreCountBar from '../components/StoreCountBar';
 import SectionHeader from '../components/SectionHeader';
 import { useFavorites, FavoritedStore, haversineDistance } from '../context/FavoritesContext';
 import { BottomSheet, BottomCTA, CTAButton, Toast } from '@toss/tds-mobile';
+import FocusBottomCTA from '../components/FocusBottomCTA';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 
 type BottomSheetType = null | 'create' | 'select-collection' | 'rename' | 'col-action';
@@ -424,33 +425,31 @@ export default function CollectionPage({
         <div style={{ height: `calc(env(safe-area-inset-bottom, 0px) + ${(isEditMode || isOrganizeMode) ? 88 : 76}px)` }} />
       </div>
 
-      {/* ── 편집 모드 Bottom CTA ── */}
+      {/* ── 편집 모드 Bottom CTA (FocusBottomCTA 통일) ── */}
       {isEditMode && (
         hasSelection ? (
-          <BottomCTA.Double
-            fixed
-            leftButton={<CTAButton color="dark" variant="weak" onClick={deleteSelected}>삭제</CTAButton>}
-            rightButton={<CTAButton onClick={exitEditMode}>완료</CTAButton>}
+          <FocusBottomCTA.Double
+            leftLabel="삭제"
+            leftOnClick={deleteSelected}
+            rightLabel="완료"
+            rightOnClick={exitEditMode}
           />
         ) : (
-          <BottomCTA.Single fixed>
-            <CTAButton onClick={exitEditMode}>완료</CTAButton>
-          </BottomCTA.Single>
+          <FocusBottomCTA.Single label="완료" onClick={exitEditMode} />
         )
       )}
 
       {/* ── 컬렉션 선택 모드 Bottom CTA (Figma: Organize_Default/Selected) ── */}
       {isOrganizeMode && (
         hasSelection ? (
-          <BottomCTA.Double
-            fixed
-            leftButton={<CTAButton color="dark" variant="weak" onClick={exitOrganizeMode}>취소</CTAButton>}
-            rightButton={<CTAButton onClick={() => setBottomSheet('select-collection')}>완료</CTAButton>}
+          <FocusBottomCTA.Double
+            leftLabel="취소"
+            leftOnClick={exitOrganizeMode}
+            rightLabel="완료"
+            rightOnClick={() => setBottomSheet('select-collection')}
           />
         ) : (
-          <BottomCTA.Single fixed>
-            <CTAButton disabled>완료</CTAButton>
-          </BottomCTA.Single>
+          <FocusBottomCTA.Single label="완료" onClick={() => {}} disabled />
         )
       )}
 

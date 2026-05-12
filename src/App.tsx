@@ -84,6 +84,7 @@ function AppInner() {
   const [photoReview, setPhotoReview] = useState<{ storeId: string; cafeName: string; photos: string[] } | null>(null);
   const [deletedCollectionData, setDeletedCollectionData] = useState<{ id: string; name: string; storeIds: string[] } | null>(null);
   const [isCollectionEditMode, setIsCollectionEditMode] = useState(false);
+  const [isDetailFocusMode, setIsDetailFocusMode] = useState(false); // DetailPage 내부의 사진리뷰/리뷰작성 진입 시 탭바 숨김
   const { isFavorited, addFavorite, removeFavorite, favorites } = useFavorites();
 
   // CollectionDetailPage가 닫힐 때(collectionDetail → null) 편집모드 상태 리셋
@@ -95,6 +96,19 @@ function AppInner() {
   const [guidebookStoreIndex, setGuidebookStoreIndex] = useState(0);
   const [detailScrollToReview, setDetailScrollToReview] = useState(false);
   const [detailOpenDirections, setDetailOpenDirections] = useState(false);
+
+  // 탭바를 숨기는 풀스크린 액션 모드 (작성·편집·입력 등 집중 화면)
+  //  - 모음집: 편집/조직화 모드 (isCollectionEditMode)
+  //  - App-level 사진리뷰 오버레이 (photoReview)
+  //  - DetailPage 안의 사진리뷰/리뷰작성 (isDetailFocusMode)
+  //  - 마이 탭의 카페 제보하기/리뷰 편집 (FOCUS_MY_SUBPAGES)
+  //  - 향후 추가 예정: 'inquiry' (문의하기), 'withdraw' (회원탈퇴) — 구현 시 아래 배열에 슬러그 추가
+  const FOCUS_MY_SUBPAGES = ['report-cafe', 'review-edit'];
+  const isFocusMode =
+    isCollectionEditMode ||
+    !!photoReview ||
+    isDetailFocusMode ||
+    (!!myPageSubPage && FOCUS_MY_SUBPAGES.includes(myPageSubPage));
 
   // ── 왼쪽 엣지 스와이프 뒤로가기 (인터랙티브) ──────────────────
   const swipeRef            = useRef<HTMLDivElement>(null);
@@ -260,7 +274,7 @@ function AppInner() {
           right: 16,
           bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
           height: 56,
-          display: isCollectionEditMode ? 'none' : 'flex',
+          display: isFocusMode ? 'none' : 'flex',
           alignItems: 'center',
           background: '#ffffff',
           borderRadius: 28,
@@ -386,6 +400,7 @@ function AppInner() {
                 setActiveTab('collection');
               }
             }}
+            onFocusModeChange={setIsDetailFocusMode}
           />
         </div>
       )}

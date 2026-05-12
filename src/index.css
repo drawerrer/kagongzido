@@ -17,8 +17,8 @@
   --color-success: #1EC800;
   --color-warning: #FF9500;
 
-  /* 타이포그래피 토큰 */
-  --font-family: 'Pretendard Variable', -apple-system, sans-serif;
+  /* 타이포그래피 토큰 — 토스 미니앱 배포 시 시스템(앱인토스)이 '토스 프로덕트 산스'로 자동 치환 */
+  --font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-size-xs: 11px;
   --font-size-sm: 13px;
   --font-size-md: 15px;

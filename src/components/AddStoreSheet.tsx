@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { type FavoritedStore, fmtDist } from '../context/FavoritesContext';
+import SheetCTA from './SheetCTA';
 
 interface AddStoreSheetProps {
   availableStores: FavoritedStore[];
@@ -65,7 +66,7 @@ export default function AddStoreSheet({
           position: 'absolute',
           bottom: 0, left: 0, right: 0,
           height: expanded ? '92%' : '55%',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F3F3F3',
           borderRadius: '20px 20px 0 0',
           display: 'flex', flexDirection: 'column',
           transition: 'height 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -218,53 +219,23 @@ export default function AddStoreSheet({
           </div>
         </div>
 
-        {/* 하단 버튼 */}
+        {/* 하단 버튼 (SheetCTA 통일) — 래퍼 bg 제거: SheetCTA의 그라데이션이 가려지지 않도록 */}
         <div style={{
           flexShrink: 0,
-          padding: '12px 20px',
+          paddingLeft: 20,
+          paddingRight: 20,
           paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-          backgroundColor: '#ffffff',
         }}>
           {!hasSelection ? (
-            <button
-              onClick={onClose}
-              style={{
-                width: '100%', height: 52, borderRadius: 12,
-                backgroundColor: 'rgba(0,23,51,0.06)',
-                border: 'none', cursor: 'pointer',
-                fontWeight: 700, fontSize: 17,
-                color: 'rgba(0,12,30,0.25)',
-              }}
-            >
-              완료
-            </button>
+            <SheetCTA.Single label="완료" onClick={onClose} variant="secondary" background="#F3F3F3" />
           ) : (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={onClose}
-                style={{
-                  flex: 1, height: 52, borderRadius: 12,
-                  backgroundColor: 'rgba(0,23,51,0.06)',
-                  border: 'none', cursor: 'pointer',
-                  fontWeight: 700, fontSize: 17,
-                  color: 'rgba(0,12,30,0.8)',
-                }}
-              >
-                닫기
-              </button>
-              <button
-                onClick={() => onConfirm([...selectedIds])}
-                style={{
-                  flex: 1, height: 52, borderRadius: 12,
-                  backgroundColor: '#252525',
-                  border: 'none', cursor: 'pointer',
-                  fontWeight: 700, fontSize: 17,
-                  color: '#ffffff',
-                }}
-              >
-                확인
-              </button>
-            </div>
+            <SheetCTA.Double
+              leftLabel="닫기"
+              leftOnClick={onClose}
+              rightLabel="확인"
+              rightOnClick={() => onConfirm([...selectedIds])}
+              background="#F3F3F3"
+            />
           )}
         </div>
       </div>

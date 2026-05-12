@@ -17,6 +17,8 @@
 //     확인(granted/denied): fill=#2272eb text=#ffffff fs=17 fw=590
 //   딤: rgba(0,0,0,0.20)
 
+import SheetCTA from './SheetCTA';
+
 export type LocationSheetType = 'ask' | 'granted' | 'denied' | 'reask';
 
 interface LocationPermissionSheetProps {
@@ -208,107 +210,35 @@ export default function LocationPermissionSheet({
           {icon}
         </div>
 
-        {/* Button Area — 피그마: h=90 (버튼 34px top pad, 버튼 56px, bottom safe area)
-            버튼 가로: 각 153.5px (2개) or full width (1개) */}
+        {/* Button Area (SheetCTA 통일) — top padding 제거: SheetCTA 그라데이션이 가려지지 않도록 */}
         <div style={{
-          height: 90,
-          padding: '17px 20px',
+          paddingLeft: 20,
+          paddingRight: 20,
           paddingBottom: 'max(17px, env(safe-area-inset-bottom))',
-          display: 'flex',
-          gap: 8,
         }}>
           {type === 'ask' && (
-            <>
-              {/* 아니요 */}
-              <button
-                onClick={onClose}
-                style={{
-                  flex: 1, height: 56, borderRadius: 16, border: 'none',
-                  background: 'rgba(7,25,76,0.05)', fontSize: 17,
-                  fontWeight: 590, color: 'rgba(3,18,40,0.70)', cursor: 'pointer',
-                }}
-              >
-                아니요
-              </button>
-              {/* 허용하기 */}
-              <button
-                onClick={onAllow}
-                style={{
-                  flex: 1, height: 56, borderRadius: 16, border: 'none',
-                  background: '#252525', fontSize: 17,
-                  fontWeight: 590, color: '#ffffff', cursor: 'pointer',
-                }}
-              >
-                허용하기
-              </button>
-            </>
+            <SheetCTA.Double
+              leftLabel="아니요" leftOnClick={onClose}
+              rightLabel="허용하기" rightOnClick={onAllow}
+              background="#F3F3F3"
+            />
           )}
-
           {type === 'denied' && (
-            <>
-              {/* 설정에서 변경하기 — SDK openPermissionDialog() 호출 */}
-              <button
-                onClick={onOpenSettings}
-                style={{
-                  flex: 1, height: 56, borderRadius: 16, border: 'none',
-                  background: 'rgba(7,25,76,0.05)', fontSize: 17,
-                  fontWeight: 590, color: 'rgba(3,18,40,0.70)', cursor: 'pointer',
-                }}
-              >
-                설정에서 변경하기
-              </button>
-              {/* 확인 */}
-              <button
-                onClick={onClose}
-                style={{
-                  flex: 1, height: 56, borderRadius: 16, border: 'none',
-                  background: '#252525', fontSize: 17,
-                  fontWeight: 590, color: '#ffffff', cursor: 'pointer',
-                }}
-              >
-                확인
-              </button>
-            </>
+            <SheetCTA.Double
+              leftLabel="설정에서 변경하기" leftOnClick={onOpenSettings}
+              rightLabel="확인" rightOnClick={onClose}
+              background="#F3F3F3"
+            />
           )}
-
           {type === 'reask' && (
-            <>
-              {/* 나중에 */}
-              <button
-                onClick={onClose}
-                style={{
-                  flex: 1, height: 56, borderRadius: 16, border: 'none',
-                  background: 'rgba(7,25,76,0.05)', fontSize: 17,
-                  fontWeight: 590, color: 'rgba(3,18,40,0.70)', cursor: 'pointer',
-                }}
-              >
-                나중에
-              </button>
-              {/* 허용하기 → 설정으로 */}
-              <button
-                onClick={onOpenSettings}
-                style={{
-                  flex: 1, height: 56, borderRadius: 16, border: 'none',
-                  background: '#252525', fontSize: 17,
-                  fontWeight: 590, color: '#ffffff', cursor: 'pointer',
-                }}
-              >
-                허용하기
-              </button>
-            </>
+            <SheetCTA.Double
+              leftLabel="나중에" leftOnClick={onClose}
+              rightLabel="허용하기" rightOnClick={onOpenSettings}
+              background="#F3F3F3"
+            />
           )}
-
           {type === 'granted' && (
-            <button
-              onClick={onClose}
-              style={{
-                flex: 1, height: 56, borderRadius: 16, border: 'none',
-                background: '#252525', fontSize: 17,
-                fontWeight: 590, color: '#ffffff', cursor: 'pointer',
-              }}
-            >
-              확인
-            </button>
+            <SheetCTA.Single label="확인" onClick={onClose} background="#F3F3F3" />
           )}
         </div>
       </div>

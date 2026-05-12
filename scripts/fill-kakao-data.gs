@@ -247,6 +247,7 @@ function uploadToSupabase() {
   }
 
   // 50개씩 나눠서 업로드 (Supabase 요청 크기 제한 대응)
+  // 중복 api_place_id가 있으면 의도적으로 23505 오류 발생 → 시트에서 수동 제거
   const BATCH_SIZE = 50;
   let success = 0, failed = 0;
   const endpoint = supabaseUrl.replace(/\/$/, '') + '/rest/v1/stores';

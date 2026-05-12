@@ -1007,6 +1007,7 @@ interface DetailPageProps {
   embedded?: boolean; // 바텀시트 임베드 모드: 하트버튼/backEvent 등록 스킵
   onSwipeDown?: () => void; // embedded 풀스크린 상태에서 아래 스와이프 시 지도 복귀
   showHero?: boolean; // false면 포토 히어로 영역 숨김 (MapPage 기본 바텀시트 상태)
+  onFocusModeChange?: (active: boolean) => void; // 사진리뷰/리뷰작성 등 풀스크린 액션 진입 시 true (탭바 숨김 신호)
 }
 
 // 아바타 색상 (user_id 기반 고정 색)
@@ -1032,7 +1033,7 @@ function rowToReviewItem(row: ReviewRow): ReviewItem {
   };
 }
 
-export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false, onSwipeDown, showHero = true }: DetailPageProps) {
+export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false, onSwipeDown, showHero = true, onFocusModeChange }: DetailPageProps) {
   const [storeData, setStoreData] = useState<CafeDetailData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -1217,6 +1218,16 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [reviewToastVisible, setReviewToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
+
+  // 사진리뷰/리뷰작성 — 탭바를 숨겨야 하는 풀스크린 액션 상태를 부모(App.tsx)에 전파
+  useEffect(() => {
+    onFocusModeChange?.(showPhotoReview || showWriteReview);
+  }, [showPhotoReview, showWriteReview, onFocusModeChange]);
+  // DetailPage 자체가 닫힐 때(unmount) focus 모드를 false로 복구해 탭바를 다시 노출
+  useEffect(() => {
+    return () => { onFocusModeChange?.(false); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // backHandlerRef 업데이트 — 항상 최신 상태 반영
   backHandlerRef.current = () => {

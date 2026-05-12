@@ -810,7 +810,7 @@ export default function AdminApp() {
   if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'Pretendard, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F9FAFB', fontFamily: 'inherit' }}>
       {/* 헤더 */}
       <div style={{
         background: '#fff', borderBottom: '1px solid #E5E8EB',

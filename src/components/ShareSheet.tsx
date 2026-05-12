@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react';
 import { share } from '@apps-in-toss/web-framework';
 import BottomSheet from './BottomSheet';
+import SheetCTA from './SheetCTA';
 
 
 interface ShareSheetProps {
@@ -211,19 +212,8 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카페인덱
           </button>
         </div>
 
-        {/* 닫기 버튼 */}
-        <button
-          onClick={onClose}
-          style={{
-            width: '100%', height: 52, marginTop: 12,
-            borderRadius: 14, backgroundColor: 'rgba(7,25,76,0.05)',
-            border: 'none', cursor: 'pointer',
-            fontWeight: 590, fontSize: 17,
-            color: 'rgba(3,18,40,0.7)',
-          }}
-        >
-          닫기
-        </button>
+        {/* 닫기 버튼 (SheetCTA 통일) */}
+        <SheetCTA.Single label="닫기" onClick={onClose} variant="secondary" background="#F3F3F3" />
       </div>
     </BottomSheet>
   );

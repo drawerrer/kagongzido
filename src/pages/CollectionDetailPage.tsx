@@ -11,7 +11,8 @@ import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
 import CollectionActionSheet from '../components/CollectionActionSheet';
 import PageHeader from '../components/PageHeader';
 import StoreCountBar from '../components/StoreCountBar';
-import { BottomCTA, CTAButton, Toast } from '@toss/tds-mobile';
+import { Toast } from '@toss/tds-mobile';
+import FocusBottomCTA from '../components/FocusBottomCTA';
 import { graniteEvent } from '@apps-in-toss/web-framework';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
 import { type StoreRow } from '../services/db';
@@ -678,18 +679,17 @@ export default function CollectionDetailPage({
         </div>
       )}
 
-      {/* ── 편집모드 하단 CTA ── */}
+      {/* ── 편집모드 하단 CTA (FocusBottomCTA 통일) ── */}
       {isEditMode && (
         selectedIds.size > 0 ? (
-          <BottomCTA.Double
-            fixed
-            leftButton={<CTAButton color="dark" variant="weak" onClick={handleDeleteSelected}>삭제</CTAButton>}
-            rightButton={<CTAButton onClick={exitEditMode}>완료</CTAButton>}
+          <FocusBottomCTA.Double
+            leftLabel="삭제"
+            leftOnClick={handleDeleteSelected}
+            rightLabel="완료"
+            rightOnClick={exitEditMode}
           />
         ) : (
-          <BottomCTA.Single fixed>
-            <CTAButton onClick={exitEditMode}>완료</CTAButton>
-          </BottomCTA.Single>
+          <FocusBottomCTA.Single label="완료" onClick={exitEditMode} />
         )
       )}
 
