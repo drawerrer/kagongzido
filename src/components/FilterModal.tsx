@@ -163,7 +163,7 @@ export const DEFAULT_FILTERS: FilterState = {
 };
 
 // 피그마 분위기 칩 목록 (조용한 → 모던한 → 개방적인 → 활기찬 → 아늑한 → 따뜻한 → 자연 → 빈티지)
-const MOOD_CHIPS = ['조용한', '모던한', '개방적인', '활기찬', '아늑한', '따뜻한', '자연', '빈티지'];
+const MOOD_CHIPS = ['웜톤 조명', '화이트 조명', '로우톤 조명', '우드', '메탈', '화이트', '블랙', '플랜트', '스톤'];
 
 // 피그마 옵션 칩 목록 (TDS SVG 아이콘 + 텍스트, fs=12)
 const OPTION_CHIPS: { icon: ReactNode; label: string }[] = [

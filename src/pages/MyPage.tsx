@@ -1,18 +1,18 @@
 import { useState, useEffect, type RefObject } from 'react';
-import { graniteEvent, fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
+import { graniteEvent, fetchAlbumPhotos, openCamera, openURL } from '@apps-in-toss/web-framework';
 import { Toast, BottomSheet, Button, ConfirmDialog } from '@toss/tds-mobile';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import SheetMenuRow from '../components/SheetMenuRow';
 import SheetCTA from '../components/SheetCTA';
 import { useFavorites } from '../context/FavoritesContext';
-import { insertCafeReport } from '../services/db';
+import { insertCafeReport, deleteUserData } from '../services/db';
 import StoreCountBar from '../components/StoreCountBar';
 
 // ─────────────────────────────────────────────────────────────
 // 타입
 // ─────────────────────────────────────────────────────────────
 type MyTab = '내 활동' | '설정';
-type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe';
+type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices';
 
 interface CafeItem {
   id: string;
@@ -132,6 +132,93 @@ function SubHeader({
   }, [onBack]);
 
   return null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 공지사항 페이지
+// ─────────────────────────────────────────────────────────────
+const NOTICES = [
+  {
+    id: '1',
+    date: '26/04/28',
+    title: '카공지도 정식 출시 안내',
+    content: '안녕하세요, 카공지도 팀입니다.\n드디어 카공지도가 정식 출시되었어요! 앞으로도 더 좋은 서비스로 찾아오겠습니다. 많은 관심과 사랑 부탁드려요.',
+  },
+  {
+    id: '2',
+    date: '26/04/10',
+    title: '리뷰 기능 업데이트 안내',
+    content: '카페에 방문하고 느낀 점을 리뷰로 남길 수 있게 되었어요. 콘센트 여부, 좌석 상태, 소음 수준을 직접 평가해보세요.',
+  },
+  {
+    id: '3',
+    date: '26/03/20',
+    title: '모음집 기능 업데이트 안내',
+    content: '마음에 드는 카페를 모음집으로 묶어 관리할 수 있어요. 테마별로 카페를 분류해보세요.',
+  },
+  {
+    id: '4',
+    date: '26/03/01',
+    title: '카공지도 베타 서비스 오픈 안내',
+    content: '카공지도 베타 서비스가 시작되었습니다. 서울 주요 지역의 카공 카페 정보를 먼저 만나보세요. 피드백은 언제든지 환영합니다.',
+  },
+];
+
+function NoticesPage({ onBack }: { onBack: () => void }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      return graniteEvent.addEventListener('backEvent', {
+        onEvent: () => onBack(),
+        onError: (err) => console.error(err),
+      });
+    } catch { return undefined; }
+  }, [onBack]);
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#F3F3F3' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
+        <div style={{ background: '#FFFFFF', margin: '12px 16px', borderRadius: 14, overflow: 'hidden' }}>
+          {NOTICES.map((notice, i) => (
+            <div key={notice.id}>
+              <button
+                onClick={() => setOpenId(openId === notice.id ? null : notice.id)}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+                  width: '100%', padding: '18px 16px',
+                  borderBottom: i < NOTICES.length - 1 || openId === notice.id ? '1px solid #F3F3F3' : 'none',
+                  background: 'transparent', cursor: 'pointer', textAlign: 'left', gap: 12,
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 11, color: '#B0B8C1', fontWeight: 500, marginBottom: 4 }}>{notice.date}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: 'rgba(3,18,40,0.85)', lineHeight: '1.4' }}>{notice.title}</p>
+                </div>
+                <svg
+                  width="20" height="20" viewBox="0 0 20 20" fill="none"
+                  style={{ flexShrink: 0, marginTop: 2, transition: 'transform 0.2s', transform: openId === notice.id ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                >
+                  <path d="M5 7.5L10 12.5L15 7.5" stroke="#B0B8C1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              {openId === notice.id && (
+                <div style={{
+                  padding: '14px 16px 18px',
+                  borderBottom: i < NOTICES.length - 1 ? '1px solid #F3F3F3' : 'none',
+                  background: '#FAFAFA',
+                }}>
+                  <p style={{ fontSize: 13, color: 'rgba(3,18,40,0.60)', lineHeight: '1.7', whiteSpace: 'pre-line' }}>
+                    {notice.content}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** 카페 2-컬럼 그리드 카드 */
@@ -1105,6 +1192,8 @@ export default function MyPage({
 
   const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
 
+  const { userId } = useFavorites();
+
   // 부모(App.tsx)에 엣지스와이프용 back 핸들러 등록
   // 리뷰 작성·수정, 카페 제보, 리뷰 편집 중에는 폼 데이터 손실 방지를 위해 비활성화
   const SWIPE_DISABLED_PAGES: SubPage[] = ['review-edit', 'report-cafe'];
@@ -1120,6 +1209,9 @@ export default function MyPage({
   const [versionToast, setVersionToast] = useState(false);
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const [displayName, setDisplayName] = useState('김카페');
+  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+  const [showContactPopup, setShowContactPopup] = useState(false);
+  const [copiedToast, setCopiedToast] = useState(false);
   const [showNameSheet, setShowNameSheet] = useState(false);
   const [draftName, setDraftName] = useState('');
 
@@ -1149,7 +1241,7 @@ export default function MyPage({
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <span style={{ fontSize: 28, fontWeight: 700, color: '#101010', lineHeight: 1 }}>김</span>
+            <span style={{ fontSize: 28, fontWeight: 700, color: '#101010', lineHeight: 1 }}>{displayName[0]}</span>
           </div>
           {/* 이름 + 정보 + 제보하기 배지 */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -1223,8 +1315,90 @@ export default function MyPage({
             </>
           ) : (
             <>
-              <MenuRow label="공지사항" onTap={() => {}} />
-              <MenuRow label="문의하기" onTap={() => {}} />
+              <MenuRow label="공지사항" onTap={() => changeSubPage('notices')} />
+              <div style={{ position: 'relative' }}>
+                <MenuRow label="문의하기" onTap={() => setShowContactPopup(v => !v)} />
+                {showContactPopup && (
+                  <>
+                    {/* 외부 클릭 닫기 */}
+                    <div
+                      onClick={() => setShowContactPopup(false)}
+                      style={{ position: 'fixed', inset: 0, zIndex: 299 }}
+                    />
+                    {/* 말풍선 팝업 */}
+                    <div style={{
+                      position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
+                      transform: 'translateX(-50%)',
+                      zIndex: 300,
+                      background: '#FFFFFF',
+                      borderRadius: 14,
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                      padding: '16px 0 8px',
+                      minWidth: 220,
+                      width: 'calc(100vw - 80px)',
+                      maxWidth: 280,
+                    }}>
+                      {/* 꼬리 */}
+                      <div style={{
+                        position: 'absolute', top: -7, left: '50%', transform: 'translateX(-50%)',
+                        width: 14, height: 7,
+                        overflow: 'hidden',
+                      }}>
+                        <div style={{
+                          width: 14, height: 14,
+                          background: '#FFFFFF',
+                          boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                          transform: 'rotate(45deg)',
+                          transformOrigin: 'bottom center',
+                          marginTop: 3,
+                          marginLeft: 0,
+                          borderRadius: 2,
+                        }} />
+                      </div>
+                      {/* 이메일 주소 */}
+                      <p style={{
+                        textAlign: 'center', fontSize: 13, color: '#8B95A1',
+                        fontWeight: 500, marginBottom: 10, padding: '0 16px',
+                      }}>
+                        juliesba1015@gmail.com
+                      </p>
+                      {/* Gmail 버튼 */}
+                      <button
+                        onClick={() => {
+                          setShowContactPopup(false);
+                          openURL('https://mail.google.com/mail/?view=cm&to=juliesba1015@gmail.com');
+                        }}
+                        style={{
+                          display: 'block', width: 'calc(100% - 24px)', margin: '0 12px 8px',
+                          background: '#F2F2F7', border: 'none', borderRadius: 10,
+                          padding: '13px 0', fontSize: 15, fontWeight: 500, color: '#1C1C1E',
+                          cursor: 'pointer', textAlign: 'center',
+                        }}
+                      >
+                        Gmail
+                      </button>
+                      {/* 이메일 주소 복사 버튼 */}
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText('juliesba1015@gmail.com').then(() => {
+                            setShowContactPopup(false);
+                            setCopiedToast(true);
+                            setTimeout(() => setCopiedToast(false), 2000);
+                          });
+                        }}
+                        style={{
+                          display: 'block', width: 'calc(100% - 24px)', margin: '0 12px 8px',
+                          background: '#F2F2F7', border: 'none', borderRadius: 10,
+                          padding: '13px 0', fontSize: 15, fontWeight: 500, color: '#1C1C1E',
+                          cursor: 'pointer', textAlign: 'center',
+                        }}
+                      >
+                        이메일 주소 복사
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
               <MenuRow
                 label="버전 관리"
                 dimmed
@@ -1234,7 +1408,7 @@ export default function MyPage({
               <MenuRow
                 label="회원탈퇴"
                 dimmed
-                onTap={() => {}}
+                onTap={() => setShowWithdrawDialog(true)}
               />
             </>
           )}
@@ -1250,6 +1424,14 @@ export default function MyPage({
         position="top"
         text="현재 최신 버전을 사용 중입니다"
         onClose={() => setVersionToast(false)}
+      />
+
+      {/* 이메일 복사 토스트 */}
+      <Toast
+        open={copiedToast}
+        position="top"
+        text="이메일 주소가 복사되었어요"
+        onClose={() => setCopiedToast(false)}
       />
 
       {/* 더보기 드롭다운 팝업 */}
@@ -1339,6 +1521,33 @@ export default function MyPage({
           적용하기
         </Button>
       </BottomSheet>
+
+      {/* 회원탈퇴 확인 다이얼로그 — open={false} 시에도 DOM 마운트되면 TDS backdrop이 터치를 차단하므로 조건부 마운트 */}
+      {showWithdrawDialog && (
+        <ConfirmDialog
+          open={showWithdrawDialog}
+          title={<ConfirmDialog.Title>정말 탈퇴하시겠어요?</ConfirmDialog.Title>}
+          description={
+            <ConfirmDialog.Description>
+              {'탈퇴하면 저장된 찜 목록, 모음집,\n작성한 리뷰가 모두 삭제돼요.'}
+            </ConfirmDialog.Description>
+          }
+          cancelButton={
+            <ConfirmDialog.CancelButton onClick={() => setShowWithdrawDialog(false)}>
+              취소
+            </ConfirmDialog.CancelButton>
+          }
+          confirmButton={
+            <ConfirmDialog.ConfirmButton onClick={async () => {
+              setShowWithdrawDialog(false);
+              await deleteUserData(userId);
+            }}>
+              탈퇴하기
+            </ConfirmDialog.ConfirmButton>
+          }
+          onClose={() => setShowWithdrawDialog(false)}
+        />
+      )}
     </div>
     {/* ── 서브페이지 오버레이 (스와이프 애니메이션 지원) ── */}
     {subPage === 'reported' && (
@@ -1364,6 +1573,11 @@ export default function MyPage({
     {subPage === 'report-cafe' && (
       <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
         <ReportCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} />
+      </div>
+    )}
+    {subPage === 'notices' && (
+      <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <NoticesPage onBack={() => changeSubPage(null)} />
       </div>
     )}
     {editingReview && (

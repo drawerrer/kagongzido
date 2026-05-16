@@ -398,7 +398,7 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
         )}
 
         {/* 콘텐츠 */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
 
         {/* ① 타이핑 중 — Figma: search_typing */}
         {isTyping && (() => {

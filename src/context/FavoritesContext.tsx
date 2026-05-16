@@ -141,10 +141,7 @@ export function FavoritesProvider({
 
   const [collections, setCollections] = useState<Collection[]>(() => {
     const cached = lsGet<Collection[]>(`collections_${userId}`, []);
-    if (cached.length > 0) {
-      const hasRecent = cached.some(c => c.id === 'recent');
-      return hasRecent ? cached : [{ id: 'recent', name: '최근', storeIds: [] }, ...cached];
-    }
+    if (cached.length > 0) return cached;
     return DEFAULT_COLLECTIONS;
   });
 
@@ -167,15 +164,24 @@ export function FavoritesProvider({
 
       // collections
       if (cols.length > 0) {
-        const hasRecent = cols.some(c => c.id === 'recent');
-        const next = hasRecent ? cols : [{ id: 'recent', name: '최근', storeIds: [] }, ...cols];
-        setCollections(next);
-        lsSet(`collections_${userId}`, next);
+        // '최근' 컬렉션이 없으면 DB에 생성 후 UUID 추가
+        const hasRecent = cols.some(c => c.name === '최근');
+        if (!hasRecent) {
+          const recentId = await insertCollection(userId, { name: '최근' }, 0);
+          const recentCol: Collection = { id: recentId ?? 'recent', name: '최근', storeIds: [] };
+          const next = [recentCol, ...cols];
+          setCollections(next);
+          lsSet(`collections_${userId}`, next);
+        } else {
+          setCollections(cols);
+          lsSet(`collections_${userId}`, cols);
+        }
       } else {
         // 첫 접속 또는 전체 삭제: 기본 컬렉션 DB에 생성
-        await insertCollection(userId, DEFAULT_COLLECTIONS[0], 0);
-        setCollections(DEFAULT_COLLECTIONS);
-        lsSet(`collections_${userId}`, DEFAULT_COLLECTIONS);
+        const recentId = await insertCollection(userId, { name: '최근' }, 0);
+        const recentCol: Collection = { id: recentId ?? 'recent', name: '최근', storeIds: [] };
+        setCollections([recentCol]);
+        lsSet(`collections_${userId}`, [recentCol]);
       }
 
       setIsLoading(false);
@@ -223,17 +229,26 @@ export function FavoritesProvider({
 
   // ── 컬렉션 (로컬 + Supabase) ─────────────────────────────
   const addCollection = useCallback((col: Omit<Collection, 'id' | 'storeIds'>) => {
-    const newId = Date.now().toString();
-    const newCol: Collection = { id: newId, storeIds: [], ...col };
+    const tempId = 'temp_' + Date.now().toString();
+    const newCol: Collection = { id: tempId, storeIds: [], ...col };
     setCollections(prev => {
-      const recent = prev.find(c => c.id === 'recent')!;
-      const rest = prev.filter(c => c.id !== 'recent');
-      const next = [recent, newCol, ...rest];
-      insertCollection(userId, newCol, 1);
+      const recent = prev.find(c => c.name === '최근');
+      const rest = prev.filter(c => c.name !== '최근');
+      const next = recent ? [recent, newCol, ...rest] : [newCol, ...rest];
       lsSet(`collections_${userId}`, next);
       return next;
     });
-    return newId;
+    // DB에 저장 후 실제 UUID로 id 교체
+    insertCollection(userId, newCol, 1).then(uuid => {
+      if (uuid) {
+        setCollections(prev => {
+          const next = prev.map(c => c.id === tempId ? { ...c, id: uuid } : c);
+          lsSet(`collections_${userId}`, next);
+          return next;
+        });
+      }
+    });
+    return tempId;
   }, [userId]);
 
   const updateCollection = useCallback((id: string, updates: Partial<Omit<Collection, 'id'>>) => {
@@ -247,19 +262,20 @@ export function FavoritesProvider({
   }, [userId]);
 
   const removeCollection = useCallback((id: string) => {
-    if (id === 'recent') return;
     setCollections(prev => {
+      // '최근' 컬렉션은 삭제 불가
+      if (prev.find(c => c.id === id)?.name === '최근') return prev;
       const next = prev.filter(c => c.id !== id);
       lsSet(`collections_${userId}`, next);
+      deleteCollectionDB(id);
       return next;
     });
-    deleteCollectionDB(id);
   }, [userId]);
 
   const reorderCollections = useCallback((newOrder: Collection[]) => {
     setCollections(prev => {
-      const recent = prev.find(c => c.id === 'recent');
-      const rest = newOrder.filter(c => c.id !== 'recent');
+      const recent = prev.find(c => c.name === '최근');
+      const rest = newOrder.filter(c => c.name !== '최근');
       const next = recent ? [recent, ...rest] : rest;
       lsSet(`collections_${userId}`, next);
       updateCollectionsOrder(userId, next);

@@ -2,6 +2,31 @@ import { supabase } from './supabase';
 import type { FavoritedStore, Collection } from '../context/FavoritesContext';
 
 // ─────────────────────────────────────────────────────────────
+// 유저 (users)
+// ─────────────────────────────────────────────────────────────
+
+export async function getOrCreateUser(tossUserId: string): Promise<string | null> {
+  if (!supabase) return null;
+
+  const { data: existing } = await supabase
+    .from('users')
+    .select('id')
+    .eq('toss_user_id', tossUserId)
+    .maybeSingle();
+
+  if (existing?.id) return existing.id as string;
+
+  const { data: created, error } = await supabase
+    .from('users')
+    .insert({ toss_user_id: tossUserId })
+    .select('id')
+    .single();
+
+  if (error) { console.error('getOrCreateUser:', error); return null; }
+  return (created as Record<string, string>)?.id ?? null;
+}
+
+// ─────────────────────────────────────────────────────────────
 // 찜한 매장
 // ─────────────────────────────────────────────────────────────
 
@@ -9,21 +34,24 @@ export async function fetchFavorites(userId: string): Promise<FavoritedStore[]> 
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('favorites')
-    .select('*')
+    .select('store_id, sort_order, stores!inner(id, name, address_road, thumbnail_url, photo_urls, badges)')
     .eq('user_id', userId)
     .order('sort_order', { ascending: true });
 
   if (error) { console.error('fetchFavorites:', error); return []; }
 
-  return (data ?? []).map((row: Record<string, unknown>) => ({
-    id: row.store_id as string,
-    name: row.name as string,
-    address: row.address as string,
-    rating: row.rating as number,
-    reviewCount: row.review_count as number,
-    badge: (row.badge ?? undefined) as string | undefined,
-    photos: (row.photos ?? []) as string[],
-  }));
+  return (data ?? []).map((row: Record<string, unknown>) => {
+    const store = row.stores as Record<string, unknown> | null;
+    return {
+      id: row.store_id as string,
+      name: (store?.name ?? '') as string,
+      address: (store?.address_road ?? '') as string,
+      rating: 0,
+      reviewCount: 0,
+      badge: ((store?.badges as string[] | null)?.[0]) ?? undefined,
+      photos: (store?.photo_urls ?? []) as string[],
+    };
+  });
 }
 
 export async function insertFavorite(userId: string, store: FavoritedStore, sortOrder: number): Promise<void> {
@@ -31,12 +59,6 @@ export async function insertFavorite(userId: string, store: FavoritedStore, sort
   const { error } = await supabase.from('favorites').upsert({
     user_id: userId,
     store_id: store.id,
-    name: store.name,
-    address: store.address,
-    rating: store.rating,
-    review_count: store.reviewCount,
-    badge: store.badge ?? null,
-    photos: store.photos,
     sort_order: sortOrder,
   }, { onConflict: 'user_id,store_id' });
 
@@ -59,12 +81,6 @@ export async function updateFavoritesOrder(userId: string, stores: FavoritedStor
   const updates = stores.map((s, i) => ({
     user_id: userId,
     store_id: s.id,
-    name: s.name,
-    address: s.address,
-    rating: s.rating,
-    review_count: s.reviewCount,
-    badge: s.badge ?? null,
-    photos: s.photos,
     sort_order: i,
   }));
 
@@ -114,17 +130,22 @@ export async function fetchCollections(userId: string): Promise<Collection[]> {
   });
 }
 
-export async function insertCollection(userId: string, col: Collection, sortOrder: number): Promise<void> {
-  if (!supabase) return;
-  const { error } = await supabase.from('collections').insert({
-    id: col.id,
-    user_id: userId,
-    name: col.name,
-    memo: col.memo ?? null,
-    sort_order: sortOrder,
-  });
+// id는 DB가 자동 생성 — 생성된 UUID를 반환
+export async function insertCollection(userId: string, col: Omit<Collection, 'id' | 'storeIds'>, sortOrder: number): Promise<string | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('collections')
+    .insert({
+      user_id: userId,
+      name: col.name,
+      memo: col.memo ?? null,
+      sort_order: sortOrder,
+    })
+    .select('id')
+    .single();
 
-  if (error) console.error('insertCollection:', error);
+  if (error) { console.error('insertCollection:', error); return null; }
+  return (data as Record<string, string>)?.id ?? null;
 }
 
 export async function updateCollectionDB(
@@ -353,6 +374,52 @@ export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' |
 
   if (error) { console.error('insertReview:', error); return false; }
   return true;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 회원탈퇴 — 유저 데이터 전체 삭제
+// ─────────────────────────────────────────────────────────────
+
+export async function deleteUserData(userId: string): Promise<void> {
+  if (!supabase) return;
+
+  // 1) 해당 유저의 collection id 목록 조회
+  const { data: cols } = await supabase
+    .from('collections')
+    .select('id')
+    .eq('user_id', userId);
+
+  const colIds = (cols ?? []).map((c: Record<string, unknown>) => c.id as string);
+
+  // 2) collection_stores 삭제 (FK)
+  if (colIds.length > 0) {
+    const { error } = await supabase
+      .from('collection_stores')
+      .delete()
+      .in('collection_id', colIds);
+    if (error) console.error('deleteUserData collection_stores:', error);
+  }
+
+  // 3) collections 삭제
+  const { error: colErr } = await supabase
+    .from('collections')
+    .delete()
+    .eq('user_id', userId);
+  if (colErr) console.error('deleteUserData collections:', colErr);
+
+  // 4) favorites 삭제
+  const { error: favErr } = await supabase
+    .from('favorites')
+    .delete()
+    .eq('user_id', userId);
+  if (favErr) console.error('deleteUserData favorites:', favErr);
+
+  // 5) reviews 삭제
+  const { error: revErr } = await supabase
+    .from('reviews')
+    .delete()
+    .eq('user_id', userId);
+  if (revErr) console.error('deleteUserData reviews:', revErr);
 }
 
 // ─────────────────────────────────────────────────────────────

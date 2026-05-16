@@ -260,7 +260,7 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
     }}>
 
       {/* ── 스크롤 영역 ── */}
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 100 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 140px)' }}>
 
         {/* ── 카페 정보 카드 ── */}
         <div style={{

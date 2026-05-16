@@ -1138,15 +1138,14 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [embedded]);
 
-  // 리뷰 섹션으로 자동 스크롤
+  // 리뷰 섹션으로 자동 스크롤 — 데이터 로딩 완료 후 실행
   useEffect(() => {
-    if (scrollToReview && reviewSectionRef.current && scrollRef.current) {
-      setTimeout(() => {
-        reviewSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }
+    if (!scrollToReview || loading) return;
+    setTimeout(() => {
+      reviewSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loading]);
 
   const [hoursExpanded, setHoursExpanded] = useState(false);
   const [isLoggedIn] = useState(true); // mock: 로그인 상태 (Supabase 연동 전 임시)
@@ -1243,6 +1242,17 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const removedFavoriteRef = useRef<Parameters<typeof addFavorite>[0] | null>(null);
 
   const isFavorite = isFavorited(cafeId);
+
+  // 찜 상태 변경 시 네비바 하트 아이콘 업데이트 (filled ↔ outline)
+  useEffect(() => {
+    if (embedded) return;
+    try {
+      partner.addAccessoryButton({
+        id: 'heart', title: '하트',
+        icon: { name: isFavorite ? 'icon-heart-filled-mono' : 'icon-heart-mono' },
+      });
+    } catch {}
+  }, [isFavorite, embedded]);
 
   const { label: statusLabel, color: statusColor } = getStatusInfo(cafe);
   const todayKey = getTodayKey();
@@ -1533,12 +1543,12 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
             {cafe.name}
           </h1>
 
-          {/* 주소 + 길 안내 버튼 */}
+          {/* 주소 + 액션 버튼 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <p style={{ fontSize: 14, color: '#6B7684', flex: 1, lineHeight: 1.4 }}>
               {cafe.address}
             </p>
-            <div style={{ marginLeft: 10 }}>
+            <div style={{ display: 'flex', gap: 8, marginLeft: 10, flexShrink: 0 }}>
               <SubButton label="길 안내" onClick={() => openKakaoMapWeb(cafe)} />
             </div>
           </div>

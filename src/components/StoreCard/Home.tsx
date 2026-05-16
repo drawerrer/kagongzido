@@ -58,16 +58,22 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange }: StoreCa
           height: 80,
           borderRadius: 4,
           flexShrink: 0,
-          background: cafe.thumbnailUrl
-            ? `url(${cafe.thumbnailUrl}) center/cover no-repeat`
-            : '#F2F4F6',
+          background: '#F2F4F6',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'hidden',
         }}
       >
-        {!cafe.thumbnailUrl && <span style={{ fontSize: 28 }}>☕</span>}
+        {cafe.thumbnailUrl ? (
+          <img
+            src={cafe.thumbnailUrl}
+            alt={cafe.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+        ) : (
+          <span style={{ fontSize: 28 }}>☕</span>
+        )}
       </div>
 
       {/* 카페 정보 */}

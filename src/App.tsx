@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect, Component } from 'react';
+import { getAnonymousKey } from '@apps-in-toss/web-framework';
+import { getOrCreateUser } from './services/db';
 import type { ReactNode, ErrorInfo } from 'react';
 
 // ── 페이지 단위 에러바운더리 ─────────────────────────────────
@@ -62,12 +64,37 @@ const TABS: { id: TabId; label: string; icon: ReactNode }[] = [
   { id: 'mypage',     label: '마이',   icon: <TabMypageIcon /> },
 ];
 
-// 개발 단계: 임시 userId 사용 (배포 시 토스 SDK user_id로 교체)
-const DEV_USER_ID = 'dev-user-001';
+// 기기 로컬 UUID 생성/조회 — getAnonymousKey 실패 시 fallback
+function getOrCreateLocalId(): string {
+  const KEY = 'cafeindex_anon_id';
+  const existing = localStorage.getItem(KEY);
+  if (existing) return existing;
+  const id = 'local_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  localStorage.setItem(KEY, id);
+  return id;
+}
 
 export default function App() {
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+    Promise.race([getAnonymousKey().catch(() => null), timeout]).then(async (result) => {
+      console.log('[AUTH] getAnonymousKey result:', result);
+      const tossId = (result && result !== 'INVALID_CATEGORY' && result !== 'ERROR' && result.type === 'HASH')
+        ? result.hash
+        : getOrCreateLocalId();
+      console.log('[AUTH] tossId:', tossId);
+      const uuid = await getOrCreateUser(tossId);
+      console.log('[AUTH] DB uuid:', uuid);
+      setUserId(uuid ?? tossId);
+    });
+  }, []);
+
+  if (!userId) return null;
+
   return (
-    <FavoritesProvider userId={DEV_USER_ID}>
+    <FavoritesProvider userId={userId}>
       <AppInner />
     </FavoritesProvider>
   );
@@ -309,6 +336,8 @@ function AppInner() {
                   lastTabTapRef.current = null;
                   closeAllOverlays();
                   setActiveTab(tab.id);
+                  if (tab.id === 'mypage') setMyPageSubPage(null);
+                  if (tab.id === 'guidebook') { setGuidebookView(null); setGuidebookStoreIndex(0); }
                   setTabKeys(k => ({ ...k, [tab.id]: k[tab.id] + 1 }));
                 } else {
                   lastTabTapRef.current = { id: tab.id, time: now };
