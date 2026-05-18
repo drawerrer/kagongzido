@@ -7,7 +7,9 @@
     "dev": "granite dev",
     "dev:rsbuild": "rsbuild dev",
     "build": "ait build",
+    "build:admin": "rsbuild build --config rsbuild.admin.config.ts",
     "preview": "rsbuild preview",
+    "preview:admin": "rsbuild preview --config rsbuild.admin.config.ts",
     "deploy": "ait deploy"
   },
   "dependencies": {
