@@ -1,5 +1,5 @@
 ﻿import { useState, useRef, useEffect, useCallback } from 'react';
-import { useFavorites, RecentCafe, haversineDistance } from '../context/FavoritesContext';
+import { useFavorites, RecentCafe, haversineDistance, isRecentCollection } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import StoreCard, { type StoreItem } from '../components/StoreCard/Collection';
@@ -110,10 +110,11 @@ export default function CollectionDetailPage({
   const isActiveRecent = activeTab === 'recent';
 
   const activeCollection = collections.find(c => c.id === activeTab);
+  // '최근' 탭은 한 번만 — DB 동기화로 UUID가 들어와도 isRecentCollection 으로 제외하여 중복 방지
   const allTabs = [
     { id: 'recent', name: '최근' },
     ...collections
-      .filter(c => c.id !== 'recent')
+      .filter(c => !isRecentCollection(c))
       .map(c => ({ id: c.id, name: c.name })),
   ];
 
@@ -196,7 +197,7 @@ export default function CollectionDetailPage({
 
   // ── 편집모드 ──
   function enterEditMode(targetTabId?: string) {
-    const userCollections = collections.filter(c => c.id !== 'recent');
+    const userCollections = collections.filter(c => !isRecentCollection(c));
 
     // 사용자 생성 컬렉션이 없으면 토스트 표시 후 편집 비활성화
     if (userCollections.length === 0) {
@@ -430,7 +431,7 @@ export default function CollectionDetailPage({
       const newCollectionOrder = finalOrder
         .map(id => collections.find(c => c.id === id))
         .filter((c): c is NonNullable<typeof c> => Boolean(c));
-      if (newCollectionOrder.length === collections.filter(c => c.id !== 'recent').length) {
+      if (newCollectionOrder.length === collections.filter(c => !isRecentCollection(c)).length) {
         reorderCollections(newCollectionOrder);
       }
       setChipDragId(null);

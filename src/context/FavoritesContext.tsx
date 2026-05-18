@@ -58,6 +58,15 @@ const DEFAULT_COLLECTIONS: Collection[] = [
   { id: 'recent', name: '최근', storeIds: [] },
 ];
 
+/**
+ * '최근' 컬렉션 판별 헬퍼
+ * - 로컬 기본값('recent' 하드코딩 ID) 과 DB 저장본(UUID) 모두 커버
+ * - DB 동기화 후 UUID가 들어와도 정상 매칭됨
+ */
+export function isRecentCollection(col: { id: string; name: string }): boolean {
+  return col.id === 'recent' || col.name === '최근';
+}
+
 // ─── localStorage 헬퍼 ────────────────────────────────────────
 function lsGet<T>(key: string, fallback: T): T {
   try {
@@ -164,17 +173,26 @@ export function FavoritesProvider({
 
       // collections
       if (cols.length > 0) {
-        // '최근' 컬렉션이 없으면 DB에 생성 후 UUID 추가
-        const hasRecent = cols.some(c => c.name === '최근');
-        if (!hasRecent) {
+        // 과거 버그로 DB에 '최근'이 중복 저장되었을 수 있음 — 첫 항목만 남기고 나머지는 제외
+        let seenRecent = false;
+        const deduped = cols.filter(c => {
+          if (c.name === '최근') {
+            if (seenRecent) return false;
+            seenRecent = true;
+          }
+          return true;
+        });
+
+        // '최근' 컬렉션이 아예 없으면 DB에 생성 후 UUID 추가
+        if (!seenRecent) {
           const recentId = await insertCollection(userId, { name: '최근' }, 0);
           const recentCol: Collection = { id: recentId ?? 'recent', name: '최근', storeIds: [] };
-          const next = [recentCol, ...cols];
+          const next = [recentCol, ...deduped];
           setCollections(next);
           lsSet(`collections_${userId}`, next);
         } else {
-          setCollections(cols);
-          lsSet(`collections_${userId}`, cols);
+          setCollections(deduped);
+          lsSet(`collections_${userId}`, deduped);
         }
       } else {
         // 첫 접속 또는 전체 삭제: 기본 컬렉션 DB에 생성

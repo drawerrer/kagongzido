@@ -10,7 +10,7 @@ import CollectionActionSheet from '../components/CollectionActionSheet';
 import PageHeader from '../components/PageHeader';
 import StoreCountBar from '../components/StoreCountBar';
 import SectionHeader from '../components/SectionHeader';
-import { useFavorites, FavoritedStore, haversineDistance } from '../context/FavoritesContext';
+import { useFavorites, FavoritedStore, haversineDistance, isRecentCollection } from '../context/FavoritesContext';
 import { BottomSheet, BottomCTA, CTAButton, Toast } from '@toss/tds-mobile';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import { graniteEvent } from '@apps-in-toss/web-framework';
@@ -324,16 +324,16 @@ export default function CollectionPage({
                 isDragOver={isEditMode && colDragOverIndex === index && colDragIndex !== index}
                 wiggleDelay={index * 80}
                 previewPhotos={
-                  col.id === 'recent'
+                  isRecentCollection(col)
                     ? recentlyViewed.slice(0, 4).map(r => r.photo).filter(Boolean)
                     : col.storeIds.slice(0, 4)
                         .map(id => favorites.find(f => f.id === id)?.photos?.[0])
                         .filter((p): p is string => !!p)
                 }
                 onRename={() => openRename(col.id)}
-                onLongPress={!isEditMode && col.id !== 'recent' ? () => { setColActionTargetId(col.id); setBottomSheet('col-action'); } : undefined}
+                onLongPress={!isEditMode && !isRecentCollection(col) ? () => { setColActionTargetId(col.id); setBottomSheet('col-action'); } : undefined}
                 onPress={!isEditMode ? () => onCollectionOpen?.(col.id, col.name) : undefined}
-                onHandlePointerDown={isEditMode && col.id !== 'recent'
+                onHandlePointerDown={isEditMode && !isRecentCollection(col)
                   ? (e) => onColHandlePointerDown(e, index)
                   : undefined}
               />
@@ -401,7 +401,7 @@ export default function CollectionPage({
                     onPress={() => onDetailOpen?.(store.id)}
                     onHeartTap={() => {
                       const isInCollection = collections.some(
-                        c => c.id !== 'recent' && c.storeIds.includes(store.id)
+                        c => !isRecentCollection(c) && c.storeIds.includes(store.id)
                       );
                       if (isInCollection) {
                         setRemoveStoreTarget(store);
@@ -511,7 +511,7 @@ export default function CollectionPage({
         </button>
 
         {/* 기존 컬렉션 목록 (최근 제외) */}
-        {collections.filter(c => c.id !== 'recent').map(col => (
+        {collections.filter(c => !isRecentCollection(c)).map(col => (
           <button
             key={col.id}
             onClick={() => setSelectedCollectionIds(prev => {
