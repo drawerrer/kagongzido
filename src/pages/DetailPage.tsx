@@ -180,6 +180,7 @@ interface CafeDetailData {
   id: string;
   name: string;
   address: string;
+  location?: { lat: number; lng: number };
   distance?: number;
   thumbnailUrl?: string;
   photos?: string[];
@@ -934,12 +935,12 @@ function ReviewCard({ review }: { review: ReviewItem }) {
   );
 }
 
-// ────────── 카카오맵 웹 URL 생성 ─────────────────────────────
-// SDK 규정: 앱 딥링크(kakaomap://) 사용 금지 → 타사 웹사이트 URL(https://)만 허용
-// openURL()로 카카오맵 웹에서 장소 검색 결과를 열어요.
+// ────────── 네이버 지도 웹 URL 생성 ─────────────────────────────
+// SDK 규정: 앱 딥링크 사용 금지 → 타사 웹사이트 URL(https://)만 허용
+// lat/lng로 정확한 위치를 열고, 없으면 이름+주소 검색으로 폴백
 function openKakaoMapWeb(cafe: CafeDetailData) {
   const query = encodeURIComponent(`${cafe.name} ${cafe.address}`);
-  openURL(`https://map.kakao.com/link/search/${query}`);
+  openURL(`https://map.naver.com/v5/search/${query}`);
 }
 
 // MorePopup — 배포 시 네이티브 바텀시트로 대체 예정
@@ -1049,6 +1050,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           id: store.api_place_id,
           name: store.name,
           address: store.address_road,
+          location: { lat: store.latitude, lng: store.longitude },
           thumbnailUrl: store.thumbnail_url || undefined,
           photos: photoUrls.length > 0 ? photoUrls : [],
           ...(() => {

@@ -571,7 +571,16 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
 
       {/* ── 외부 탭 오버레이 ── */}
       {(panelExpanded || selectedMapCafe) && (
-        <div onClick={() => { setPanelExpanded(false); setSelectedMapCafe(null); }} style={{ position: 'absolute', inset: 0, zIndex: 9 }} />
+        <div
+          onClick={() => { setPanelExpanded(false); setSelectedMapCafe(null); }}
+          style={{
+            position: 'absolute',
+            // 지도 터치(핀치줌 포함) 보호: 바텀시트 영역(하단 50vh)만 덮음
+            top: panelExpanded ? 0 : 'calc(50vh - 20px)',
+            bottom: 0, left: 0, right: 0,
+            zIndex: 9,
+          }}
+        />
       )}
 
       {/* ── 바텀 패널 ── */}

@@ -412,7 +412,7 @@ function GuideBookDetailView({
       <div ref={carouselWrapperRef} style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
 
         {/* 헤더 — 가이드북명 14px/590 + n places 14px/400 */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, paddingBottom: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, paddingTop: 12, paddingBottom: 20 }}>
           <p style={{
             fontWeight: 590, fontSize: 14, color: '#000000',
             lineHeight: '22.5px', marginBottom: 5,
