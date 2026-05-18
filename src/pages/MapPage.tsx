@@ -124,9 +124,11 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
 }
 
 // ── MapPage 상태 타입 ─────────────────────
+type PanelState = 'minimized' | 'half' | 'expanded';
+
 export interface MapPageState {
   activeChip: string | null;
-  panelExpanded: boolean;
+  panelState: PanelState;
   appliedFilters: FilterState;
   filterApplied: boolean;
 }
@@ -161,7 +163,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
   const [activeChip, setActiveChip] = useState<string | null>(initialState?.activeChip ?? null);
 const [filterOpen, setFilterOpen] = useState(false);
   const [filterOpenKey, setFilterOpenKey] = useState(0);
-  const [panelExpanded, setPanelExpanded] = useState(initialState?.panelExpanded ?? false);
+  const [panelState, setPanelState] = useState<PanelState>(initialState?.panelState ?? 'half');
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
   const [selectedMapCafe, setSelectedMapCafe] = useState<Cafe | null>(null);
 
@@ -180,7 +182,7 @@ const [filterOpen, setFilterOpen] = useState(false);
     if (!selectedMapCafe) return;
     try {
       const unsubscribe = graniteEvent.addEventListener('backEvent', {
-        onEvent: () => { setSelectedMapCafe(null); setPanelExpanded(false); },
+        onEvent: () => { setSelectedMapCafe(null); setPanelState('half'); },
         onError: (err) => console.error(err),
       });
       return unsubscribe;
@@ -194,8 +196,8 @@ const [filterOpen, setFilterOpen] = useState(false);
     appliedFilters.options.length > 0;
 
   useEffect(() => {
-    onStateChange?.({ activeChip, panelExpanded, appliedFilters, filterApplied });
-  }, [activeChip, panelExpanded, appliedFilters, filterApplied]); // eslint-disable-line react-hooks/exhaustive-deps
+    onStateChange?.({ activeChip, panelState, appliedFilters, filterApplied });
+  }, [activeChip, panelState, appliedFilters, filterApplied]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const showFavoriteSnackbar = (type: 'added' | 'removed', cafe?: Cafe) => {
     if (type === 'removed' && cafe) setRemovedCafe(cafe);
@@ -332,7 +334,7 @@ const [filterOpen, setFilterOpen] = useState(false);
       const cafe = cafesRef.current.find(c => c.id === cafeId);
       if (cafe) {
         setSelectedMapCafe(cafe);
-        setPanelExpanded(false);
+        setPanelState('half');
       }
     };
     container.addEventListener('click', handleClick);
@@ -507,7 +509,7 @@ const [filterOpen, setFilterOpen] = useState(false);
         style={{
           position: 'absolute',
           top: 'calc(env(safe-area-inset-top) + 72px)',
-          bottom: panelExpanded ? 0 : 'calc(50vh - 20px)',
+          bottom: panelState === 'expanded' ? 0 : panelState === 'minimized' ? '32px' : 'calc(50vh - 20px)',
           left: 0, right: 0,
           zIndex: 0,
           transition: 'bottom 0.3s ease',
@@ -533,19 +535,18 @@ const [filterOpen, setFilterOpen] = useState(false);
       {/* ── GPS 버튼 ── */}
       <button
         onClick={goToCurrentLocation}
-        style={{ position: 'absolute', right: 16, bottom: 'calc(50vh + 12px)', zIndex: 8, width: 44, height: 44, borderRadius: 22, background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ position: 'absolute', right: 16, bottom: panelState === 'minimized' ? '44px' : 'calc(50vh + 12px)', zIndex: 8, width: 44, height: 44, borderRadius: 22, background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
         <GpsIcon />
       </button>
 
       {/* ── 외부 탭 오버레이 ── */}
-      {(panelExpanded || selectedMapCafe) && (
+      {(panelState === 'expanded' || selectedMapCafe) && (
         <div
-          onClick={() => { setPanelExpanded(false); setSelectedMapCafe(null); }}
+          onClick={() => { setPanelState('half'); setSelectedMapCafe(null); }}
           style={{
             position: 'absolute',
-            // 지도 터치(핀치줌 포함) 보호: 바텀시트 영역(하단 50vh)만 덮음
-            top: panelExpanded ? 0 : 'calc(50vh - 20px)',
+            top: panelState === 'expanded' ? 0 : 'calc(50vh - 20px)',
             bottom: 0, left: 0, right: 0,
             zIndex: 9,
           }}
@@ -558,31 +559,33 @@ const [filterOpen, setFilterOpen] = useState(false);
         onTouchEnd={(e) => {
           const delta = e.changedTouches[0].clientY - touchStartYRef.current;
           if (selectedMapCafe) {
-            if (panelExpanded) {
-              if (delta > 60) setPanelExpanded(false);
+            if (panelState === 'expanded') {
+              if (delta > 60) setPanelState('half');
             } else {
-              if (delta < -60) setPanelExpanded(true);
+              if (delta < -60) setPanelState('expanded');
               else if (delta > 60) setSelectedMapCafe(null);
             }
           } else {
-            if (delta > 60 && panelExpanded) setPanelExpanded(false);
-            if (delta < -60 && !panelExpanded) setPanelExpanded(true);
+            if (delta > 60 && panelState === 'expanded') setPanelState('half');
+            if (delta > 60 && panelState === 'half') setPanelState('minimized');
+            if (delta < -60 && panelState === 'half') setPanelState('expanded');
+            if (delta < -60 && panelState === 'minimized') setPanelState('half');
           }
         }}
         style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          zIndex: panelExpanded ? 25 : 10,
+          zIndex: panelState === 'expanded' ? 25 : 10,
           background: '#f3f3f3',
-          borderRadius: (selectedMapCafe && panelExpanded) ? 0 : '16px 16px 0 0',
-          height: panelExpanded ? '100%' : '50vh',
+          borderRadius: (selectedMapCafe && panelState === 'expanded') ? 0 : '16px 16px 0 0',
+          height: panelState === 'expanded' ? '100%' : panelState === 'minimized' ? '32px' : '50vh',
           transition: 'height 0.3s ease',
           display: 'flex', flexDirection: 'column',
           boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
           ...(selectedMapCafe ? { transform: 'translateZ(0)', willChange: 'transform' } : {}),
         }}
       >
-        {!(selectedMapCafe && panelExpanded) && (
-          <div onClick={() => setPanelExpanded(e => !e)} style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px', flexShrink: 0, cursor: 'pointer' }}>
+        {!(selectedMapCafe && panelState === 'expanded') && (
+          <div onClick={() => setPanelState(s => s === 'minimized' ? 'half' : s === 'half' ? 'expanded' : 'half')} style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px', flexShrink: 0, cursor: 'pointer' }}>
             <div style={{ width: 48, height: 4, borderRadius: 2, background: '#E5E8EB' }} />
           </div>
         )}
@@ -592,10 +595,10 @@ const [filterOpen, setFilterOpen] = useState(false);
             <DetailPage
               embedded
               cafeId={selectedMapCafe.id}
-              onBack={() => { setSelectedMapCafe(null); setPanelExpanded(false); }}
-              onClose={() => { setSelectedMapCafe(null); setPanelExpanded(false); }}
-              onSwipeDown={() => { setPanelExpanded(false); }}
-              showHero={panelExpanded}
+              onBack={() => { setSelectedMapCafe(null); setPanelState('half'); }}
+              onClose={() => { setSelectedMapCafe(null); setPanelState('half'); }}
+              onSwipeDown={() => { setPanelState('half'); }}
+              showHero={panelState === 'expanded'}
             />
           </div>
         ) : (
@@ -611,13 +614,13 @@ const [filterOpen, setFilterOpen] = useState(false);
             </div>
 
             <div
-              style={{ flex: 1, overflowY: panelExpanded ? 'auto' : 'hidden', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
-              onScroll={(e) => { if (!panelExpanded && e.currentTarget.scrollTop > 0) setPanelExpanded(true); }}
+              style={{ flex: 1, overflowY: panelState === 'expanded' ? 'auto' : 'hidden', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
+              onScroll={(e) => { if (panelState !== 'expanded' && e.currentTarget.scrollTop > 0) setPanelState('expanded'); }}
               onTouchStart={(e) => { touchStartYRef.current = e.touches[0].clientY; }}
               onTouchEnd={(e) => {
                 const el = e.currentTarget;
                 const delta = e.changedTouches[0].clientY - touchStartYRef.current;
-                if (panelExpanded && el.scrollTop === 0 && delta > 60) setPanelExpanded(false);
+                if (panelState === 'expanded' && el.scrollTop === 0 && delta > 60) setPanelState('half');
               }}
             >
               {filteredCafes.length > 0 ? (
