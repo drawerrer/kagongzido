@@ -33,7 +33,6 @@ interface Cafe {
   badges: string[];
 }
 
-type SortType = '조회순' | '거리순' | '평점순';
 
 const CATEGORY_CHIPS = ['콘센트 넉넉', '대형 공간', '편안한 좌석'];
 
@@ -113,31 +112,6 @@ function GpsIcon() {
   );
 }
 
-function ArrowDownIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
-// ── 정렬 팝업 ─────────────────────────────
-function SortPopup({ current, onSelect, onClose }: { current: SortType; onSelect: (t: SortType) => void; onClose: () => void; }) {
-  const OPTIONS: SortType[] = ['조회순', '거리순', '평점순'];
-  return (
-    <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200 }} />
-      <div style={{ position: 'absolute', right: 16, top: 56, zIndex: 201, background: '#FDFDFE', borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', width: 180, overflow: 'hidden' }}>
-        <div style={{ padding: '10px 16px 6px', fontSize: 13, fontWeight: 600, color: '#6B7684' }}>정렬</div>
-        {OPTIONS.map(opt => (
-          <button key={opt} onClick={() => onSelect(opt)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 16px', fontSize: 17, fontWeight: opt === current ? 600 : 400, color: opt === current ? '#252525' : '#191F28', background: 'transparent' }}>
-            {opt}
-          </button>
-        ))}
-      </div>
-    </>
-  );
-}
 
 function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => void; onFavoriteChange?: (type: 'added' | 'removed', cafe: Cafe) => void }) {
   return (
@@ -152,7 +126,6 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
 // ── MapPage 상태 타입 ─────────────────────
 export interface MapPageState {
   activeChip: string | null;
-  sortType: SortType;
   panelExpanded: boolean;
   appliedFilters: FilterState;
   filterApplied: boolean;
@@ -186,9 +159,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
 
   const [cafes, setCafes] = useState<Cafe[]>([]);
   const [activeChip, setActiveChip] = useState<string | null>(initialState?.activeChip ?? null);
-  const [sortType, setSortType] = useState<SortType>(initialState?.sortType ?? '조회순');
-  const [sortPopupOpen, setSortPopupOpen] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
+const [filterOpen, setFilterOpen] = useState(false);
   const [filterOpenKey, setFilterOpenKey] = useState(0);
   const [panelExpanded, setPanelExpanded] = useState(initialState?.panelExpanded ?? false);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
@@ -223,8 +194,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
     appliedFilters.options.length > 0;
 
   useEffect(() => {
-    onStateChange?.({ activeChip, sortType, panelExpanded, appliedFilters, filterApplied });
-  }, [activeChip, sortType, panelExpanded, appliedFilters, filterApplied]); // eslint-disable-line react-hooks/exhaustive-deps
+    onStateChange?.({ activeChip, panelExpanded, appliedFilters, filterApplied });
+  }, [activeChip, panelExpanded, appliedFilters, filterApplied]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const showFavoriteSnackbar = (type: 'added' | 'removed', cafe?: Cafe) => {
     if (type === 'removed' && cafe) setRemovedCafe(cafe);
@@ -236,8 +207,6 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
     if (appliedFilters.moods.length > 0) filtered = filtered.filter(c => appliedFilters.moods.includes(c.mood));
     if (appliedFilters.priceMax < DEFAULT_FILTERS.priceMax) filtered = filtered.filter(c => c.priceRange <= appliedFilters.priceMax);
     if (appliedFilters.options.length > 0) filtered = filtered.filter(c => appliedFilters.options.every(opt => c.options.includes(opt)));
-    if (sortType === '평점순') return filtered.slice().sort((a, b) => b.rating - a.rating);
-    if (sortType === '거리순') return filtered.slice().sort((a, b) => a.distance - b.distance);
     return filtered;
   })();
 
@@ -637,15 +606,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
               ))}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: 16, flexShrink: 0, position: 'relative' }}>
+            <div style={{ flexShrink: 0 }}>
               <StoreCountBar count={filteredCafes.length} />
-              <button onClick={() => setSortPopupOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, color: '#6B7684', fontWeight: 400 }}>
-                {sortType}
-                <ArrowDownIcon />
-              </button>
-              {sortPopupOpen && (
-                <SortPopup current={sortType} onSelect={t => { setSortType(t); setSortPopupOpen(false); }} onClose={() => setSortPopupOpen(false)} />
-              )}
             </div>
 
             <div
