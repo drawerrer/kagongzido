@@ -35,7 +35,7 @@ interface Cafe {
 
 type SortType = '조회순' | '거리순' | '평점순';
 
-const CATEGORY_CHIPS = ['콘센트 넉넉', '대형공간', '편안한 좌석'];
+const CATEGORY_CHIPS = ['콘센트 넉넉', '대형 공간', '편안한 좌석'];
 
 // ── 유틸 ─────────────────────────────────
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
