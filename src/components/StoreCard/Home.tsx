@@ -111,7 +111,7 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange }: StoreCa
                   key={i}
                   style={{
                     display: 'inline-block',
-                    padding: '1px 8px',
+                    padding: '0px 8px',
                     background: '#D1D6DB',
                     borderRadius: 20,
                     fontSize: 11,
