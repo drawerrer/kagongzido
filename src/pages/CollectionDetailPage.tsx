@@ -92,7 +92,12 @@ export default function CollectionDetailPage({
   const storeListRef = useRef<HTMLDivElement>(null);
   const itemRefsArr = useRef<(HTMLDivElement | null)[]>([]);
 
-  const [activeTab, setActiveTab] = useState<string>(collectionId);
+  // '최근' 컬렉션이 DB UUID로 들어와도 칩 id ('recent') 와 일치하도록 정규화
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const incoming = collections.find(c => c.id === collectionId);
+    if (incoming && isRecentCollection(incoming)) return 'recent';
+    return collectionId;
+  });
   const [tabManageTargetId, setTabManageTargetId] = useState<string | null>(null);
   const [deleteTabTargetId, setDeleteTabTargetId] = useState<string | null>(null);
   const [renameTabId, setRenameTabId] = useState<string | null>(null);
