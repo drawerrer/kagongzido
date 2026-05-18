@@ -105,7 +105,7 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange }: StoreCa
             {fmtDist(cafe.distance)} · 리뷰 {cafe.reviewCount}
           </span>
           {cafe.badges.length > 0 && (
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 1 }}>
               {cafe.badges.map((badge, i) => (
                 <span
                   key={i}
