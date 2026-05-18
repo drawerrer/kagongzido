@@ -107,9 +107,10 @@ export default function CollectionDetailPage({
   const chipDragPointerIdRef = useRef<number>(-1);
   const chipContainerRef = useRef<HTMLDivElement>(null);
 
-  const isActiveRecent = activeTab === 'recent';
-
+  // activeTab은 'recent'(하드코딩 ID) 또는 DB UUID 둘 다 올 수 있음.
+  // DB UUID로 들어와도 '최근' 컬렉션이면 recentlyViewed 화면을 보여주도록 매칭.
   const activeCollection = collections.find(c => c.id === activeTab);
+  const isActiveRecent = activeTab === 'recent' || (activeCollection ? isRecentCollection(activeCollection) : false);
   // '최근' 탭은 한 번만 — DB 동기화로 UUID가 들어와도 isRecentCollection 으로 제외하여 중복 방지
   const allTabs = [
     { id: 'recent', name: '최근' },
