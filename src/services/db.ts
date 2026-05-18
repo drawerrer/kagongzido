@@ -272,7 +272,27 @@ export async function fetchReviews(storeId: string): Promise<ReviewRow[]> {
 // 카페 제보
 // ─────────────────────────────────────────────────────────────
 
+export interface UserReportRow {
+  id: string;
+  store_name: string;
+  content: string;
+  created_at: string;
+}
+
+export async function fetchUserReports(userId: string): Promise<UserReportRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('reports')
+    .select('id, store_name, content, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error('fetchUserReports:', error); return []; }
+  return (data ?? []) as UserReportRow[];
+}
+
 export interface CafeReportRow {
+  user_id?: string;
   store_name: string;
   outlet_status?: string | null;
   seat_status?: string | null;
@@ -312,6 +332,7 @@ export async function insertCafeReport(report: CafeReportRow): Promise<boolean> 
   const photoUrls = await uploadReportPhotos(report.photos ?? []);
 
   const { error } = await supabase.from('reports').insert({
+    user_id: report.user_id ?? null,
     store_name: report.store_name,
     outlet_status: report.outlet_status ?? null,
     seat_status: report.seat_status ?? null,
@@ -354,6 +375,49 @@ async function uploadReviewPhotos(photos: string[]): Promise<string[]> {
     }
   }
   return urls;
+}
+
+export interface UserReviewRow {
+  id: string;
+  store_id: string;
+  store_name: string;
+  store_address: string;
+  store_thumbnail: string;
+  content: string;
+  photo_urls: string[];
+  created_at: string;
+}
+
+export async function fetchUserReviews(userId: string): Promise<UserReviewRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('id, store_id, content, photo_urls, created_at, stores(name, address_road, thumbnail_url)')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error('fetchUserReviews:', error); return []; }
+
+  return (data ?? []).map((row: Record<string, unknown>) => {
+    const store = row.stores as Record<string, unknown> | null;
+    return {
+      id: row.id as string,
+      store_id: row.store_id as string,
+      store_name: (store?.name ?? '') as string,
+      store_address: (store?.address_road ?? '') as string,
+      store_thumbnail: (store?.thumbnail_url ?? '') as string,
+      content: row.content as string,
+      photo_urls: (row.photo_urls ?? []) as string[],
+      created_at: row.created_at as string,
+    };
+  });
+}
+
+export async function deleteReview(reviewId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('reviews').delete().eq('id', reviewId);
+  if (error) { console.error('deleteReview:', error); return false; }
+  return true;
 }
 
 export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' | 'created_at' | 'updated_at'>): Promise<boolean> {

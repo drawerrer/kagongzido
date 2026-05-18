@@ -5,7 +5,11 @@ import FocusBottomCTA from '../components/FocusBottomCTA';
 import SheetMenuRow from '../components/SheetMenuRow';
 import SheetCTA from '../components/SheetCTA';
 import { useFavorites } from '../context/FavoritesContext';
-import { insertCafeReport, deleteUserData } from '../services/db';
+import {
+  insertCafeReport, deleteUserData,
+  fetchUserReviews, deleteReview, type UserReviewRow,
+  fetchUserReports, type UserReportRow,
+} from '../services/db';
 import StoreCountBar from '../components/StoreCountBar';
 
 // ─────────────────────────────────────────────────────────────
@@ -45,68 +49,32 @@ const CAFE_BG = [
   'linear-gradient(145deg,#1C1C1E 0%,#2C2C2E 100%)',
 ];
 
-const MOCK_REPORTED: CafeItem[] = [
-  { id: 'r1', name: '우모에', address: '서울 용산구 한강대로84길 21-17 1층', bg: CAFE_BG[0] },
-  { id: 'r2', name: '본지르본 연희', address: '서울 서대문구 연희로 93-10', bg: CAFE_BG[1] },
-  { id: 'r3', name: '카페 온도', address: '서울 마포구 와우산로 21', bg: CAFE_BG[2] },
-  { id: 'r4', name: '모노 커피', address: '서울 강남구 언주로 234', bg: CAFE_BG[3] },
-];
-
 // MOCK_RECENT: 최근 방문 카페 (추후 활성화 예정)
 // const MOCK_RECENT: CafeItem[] = [...]
 
-const MOCK_REVIEWS: ReviewItem[] = [
-  {
-    id: 'rv1',
-    cafeId: '1',
-    cafeName: '우모에',
-    cafeAddress: '서울 용산구 한강대로84길 21-17 1층',
-    cafeBg: CAFE_BG[0],
-    date: '2026.03.29',
-    content: '카피와 조용한 분위기 덕분에 작업하기 좋았어요. 사장님 음악 취향도 좋으셔서 집중도 잘 되더라고요. 다음에 또 방문하고 싶어요.',
-    photos: [CAFE_BG[1], CAFE_BG[2]],
-  },
-  {
-    id: 'rv2',
-    cafeId: '2',
-    cafeName: '본지르본 연희',
-    cafeAddress: '서울 서대문구 연희로 93-10',
-    cafeBg: CAFE_BG[1],
-    date: '2026.03.29',
-    content: '커피와 조용한 분위기 덕분에 작업하기 좋았어요. 사장님 음악 취향도 좋으셔서 집중도 잘 되더라고요. 다음에 또 방문하고 싶어요.',
-    photos: [],
-  },
-  {
-    id: 'rv3',
-    cafeId: '3',
-    cafeName: '카페 온도',
-    cafeAddress: '서울 마포구 와우산로 21',
-    cafeBg: CAFE_BG[2],
-    date: '2026.02.14',
-    content: '아늑하고 따뜻한 분위기가 좋아요. 콘센트도 충분하고 와이파이도 빠릅니다.',
-    photos: [CAFE_BG[3]],
-  },
-  {
-    id: 'rv4',
-    cafeId: '4',
-    cafeName: '모노 커피',
-    cafeAddress: '서울 강남구 언주로 234',
-    cafeBg: CAFE_BG[3],
-    date: '2026.01.20',
-    content: '조용하고 깔끔해요. 에스프레소가 특히 맛있었어요.',
-    photos: [],
-  },
-  {
-    id: 'rv5',
-    cafeId: '5',
-    cafeName: '블루보틀 강남',
-    cafeAddress: '서울 강남구 논현로 508',
-    cafeBg: CAFE_BG[4],
-    date: '2025.12.10',
-    content: '늘 대기가 있지만 그만한 가치가 있어요. 분위기가 정말 좋습니다.',
-    photos: [],
-  },
-];
+function mapReviewRow(row: UserReviewRow, idx: number): ReviewItem {
+  return {
+    id: row.id,
+    cafeId: row.store_id,
+    cafeName: row.store_name,
+    cafeAddress: row.store_address,
+    cafeBg: row.store_thumbnail
+      ? `url('${row.store_thumbnail}') center / cover no-repeat`
+      : CAFE_BG[idx % CAFE_BG.length],
+    date: row.created_at.slice(0, 10).replace(/-/g, '.'),
+    content: row.content,
+    photos: row.photo_urls,
+  };
+}
+
+function mapReportRow(row: UserReportRow, idx: number): CafeItem {
+  return {
+    id: row.id,
+    name: row.store_name,
+    address: row.created_at.slice(0, 10).replace(/-/g, '.') + ' 제보',
+    bg: CAFE_BG[idx % CAFE_BG.length],
+  };
+}
 
 // ─────────────────────────────────────────────────────────────
 // 공통 컴포넌트
@@ -321,11 +289,21 @@ function ReportedCafePage({
   onClose: () => void;
   onDetailOpen?: (id: string) => void;
 }) {
+  const { userId } = useFavorites();
+  const [cafes, setCafes] = useState<CafeItem[]>([]);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchUserReports(userId).then(rows => {
+      setCafes(rows.map(mapReportRow));
+    });
+  }, [userId]);
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
       <SubHeader title="제보한 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
-        <CafeGrid cafes={MOCK_REPORTED} onDetailOpen={onDetailOpen} />
+        <CafeGrid cafes={cafes} onDetailOpen={onDetailOpen} />
       </div>
     </div>
   );
@@ -626,12 +604,21 @@ function WrittenReviewPage({
   onClose: () => void;
   onEdit: (review: ReviewItem) => void;
 }) {
-  const [reviews, setReviews] = useState<ReviewItem[]>(MOCK_REVIEWS);
+  const { userId } = useFavorites();
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [deleteToast, setDeleteToast] = useState(false);
 
-  const confirmDelete = () => {
+  useEffect(() => {
+    if (!userId) return;
+    fetchUserReviews(userId).then(rows => {
+      setReviews(rows.map(mapReviewRow));
+    });
+  }, [userId]);
+
+  const confirmDelete = async () => {
     if (!deleteTargetId) return;
+    await deleteReview(deleteTargetId);
     setReviews(prev => prev.filter(r => r.id !== deleteTargetId));
     setDeleteTargetId(null);
     setDeleteToast(true);
@@ -779,25 +766,6 @@ function WrittenReviewPage({
 // ─────────────────────────────────────────────────────────────
 // 카페 제보하기 페이지 (mypage_recommend / searching / searched)
 // ─────────────────────────────────────────────────────────────
-const MOCK_CAFE_SEARCH = [
-  // MyPage 제보 목록
-  { id: 'r1',  name: '우모에',           address: '서울 용산구 한강대로84길 21-17 1층' },
-  { id: 'r2',  name: '본지르본 연희',    address: '서울 서대문구 연희로 93-10' },
-  { id: 'r3',  name: '카페 온도',        address: '서울 마포구 와우산로 21' },
-  { id: 'r4',  name: '모노 커피',        address: '서울 강남구 언주로 234' },
-  // MapPage 카페 목록
-  { id: '1',   name: '블루보틀 강남',    address: '서울 강남구 논현로 508' },
-  { id: '2',   name: '스타벅스 역삼역점', address: '서울 강남구 역삼로 123' },
-  { id: '4',   name: '카페 베이커리',    address: '서울 강남구 역삼동 567' },
-  { id: '5',   name: '브런치 팩토리',   address: '서울 강남구 선릉로 890' },
-  { id: '6',   name: '더 로스터리',     address: '서울 강남구 도곡로 321' },
-  // 가이드북 카페 목록
-  { id: 'gs1', name: '도트커피',        address: '서울 영등포구 당산로41길 11' },
-  { id: 'gs2', name: '프릳츠 커피',     address: '서울 마포구 도화길 20' },
-  { id: 'gs3', name: '어니언',          address: '서울 성동구 아차산로9길 8' },
-  { id: 'gs4', name: '오르에르',        address: '서울 강남구 도산대로15길 8' },
-  { id: 'gs5', name: '스탠딩커피',      address: '경기 성남시 분당구 판교역로 235' },
-];
 
 const CHIP_OPTIONS: Record<string, string[]> = {
   콘센트: ['부족', '적당', '넉넉'],
@@ -806,6 +774,7 @@ const CHIP_OPTIONS: Record<string, string[]> = {
 };
 
 function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
+  const { userId, allStores } = useFavorites();
   const [query, setQuery] = useState('');
   const [selectedCafe, setSelectedCafe] = useState<{ id: string; name: string; address: string } | null>(null);
   const [chips, setChips] = useState<Record<string, string>>({});
@@ -818,7 +787,10 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
 
   const results = query.trim()
-    ? MOCK_CAFE_SEARCH.filter(c => c.name.includes(query.trim()))
+    ? allStores
+        .filter(c => c.name.includes(query.trim()))
+        .slice(0, 20)
+        .map(c => ({ id: c.id, name: c.name, address: c.address_road }))
     : [];
   const isSearching = !selectedCafe && !directName && query.trim().length > 0 && results.length > 0;
   const isNoResult = !selectedCafe && !directName && query.trim().length > 0 && results.length === 0;
@@ -1150,6 +1122,7 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
         cancelButton={<ConfirmDialog.CancelButton onClick={() => setShowSubmitDialog(false)}>제보 취소</ConfirmDialog.CancelButton>}
         confirmButton={<ConfirmDialog.ConfirmButton onClick={async () => {
           await insertCafeReport({
+            user_id: userId,
             store_name: selectedCafe?.name ?? directName ?? '',
             outlet_status: chips['콘센트'] || null,
             seat_status: chips['좌석'] || null,
@@ -1193,6 +1166,11 @@ export default function MyPage({
   const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
 
   const { userId } = useFavorites();
+  const [reportCount, setReportCount] = useState(0);
+  useEffect(() => {
+    if (!userId) return;
+    fetchUserReports(userId).then(rows => setReportCount(rows.length));
+  }, [userId]);
 
   // 부모(App.tsx)에 엣지스와이프용 back 핸들러 등록
   // 리뷰 작성·수정, 카페 제보, 리뷰 편집 중에는 폼 데이터 손실 방지를 위해 비활성화
@@ -1262,7 +1240,7 @@ export default function MyPage({
                 style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
               >
                 <span style={{ fontSize: 14, fontWeight: 510, color: '#9b9b9b', lineHeight: '18px' }}>제보한 카페</span>
-                <span style={{ fontSize: 14, fontWeight: 510, color: '#101010', lineHeight: '18px' }}>{MOCK_REPORTED.length}개</span>
+                <span style={{ fontSize: 14, fontWeight: 510, color: '#101010', lineHeight: '18px' }}>{reportCount}개</span>
               </div>
               <div style={{ flex: 1 }} />
               <button
