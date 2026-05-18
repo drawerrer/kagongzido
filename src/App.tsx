@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, Component } from 'react';
-import { getAnonymousKey } from '@apps-in-toss/web-framework';
 import { getOrCreateUser } from './services/db';
 import type { ReactNode, ErrorInfo } from 'react';
+
+// TODO: 토스 SDK에 getAnonymousKey가 없어 임시로 로컬 UUID만 사용.
+//       토스 익명 식별이 필요해지면 SDK 정식 API (appLogin 등) 확인 후 복구.
 
 // ── 페이지 단위 에러바운더리 ─────────────────────────────────
 class PageErrorBoundary extends Component<{ children: ReactNode; fallback?: ReactNode }, { error: Error | null }> {
@@ -78,17 +80,14 @@ export default function App() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
-    Promise.race([getAnonymousKey().catch(() => null), timeout]).then(async (result) => {
-      console.log('[AUTH] getAnonymousKey result:', result);
-      const tossId = (result && result !== 'INVALID_CATEGORY' && result !== 'ERROR' && result.type === 'HASH')
-        ? result.hash
-        : getOrCreateLocalId();
-      console.log('[AUTH] tossId:', tossId);
+    // 토스 익명 키 미사용 — 로컬 UUID로 사용자 식별 (SDK 정식 API 확정 시 복구)
+    (async () => {
+      const tossId = getOrCreateLocalId();
+      console.log('[AUTH] localId:', tossId);
       const uuid = await getOrCreateUser(tossId);
       console.log('[AUTH] DB uuid:', uuid);
       setUserId(uuid ?? tossId);
-    });
+    })();
   }, []);
 
   if (!userId) return null;
