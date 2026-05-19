@@ -126,6 +126,16 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
 // ── MapPage 상태 타입 ─────────────────────
 type PanelState = 'minimized' | 'half' | 'expanded';
 
+// ── 레이아웃 상수 ─────────────────────────────────────────
+// 최소화 시트의 top 위치 = 시트 height (bottom: 0 기준).
+// 탭바(env+8 + 56) 위로 핸들이 노출되도록 충분히 큰 값.
+// 시트 높이 조정 시 이 한 줄만 수정하면 GPS·지도도 자동 보정됨.
+const SHEET_MIN_TOP = 'calc(env(safe-area-inset-bottom, 0px) + 132px)';
+// 시트 위쪽 12px 떨어진 위치 (GPS 버튼)
+const GPS_MIN_BOTTOM = `calc(${SHEET_MIN_TOP} + 12px)`;
+// 시트보다 20px 아래에서 끝나는 위치 (지도 컨테이너)
+const MAP_MIN_BOTTOM = `calc(${SHEET_MIN_TOP} - 20px)`;
+
 export interface MapPageState {
   activeChip: string | null;
   panelState: PanelState;
@@ -509,7 +519,7 @@ const [filterOpen, setFilterOpen] = useState(false);
         style={{
           position: 'absolute',
           top: 'calc(env(safe-area-inset-top) + 72px)',
-          bottom: panelState === 'expanded' ? 0 : panelState === 'minimized' ? 'calc(env(safe-area-inset-bottom, 0px) + 112px)' : 'calc(50vh - 20px)',
+          bottom: panelState === 'expanded' ? 0 : panelState === 'minimized' ? MAP_MIN_BOTTOM : 'calc(50vh - 20px)',
           left: 0, right: 0,
           zIndex: 0,
           transition: 'bottom 0.3s ease',
@@ -535,7 +545,7 @@ const [filterOpen, setFilterOpen] = useState(false);
       {/* ── GPS 버튼 ── */}
       <button
         onClick={goToCurrentLocation}
-        style={{ position: 'absolute', right: 16, bottom: panelState === 'minimized' ? 'calc(env(safe-area-inset-bottom, 0px) + 144px)' : 'calc(50vh + 12px)', zIndex: 8, width: 44, height: 44, borderRadius: 22, background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ position: 'absolute', right: 16, bottom: panelState === 'minimized' ? GPS_MIN_BOTTOM : 'calc(50vh + 12px)', zIndex: 8, width: 44, height: 44, borderRadius: 22, background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
         <GpsIcon />
       </button>
@@ -577,7 +587,7 @@ const [filterOpen, setFilterOpen] = useState(false);
           zIndex: panelState === 'expanded' ? 25 : 10,
           background: '#f3f3f3',
           borderRadius: (selectedMapCafe && panelState === 'expanded') ? 0 : '16px 16px 0 0',
-          height: panelState === 'expanded' ? '100%' : panelState === 'minimized' ? 'calc(env(safe-area-inset-bottom, 0px) + 132px)' : '50vh',
+          height: panelState === 'expanded' ? '100%' : panelState === 'minimized' ? SHEET_MIN_TOP : '50vh',
           transition: 'height 0.3s ease',
           display: 'flex', flexDirection: 'column',
           boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
