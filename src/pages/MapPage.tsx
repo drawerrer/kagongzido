@@ -509,7 +509,7 @@ const [filterOpen, setFilterOpen] = useState(false);
         style={{
           position: 'absolute',
           top: 'calc(env(safe-area-inset-top) + 72px)',
-          bottom: panelState === 'expanded' ? 0 : panelState === 'minimized' ? '56px' : 'calc(50vh - 20px)',
+          bottom: panelState === 'expanded' ? 0 : panelState === 'minimized' ? 'calc(env(safe-area-inset-bottom, 0px) + 112px)' : 'calc(50vh - 20px)',
           left: 0, right: 0,
           zIndex: 0,
           transition: 'bottom 0.3s ease',
@@ -535,7 +535,7 @@ const [filterOpen, setFilterOpen] = useState(false);
       {/* ── GPS 버튼 ── */}
       <button
         onClick={goToCurrentLocation}
-        style={{ position: 'absolute', right: 16, bottom: panelState === 'minimized' ? '88px' : 'calc(50vh + 12px)', zIndex: 8, width: 44, height: 44, borderRadius: 22, background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ position: 'absolute', right: 16, bottom: panelState === 'minimized' ? 'calc(env(safe-area-inset-bottom, 0px) + 144px)' : 'calc(50vh + 12px)', zIndex: 8, width: 44, height: 44, borderRadius: 22, background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
         <GpsIcon />
       </button>
@@ -577,7 +577,7 @@ const [filterOpen, setFilterOpen] = useState(false);
           zIndex: panelState === 'expanded' ? 25 : 10,
           background: '#f3f3f3',
           borderRadius: (selectedMapCafe && panelState === 'expanded') ? 0 : '16px 16px 0 0',
-          height: panelState === 'expanded' ? '100%' : panelState === 'minimized' ? '76px' : '50vh',
+          height: panelState === 'expanded' ? '100%' : panelState === 'minimized' ? 'calc(env(safe-area-inset-bottom, 0px) + 132px)' : '50vh',
           transition: 'height 0.3s ease',
           display: 'flex', flexDirection: 'column',
           boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
