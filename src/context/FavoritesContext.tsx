@@ -4,7 +4,7 @@ import {
   fetchFavorites, insertFavorite, deleteFavorite, updateFavoritesOrder,
   fetchCollections, insertCollection, updateCollectionDB, deleteCollectionDB,
   updateCollectionsOrder, addStoresToCollectionDB, removeStoresFromCollectionDB,
-  updateStoreMemo, fetchAllStores, type StoreRow,
+  updateStoreMemo, fetchAllStores, updateUserNickname, type StoreRow,
 } from '../services/db';
 
 // ─── 거리 계산 유틸 (Haversine) ───────────────────────────────
@@ -83,6 +83,8 @@ function lsSet(key: string, value: unknown) {
 // ─── Context 타입 ─────────────────────────────────────────────
 interface FavoritesContextType {
   userId: string;
+  nickname: string | null;
+  updateNickname: (name: string) => void;
   isLoading: boolean;
   allStores: StoreRow[];
   userLocation: { lat: number; lng: number } | null;
@@ -108,13 +110,20 @@ const FavoritesContext = createContext<FavoritesContextType | null>(null);
 // ─── Provider ─────────────────────────────────────────────────
 export function FavoritesProvider({
   userId,
+  initialNickname,
   children,
 }: {
   userId: string;
+  initialNickname: string | null;
   children: ReactNode;
 }) {
   // localStorage에서 즉시 초기값 로드 → 새로고침 후에도 데이터 즉시 표시
   const [isLoading, setIsLoading] = useState(true);
+  const [nickname, setNickname] = useState<string | null>(initialNickname);
+  const updateNickname = useCallback((name: string) => {
+    setNickname(name);
+    updateUserNickname(userId, name);
+  }, [userId]);
 
   // 전체 매장 데이터 (앱 시작 시 1회 로드, 컬렉션·검색 등에서 공유)
   const [allStores, setAllStores] = useState<StoreRow[]>([]);
@@ -343,7 +352,7 @@ export function FavoritesProvider({
 
   return (
     <FavoritesContext.Provider value={{
-      userId, isLoading,
+      userId, nickname, updateNickname, isLoading,
       allStores, userLocation,
       favorites, isFavorited, addFavorite, removeFavorite, reorderFavorites,
       recentlyViewed, addRecentlyViewed,

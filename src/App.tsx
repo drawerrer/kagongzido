@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, Component } from 'react';
-import { getOrCreateUser } from './services/db';
+import { getOrCreateUser, updateUserNickname } from './services/db';
 import type { ReactNode, ErrorInfo } from 'react';
 
 // TODO: 토스 SDK에 getAnonymousKey가 없어 임시로 로컬 UUID만 사용.
@@ -76,24 +76,111 @@ function getOrCreateLocalId(): string {
   return id;
 }
 
+// ── 닉네임 설정 온보딩 페이지 ────────────────────────────────
+function NicknameSetupPage({ userId, onDone }: { userId: string; onDone: (nickname: string) => void }) {
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleConfirm = async () => {
+    const name = draft.trim();
+    if (!name) return;
+    setSaving(true);
+    await updateUserNickname(userId, name);
+    onDone(name);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff', padding: '48px 24px 32px' }}>
+      <div style={{ flex: 1 }}>
+        <p style={{ fontSize: 24, fontWeight: 700, color: '#191F28', marginBottom: 8, lineHeight: 1.4 }}>
+          카페인덱스에서<br />사용할 닉네임을 알려주세요
+        </p>
+        <p style={{ fontSize: 14, color: '#6B7684', marginBottom: 32 }}>닉네임은 마이페이지에서 언제든지 바꿀 수 있어요.</p>
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          borderBottom: '2px solid #252525',
+          paddingBottom: 8, marginBottom: 8,
+        }}>
+          <input
+            autoFocus
+            maxLength={45}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && draft.trim()) handleConfirm(); }}
+            placeholder="닉네임을 입력해주세요"
+            style={{
+              flex: 1, border: 'none', outline: 'none',
+              fontSize: 18, fontWeight: 500, color: '#191F28',
+              background: 'transparent',
+            }}
+          />
+          {draft && (
+            <button
+              onClick={() => setDraft('')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#B0B8C1' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path fillRule="evenodd" clipRule="evenodd" d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm3.536-13.536a1 1 0 0 0-1.414 0L12 10.586 9.878 8.464a1 1 0 0 0-1.414 1.414L10.586 12l-2.122 2.122a1 1 0 1 0 1.414 1.414L12 13.414l2.122 2.122a1 1 0 1 0 1.414-1.414L13.414 12l2.122-2.122a1 1 0 0 0 0-1.414z"/>
+              </svg>
+            </button>
+          )}
+        </div>
+        <p style={{ fontSize: 12, color: '#B0B8C1', textAlign: 'right' }}>{draft.length}/45</p>
+      </div>
+      <button
+        onClick={handleConfirm}
+        disabled={!draft.trim() || saving}
+        style={{
+          width: '100%', height: 54, borderRadius: 12,
+          background: draft.trim() ? '#252525' : '#E5E8EB',
+          color: draft.trim() ? '#fff' : '#ADB5BD',
+          fontSize: 17, fontWeight: 600, border: 'none', cursor: draft.trim() ? 'pointer' : 'default',
+          transition: 'background 0.15s',
+        }}
+      >
+        시작하기
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   const [userId, setUserId] = useState<string | null>(null);
+  const [nickname, setNickname] = useState<string | null>(null);
+  const [needsNickname, setNeedsNickname] = useState(false);
 
   useEffect(() => {
     // 토스 익명 키 미사용 — 로컬 UUID로 사용자 식별 (SDK 정식 API 확정 시 복구)
     (async () => {
       const tossId = getOrCreateLocalId();
       console.log('[AUTH] localId:', tossId);
-      const uuid = await getOrCreateUser(tossId);
-      console.log('[AUTH] DB uuid:', uuid);
-      setUserId(uuid ?? tossId);
+      const info = await getOrCreateUser(tossId);
+      console.log('[AUTH] DB info:', info);
+      if (info) {
+        setUserId(info.id);
+        setNickname(info.nickname);
+        setNeedsNickname(!info.nickname);
+      } else {
+        // Supabase 없을 때 fallback
+        setUserId(tossId);
+        setNeedsNickname(true);
+      }
     })();
   }, []);
 
   if (!userId) return null;
 
+  if (needsNickname) {
+    return (
+      <NicknameSetupPage
+        userId={userId}
+        onDone={(name) => { setNickname(name); setNeedsNickname(false); }}
+      />
+    );
+  }
+
   return (
-    <FavoritesProvider userId={userId}>
+    <FavoritesProvider userId={userId} initialNickname={nickname}>
       <AppInner />
     </FavoritesProvider>
   );

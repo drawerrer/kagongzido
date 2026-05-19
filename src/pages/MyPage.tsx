@@ -1186,7 +1186,9 @@ export default function MyPage({
   }, [subPage, editingReview]); // eslint-disable-line react-hooks/exhaustive-deps
   const [versionToast, setVersionToast] = useState(false);
   const [showMoreSheet, setShowMoreSheet] = useState(false);
-  const [displayName, setDisplayName] = useState('김카페');
+  const { nickname, updateNickname } = useFavorites();
+  const [displayName, setDisplayName] = useState(nickname ?? '카페인덱서');
+  useEffect(() => { if (nickname) setDisplayName(nickname); }, [nickname]);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [showContactPopup, setShowContactPopup] = useState(false);
   const [copiedToast, setCopiedToast] = useState(false);
@@ -1472,7 +1474,9 @@ export default function MyPage({
             onChange={e => { if (e.target.value.length <= 45) setDraftName(e.target.value); }}
             onKeyDown={e => {
               if (e.key === 'Enter' && draftName.trim() && draftName.trim() !== displayName) {
-                setDisplayName(draftName.trim());
+                const name = draftName.trim();
+                setDisplayName(name);
+                updateNickname(name);
                 setShowNameSheet(false);
               }
             }}
@@ -1493,7 +1497,7 @@ export default function MyPage({
           color="primary"
           size="xlarge"
           style={{ width: '100%' }}
-          onClick={() => { setDisplayName(draftName.trim()); setShowNameSheet(false); }}
+          onClick={() => { const name = draftName.trim(); setDisplayName(name); updateNickname(name); setShowNameSheet(false); }}
           disabled={!draftName.trim() || draftName.trim() === displayName}
         >
           적용하기

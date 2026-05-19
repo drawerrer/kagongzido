@@ -5,25 +5,36 @@ import type { FavoritedStore, Collection } from '../context/FavoritesContext';
 // 유저 (users)
 // ─────────────────────────────────────────────────────────────
 
-export async function getOrCreateUser(tossUserId: string): Promise<string | null> {
+export interface UserInfo {
+  id: string;
+  nickname: string | null;
+  isNew: boolean;
+}
+
+export async function getOrCreateUser(tossUserId: string): Promise<UserInfo | null> {
   if (!supabase) return null;
 
   const { data: existing } = await supabase
     .from('users')
-    .select('id')
+    .select('id, nickname')
     .eq('toss_user_id', tossUserId)
     .maybeSingle();
 
-  if (existing?.id) return existing.id as string;
+  if (existing?.id) return { id: existing.id as string, nickname: (existing.nickname as string | null) ?? null, isNew: false };
 
   const { data: created, error } = await supabase
     .from('users')
     .insert({ toss_user_id: tossUserId })
-    .select('id')
+    .select('id, nickname')
     .single();
 
   if (error) { console.error('getOrCreateUser:', error); return null; }
-  return (created as Record<string, string>)?.id ?? null;
+  return { id: (created as Record<string, string>).id, nickname: null, isNew: true };
+}
+
+export async function updateUserNickname(userId: string, nickname: string): Promise<void> {
+  if (!supabase) return;
+  await supabase.from('users').update({ nickname }).eq('id', userId);
 }
 
 // ─────────────────────────────────────────────────────────────
