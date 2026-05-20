@@ -844,7 +844,7 @@ export default function AdminApp() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [reports, setReports] = useState<Report[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
-  const [tab, setTab] = useState<'reports' | 'guidebooks'>('reports');
+  const [tab, setTab] = useState<'reports' | 'guidebooks' | 'notices'>('reports');
 
   // 세션 초기 로드 + 변경 구독 (로그인/로그아웃 시 자동 갱신)
   useEffect(() => {
@@ -908,7 +908,7 @@ export default function AdminApp() {
 
       {/* 탭 */}
       <div style={{ background: '#fff', borderBottom: '1px solid #E5E8EB', display: 'flex', padding: '0 24px' }}>
-        {(['reports', 'guidebooks'] as const).map(t => (
+        {(['reports', 'guidebooks', 'notices'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -920,7 +920,7 @@ export default function AdminApp() {
               marginBottom: -1,
             }}
           >
-            {t === 'reports' ? '제보 목록' : '가이드북'}
+            {t === 'reports' ? '제보 목록' : t === 'guidebooks' ? '가이드북' : '공지사항'}
           </button>
         ))}
       </div>
@@ -944,7 +944,238 @@ export default function AdminApp() {
           </>
         )}
         {tab === 'guidebooks' && <GuidebooksView />}
+        {tab === 'notices' && <NoticesView />}
       </div>
+    </div>
+  );
+}
+
+// ─── 공지사항 관리 ──────────────────────────────────────────────
+interface NoticeRow {
+  id: string;
+  title: string;
+  content: string;
+  is_published: boolean;
+  published_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+function NoticesView() {
+  const [notices, setNotices] = useState<NoticeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<NoticeRow | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('notices')
+      .select('*')
+      .order('published_at', { ascending: false });
+    if (error) { console.error('fetch notices:', error); setLoading(false); return; }
+    setNotices((data ?? []) as NoticeRow[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleTogglePublish = async (n: NoticeRow) => {
+    const { error } = await supabase
+      .from('notices')
+      .update({ is_published: !n.is_published })
+      .eq('id', n.id);
+    if (error) { alert('발행 상태 변경 실패: ' + error.message); return; }
+    await load();
+  };
+
+  const handleDelete = async (n: NoticeRow) => {
+    if (!confirm(`공지 "${n.title}" 을(를) 삭제하시겠어요?`)) return;
+    const { error } = await supabase.from('notices').delete().eq('id', n.id);
+    if (error) { alert('삭제 실패: ' + error.message); return; }
+    await load();
+  };
+
+  if (editing || creating) {
+    return (
+      <NoticeEditor
+        notice={editing}
+        onClose={() => { setEditing(null); setCreating(false); }}
+        onSaved={() => { setEditing(null); setCreating(false); load(); }}
+      />
+    );
+  }
+
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#191F28' }}>
+          공지사항 <span style={{ color: '#3182F6' }}>{notices.length}</span>
+        </h2>
+        <button
+          onClick={() => setCreating(true)}
+          style={{
+            padding: '8px 16px', borderRadius: 8, background: '#3182F6',
+            color: 'white', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
+          }}
+        >
+          + 새 공지
+        </button>
+      </div>
+      {loading ? (
+        <p style={{ color: '#8B95A1', textAlign: 'center', marginTop: 60 }}>불러오는 중...</p>
+      ) : notices.length === 0 ? (
+        <p style={{ color: '#8B95A1', textAlign: 'center', marginTop: 60 }}>등록된 공지가 없어요</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {notices.map(n => (
+            <div key={n.id} style={{
+              padding: 16, borderRadius: 12, background: 'white',
+              border: '1px solid #E5E8EB',
+              display: 'flex', flexDirection: 'column', gap: 8,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                  <span style={{
+                    padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
+                    background: n.is_published ? '#E8F4FF' : '#F3F3F3',
+                    color: n.is_published ? '#3182F6' : '#8B95A1',
+                    flexShrink: 0,
+                  }}>
+                    {n.is_published ? '발행' : '비공개'}
+                  </span>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: '#191F28', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {n.title}
+                  </p>
+                </div>
+                <p style={{ fontSize: 12, color: '#B0B8C1', flexShrink: 0 }}>
+                  {new Date(n.published_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}
+                </p>
+              </div>
+              <p style={{ fontSize: 12, color: '#6B7684', whiteSpace: 'pre-line',
+                overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                {n.content}
+              </p>
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <button onClick={() => setEditing(n)} style={{
+                  padding: '6px 12px', borderRadius: 6, background: '#F3F3F3',
+                  color: '#191F28', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer',
+                }}>수정</button>
+                <button onClick={() => handleTogglePublish(n)} style={{
+                  padding: '6px 12px', borderRadius: 6, background: '#F3F3F3',
+                  color: '#191F28', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer',
+                }}>{n.is_published ? '비공개로' : '발행'}</button>
+                <button onClick={() => handleDelete(n)} style={{
+                  padding: '6px 12px', borderRadius: 6, background: '#FFE5E5',
+                  color: '#FF4D4D', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer',
+                  marginLeft: 'auto',
+                }}>삭제</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function NoticeEditor({ notice, onClose, onSaved }: {
+  notice: NoticeRow | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [title, setTitle] = useState(notice?.title ?? '');
+  const [content, setContent] = useState(notice?.content ?? '');
+  const [isPublished, setIsPublished] = useState(notice?.is_published ?? true);
+  const [publishedDate, setPublishedDate] = useState(
+    notice?.published_at ? notice.published_at.slice(0, 10) : new Date().toISOString().slice(0, 10),
+  );
+  const [saving, setSaving] = useState(false);
+
+  const canSave = title.trim().length > 0 && content.trim().length > 0 && !saving;
+
+  const handleSave = async () => {
+    if (!canSave) return;
+    setSaving(true);
+    const payload = {
+      title: title.trim(),
+      content: content.trim(),
+      is_published: isPublished,
+      published_at: new Date(publishedDate).toISOString(),
+    };
+    const { error } = notice
+      ? await supabase.from('notices').update(payload).eq('id', notice.id)
+      : await supabase.from('notices').insert(payload);
+    setSaving(false);
+    if (error) { alert('저장 실패: ' + error.message); return; }
+    onSaved();
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#191F28' }}>
+          {notice ? '공지 수정' : '새 공지 작성'}
+        </h2>
+        <button onClick={onClose} style={{
+          padding: '6px 12px', borderRadius: 6, background: '#F3F3F3',
+          color: '#8B95A1', fontSize: 13, border: 'none', cursor: 'pointer',
+        }}>취소</button>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <label style={{ fontSize: 12, color: '#6B7684', fontWeight: 600 }}>제목</label>
+        <input
+          type="text" value={title} onChange={e => setTitle(e.target.value)} maxLength={120}
+          placeholder="공지 제목을 입력하세요"
+          style={{
+            padding: '12px 14px', borderRadius: 8, border: '1px solid #E5E8EB',
+            fontSize: 14, fontFamily: 'inherit', outline: 'none',
+          }}
+        />
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <label style={{ fontSize: 12, color: '#6B7684', fontWeight: 600 }}>내용</label>
+        <textarea
+          value={content} onChange={e => setContent(e.target.value)} rows={10}
+          placeholder="공지 내용을 입력하세요 (줄바꿈 포함)"
+          style={{
+            padding: '12px 14px', borderRadius: 8, border: '1px solid #E5E8EB',
+            fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none', lineHeight: 1.5,
+          }}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+          <label style={{ fontSize: 12, color: '#6B7684', fontWeight: 600 }}>발행일</label>
+          <input
+            type="date" value={publishedDate} onChange={e => setPublishedDate(e.target.value)}
+            style={{
+              padding: '10px 14px', borderRadius: 8, border: '1px solid #E5E8EB',
+              fontSize: 14, fontFamily: 'inherit', outline: 'none',
+            }}
+          />
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', cursor: 'pointer' }}>
+          <input type="checkbox" checked={isPublished} onChange={e => setIsPublished(e.target.checked)} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#191F28' }}>발행</span>
+        </label>
+      </div>
+
+      <button
+        onClick={handleSave} disabled={!canSave}
+        style={{
+          marginTop: 8, padding: '14px', borderRadius: 8,
+          background: canSave ? '#3182F6' : '#E5E8EB',
+          color: canSave ? 'white' : '#ADB5BD',
+          fontSize: 14, fontWeight: 700, border: 'none',
+          cursor: canSave ? 'pointer' : 'default',
+        }}
+      >
+        {saving ? '저장 중...' : (notice ? '수정 완료' : '공지 등록')}
+      </button>
     </div>
   );
 }

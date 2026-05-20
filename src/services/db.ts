@@ -576,6 +576,76 @@ export async function toggleReviewLike(
 }
 
 // ─────────────────────────────────────────────────────────────
+// 공지사항 (notices)
+// ─────────────────────────────────────────────────────────────
+
+export interface NoticeRow {
+  id: string;
+  title: string;
+  content: string;
+  is_published: boolean;
+  published_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** 사용자용: 발행된 공지 목록 (최신순) */
+export async function fetchNotices(): Promise<NoticeRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('notices')
+    .select('*')
+    .eq('is_published', true)
+    .order('published_at', { ascending: false });
+
+  if (error) { console.error('fetchNotices:', error); return []; }
+  return (data ?? []) as NoticeRow[];
+}
+
+/** 어드민용: 발행 여부 무관 전체 공지 목록 */
+export async function fetchAllNotices(): Promise<NoticeRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('notices')
+    .select('*')
+    .order('published_at', { ascending: false });
+
+  if (error) { console.error('fetchAllNotices:', error); return []; }
+  return (data ?? []) as NoticeRow[];
+}
+
+export async function insertNotice(
+  notice: Pick<NoticeRow, 'title' | 'content'> & Partial<Pick<NoticeRow, 'is_published' | 'published_at'>>,
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('notices').insert({
+    title: notice.title,
+    content: notice.content,
+    is_published: notice.is_published ?? true,
+    published_at: notice.published_at ?? new Date().toISOString(),
+  });
+  if (error) { console.error('insertNotice:', error); return false; }
+  return true;
+}
+
+export async function updateNotice(
+  id: string,
+  patch: Partial<Pick<NoticeRow, 'title' | 'content' | 'is_published' | 'published_at'>>,
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('notices').update(patch).eq('id', id);
+  if (error) { console.error('updateNotice:', error); return false; }
+  return true;
+}
+
+export async function deleteNotice(id: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('notices').delete().eq('id', id);
+  if (error) { console.error('deleteNotice:', error); return false; }
+  return true;
+}
+
+// ─────────────────────────────────────────────────────────────
 // 회원탈퇴 — 유저 데이터 전체 삭제
 // ─────────────────────────────────────────────────────────────
 

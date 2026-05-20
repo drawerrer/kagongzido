@@ -9,6 +9,7 @@ import {
   insertCafeReport, deleteUserData,
   fetchUserReviews, deleteReview, type UserReviewRow,
   fetchUserReports, type UserReportRow,
+  fetchNotices, type NoticeRow,
 } from '../services/db';
 import StoreCountBar from '../components/StoreCountBar';
 
@@ -103,37 +104,21 @@ function SubHeader({
 }
 
 // ─────────────────────────────────────────────────────────────
-// 공지사항 페이지
+// 공지사항 페이지 — Supabase notices 테이블에서 발행분만 조회
 // ─────────────────────────────────────────────────────────────
-const NOTICES = [
-  {
-    id: '1',
-    date: '26/04/28',
-    title: '카공지도 정식 출시 안내',
-    content: '안녕하세요, 카공지도 팀입니다.\n드디어 카공지도가 정식 출시되었어요! 앞으로도 더 좋은 서비스로 찾아오겠습니다. 많은 관심과 사랑 부탁드려요.',
-  },
-  {
-    id: '2',
-    date: '26/04/10',
-    title: '리뷰 기능 업데이트 안내',
-    content: '카페에 방문하고 느낀 점을 리뷰로 남길 수 있게 되었어요. 콘센트 여부, 좌석 상태, 소음 수준을 직접 평가해보세요.',
-  },
-  {
-    id: '3',
-    date: '26/03/20',
-    title: '모음집 기능 업데이트 안내',
-    content: '마음에 드는 카페를 모음집으로 묶어 관리할 수 있어요. 테마별로 카페를 분류해보세요.',
-  },
-  {
-    id: '4',
-    date: '26/03/01',
-    title: '카공지도 베타 서비스 오픈 안내',
-    content: '카공지도 베타 서비스가 시작되었습니다. 서울 주요 지역의 카공 카페 정보를 먼저 만나보세요. 피드백은 언제든지 환영합니다.',
-  },
-];
+
+function formatNoticeDate(iso: string): string {
+  const d = new Date(iso);
+  const yy = String(d.getFullYear()).slice(-2);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yy}/${mm}/${dd}`;
+}
 
 function NoticesPage({ onBack }: { onBack: () => void }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [notices, setNotices] = useState<NoticeRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     try {
@@ -144,46 +129,63 @@ function NoticesPage({ onBack }: { onBack: () => void }) {
     } catch { return undefined; }
   }, [onBack]);
 
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const rows = await fetchNotices();
+      setNotices(rows);
+      setLoading(false);
+    })();
+  }, []);
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#F3F3F3' }}>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
-        <div style={{ background: '#FFFFFF', margin: '12px 16px', borderRadius: 14, overflow: 'hidden' }}>
-          {NOTICES.map((notice, i) => (
-            <div key={notice.id}>
-              <button
-                onClick={() => setOpenId(openId === notice.id ? null : notice.id)}
-                style={{
-                  display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-                  width: '100%', padding: '18px 16px',
-                  borderBottom: i < NOTICES.length - 1 || openId === notice.id ? '1px solid #F3F3F3' : 'none',
-                  background: 'transparent', cursor: 'pointer', textAlign: 'left', gap: 12,
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 11, color: '#B0B8C1', fontWeight: 500, marginBottom: 4 }}>{notice.date}</p>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: 'rgba(3,18,40,0.85)', lineHeight: '1.4' }}>{notice.title}</p>
-                </div>
-                <svg
-                  width="20" height="20" viewBox="0 0 20 20" fill="none"
-                  style={{ flexShrink: 0, marginTop: 2, transition: 'transform 0.2s', transform: openId === notice.id ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        {loading ? (
+          <p style={{ color: '#8B95A1', textAlign: 'center', marginTop: 60, fontSize: 14 }}>불러오는 중...</p>
+        ) : notices.length === 0 ? (
+          <p style={{ color: '#8B95A1', textAlign: 'center', marginTop: 60, fontSize: 14 }}>등록된 공지가 없어요</p>
+        ) : (
+          <div style={{ background: '#FFFFFF', margin: '12px 16px', borderRadius: 14, overflow: 'hidden' }}>
+            {notices.map((notice, i) => (
+              <div key={notice.id}>
+                <button
+                  onClick={() => setOpenId(openId === notice.id ? null : notice.id)}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+                    width: '100%', padding: '18px 16px',
+                    borderBottom: i < notices.length - 1 || openId === notice.id ? '1px solid #F3F3F3' : 'none',
+                    background: 'transparent', cursor: 'pointer', textAlign: 'left', gap: 12,
+                  }}
                 >
-                  <path d="M5 7.5L10 12.5L15 7.5" stroke="#B0B8C1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              {openId === notice.id && (
-                <div style={{
-                  padding: '14px 16px 18px',
-                  borderBottom: i < NOTICES.length - 1 ? '1px solid #F3F3F3' : 'none',
-                  background: '#FAFAFA',
-                }}>
-                  <p style={{ fontSize: 13, color: 'rgba(3,18,40,0.60)', lineHeight: '1.7', whiteSpace: 'pre-line' }}>
-                    {notice.content}
-                  </p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 11, color: '#B0B8C1', fontWeight: 500, marginBottom: 4 }}>
+                      {formatNoticeDate(notice.published_at)}
+                    </p>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: 'rgba(3,18,40,0.85)', lineHeight: '1.4' }}>{notice.title}</p>
+                  </div>
+                  <svg
+                    width="20" height="20" viewBox="0 0 20 20" fill="none"
+                    style={{ flexShrink: 0, marginTop: 2, transition: 'transform 0.2s', transform: openId === notice.id ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  >
+                    <path d="M5 7.5L10 12.5L15 7.5" stroke="#B0B8C1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+                {openId === notice.id && (
+                  <div style={{
+                    padding: '14px 16px 18px',
+                    borderBottom: i < notices.length - 1 ? '1px solid #F3F3F3' : 'none',
+                    background: '#FAFAFA',
+                  }}>
+                    <p style={{ fontSize: 13, color: 'rgba(3,18,40,0.60)', lineHeight: '1.7', whiteSpace: 'pre-line' }}>
+                      {notice.content}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
