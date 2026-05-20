@@ -41,11 +41,29 @@ export async function updateUserNickname(userId: string, nickname: string): Prom
 // 찜한 매장
 // ─────────────────────────────────────────────────────────────
 
+// UI 에서는 store 식별자로 api_place_id(text) 를 사용하지만
+// DB(favorites/collection_stores)는 stores.id(uuid) FK 를 요구함.
+// 두 ID 를 매핑하는 헬퍼.
+function isUuid(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
+async function resolveStoreUuid(maybeId: string): Promise<string | null> {
+  if (!supabase) return null;
+  if (isUuid(maybeId)) return maybeId; // 이미 UUID
+  const { data } = await supabase
+    .from('stores')
+    .select('id')
+    .eq('api_place_id', maybeId)
+    .maybeSingle();
+  return (data?.id as string | undefined) ?? null;
+}
+
 export async function fetchFavorites(userId: string): Promise<FavoritedStore[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('favorites')
-    .select('store_id, sort_order, stores!inner(id, name, address_road, thumbnail_url, photo_urls, badges)')
+    .select('store_id, sort_order, stores!inner(id, api_place_id, name, address_road, thumbnail_url, photo_urls, badges)')
     .eq('user_id', userId)
     .order('sort_order', { ascending: true });
 
@@ -54,7 +72,8 @@ export async function fetchFavorites(userId: string): Promise<FavoritedStore[]> 
   return (data ?? []).map((row: Record<string, unknown>) => {
     const store = row.stores as Record<string, unknown> | null;
     return {
-      id: row.store_id as string,
+      // UI 에서는 api_place_id 를 식별자로 사용 (cafe.id, isFavorited 매칭)
+      id: (store?.api_place_id ?? row.store_id) as string,
       name: (store?.name ?? '') as string,
       address: (store?.address_road ?? '') as string,
       rating: 0,
@@ -67,9 +86,14 @@ export async function fetchFavorites(userId: string): Promise<FavoritedStore[]> 
 
 export async function insertFavorite(userId: string, store: FavoritedStore, sortOrder: number): Promise<void> {
   if (!supabase) return;
+  const storeUuid = await resolveStoreUuid(store.id);
+  if (!storeUuid) {
+    console.error('insertFavorite: stores 에서 해당 매장을 찾을 수 없어요', store.id);
+    return;
+  }
   const { error } = await supabase.from('favorites').upsert({
     user_id: userId,
-    store_id: store.id,
+    store_id: storeUuid,
     sort_order: sortOrder,
   }, { onConflict: 'user_id,store_id' });
 
@@ -78,22 +102,31 @@ export async function insertFavorite(userId: string, store: FavoritedStore, sort
 
 export async function deleteFavorite(userId: string, storeId: string): Promise<void> {
   if (!supabase) return;
+  const storeUuid = await resolveStoreUuid(storeId);
+  if (!storeUuid) return;
   const { error } = await supabase
     .from('favorites')
     .delete()
     .eq('user_id', userId)
-    .eq('store_id', storeId);
+    .eq('store_id', storeUuid);
 
   if (error) console.error('deleteFavorite:', error);
 }
 
 export async function updateFavoritesOrder(userId: string, stores: FavoritedStore[]): Promise<void> {
   if (!supabase) return;
-  const updates = stores.map((s, i) => ({
-    user_id: userId,
-    store_id: s.id,
-    sort_order: i,
-  }));
+
+  // api_place_id 들을 한 번에 UUID 로 변환
+  const resolved = await Promise.all(stores.map(s => resolveStoreUuid(s.id)));
+  const updates = stores
+    .map((_s, i) => resolved[i] ? ({
+      user_id: userId,
+      store_id: resolved[i] as string,
+      sort_order: i,
+    }) : null)
+    .filter((u): u is { user_id: string; store_id: string; sort_order: number } => u !== null);
+
+  if (updates.length === 0) return;
 
   const { error } = await supabase
     .from('favorites')
@@ -118,9 +151,10 @@ export async function fetchCollections(userId: string): Promise<Collection[]> {
   if (!cols || cols.length === 0) return [];
 
   const colIds = cols.map((c: Record<string, unknown>) => c.id);
+  // stores 조인하여 api_place_id 동시 수집 (UI 식별자와 일치시키기 위함)
   const { data: stores, error: storeErr } = await supabase
     .from('collection_stores')
-    .select('*')
+    .select('collection_id, store_id, sort_order, memo, stores!inner(api_place_id)')
     .in('collection_id', colIds)
     .order('sort_order', { ascending: true });
 
@@ -129,13 +163,21 @@ export async function fetchCollections(userId: string): Promise<Collection[]> {
   return cols.map((col: Record<string, unknown>) => {
     const colStores = (stores ?? []).filter((s: Record<string, unknown>) => s.collection_id === col.id);
     const memos: Record<string, string> = {};
-    colStores.forEach((s: Record<string, unknown>) => { if (s.memo) memos[s.store_id as string] = s.memo as string; });
+    colStores.forEach((s: Record<string, unknown>) => {
+      const placeId = (s.stores as Record<string, unknown> | null)?.api_place_id as string | undefined;
+      const key = placeId ?? (s.store_id as string);
+      if (s.memo) memos[key] = s.memo as string;
+    });
 
     return {
       id: col.id as string,
       name: col.name as string,
       memo: (col.memo ?? undefined) as string | undefined,
-      storeIds: colStores.map((s: Record<string, unknown>) => s.store_id as string),
+      // UI 가 api_place_id 로 storeIds 비교하므로 api_place_id 우선 반환 (fallback: store_id uuid)
+      storeIds: colStores.map((s: Record<string, unknown>) => {
+        const placeId = (s.stores as Record<string, unknown> | null)?.api_place_id as string | undefined;
+        return placeId ?? (s.store_id as string);
+      }),
       memos,
     };
   });
@@ -210,11 +252,17 @@ export async function addStoresToCollectionDB(collectionId: string, storeIds: st
 
   const startOrder = existing?.[0]?.sort_order ?? -1;
 
-  const rows = storeIds.map((storeId, i) => ({
-    collection_id: collectionId,
-    store_id: storeId,
-    sort_order: startOrder + i + 1,
-  }));
+  // api_place_id → stores.id(uuid) 변환
+  const resolved = await Promise.all(storeIds.map(id => resolveStoreUuid(id)));
+  const rows = resolved
+    .map((uuid, i) => uuid ? ({
+      collection_id: collectionId,
+      store_id: uuid,
+      sort_order: startOrder + i + 1,
+    }) : null)
+    .filter((r): r is { collection_id: string; store_id: string; sort_order: number } => r !== null);
+
+  if (rows.length === 0) return;
 
   const { error } = await supabase
     .from('collection_stores')
@@ -225,22 +273,27 @@ export async function addStoresToCollectionDB(collectionId: string, storeIds: st
 
 export async function removeStoresFromCollectionDB(collectionId: string, storeIds: string[]): Promise<void> {
   if (!supabase) return;
+  const resolved = await Promise.all(storeIds.map(id => resolveStoreUuid(id)));
+  const uuids = resolved.filter((u): u is string => !!u);
+  if (uuids.length === 0) return;
   const { error } = await supabase
     .from('collection_stores')
     .delete()
     .eq('collection_id', collectionId)
-    .in('store_id', storeIds);
+    .in('store_id', uuids);
 
   if (error) console.error('removeStoresFromCollectionDB:', error);
 }
 
 export async function updateStoreMemo(collectionId: string, storeId: string, memo: string): Promise<void> {
   if (!supabase) return;
+  const storeUuid = await resolveStoreUuid(storeId);
+  if (!storeUuid) return;
   const { error } = await supabase
     .from('collection_stores')
     .update({ memo })
     .eq('collection_id', collectionId)
-    .eq('store_id', storeId);
+    .eq('store_id', storeUuid);
 
   if (error) console.error('updateStoreMemo:', error);
 }
