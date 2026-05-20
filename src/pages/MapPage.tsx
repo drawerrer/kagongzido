@@ -158,6 +158,9 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
   const listReachedTopRef = useRef<boolean>(false);
   // 맨 위 도달 시점의 finger Y — 거기서부터의 추가 drag 거리로 collapse 판단 (안정성 ↑)
   const listReachedTopYRef = useRef<number>(0);
+  // 이번 터치 시퀀스에서 collapse(or 상태전환)가 이미 트리거됐는지
+  // touchMove 에서 expanded→half 후, touchEnd 가 half→minimized 로 cascade 트리거하는 것 방지
+  const collapseTriggeredRef = useRef<boolean>(false);
 
   // ── Kakao Maps refs ───────────────────────
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -646,6 +649,7 @@ const [filterOpen, setFilterOpen] = useState(false);
                 const atTop = e.currentTarget.scrollTop === 0;
                 listReachedTopRef.current = atTop;
                 listReachedTopYRef.current = atTop ? y : 0;
+                collapseTriggeredRef.current = false;
               }}
               onTouchMove={(e) => {
                 e.stopPropagation();
@@ -666,12 +670,18 @@ const [filterOpen, setFilterOpen] = useState(false);
                   currentY - listReachedTopYRef.current > 30
                 ) {
                   setPanelState('half');
-                  // 한 번만 트리거되도록 플래그 리셋
+                  // 한 번만 트리거 + touchEnd 의 cascade(half→minimized) 차단
                   listReachedTopRef.current = false;
+                  collapseTriggeredRef.current = true;
                 }
               }}
               onTouchEnd={(e) => {
                 e.stopPropagation();
+                // touchMove 에서 이미 collapse 트리거된 경우 스킵 (cascade 차단)
+                if (collapseTriggeredRef.current) {
+                  collapseTriggeredRef.current = false;
+                  return;
+                }
                 const endY = e.changedTouches[0].clientY;
                 const delta = endY - touchStartYRef.current;
                 const COLLAPSE_THRESHOLD = 30;  // expanded → half (touchEnd fallback)
