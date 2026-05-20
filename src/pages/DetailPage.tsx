@@ -421,14 +421,49 @@ function Divider() {
   return <div style={{ height: 8, background: '#F2F4F6' }} />;
 }
 
-function InfoBox({ label, value, icon }: { label: string; value: string; icon?: ReactNode }) {
+function InfoBox({ label, value, icon, tooltip }: { label: string; value: string; icon?: ReactNode; tooltip?: string }) {
+  const [showTooltip, setShowTooltip] = useState(false);
   return (
-    <div style={{ flex: 1, padding: '14px 16px' }}>
+    <div style={{ flex: 1, padding: '14px 16px', position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4, color: '#8B95A1' }}>
         {icon}
         <p style={{ fontSize: 12, color: '#8B95A1' }}>{label}</p>
+        {tooltip && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowTooltip(v => !v); }}
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', lineHeight: 0 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11.9977 6.60059C11.2247 6.60059 10.5977 7.22759 10.5977 8.00059C10.5977 8.77359 11.2247 9.40059 11.9977 9.40059C12.7707 9.40059 13.3977 8.77359 13.3977 8.00059C13.3977 7.22759 12.7707 6.60059 11.9977 6.60059Z" fill="#9AA4AE"/>
+              <path d="M12 17.635C11.448 17.635 11 17.188 11 16.635V12C11 11.448 11.448 11 12 11C12.552 11 13 11.448 13 12V16.635C13 17.188 12.552 17.635 12 17.635Z" fill="#9AA4AE"/>
+              <path d="M11.9984 23.1004C5.87744 23.1004 0.898438 18.1204 0.898438 12.0004C0.898438 5.87939 5.87744 0.900391 11.9984 0.900391C18.1184 0.900391 23.0984 5.87939 23.0984 12.0004C23.0984 18.1204 18.1184 23.1004 11.9984 23.1004ZM11.9984 3.10039C7.09044 3.10039 3.09844 7.09239 3.09844 12.0004C3.09844 16.9074 7.09044 20.9004 11.9984 20.9004C16.9054 20.9004 20.8984 16.9074 20.8984 12.0004C20.8984 7.09239 16.9054 3.10039 11.9984 3.10039Z" fill="#9AA4AE"/>
+            </svg>
+          </button>
+        )}
       </div>
       <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28' }}>{value}</p>
+      {tooltip && showTooltip && (
+        <div
+          onClick={(e) => { e.stopPropagation(); setShowTooltip(false); }}
+          style={{
+            position: 'absolute', bottom: 'calc(100% + 6px)', left: 12,
+            background: '#333D4B', color: '#fff',
+            borderRadius: 8, padding: '8px 12px',
+            fontSize: 12, lineHeight: '18px', whiteSpace: 'pre-line',
+            zIndex: 100, minWidth: 160, maxWidth: 220,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+          }}
+        >
+          {tooltip}
+          <div style={{
+            position: 'absolute', top: '100%', left: 16,
+            width: 0, height: 0,
+            borderLeft: '6px solid transparent',
+            borderRight: '6px solid transparent',
+            borderTop: '6px solid #333D4B',
+          }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -1630,11 +1665,11 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           {/* 좌석 | 콘센트 (가로 배치) */}
           <div style={{
             display: 'flex', border: '1px solid #F2F4F6',
-            borderRadius: 12, overflow: 'hidden', marginBottom: 4,
+            borderRadius: 12, marginBottom: 4, overflow: 'visible',
           }}>
-            <InfoBox label="좌석" value={cafe.seats ?? '?'} icon={<IcSeat />} />
+            <InfoBox label="좌석" value={cafe.seats ?? '?'} icon={<IcSeat />} tooltip={"소형카페 : 6 테이블 이하\n중형카페 : 7~15 테이블\n대형카페 : 16 테이블 이상"} />
             <div style={{ width: 1, background: '#F2F4F6' }} />
-            <InfoBox label="콘센트" value={cafe.outlets ?? '?'} icon={<IcOutlet />} />
+            <InfoBox label="콘센트" value={cafe.outlets ?? '?'} icon={<IcOutlet />} tooltip={"[넉넉] 거의 사용가능\n[적당] 지정석에 콘센트 보유\n[부족] 0~3개 보유"} />
           </div>
 
           {/* 기타 정보 세로 나열 */}
