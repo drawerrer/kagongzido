@@ -649,24 +649,37 @@ const [filterOpen, setFilterOpen] = useState(false);
               }}
               onTouchMove={(e) => {
                 e.stopPropagation();
-                // 드래그 도중 scrollTop===0 에 처음 도달한 순간 기록
-                if (!listReachedTopRef.current && e.currentTarget.scrollTop === 0) {
+                const currentY = e.touches[0].clientY;
+                const atTop = e.currentTarget.scrollTop <= 0;
+
+                // 드래그 도중 맨 위에 도달한 순간 기록
+                if (!listReachedTopRef.current && atTop) {
                   listReachedTopRef.current = true;
-                  listReachedTopYRef.current = e.touches[0].clientY;
+                  listReachedTopYRef.current = currentY;
+                }
+
+                // expanded + 맨 위 도달 후 30px+ 추가 드래그 → 즉시 half (touchEnd 기다리지 않음)
+                if (
+                  panelState === 'expanded' &&
+                  listReachedTopRef.current &&
+                  atTop &&
+                  currentY - listReachedTopYRef.current > 30
+                ) {
+                  setPanelState('half');
+                  // 한 번만 트리거되도록 플래그 리셋
+                  listReachedTopRef.current = false;
                 }
               }}
               onTouchEnd={(e) => {
                 e.stopPropagation();
-                const el = e.currentTarget;
                 const endY = e.changedTouches[0].clientY;
                 const delta = endY - touchStartYRef.current;
-                const COLLAPSE_THRESHOLD = 40;  // expanded → half
+                const COLLAPSE_THRESHOLD = 30;  // expanded → half (touchEnd fallback)
                 const STATE_THRESHOLD = 60;     // half ↔ minimized/expanded
 
                 if (panelState === 'expanded') {
-                  // 드래그 도중 맨 위에 도달했고, 그 시점부터 아래로 40px+ 더 끌었으면 → half
-                  // (중간에서 시작해도 위로 끝까지 스크롤 후 더 끌어내리면 OK)
-                  if (listReachedTopRef.current && el.scrollTop === 0) {
+                  // touchMove 에서 못 잡힌 케이스를 위한 fallback (scrollTop 체크 완화)
+                  if (listReachedTopRef.current) {
                     const deltaFromTop = endY - listReachedTopYRef.current;
                     if (deltaFromTop > COLLAPSE_THRESHOLD) setPanelState('half');
                   }
