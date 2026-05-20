@@ -608,6 +608,14 @@ export default function CollectionPage({
           type="collection"
           onConfirm={() => {
             if (!colActionTargetId) return;
+            // 되돌리기 위해 삭제 전 컬렉션 정보 저장
+            const colToDelete = collections.find(c => c.id === colActionTargetId);
+            if (colToDelete) {
+              setDeletedCollectionStore({
+                name: colToDelete.name,
+                storeIds: [...colToDelete.storeIds],
+              });
+            }
             removeCollection(colActionTargetId);
             setShowColDeleteConfirm(false);
             setColActionTargetId(null);
