@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, Component } from 'react';
 import { getAnonymousKey } from '@apps-in-toss/web-framework';
-import { getOrCreateUser, updateUserNickname } from './services/db';
+import { getOrCreateUser, getOrCreateUserWithAuth, updateUserNickname } from './services/db';
+import { supabase } from './services/supabase';
 import type { ReactNode, ErrorInfo } from 'react';
 
 // ── 페이지 단위 에러바운더리 ─────────────────────────────────
@@ -164,18 +165,46 @@ export default function App() {
   const [needsNickname, setNeedsNickname] = useState(false);
 
   useEffect(() => {
-    // 토스 공식 익명 키(getAnonymousKey)로 사용자 식별. 실패 시 로컬 UUID 폴백.
+    // 1) 토스 익명 해시 발급
+    // 2) Supabase Anonymous Auth 로그인 → auth.uid 발급
+    // 3) tossUserId + authUserId 로 users 행 매핑 (RLS 동작에 필수)
+    // 4) Auth 실패 시 RLS 우회 모드로 폴백 (개발 환경)
     (async () => {
       const tossId = await getTossUserId();
       console.log('[AUTH] tossUserId:', tossId);
-      const info = await getOrCreateUser(tossId);
+
+      // ── Supabase Anonymous Auth ────────────────────────────
+      let authUid: string | null = null;
+      if (supabase) {
+        // 기존 세션 복원 시도
+        const { data: { session: existing } } = await supabase.auth.getSession();
+        if (existing?.user?.id) {
+          authUid = existing.user.id;
+          console.log('[AUTH] reused existing supabase session');
+        } else {
+          // 익명 로그인
+          const { data, error } = await supabase.auth.signInAnonymously();
+          if (error) {
+            console.error('[AUTH] signInAnonymously failed:', error);
+          } else if (data?.user?.id) {
+            authUid = data.user.id;
+            console.log('[AUTH] new anonymous session');
+          }
+        }
+      }
+
+      // ── users 매핑 ──────────────────────────────────────────
+      const info = authUid
+        ? await getOrCreateUserWithAuth(tossId, authUid)
+        : await getOrCreateUser(tossId);   // 폴백 (개발/SUPABASE OFF)
       console.log('[AUTH] DB info:', info);
+
       if (info) {
         setUserId(info.id);
         setNickname(info.nickname);
         setNeedsNickname(!info.nickname);
       } else {
-        // Supabase 없을 때 fallback
+        // 모두 실패 시 마지막 폴백 — 토스 해시를 그대로 userId 로 사용
         setUserId(tossId);
         setNeedsNickname(true);
       }

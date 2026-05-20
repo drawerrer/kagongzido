@@ -32,6 +32,63 @@ export async function getOrCreateUser(tossUserId: string): Promise<UserInfo | nu
   return { id: (created as Record<string, string>).id, nickname: null, isNew: true };
 }
 
+/**
+ * Supabase Anonymous Auth + RLS 모드용 사용자 조회/생성.
+ * @param tossUserId 토스 익명 해시 (getAnonymousKey)
+ * @param authUserId Supabase auth.uid() — signInAnonymously() 후 발급
+ *
+ * 동작:
+ *  1) tossUserId 로 users 행 조회
+ *  2) 있으면: auth_user_id 가 다르거나 비었으면 → 갱신 (localStorage 초기화 등으로 세션 재발급된 케이스)
+ *  3) 없으면: INSERT (toss_user_id + auth_user_id)
+ *
+ * RLS 정책상 INSERT/UPDATE 모두 auth_user_id = auth.uid() 일 때만 허용됨.
+ */
+export async function getOrCreateUserWithAuth(
+  tossUserId: string,
+  authUserId: string,
+): Promise<UserInfo | null> {
+  if (!supabase) return null;
+
+  // 1) 기존 row 조회
+  const { data: existing, error: selErr } = await supabase
+    .from('users')
+    .select('id, nickname, auth_user_id')
+    .eq('toss_user_id', tossUserId)
+    .maybeSingle();
+
+  if (selErr) {
+    console.error('getOrCreateUserWithAuth select:', selErr);
+    return null;
+  }
+
+  if (existing?.id) {
+    const row = existing as { id: string; nickname: string | null; auth_user_id: string | null };
+    // auth_user_id 재매핑이 필요한 경우 (NULL 또는 다른 값)
+    if (row.auth_user_id !== authUserId) {
+      const { error: updErr } = await supabase
+        .from('users')
+        .update({ auth_user_id: authUserId })
+        .eq('id', row.id);
+      if (updErr) console.error('getOrCreateUserWithAuth remap:', updErr);
+    }
+    return { id: row.id, nickname: row.nickname, isNew: false };
+  }
+
+  // 2) 신규 row INSERT
+  const { data: created, error: insErr } = await supabase
+    .from('users')
+    .insert({ toss_user_id: tossUserId, auth_user_id: authUserId })
+    .select('id, nickname')
+    .single();
+
+  if (insErr) {
+    console.error('getOrCreateUserWithAuth insert:', insErr);
+    return null;
+  }
+  return { id: (created as Record<string, string>).id, nickname: null, isNew: true };
+}
+
 export async function updateUserNickname(userId: string, nickname: string): Promise<void> {
   if (!supabase) return;
   await supabase.from('users').update({ nickname }).eq('id', userId);

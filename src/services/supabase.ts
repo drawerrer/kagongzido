@@ -8,5 +8,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storageKey: 'kagongzido_supabase_auth',
+        detectSessionInUrl: false, // WebView 환경에선 URL 콜백 미사용
+      },
+    })
   : null;
