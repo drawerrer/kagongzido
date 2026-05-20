@@ -1025,7 +1025,8 @@ function formatDate(iso: string) {
 function rowToReviewItem(row: ReviewRow): ReviewItem {
   return {
     id: row.id,
-    author: `사용자 ${row.user_id.slice(-4)}`,
+    // users 테이블의 nickname 우선 사용, 없을 경우만 UUID 마지막 4자리로 폴백
+    author: row.author_nickname?.trim() || `사용자 ${row.user_id.slice(-4)}`,
     avatarColor: avatarColor(row.user_id),
     date: formatDate(row.created_at),
     content: row.content,

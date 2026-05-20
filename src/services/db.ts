@@ -312,6 +312,7 @@ export interface ReviewRow {
   noise_status: string;
   photo_urls?: string[];
   like_count: number;  // reviews_likes COUNT 집계값 (DB 컬럼 아님)
+  author_nickname: string | null;  // users.nickname JOIN 결과 (없으면 null → UI 폴백)
   created_at: string;
   updated_at: string;
 }
@@ -323,15 +324,16 @@ export async function fetchReviews(storeId: string): Promise<ReviewRow[]> {
   if (!storeUuid) return [];
   const { data, error } = await supabase
     .from('reviews')
-    .select('*, reviews_likes(count)')
+    .select('*, reviews_likes(count), users(nickname)')
     .eq('store_id', storeUuid)
     .order('created_at', { ascending: false });
 
   if (error) { console.error('fetchReviews:', error); return []; }
 
   return (data ?? []).map((row: Record<string, unknown>) => ({
-    ...(row as Omit<ReviewRow, 'like_count'>),
+    ...(row as Omit<ReviewRow, 'like_count' | 'author_nickname'>),
     like_count: (row.reviews_likes as { count: number }[])?.[0]?.count ?? 0,
+    author_nickname: ((row.users as { nickname: string | null } | null)?.nickname) ?? null,
   }));
 }
 
