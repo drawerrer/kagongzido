@@ -163,41 +163,50 @@ export default function App() {
   const [userId, setUserId] = useState<string | null>(null);
   const [nickname, setNickname] = useState<string | null>(null);
   const [needsNickname, setNeedsNickname] = useState(false);
+  // ⚠️ 디버그 전용: 콘솔 못 보는 WebView 환경에서 Auth 흐름 화면에 표시. 검증 후 제거.
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   useEffect(() => {
     // 1) 토스 익명 해시 발급
     // 2) Supabase Anonymous Auth 로그인 → auth.uid 발급
     // 3) tossUserId + authUserId 로 users 행 매핑 (RLS 동작에 필수)
     // 4) Auth 실패 시 RLS 우회 모드로 폴백 (개발 환경)
+    const logs: string[] = [];
+    const log = (s: string) => { logs.push(s); console.log(s); setDebugInfo(logs.join('\n')); };
     (async () => {
       const tossId = await getTossUserId();
-      console.log('[AUTH] tossUserId:', tossId);
+      log(`[AUTH] tossId: ${tossId.slice(0, 12)}...`);
 
       // ── Supabase Anonymous Auth ────────────────────────────
       let authUid: string | null = null;
       if (supabase) {
+        log('[AUTH] supabase client OK');
         // 기존 세션 복원 시도
         const { data: { session: existing } } = await supabase.auth.getSession();
         if (existing?.user?.id) {
           authUid = existing.user.id;
-          console.log('[AUTH] reused existing supabase session');
+          log(`[AUTH] reused session: ${authUid.slice(0, 8)}...`);
         } else {
-          // 익명 로그인
+          log('[AUTH] no existing session → signInAnonymously...');
           const { data, error } = await supabase.auth.signInAnonymously();
           if (error) {
-            console.error('[AUTH] signInAnonymously failed:', error);
+            log(`[AUTH] ❌ signInAnonymously FAIL: ${error.message}`);
           } else if (data?.user?.id) {
             authUid = data.user.id;
-            console.log('[AUTH] new anonymous session');
+            log(`[AUTH] ✅ new anon session: ${authUid.slice(0, 8)}...`);
+          } else {
+            log('[AUTH] ❌ signInAnonymously returned no user');
           }
         }
+      } else {
+        log('[AUTH] ❌ supabase client = null (env missing)');
       }
 
       // ── users 매핑 ──────────────────────────────────────────
       const info = authUid
         ? await getOrCreateUserWithAuth(tossId, authUid)
         : await getOrCreateUser(tossId);   // 폴백 (개발/SUPABASE OFF)
-      console.log('[AUTH] DB info:', info);
+      log(`[AUTH] DB info: ${info ? `id=${info.id.slice(0, 8)} nick=${info.nickname ?? 'null'}` : 'null'}`);
 
       if (info) {
         setUserId(info.id);
@@ -212,7 +221,15 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!userId) return null;
+  // ⚠️ 디버그: userId 미발급 시 진행상황 표시 (검증 후 제거)
+  if (!userId) {
+    return (
+      <div style={{ padding: 20, fontFamily: 'monospace', fontSize: 12, whiteSpace: 'pre-wrap', color: '#191F28' }}>
+        <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>🔧 Auth 디버그</p>
+        {debugInfo || '초기화 중...'}
+      </div>
+    );
+  }
 
   if (needsNickname) {
     return (
