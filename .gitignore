@@ -9,3 +9,4 @@ dist-admin/
 granite.config.ts
 .granite/
 images/
+.vercel
