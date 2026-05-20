@@ -20,6 +20,12 @@ interface PhotoReviewPageProps {
   onFavoriteToggle: () => void;
   onBack: () => void;
   onClose: () => void;
+  /** (옵션) DetailPage 진입 시 — DB 좋아요 연동용 */
+  userId?: string;
+  /** (옵션) 부모에서 prefetch한 본인 좋아요 reviewId 집합 */
+  initialLikedReviewIds?: Set<string>;
+  /** (옵션) 좋아요 토글 — DB 동기화 후 최종 좋아요 상태 반환. 없으면 로컬 토글만 */
+  onToggleReviewLike?: (reviewId: string) => Promise<boolean>;
 }
 
 // ────────── 상수 ─────────────────────────────────────────────
@@ -85,17 +91,25 @@ function PhotoDetailView({
   photos,
   initialIndex,
   onBack,
+  initialLikedReviewIds,
+  onToggleReviewLike,
 }: {
   photos: ReviewPhoto[];
   initialIndex: number;
   onBack: () => void;
+  initialLikedReviewIds: Set<string>;
+  onToggleReviewLike?: (reviewId: string) => Promise<boolean>;
 }) {
   // 같은 작성자의 사진만 표시
   const authorPhotos = photos.filter(p => p.reviewAuthor === photos[initialIndex].reviewAuthor);
+  const reviewId = authorPhotos[0]?.reviewId ?? '';
 
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(initialLikedReviewIds.has(reviewId));
   const [likeCount, setLikeCount] = useState(0);
   const [imgIdx, setImgIdx] = useState(0);
+
+  // prefetch 변경 시 동기화
+  useEffect(() => { setLiked(initialLikedReviewIds.has(reviewId)); }, [initialLikedReviewIds, reviewId]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showMeatball, setShowMeatball] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -117,11 +131,20 @@ function PhotoDetailView({
     } catch { return undefined; }
   }, [onBack]);
 
-  const toggleLike = () => {
-    setLiked(l => {
-      setLikeCount(c => c + (l ? -1 : 1));
-      return !l;
-    });
+  const toggleLike = async () => {
+    if (!reviewId) return;
+    // 낙관적 업데이트
+    const prevLiked = liked;
+    const nextLiked = !prevLiked;
+    setLiked(nextLiked);
+    setLikeCount(c => c + (nextLiked ? 1 : -1));
+    // DB 동기화 (즐겨찾기 그리드 등에서는 onToggleReviewLike 미전달 → 로컬 토글로 끝)
+    if (!onToggleReviewLike) return;
+    const dbLiked = await onToggleReviewLike(reviewId);
+    if (dbLiked !== nextLiked) {
+      setLiked(dbLiked);
+      setLikeCount(c => c + (dbLiked ? 1 : -1) - (nextLiked ? 1 : -1));
+    }
   };
 
   const handleReport = (reason: string) => {
@@ -447,6 +470,9 @@ export default function PhotoReviewPage({
   onFavoriteToggle,
   onBack,
   onClose,
+  userId: _userId,
+  initialLikedReviewIds,
+  onToggleReviewLike,
 }: PhotoReviewPageProps) {
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
 
@@ -457,6 +483,8 @@ export default function PhotoReviewPage({
         photos={photos}
         initialIndex={detailIndex}
         onBack={() => setDetailIndex(null)}
+        initialLikedReviewIds={initialLikedReviewIds ?? new Set()}
+        onToggleReviewLike={onToggleReviewLike}
       />
     );
   }

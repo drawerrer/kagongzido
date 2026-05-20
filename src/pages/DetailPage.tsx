@@ -9,7 +9,7 @@ import SectionHeader from '../components/SectionHeader';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
 import WriteReviewPage from './WriteReviewPage';
 import { useFavorites } from '../context/FavoritesContext';
-import { fetchReviews, fetchStoreByPlaceId, type ReviewRow } from '../services/db';
+import { fetchReviews, fetchStoreByPlaceId, fetchUserLikedReviewIds, toggleReviewLike, type ReviewRow } from '../services/db';
 import SubButton from '../components/SubButton';
 
 // ── 편의시설 SVG 아이콘 ──────────────────────────────────────
@@ -622,11 +622,18 @@ const REPORT_REASONS = ['스팸/광고', '욕설/혐오 표현', '부적절한 �
 const BLOCK_REASONS = ['불쾌한 내용을 게시해요', '스팸 또는 광고성 글을 올려요', '욕설 또는 혐오 표현을 사용해요', '허위 정보를 올려요', '기타'];
 
 // ── 리뷰 카드 (강화) ─────────────────────────────────────────
-function ReviewCard({ review }: { review: ReviewItem }) {
+function ReviewCard({ review, initialLiked, onToggleLike }: {
+  review: ReviewItem;
+  initialLiked: boolean;
+  onToggleLike: (reviewId: string) => Promise<boolean>;
+}) {
   const [textExpanded, setTextExpanded] = useState(false);
   const [expandedImgIdx, setExpandedImgIdx] = useState<number | null>(null);
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(review.likeCount ?? 0);
+
+  // 부모에서 prefetch 완료 시 초기 상태 동기화
+  useEffect(() => { setLiked(initialLiked); }, [initialLiked]);
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showBlock, setShowBlock] = useState(false);
@@ -817,11 +824,19 @@ function ReviewCard({ review }: { review: ReviewItem }) {
       {/* 우측 하단 좋아요 버튼 */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
         <button
-          onClick={() => {
-            setLiked(l => {
-              setLikeCount(c => l ? c - 1 : c + 1);
-              return !l;
-            });
+          onClick={async () => {
+            // 낙관적 업데이트
+            const prevLiked = liked;
+            const nextLiked = !prevLiked;
+            setLiked(nextLiked);
+            setLikeCount(c => nextLiked ? c + 1 : c - 1);
+            // DB 동기화
+            const dbLiked = await onToggleLike(review.id);
+            if (dbLiked !== nextLiked) {
+              // 충돌 시 DB 결과로 복원
+              setLiked(dbLiked);
+              setLikeCount(c => dbLiked ? c + (prevLiked ? 0 : 1) : c - (prevLiked ? 1 : 0));
+            }
           }}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
@@ -1061,13 +1076,34 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const cafeInfoRef = useRef<HTMLDivElement>(null);
   const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed, userId, collections } = useFavorites();
 
-  // ── DB 리뷰 로딩 ──────────────────────────────────────────
+  // ── DB 리뷰 로딩 + 본인 좋아요 prefetch ──────────────────
   const [dbReviews, setDbReviews] = useState<ReviewItem[]>([]);
+  const [likedReviewIds, setLikedReviewIds] = useState<Set<string>>(new Set());
   const loadReviews = useCallback(async () => {
     const rows = await fetchReviews(cafeId);
-    setDbReviews(rows.map(rowToReviewItem));
-  }, [cafeId]);
+    const items = rows.map(rowToReviewItem);
+    setDbReviews(items);
+    // 좋아요 상태 prefetch
+    if (userId && items.length > 0) {
+      const likedSet = await fetchUserLikedReviewIds(userId, items.map(r => r.id));
+      setLikedReviewIds(likedSet);
+    } else {
+      setLikedReviewIds(new Set());
+    }
+  }, [cafeId, userId]);
   useEffect(() => { loadReviews(); }, [loadReviews]);
+
+  // 리뷰 좋아요 토글 — DB 동기화 + 로컬 set 갱신
+  const handleToggleReviewLike = useCallback(async (reviewId: string): Promise<boolean> => {
+    if (!userId) return false;
+    const dbResult = await toggleReviewLike(userId, reviewId);
+    setLikedReviewIds(prev => {
+      const next = new Set(prev);
+      if (dbResult) next.add(reviewId); else next.delete(reviewId);
+      return next;
+    });
+    return dbResult;
+  }, [userId]);
 
   const reviews = dbReviews;
 
@@ -1375,6 +1411,9 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         onFavoriteToggle={handleFavorite}
         onBack={() => setShowPhotoReview(false)}
         onClose={onClose}
+        userId={userId}
+        initialLikedReviewIds={likedReviewIds}
+        onToggleReviewLike={handleToggleReviewLike}
       />
     );
   }
@@ -1770,7 +1809,12 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                 return (
                   <>
                     {visible.map(review => (
-                      <ReviewCard key={review.id} review={review} />
+                      <ReviewCard
+                        key={review.id}
+                        review={review}
+                        initialLiked={likedReviewIds.has(review.id)}
+                        onToggleLike={handleToggleReviewLike}
+                      />
                     ))}
                     {!showAllReviews && ordered.length > 3 && (
                       <div style={{ height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -489,7 +489,7 @@ export async function deleteReview(reviewId: string): Promise<boolean> {
   return true;
 }
 
-export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' | 'created_at' | 'updated_at'>): Promise<boolean> {
+export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' | 'author_nickname' | 'created_at' | 'updated_at'>): Promise<boolean> {
   if (!supabase) return false;
 
   // store_id 가 api_place_id 로 들어와도 stores.id(uuid) 로 변환
@@ -511,6 +511,68 @@ export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' |
 
   if (error) { console.error('insertReview:', error); return false; }
   return true;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 리뷰 좋아요 (reviews_likes)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 본인이 좋아요한 리뷰 ID 집합 조회 (UI 초기 상태 prefetch)
+ * @param userId users.id (uuid)
+ * @param reviewIds 표시 중인 리뷰 id 배열 (없으면 빈 Set 반환)
+ */
+export async function fetchUserLikedReviewIds(
+  userId: string,
+  reviewIds: string[],
+): Promise<Set<string>> {
+  if (!supabase || !userId || reviewIds.length === 0) return new Set();
+  const { data, error } = await supabase
+    .from('reviews_likes')
+    .select('review_id')
+    .eq('user_id', userId)
+    .in('review_id', reviewIds);
+
+  if (error) { console.error('fetchUserLikedReviewIds:', error); return new Set(); }
+  return new Set((data ?? []).map((r: Record<string, unknown>) => r.review_id as string));
+}
+
+/**
+ * 리뷰 좋아요 토글
+ * @returns 토글 후 상태 (true = 좋아요됨)
+ */
+export async function toggleReviewLike(
+  userId: string,
+  reviewId: string,
+): Promise<boolean> {
+  if (!supabase || !userId || !reviewId) return false;
+
+  // 1) 기존 좋아요 여부 확인
+  const { data: existing, error: selectError } = await supabase
+    .from('reviews_likes')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('review_id', reviewId)
+    .maybeSingle();
+
+  if (selectError) { console.error('toggleReviewLike select:', selectError); return false; }
+
+  if (existing) {
+    // 2a) 이미 있으면 삭제
+    const { error } = await supabase
+      .from('reviews_likes')
+      .delete()
+      .eq('id', (existing as { id: string }).id);
+    if (error) { console.error('toggleReviewLike delete:', error); return true; }
+    return false;
+  } else {
+    // 2b) 없으면 추가
+    const { error } = await supabase
+      .from('reviews_likes')
+      .insert({ user_id: userId, review_id: reviewId });
+    if (error) { console.error('toggleReviewLike insert:', error); return false; }
+    return true;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
