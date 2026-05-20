@@ -615,7 +615,7 @@ const [filterOpen, setFilterOpen] = useState(false);
         )}
 
         {selectedMapCafe ? (
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
             <DetailPage
               embedded
               cafeId={selectedMapCafe.id}
@@ -624,6 +624,22 @@ const [filterOpen, setFilterOpen] = useState(false);
               onSwipeDown={() => { setPanelState('half'); }}
               showHero={panelState === 'expanded'}
             />
+            <button
+              onClick={() => { setSelectedMapCafe(null); setPanelState('half'); }}
+              style={{
+                position: 'absolute', top: 20, right: 20,
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 10,
+              }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clipPath="url(#clip-x-close)">
+                  <path fillRule="evenodd" clipRule="evenodd" d="M5.24479 5.24479C8.97812 1.51146 14.9337 1.51146 18.667 5.24479C22.4003 8.97812 22.4003 14.9337 18.667 18.667C14.9337 22.4003 8.97812 22.4003 5.24479 18.667C1.60035 15.0226 1.60035 8.97812 5.24479 5.24479ZM20.0892 3.91146C15.6448 -0.532986 8.3559 -0.532986 3.91146 3.91146C-0.532986 8.3559 -0.532986 15.6448 3.91146 20.0892C8.3559 24.5337 15.6448 24.5337 20.0892 20.0892C24.6226 15.6448 24.6226 8.3559 20.0892 3.91146ZM7.73368 16.267C7.37812 15.9115 7.37812 15.2892 7.73368 14.8448L10.5781 12.0003L7.73368 9.1559C7.37812 8.80035 7.37812 8.17812 7.73368 7.73368C8.08923 7.28924 8.71146 7.37812 9.1559 7.73368L12.0003 10.5781L14.8448 7.73368C15.2003 7.37812 15.8226 7.37812 16.267 7.73368C16.6226 8.08923 16.6226 8.71146 16.267 9.1559L13.4226 12.0003L16.267 14.8448C16.6226 15.2003 16.6226 15.8226 16.267 16.267C15.9115 16.6226 15.2892 16.6226 14.8448 16.267L12.0003 13.4226L9.1559 16.267C8.71146 16.6226 8.08923 16.6226 7.73368 16.267Z" fill="#B0B8C1"/>
+                </g>
+                <defs><clipPath id="clip-x-close"><rect width="24" height="24" fill="white"/></clipPath></defs>
+              </svg>
+            </button>
           </div>
         ) : (
           <>
