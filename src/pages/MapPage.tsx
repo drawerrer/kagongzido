@@ -642,8 +642,21 @@ const [filterOpen, setFilterOpen] = useState(false);
                 e.stopPropagation();
                 const el = e.currentTarget;
                 const delta = e.changedTouches[0].clientY - touchStartYRef.current;
-                // 맨 위에서 더 내릴 게 없는 상태에서 아래로 60px+ 드래그 → half 로 축소
-                if (panelState === 'expanded' && el.scrollTop === 0 && delta > 60) setPanelState('half');
+
+                if (panelState === 'expanded') {
+                  // 확장 상태: 맨 위에서 아래로 60px+ 드래그 → half (스크롤 중엔 무시)
+                  if (el.scrollTop === 0 && delta > 60) setPanelState('half');
+                } else {
+                  // half/minimized 상태: 리스트 자체가 시트 드래그 역할 (overflowY: hidden 으로 스크롤 비활성)
+                  if (delta < -60) {
+                    // 위로 드래그 → 확장
+                    if (panelState === 'half') setPanelState('expanded');
+                    else if (panelState === 'minimized') setPanelState('half');
+                  } else if (delta > 60) {
+                    // 아래로 드래그 → 축소
+                    if (panelState === 'half') setPanelState('minimized');
+                  }
+                }
               }}
             >
               {filteredCafes.length > 0 ? (
