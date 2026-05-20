@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { openURL, appLogin, partner, tdsEvent, graniteEvent } from '@apps-in-toss/web-framework';
+import { openURL, partner, tdsEvent, graniteEvent } from '@apps-in-toss/web-framework';
 import { ConfirmDialog, Toast } from '@toss/tds-mobile';
 import BottomSheet from '../components/BottomSheet';
 import Snackbar from '../components/Snackbar';
@@ -945,42 +945,6 @@ function openKakaoMapWeb(cafe: CafeDetailData) {
 
 // MorePopup — 배포 시 네이티브 바텀시트로 대체 예정
 
-// ────────── 바텀시트: 로그인 유도 ────────────────────────────
-function LoginPromptSheet({ onClose }: { onClose: () => void }) {
-  return (
-    <BottomSheet isOpen onClose={onClose}>
-      <div style={{ padding: '8px 20px 0', paddingBottom: 'max(32px, env(safe-area-inset-bottom))', textAlign: 'center' }}>
-        <div style={{ fontSize: 44, marginBottom: 12 }}>💙</div>
-        <p style={{ fontSize: 18, fontWeight: 700, color: '#191F28', marginBottom: 8 }}>로그인이 필요해요</p>
-        <p style={{ fontSize: 14, color: '#6B7684', marginBottom: 24, lineHeight: 1.5 }}>
-          즐겨찾기를 사용하려면<br />로그인이 필요해요
-        </p>
-        <button
-          onClick={async () => {
-            try {
-              await appLogin();
-              onClose();
-            } catch { /* 사용자 취소 무시 */ }
-          }}
-          style={{
-            width: '100%', height: 52, borderRadius: 12,
-            background: '#252525', color: 'white',
-            fontSize: 16, fontWeight: 700,
-          }}
-        >
-          토스로 로그인
-        </button>
-        <button
-          onClick={onClose}
-          style={{ marginTop: 12, fontSize: 14, color: '#8B95A1' }}
-        >
-          다음에 할게요
-        </button>
-      </div>
-    </BottomSheet>
-  );
-}
-
 // ────────── 즐겨찾기 스낵바 ──────────────────────────────────
 // ────────── 탭바 아이콘 ──────────────────────────────────────
 function NavHomeIcon()       { return <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>; }
@@ -1151,10 +1115,9 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   }, [loading]);
 
   const [hoursExpanded, setHoursExpanded] = useState(false);
-  const [isLoggedIn] = useState(true); // mock: 로그인 상태 (Supabase 연동 전 임시)
+  // 토스 미니앱은 토스 로그인 사용자 전용 → 익명 상태 없음. isLoggedIn 분기 제거.
 
   // showMoreSheet — 배포 시 바텀시트 연결 예정
-  const [showLoginSheet, setShowLoginSheet] = useState(false);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showUnfavoriteDialog, setShowUnfavoriteDialog] = useState(false);
 
@@ -1283,7 +1246,6 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   };
 
   const handleFavorite = () => {
-    if (!isLoggedIn) { setShowLoginSheet(true); return; }
     if (isFavorite) {
       if (isInAnyCollection) {
         setShowUnfavoriteDialog(true);
@@ -1941,9 +1903,6 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
       {/* ── 바텀시트들 ── */}
 
-      {showLoginSheet && (
-        <LoginPromptSheet onClose={() => setShowLoginSheet(false)} />
-      )}
       <ShareSheet
         isOpen={showShareSheet}
         onClose={() => setShowShareSheet(false)}

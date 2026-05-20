@@ -40,7 +40,7 @@ function IcOutlet() {
 
 
 // ─── 타입 ─────────────────────────────────────────────────────
-interface MockStore {
+interface GuidebookStore {
   id: string;           // api_place_id
   district: string;
   name: string;
@@ -51,12 +51,12 @@ interface MockStore {
   photos: string[];     // 실제 이미지 URL 배열
 }
 
-interface MockGuidebook {
+interface GuidebookItem {
   id: string;
   title: string;
   coverUrl?: string;    // 대표 이미지 URL (첫 번째 매장 thumbnail)
   gradient: [string, string];
-  stores: MockStore[];
+  stores: GuidebookStore[];
 }
 
 type GuideView = 'main' | 'detail' | 'past';
@@ -95,7 +95,7 @@ function GuideBookMainView({
   onCardPress,
   onPastPress,
 }: {
-  guidebook: MockGuidebook;
+  guidebook: GuidebookItem;
   onCardPress: () => void;
   onPastPress: () => void;
 }) {
@@ -182,7 +182,7 @@ function GuideBookMainView({
 const CARD_GAP = 20;
 const CARD_W_RATIO = 261 / 375; // 기준 비율 (375px 기준)
 
-function openKakaoMapWeb(store: MockStore) {
+function openKakaoMapWeb(store: GuidebookStore) {
   // 메인/상세페이지의 길찾기와 동일하게 네이버맵 웹으로 통일 (이전: kakao map)
   const query = encodeURIComponent(`${store.name} ${store.district}`);
   openURL(`https://map.naver.com/v5/search/${query}`);
@@ -196,10 +196,10 @@ function GuideBookDetailView({
   initialStoreIndex,
   onStoreIndexChange,
 }: {
-  guidebook: MockGuidebook;
+  guidebook: GuidebookItem;
   onDetailOpen?: (id: string) => void;
   onDetailOpenToReview?: (id: string) => void;
-  onSave: (store: MockStore) => void;
+  onSave: (store: GuidebookStore) => void;
   initialStoreIndex?: number;
   onStoreIndexChange?: (index: number) => void;
 }) {
@@ -654,8 +654,8 @@ function GuideBookPastView({
   guidebooks,
   onCardPress,
 }: {
-  guidebooks: MockGuidebook[];
-  onCardPress: (g: MockGuidebook) => void;
+  guidebooks: GuidebookItem[];
+  onCardPress: (g: GuidebookItem) => void;
 }) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#F3F3F3' }}>
@@ -745,9 +745,9 @@ export default function GuidebookPage({
   const { addFavorite, isFavorited } = useFavorites();
   const [view, setView] = useState<GuideView>(initialView ?? 'main');
   const [previousView, setPreviousView] = useState<GuideView>('main');
-  const [guidebooks, setGuidebooks] = useState<MockGuidebook[]>([]);
+  const [guidebooks, setGuidebooks] = useState<GuidebookItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeGuidebook, setActiveGuidebook] = useState<MockGuidebook | null>(null);
+  const [activeGuidebook, setActiveGuidebook] = useState<GuidebookItem | null>(null);
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const dismissSnackbar = useCallback(() => setSnackbar(null), []);
   const [showShareSheet, setShowShareSheet] = useState(false);
@@ -760,10 +760,10 @@ export default function GuidebookPage({
       const rows = await fetchPublishedGuidebooks();
       if (cancelled) return;
 
-      const mapped: MockGuidebook[] = await Promise.all(
+      const mapped: GuidebookItem[] = await Promise.all(
         rows.map(async (row) => {
           const items = await fetchGuidebookItems(row.id);
-          const stores: MockStore[] = items.map((item) => {
+          const stores: GuidebookStore[] = items.map((item) => {
             const s = item.store;
             return {
               id: s.api_place_id,
@@ -847,7 +847,7 @@ export default function GuidebookPage({
     }
   }, [handleBack, hasOverlay]);
 
-  const handleSave = (store: MockStore) => {
+  const handleSave = (store: GuidebookStore) => {
     if (!isFavorited(store.id)) {
       addFavorite({
         id: store.id,

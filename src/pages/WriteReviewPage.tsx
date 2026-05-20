@@ -50,7 +50,7 @@ type PageState = 'form' | 'loading' | 'success' | 'fail';
 export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose: _onClose, onReviewSubmitted }: WriteReviewPageProps) {
   const [pageState, setPageState] = useState<PageState>('form');
   const [evalState, setEvalState] = useState<EvalState>({});
-  const [photos, setPhotos] = useState<string[]>([]); // gradient strings (mock)
+  const [photos, setPhotos] = useState<string[]>([]);
   const [text, setText] = useState('');
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
@@ -87,7 +87,7 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
     });
   };
 
-  // ── 사진 추가 (mock: 그라디언트 추가) ────────────────────
+  // ── 사진 추가 ────────────────────────────────────────────
   const handleAddPhoto = () => {
     if (photos.length >= 5) return;
     setShowPhotoSheet(true);

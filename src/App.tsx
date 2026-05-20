@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect, Component } from 'react';
+import { getAnonymousKey } from '@apps-in-toss/web-framework';
 import { getOrCreateUser, updateUserNickname } from './services/db';
 import type { ReactNode, ErrorInfo } from 'react';
-
-// TODO: 토스 SDK에 getAnonymousKey가 없어 임시로 로컬 UUID만 사용.
-//       토스 익명 식별이 필요해지면 SDK 정식 API (appLogin 등) 확인 후 복구.
 
 // ── 페이지 단위 에러바운더리 ─────────────────────────────────
 class PageErrorBoundary extends Component<{ children: ReactNode; fallback?: ReactNode }, { error: Error | null }> {
@@ -66,7 +64,7 @@ const TABS: { id: TabId; label: string; icon: ReactNode }[] = [
   { id: 'mypage',     label: '마이',   icon: <TabMypageIcon /> },
 ];
 
-// 기기 로컬 UUID 생성/조회 — getAnonymousKey 실패 시 fallback
+// 기기 로컬 UUID 생성/조회 — getAnonymousKey 실패 시 fallback (개발/웹 환경)
 function getOrCreateLocalId(): string {
   const KEY = 'cafeindex_anon_id';
   const existing = localStorage.getItem(KEY);
@@ -74,6 +72,22 @@ function getOrCreateLocalId(): string {
   const id = 'local_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
   localStorage.setItem(KEY, id);
   return id;
+}
+
+// 토스 공식 익명 키 조회 — SDK 2.4.5+ 에서 미니앱별 고유 해시 반환
+// 실패/비-토스 환경에서는 로컬 UUID로 폴백
+async function getTossUserId(): Promise<string> {
+  try {
+    const res = await getAnonymousKey();
+    if (res && typeof res === 'object' && 'type' in res && res.type === 'HASH') {
+      console.log('[AUTH] using Toss anonymous hash');
+      return res.hash;
+    }
+    console.warn('[AUTH] getAnonymousKey returned non-hash:', res);
+  } catch (err) {
+    console.warn('[AUTH] getAnonymousKey failed, fallback to localId:', err);
+  }
+  return getOrCreateLocalId();
 }
 
 // ── 닉네임 설정 온보딩 페이지 ────────────────────────────────
@@ -150,10 +164,10 @@ export default function App() {
   const [needsNickname, setNeedsNickname] = useState(false);
 
   useEffect(() => {
-    // 토스 익명 키 미사용 — 로컬 UUID로 사용자 식별 (SDK 정식 API 확정 시 복구)
+    // 토스 공식 익명 키(getAnonymousKey)로 사용자 식별. 실패 시 로컬 UUID 폴백.
     (async () => {
-      const tossId = getOrCreateLocalId();
-      console.log('[AUTH] localId:', tossId);
+      const tossId = await getTossUserId();
+      console.log('[AUTH] tossUserId:', tossId);
       const info = await getOrCreateUser(tossId);
       console.log('[AUTH] DB info:', info);
       if (info) {
@@ -166,6 +180,7 @@ export default function App() {
         setNeedsNickname(true);
       }
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!userId) return null;
