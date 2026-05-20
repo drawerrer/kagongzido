@@ -318,10 +318,13 @@ export interface ReviewRow {
 
 export async function fetchReviews(storeId: string): Promise<ReviewRow[]> {
   if (!supabase) return [];
+  // storeId 가 api_place_id 로 들어와도 stores.id(uuid) 로 변환
+  const storeUuid = await resolveStoreUuid(storeId);
+  if (!storeUuid) return [];
   const { data, error } = await supabase
     .from('reviews')
     .select('*, reviews_likes(count)')
-    .eq('store_id', storeId)
+    .eq('store_id', storeUuid)
     .order('created_at', { ascending: false });
 
   if (error) { console.error('fetchReviews:', error); return []; }
@@ -487,12 +490,16 @@ export async function deleteReview(reviewId: string): Promise<boolean> {
 export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' | 'created_at' | 'updated_at'>): Promise<boolean> {
   if (!supabase) return false;
 
+  // store_id 가 api_place_id 로 들어와도 stores.id(uuid) 로 변환
+  const storeUuid = await resolveStoreUuid(review.store_id);
+  if (!storeUuid) { console.error('insertReview: stores 에서 해당 매장을 찾을 수 없어요', review.store_id); return false; }
+
   // 사진 Storage 업로드 (base64 → URL 변환)
   const photoUrls = await uploadReviewPhotos(review.photo_urls ?? []);
 
   const { error } = await supabase.from('reviews').insert({
     user_id:        review.user_id,
-    store_id:       review.store_id,
+    store_id:       storeUuid,
     content:        review.content,
     outlet_status:  review.outlet_status,
     seat_status:    review.seat_status,
