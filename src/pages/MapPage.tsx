@@ -153,8 +153,11 @@ interface MapPageProps {
 
 export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, initialState, onStateChange }: MapPageProps) {
   const touchStartYRef = useRef<number>(0);
-  // 리스트 드래그 시작 시점의 scrollTop — expanded 상태에서 "맨 위에서 시작한 드래그" 정확히 감지
-  const listTouchStartScrollTopRef = useRef<number>(0);
+  // 드래그 도중 scrollTop===0 에 도달한 적이 있는지 — expanded 시 사용자가 위에서 아래로
+  // 끝까지 끌어내려 collapse 의도를 보일 때 잡기 위함
+  const listReachedTopRef = useRef<boolean>(false);
+  // 맨 위 도달 시점의 finger Y — 거기서부터의 추가 drag 거리로 collapse 판단 (안정성 ↑)
+  const listReachedTopYRef = useRef<number>(0);
 
   // ── Kakao Maps refs ───────────────────────
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -638,25 +641,34 @@ const [filterOpen, setFilterOpen] = useState(false);
               onTouchStart={(e) => {
                 // 시트 외곽 onTouchStart 가 리스트 스크롤 제스처를 가로채지 못하도록 차단 (끊김 방지)
                 e.stopPropagation();
-                touchStartYRef.current = e.touches[0].clientY;
-                listTouchStartScrollTopRef.current = e.currentTarget.scrollTop;
+                const y = e.touches[0].clientY;
+                touchStartYRef.current = y;
+                const atTop = e.currentTarget.scrollTop === 0;
+                listReachedTopRef.current = atTop;
+                listReachedTopYRef.current = atTop ? y : 0;
+              }}
+              onTouchMove={(e) => {
+                e.stopPropagation();
+                // 드래그 도중 scrollTop===0 에 처음 도달한 순간 기록
+                if (!listReachedTopRef.current && e.currentTarget.scrollTop === 0) {
+                  listReachedTopRef.current = true;
+                  listReachedTopYRef.current = e.touches[0].clientY;
+                }
               }}
               onTouchEnd={(e) => {
                 e.stopPropagation();
                 const el = e.currentTarget;
-                const delta = e.changedTouches[0].clientY - touchStartYRef.current;
-                const COLLAPSE_THRESHOLD = 40;  // expanded → half (반응성 ↑)
+                const endY = e.changedTouches[0].clientY;
+                const delta = endY - touchStartYRef.current;
+                const COLLAPSE_THRESHOLD = 40;  // expanded → half
                 const STATE_THRESHOLD = 60;     // half ↔ minimized/expanded
 
                 if (panelState === 'expanded') {
-                  // 시작점·끝점 모두 맨 위 + 아래로 충분히 드래그 → half
-                  // (시작점도 체크해서 "리스트를 위로 스크롤 복귀" 같은 의도와 분리)
-                  if (
-                    listTouchStartScrollTopRef.current === 0 &&
-                    el.scrollTop === 0 &&
-                    delta > COLLAPSE_THRESHOLD
-                  ) {
-                    setPanelState('half');
+                  // 드래그 도중 맨 위에 도달했고, 그 시점부터 아래로 40px+ 더 끌었으면 → half
+                  // (중간에서 시작해도 위로 끝까지 스크롤 후 더 끌어내리면 OK)
+                  if (listReachedTopRef.current && el.scrollTop === 0) {
+                    const deltaFromTop = endY - listReachedTopYRef.current;
+                    if (deltaFromTop > COLLAPSE_THRESHOLD) setPanelState('half');
                   }
                 } else {
                   // half/minimized 상태: 리스트 자체가 시트 드래그 역할 (overflowY: hidden)
