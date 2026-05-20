@@ -98,10 +98,15 @@ export default function AddStoreSheet({
           )}
         </div>
 
-        {/* 매장 리스트 */}
+        {/* 매장 리스트 — paddingBottom 으로 CTA(약 92px) 영역만큼 여백 확보 (CTA 가 absolute 로 겹치므로) */}
         <div
           ref={scrollRef}
-          style={{ flex: 1, overflowY: 'auto', marginTop: 12 }}
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            marginTop: 12,
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 92px)',
+          }}
           onTouchStart={onContentTouchStart}
           onTouchEnd={onContentTouchEnd}
         >
@@ -219,9 +224,10 @@ export default function AddStoreSheet({
           </div>
         </div>
 
-        {/* 하단 버튼 (SheetCTA 통일) — 래퍼 bg 제거: SheetCTA의 그라데이션이 가려지지 않도록 */}
+        {/* 하단 버튼 — position: absolute 로 리스트 위에 떠 있어 그라데이션이 리스트 콘텐츠를 페이드 */}
         <div style={{
-          flexShrink: 0,
+          position: 'absolute',
+          bottom: 0, left: 0, right: 0,
           paddingLeft: 20,
           paddingRight: 20,
           paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
