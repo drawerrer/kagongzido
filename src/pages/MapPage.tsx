@@ -594,7 +594,8 @@ const [filterOpen, setFilterOpen] = useState(false);
           ...(selectedMapCafe ? { transform: 'translateZ(0)', willChange: 'transform' } : {}),
         }}
       >
-        {!(selectedMapCafe && panelState === 'expanded') && (
+        {/* 완전 확장 시 핸들 숨김 — 리스트 스크롤 다운으로 half 전환 */}
+        {panelState !== 'expanded' && (
           <div onClick={() => setPanelState(s => s === 'minimized' ? 'half' : s === 'half' ? 'expanded' : 'half')} style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px', flexShrink: 0, cursor: 'pointer' }}>
             <div style={{ width: 48, height: 4, borderRadius: 2, background: '#E5E8EB' }} />
           </div>
@@ -624,12 +625,24 @@ const [filterOpen, setFilterOpen] = useState(false);
             </div>
 
             <div
-              style={{ flex: 1, overflowY: panelState === 'expanded' ? 'auto' : 'hidden', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
+              style={{
+                flex: 1,
+                overflowY: panelState === 'expanded' ? 'auto' : 'hidden',
+                overscrollBehavior: 'contain', // 리스트 외부로 스크롤 전파 차단 (pull-to-refresh 등 간섭 방지)
+                paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)',
+                WebkitOverflowScrolling: 'touch',
+              }}
               onScroll={(e) => { if (panelState !== 'expanded' && e.currentTarget.scrollTop > 0) setPanelState('expanded'); }}
-              onTouchStart={(e) => { touchStartYRef.current = e.touches[0].clientY; }}
+              onTouchStart={(e) => {
+                // 시트 외곽 onTouchStart 가 리스트 스크롤 제스처를 가로채지 못하도록 차단 (끊김 방지)
+                e.stopPropagation();
+                touchStartYRef.current = e.touches[0].clientY;
+              }}
               onTouchEnd={(e) => {
+                e.stopPropagation();
                 const el = e.currentTarget;
                 const delta = e.changedTouches[0].clientY - touchStartYRef.current;
+                // 맨 위에서 더 내릴 게 없는 상태에서 아래로 60px+ 드래그 → half 로 축소
                 if (panelState === 'expanded' && el.scrollTop === 0 && delta > 60) setPanelState('half');
               }}
             >
