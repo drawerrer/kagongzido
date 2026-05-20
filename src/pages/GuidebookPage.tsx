@@ -183,8 +183,9 @@ const CARD_GAP = 20;
 const CARD_W_RATIO = 261 / 375; // 기준 비율 (375px 기준)
 
 function openKakaoMapWeb(store: MockStore) {
+  // 메인/상세페이지의 길찾기와 동일하게 네이버맵 웹으로 통일 (이전: kakao map)
   const query = encodeURIComponent(`${store.name} ${store.district}`);
-  openURL(`https://map.kakao.com/link/search/${query}`);
+  openURL(`https://map.naver.com/v5/search/${query}`);
 }
 
 function GuideBookDetailView({

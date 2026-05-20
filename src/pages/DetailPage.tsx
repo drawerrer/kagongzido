@@ -1157,7 +1157,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [showUnfavoriteDialog, setShowUnfavoriteDialog] = useState(false);
 
-  // 가이드북 길찾기 버튼에서 진입 시 카카오맵 웹 바로 열기
+  // 가이드북 길찾기 버튼에서 진입 시 네이버맵 웹 바로 열기 (홈/상세와 동일 경로)
   useEffect(() => {
     if (openDirections) {
       setTimeout(() => openKakaoMapWeb(cafe), 150);
