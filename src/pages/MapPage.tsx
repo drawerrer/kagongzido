@@ -293,6 +293,11 @@ const [filterOpen, setFilterOpen] = useState(false);
       });
     });
 
+    // 사용자가 지도 확대/축소 시 시트를 minimized 로 자동 축소 (지도 시야 확보)
+    window.kakao.maps.event.addListener(map, 'zoom_changed', () => {
+      setPanelState('minimized');
+    });
+
   }, [mapLoaded]);
 
   // ── 마커/오버레이 추가 ─────────────────────
