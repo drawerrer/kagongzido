@@ -546,6 +546,13 @@ export async function deleteReview(reviewId: string): Promise<boolean> {
   return true;
 }
 
+export async function updateReview(reviewId: string, content: string, photoUrls: string[]): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('reviews').update({ content, photo_urls: photoUrls }).eq('id', reviewId);
+  if (error) { console.error('updateReview:', error); return false; }
+  return true;
+}
+
 export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' | 'author_nickname' | 'created_at' | 'updated_at'>): Promise<boolean> {
   if (!supabase) return false;
 

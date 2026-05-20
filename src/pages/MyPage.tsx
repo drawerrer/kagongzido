@@ -7,7 +7,7 @@ import SheetCTA from '../components/SheetCTA';
 import { useFavorites } from '../context/FavoritesContext';
 import {
   insertCafeReport, deleteUserData,
-  fetchUserReviews, deleteReview, type UserReviewRow,
+  fetchUserReviews, deleteReview, updateReview, type UserReviewRow,
   fetchUserReports, type UserReportRow,
   fetchNotices, type NoticeRow,
 } from '../services/db';
@@ -601,10 +601,12 @@ function WrittenReviewPage({
   onBack,
   onClose,
   onEdit,
+  refreshTrigger,
 }: {
   onBack: () => void;
   onClose: () => void;
   onEdit: (review: ReviewItem) => void;
+  refreshTrigger?: number;
 }) {
   const { userId } = useFavorites();
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
@@ -616,7 +618,7 @@ function WrittenReviewPage({
     fetchUserReviews(userId).then(rows => {
       setReviews(rows.map(mapReviewRow));
     });
-  }, [userId]);
+  }, [userId, refreshTrigger]);
 
   const confirmDelete = async () => {
     if (!deleteTargetId) return;
@@ -709,50 +711,25 @@ function WrittenReviewPage({
       </div>
 
       {/* 삭제 확인 다이얼로그 */}
-      {deleteTargetId && (
-        <>
-          <div
-            onClick={() => setDeleteTargetId(null)}
-            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200 }}
-          />
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%,-50%)',
-            zIndex: 201, background: 'white', borderRadius: 16,
-            padding: '28px 24px 20px', width: 280, textAlign: 'center',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-          }}>
-            <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 10 }}>
-              리뷰를 삭제할까요?
-            </p>
-            <p style={{ fontSize: 14, color: '#8B95A1', lineHeight: 1.5, marginBottom: 24 }}>
-              삭제된 리뷰는 복구할 수 없어요
-            </p>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => setDeleteTargetId(null)}
-                style={{
-                  flex: 1, height: 44, borderRadius: 10,
-                  border: '1.5px solid #E5E8EB', background: 'white',
-                  fontSize: 15, fontWeight: 600, color: '#4E5968',
-                }}
-              >
-                닫기
-              </button>
-              <button
-                onClick={confirmDelete}
-                style={{
-                  flex: 1, height: 44, borderRadius: 10,
-                  background: '#FF4B4B', border: 'none',
-                  fontSize: 15, fontWeight: 700, color: 'white',
-                }}
-              >
-                삭제하기
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      <ConfirmDialog
+        open={!!deleteTargetId}
+        title={<ConfirmDialog.Title>리뷰를 삭제할까요?</ConfirmDialog.Title>}
+        description={
+          <ConfirmDialog.Description>
+            {'삭제된 리뷰는 복구할 수 없어요'}
+          </ConfirmDialog.Description>
+        }
+        cancelButton={
+          <ConfirmDialog.CancelButton onClick={() => setDeleteTargetId(null)}>
+            닫기
+          </ConfirmDialog.CancelButton>
+        }
+        confirmButton={
+          <ConfirmDialog.ConfirmButton onClick={confirmDelete}>
+            삭제하기
+          </ConfirmDialog.ConfirmButton>
+        }
+      />
 
       {/* 삭제 완료 토스트 */}
       <Toast
@@ -1164,6 +1141,7 @@ export default function MyPage({
   };
 
   const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
+  const [reviewRefreshTrigger, setReviewRefreshTrigger] = useState(0);
 
   const { userId } = useFavorites();
   const [reportCount, setReportCount] = useState(0);
@@ -1548,6 +1526,7 @@ export default function MyPage({
           onBack={() => changeSubPage(null)}
           onClose={() => changeSubPage(null)}
           onEdit={review => setEditingReview(review)}
+          refreshTrigger={reviewRefreshTrigger}
         />
       </div>
     )}
@@ -1568,7 +1547,13 @@ export default function MyPage({
           review={editingReview}
           onBack={() => setEditingReview(null)}
           onClose={() => { setEditingReview(null); changeSubPage(null); }}
-          onSave={(_text, _photos) => setEditingReview(null)}
+          onSave={async (text, photos) => {
+            if (editingReview) {
+              await updateReview(editingReview.id, text, photos);
+              setReviewRefreshTrigger(t => t + 1);
+            }
+            setEditingReview(null);
+          }}
         />
       </div>
     )}
