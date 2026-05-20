@@ -153,6 +153,8 @@ interface MapPageProps {
 
 export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, initialState, onStateChange }: MapPageProps) {
   const touchStartYRef = useRef<number>(0);
+  // 리스트 드래그 시작 시점의 scrollTop — expanded 상태에서 "맨 위에서 시작한 드래그" 정확히 감지
+  const listTouchStartScrollTopRef = useRef<number>(0);
 
   // ── Kakao Maps refs ───────────────────────
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -637,23 +639,31 @@ const [filterOpen, setFilterOpen] = useState(false);
                 // 시트 외곽 onTouchStart 가 리스트 스크롤 제스처를 가로채지 못하도록 차단 (끊김 방지)
                 e.stopPropagation();
                 touchStartYRef.current = e.touches[0].clientY;
+                listTouchStartScrollTopRef.current = e.currentTarget.scrollTop;
               }}
               onTouchEnd={(e) => {
                 e.stopPropagation();
                 const el = e.currentTarget;
                 const delta = e.changedTouches[0].clientY - touchStartYRef.current;
+                const COLLAPSE_THRESHOLD = 40;  // expanded → half (반응성 ↑)
+                const STATE_THRESHOLD = 60;     // half ↔ minimized/expanded
 
                 if (panelState === 'expanded') {
-                  // 확장 상태: 맨 위에서 아래로 60px+ 드래그 → half (스크롤 중엔 무시)
-                  if (el.scrollTop === 0 && delta > 60) setPanelState('half');
+                  // 시작점·끝점 모두 맨 위 + 아래로 충분히 드래그 → half
+                  // (시작점도 체크해서 "리스트를 위로 스크롤 복귀" 같은 의도와 분리)
+                  if (
+                    listTouchStartScrollTopRef.current === 0 &&
+                    el.scrollTop === 0 &&
+                    delta > COLLAPSE_THRESHOLD
+                  ) {
+                    setPanelState('half');
+                  }
                 } else {
-                  // half/minimized 상태: 리스트 자체가 시트 드래그 역할 (overflowY: hidden 으로 스크롤 비활성)
-                  if (delta < -60) {
-                    // 위로 드래그 → 확장
+                  // half/minimized 상태: 리스트 자체가 시트 드래그 역할 (overflowY: hidden)
+                  if (delta < -STATE_THRESHOLD) {
                     if (panelState === 'half') setPanelState('expanded');
                     else if (panelState === 'minimized') setPanelState('half');
-                  } else if (delta > 60) {
-                    // 아래로 드래그 → 축소
+                  } else if (delta > STATE_THRESHOLD) {
                     if (panelState === 'half') setPanelState('minimized');
                   }
                 }
