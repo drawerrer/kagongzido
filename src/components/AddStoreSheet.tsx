@@ -224,27 +224,23 @@ export default function AddStoreSheet({
           </div>
         </div>
 
-        {/* 하단 버튼 — position: absolute 로 리스트 위에 떠 있어 그라데이션이 리스트 콘텐츠를 페이드 */}
+        {/* 하단 버튼 — position: absolute, 좌우 패딩은 SheetCTA 가 내장 (그라데이션 풀너비) */}
         <div style={{
           position: 'absolute',
           bottom: 0, left: 0, right: 0,
-          // wrapper 자체에 bg 를 주면 그라데이션이 가려지므로 transparent 유지.
-          // 대신 SheetCTA 아래(safe-area 영역)에만 솔리드 BG 스트립을 추가.
         }}>
-          <div style={{ paddingLeft: 20, paddingRight: 20 }}>
-            {!hasSelection ? (
-              <SheetCTA.Single label="완료" onClick={onClose} variant="secondary" background="#F3F3F3" />
-            ) : (
-              <SheetCTA.Double
-                leftLabel="닫기"
-                leftOnClick={onClose}
-                rightLabel="확인"
-                rightOnClick={() => onConfirm([...selectedIds])}
-                background="#F3F3F3"
-              />
-            )}
-          </div>
-          {/* safe-area 영역 보강용 솔리드 스트립 (그라데이션 영향 X) */}
+          {!hasSelection ? (
+            <SheetCTA.Single label="완료" onClick={onClose} variant="secondary" background="#F3F3F3" />
+          ) : (
+            <SheetCTA.Double
+              leftLabel="닫기"
+              leftOnClick={onClose}
+              rightLabel="확인"
+              rightOnClick={() => onConfirm([...selectedIds])}
+              background="#F3F3F3"
+            />
+          )}
+          {/* safe-area 영역 보강용 솔리드 스트립 */}
           <div style={{
             height: 'max(12px, env(safe-area-inset-bottom))',
             background: '#F3F3F3',

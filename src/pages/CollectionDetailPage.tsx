@@ -458,6 +458,10 @@ export default function CollectionDetailPage({
   // ── 탭(컬렉션) 삭제 ──
   const handleTabDelete = (tabId: string) => {
     const col = collections.find(c => c.id === tabId);
+    if (!col) return;
+    const snapshotName = col.name;
+    const snapshotStoreIds = [...col.storeIds];
+
     removeCollection(tabId);
     setTabManageTargetId(null);
     // 삭제된 탭이 현재 활성 탭이면 '최근'으로 이동
@@ -465,8 +469,18 @@ export default function CollectionDetailPage({
       setActiveTab('recent');
     }
     if (tabId === collectionId && onCollectionDeleted) {
-      onCollectionDeleted({ id: tabId, name: col?.name ?? '', storeIds: col?.storeIds ?? [] });
+      // 진입한 컬렉션이 삭제됨 → 부모로 알려서 페이지 닫기 + 상위 스낵바 표시
+      onCollectionDeleted({ id: tabId, name: snapshotName, storeIds: snapshotStoreIds });
+      return;
     }
+
+    // 진입 컬렉션이 아닌 다른 탭 삭제 → 로컬 스낵바 표시
+    if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+    setSnackbar({
+      msg: `'${snapshotName}' 컬렉션을 삭제했어요`,
+      type: 'negative',
+    });
+    snackbarTimerRef.current = setTimeout(() => setSnackbar(null), 3000);
   };
 
   // ── 탭(컬렉션) 이름 변경 ──

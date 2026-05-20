@@ -478,10 +478,10 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
           <div style={{ height: 16 }} />
         </div>
 
-        {/* ── 하단 고정: 초기화 + 적용하기 (SheetCTA 비대칭 통일) — bg/top padding 제거 ── */}
+        {/* ── 하단 고정: 초기화 + 적용하기 — 좌우 패딩은 SheetCTA 내장 ── */}
         <div
           style={{
-            padding: `0 20px calc(env(safe-area-inset-bottom, 0px) + 16px)`,
+            paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 16px)`,
           }}
         >
           <SheetCTA.Double

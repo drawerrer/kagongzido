@@ -210,10 +210,8 @@ export default function LocationPermissionSheet({
           {icon}
         </div>
 
-        {/* Button Area (SheetCTA 통일) — top padding 제거: SheetCTA 그라데이션이 가려지지 않도록 */}
+        {/* Button Area (SheetCTA 통일) — 좌우 패딩은 SheetCTA 내장 */}
         <div style={{
-          paddingLeft: 20,
-          paddingRight: 20,
           paddingBottom: 'max(17px, env(safe-area-inset-bottom))',
         }}>
           {type === 'ask' && (

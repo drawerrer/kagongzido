@@ -1056,9 +1056,7 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
                 <p style={{ fontSize: 16, fontWeight: 700, color: '#191F28', padding: '0 20px', marginBottom: 4 }}>사진 추가</p>
                 <SheetMenuRow icon={IconGallery} label="갤러리에서 선택" onClick={onGallery} />
                 <SheetMenuRow icon={IconCamera} label="카메라로 촬영" onClick={onCamera} />
-                <div style={{ padding: '0 20px' }}>
-                  <SheetCTA.Single label="닫기" onClick={() => setShowPhotoSheet(false)} variant="secondary" background="#F3F3F3" />
-                </div>
+                <SheetCTA.Single label="닫기" onClick={() => setShowPhotoSheet(false)} variant="secondary" background="#F3F3F3" />
               </div>
             </>
           );

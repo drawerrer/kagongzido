@@ -50,6 +50,11 @@ function makeContainer(background: string): CSSProperties {
     display: 'flex',
     gap: GAP,
     paddingTop: GRADIENT_HEIGHT,
+    // 좌우 패딩을 컴포넌트 내부에 내장 — 그라데이션 BG 가 시트 풀너비로 확장되어
+    // 양옆 빈 공간으로 리스트 콘텐츠가 비치는 문제 방지.
+    // 호출 측 래퍼에서 paddingLeft/Right 따로 주지 않도록 주의.
+    paddingLeft: 20,
+    paddingRight: 20,
     // 상단 GRADIENT_HEIGHT 영역: 투명 → background 페이드 / 아래는 솔리드 background
     background: `linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, ${background} ${GRADIENT_HEIGHT}px, ${background} 100%)`,
   };
