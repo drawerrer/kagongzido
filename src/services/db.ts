@@ -229,7 +229,6 @@ export async function fetchCollections(userId: string): Promise<Collection[]> {
     return {
       id: col.id as string,
       name: col.name as string,
-      memo: (col.memo ?? undefined) as string | undefined,
       // UI 가 api_place_id 로 storeIds 비교하므로 api_place_id 우선 반환 (fallback: store_id uuid)
       storeIds: colStores.map((s: Record<string, unknown>) => {
         const placeId = (s.stores as Record<string, unknown> | null)?.api_place_id as string | undefined;
@@ -248,7 +247,6 @@ export async function insertCollection(userId: string, col: Omit<Collection, 'id
     .insert({
       user_id: userId,
       name: col.name,
-      memo: col.memo ?? null,
       sort_order: sortOrder,
     })
     .select('id')
@@ -260,7 +258,7 @@ export async function insertCollection(userId: string, col: Omit<Collection, 'id
 
 export async function updateCollectionDB(
   id: string,
-  updates: { name?: string; memo?: string; sort_order?: number }
+  updates: { name?: string; sort_order?: number }
 ): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase

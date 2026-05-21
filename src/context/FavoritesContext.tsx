@@ -49,8 +49,8 @@ export interface RecentCafe {
 export interface Collection {
   id: string;
   name: string;
-  memo?: string;
   storeIds: string[];
+  /** 매장별 메모 (collection_stores.memo) — key: store id */
   memos?: Record<string, string>;
 }
 
