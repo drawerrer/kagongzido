@@ -443,26 +443,32 @@ function InfoBox({ label, value, icon, tooltip }: { label: string; value: string
       </div>
       <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28' }}>{value}</p>
       {tooltip && showTooltip && (
-        <div
-          onClick={(e) => { e.stopPropagation(); setShowTooltip(false); }}
-          style={{
-            position: 'absolute', bottom: 'calc(100% + 6px)', left: 12,
-            background: '#333D4B', color: '#fff',
-            borderRadius: 8, padding: '8px 12px',
-            fontSize: 12, lineHeight: '18px', whiteSpace: 'pre-line',
-            zIndex: 100, minWidth: 160, maxWidth: 220,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-          }}
-        >
-          {tooltip}
-          <div style={{
-            position: 'absolute', top: '100%', left: 16,
-            width: 0, height: 0,
-            borderLeft: '6px solid transparent',
-            borderRight: '6px solid transparent',
-            borderTop: '6px solid #333D4B',
-          }} />
-        </div>
+        <>
+          <div
+            onClick={() => setShowTooltip(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+          />
+          <div
+            onClick={() => setShowTooltip(false)}
+            style={{
+              position: 'absolute', bottom: 'calc(100% + 6px)', left: 12,
+              background: '#333D4B', color: '#fff',
+              borderRadius: 8, padding: '8px 12px',
+              fontSize: 12, lineHeight: '18px', whiteSpace: 'pre-line',
+              zIndex: 100, minWidth: 160, maxWidth: 220,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+            }}
+          >
+            {tooltip}
+            <div style={{
+              position: 'absolute', top: '100%', left: 16,
+              width: 0, height: 0,
+              borderLeft: '6px solid transparent',
+              borderRight: '6px solid transparent',
+              borderTop: '6px solid #333D4B',
+            }} />
+          </div>
+        </>
       )}
     </div>
   );
