@@ -383,10 +383,20 @@ function ReviewEditPage({
 
   const removePhoto = (idx: number) => setPhotos(prev => prev.filter((_, i) => i !== idx));
 
-  const addMockPhoto = () => {
-    if (photos.length >= 5) return;
-    const GRADIENTS = [CAFE_BG[4], CAFE_BG[5], CAFE_BG[0]];
-    setPhotos(prev => [...prev, GRADIENTS[prev.length % GRADIENTS.length]]);
+  const handleGallery = async () => {
+    try {
+      const remaining = 5 - photos.length;
+      const results = await fetchAlbumPhotos({ maxCount: remaining, maxWidth: 1024, base64: true });
+      setPhotos(prev => [...prev, ...results.map(r => 'data:image/jpeg;base64,' + r.dataUri)].slice(0, 5));
+    } catch {}
+    setShowPhotoSheet(false);
+  };
+
+  const handleCamera = async () => {
+    try {
+      const result = await openCamera({ base64: true, maxWidth: 1024 });
+      setPhotos(prev => [...prev, 'data:image/jpeg;base64,' + result.dataUri].slice(0, 5));
+    } catch {}
     setShowPhotoSheet(false);
   };
 
@@ -585,8 +595,8 @@ function ReviewEditPage({
           }}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: '#E5E8EB', margin: '0 auto 18px' }} />
             <p style={{ fontSize: 16, fontWeight: 700, color: '#191F28', padding: '0 20px', marginBottom: 4 }}>사진 추가</p>
-            <SheetMenuRow icon={<span style={{ fontSize: 20 }}>🖼️</span>} label="갤러리에서 선택" onClick={addMockPhoto} />
-            <SheetMenuRow icon={<span style={{ fontSize: 20 }}>📷</span>} label="카메라로 촬영" onClick={addMockPhoto} />
+            <SheetMenuRow icon={<span style={{ fontSize: 20 }}>🖼️</span>} label="갤러리에서 선택" onClick={handleGallery} />
+            <SheetMenuRow icon={<span style={{ fontSize: 20 }}>📷</span>} label="카메라로 촬영" onClick={handleCamera} />
           </div>
         </>
       )}
