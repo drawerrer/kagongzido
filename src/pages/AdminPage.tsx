@@ -381,33 +381,6 @@ function GuidebookDetailView({
     onDeleted();
   }
 
-  async function addStore(store: StoreOption) {
-    const maxOrder = items.length > 0 ? Math.max(...items.map(i => i.sort_order)) : -1;
-    const { data, error } = await supabase
-      .from('guidebook_items')
-      .insert({
-        guidebook_id: guidebook.id,
-        store_id: store.id,
-        comment: null,
-        sort_order: maxOrder + 1,
-      })
-      .select('id, guidebook_id, store_id, comment, sort_order')
-      .single();
-    if (!error && data) {
-      const newItem: GuidebookItem = {
-        ...data,
-        store: {
-          id: store.id,
-          name: store.name,
-          address_road: store.address_road,
-          thumbnail_url: store.thumbnail_url,
-        },
-      };
-      setItems(prev => [...prev, newItem]);
-      setStoreSearch('');
-    }
-  }
-
   async function addSelectedStores() {
     if (selectedStoreIds.size === 0) return;
     setAddingStores(true);

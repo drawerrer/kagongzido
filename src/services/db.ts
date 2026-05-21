@@ -787,7 +787,7 @@ export async function fetchAllStores(): Promise<StoreRow[]> {
   if (error) { console.error('fetchAllStores:', error); return []; }
   // Supabase에서 배열 컬럼이 null로 내려올 수 있으므로 빈 배열로 정규화
   return (data ?? []).map((row: Record<string, unknown>) => ({
-    ...(row as StoreRow),
+    ...(row as unknown as StoreRow),
     photo_urls:  (row.photo_urls  as string[] | null) ?? [],
     vibe_tags:   (row.vibe_tags   as string[] | null) ?? [],
     amenities:   (row.amenities   as string[] | null) ?? [],
@@ -850,7 +850,7 @@ export async function fetchGuidebookItems(guidebookId: string): Promise<(Guidebo
   return rawItems.map(item => {
     const raw = storeMap.get(item.store_id) as Record<string, unknown> | undefined;
     const store: StoreRow = raw ? {
-      ...(raw as StoreRow),
+      ...(raw as unknown as StoreRow),
       photo_urls: (raw.photo_urls as string[] | null) ?? [],
       vibe_tags:  (raw.vibe_tags  as string[] | null) ?? [],
       amenities:  (raw.amenities  as string[] | null) ?? [],

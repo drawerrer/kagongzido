@@ -23,7 +23,7 @@ export default function CollectionPage({
   onDetailOpen,
   onCollectionOpen,
   onGoHome,
-  onBack,
+  onBack: _onBack,
   onClose: _onClose,
   onPhotoMore,
   deletedCollection,
@@ -139,7 +139,7 @@ export default function CollectionPage({
   const [showColDeleteConfirm, setShowColDeleteConfirm] = useState(false);
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<Set<string>>(new Set());
   const [deletedStores, setDeletedStores] = useState<FavoritedStore[]>([]);
-  const [addedToCollectionIds, setAddedToCollectionIds] = useState<string[]>([]);
+  const [, setAddedToCollectionIds] = useState<string[]>([]);
   const [renameToast, setRenameToast] = useState<string | null>(null);
   const [deletedCollectionStore, setDeletedCollectionStore] = useState<{ name: string; storeIds: string[] } | null>(null);
   const [showRemoveStoreConfirm, setShowRemoveStoreConfirm] = useState(false);
