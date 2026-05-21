@@ -120,7 +120,7 @@ export async function fetchFavorites(userId: string): Promise<FavoritedStore[]> 
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('favorites')
-    .select('store_id, sort_order, stores!inner(id, api_place_id, name, address_road, thumbnail_url, photo_urls, badges)')
+    .select('store_id, sort_order, stores!inner(id, api_place_id, name, address_road, thumbnail_url, photo_urls, badges, closed_at)')
     .eq('user_id', userId)
     .order('sort_order', { ascending: true });
 
@@ -137,6 +137,7 @@ export async function fetchFavorites(userId: string): Promise<FavoritedStore[]> 
       reviewCount: 0,
       badge: ((store?.badges as string[] | null)?.[0]) ?? undefined,
       photos: (store?.photo_urls ?? []) as string[],
+      closedAt: (store?.closed_at as string | null) ?? null,
     };
   });
 }
@@ -761,11 +762,20 @@ export interface StoreRow {
   base_price: number;
   amenities: string[];
   badges: string[];
+  /** 폐업/휴업 시점 — NULL 이면 영업 중 */
+  closed_at: string | null;
 }
 
+/**
+ * 영업 중 매장 전체 조회 (지도/검색용).
+ * 폐업/휴업 매장은 자동으로 제외됨.
+ */
 export async function fetchAllStores(): Promise<StoreRow[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase.from('stores').select('*');
+  const { data, error } = await supabase
+    .from('stores')
+    .select('*')
+    .is('closed_at', null);  // 폐업 매장 제외
   if (error) { console.error('fetchAllStores:', error); return []; }
   // Supabase에서 배열 컬럼이 null로 내려올 수 있으므로 빈 배열로 정규화
   return (data ?? []).map((row: Record<string, unknown>) => ({
@@ -775,6 +785,31 @@ export async function fetchAllStores(): Promise<StoreRow[]> {
     amenities:   (row.amenities   as string[] | null) ?? [],
     badges:      (row.badges      as string[] | null) ?? [],
   }));
+}
+
+/**
+ * 어드민 — 매장 폐업/휴업 처리 (closed_at = now).
+ * UI 에서 'closed_at' 채워진 매장은 자동으로 "폐업" 표시되도록.
+ */
+export async function markStoreAsClosed(storeId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('stores')
+    .update({ closed_at: new Date().toISOString() })
+    .eq('id', storeId);
+  if (error) { console.error('markStoreAsClosed:', error); return false; }
+  return true;
+}
+
+/** 어드민 — 폐업 처리 취소 (재오픈). */
+export async function reopenStore(storeId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('stores')
+    .update({ closed_at: null })
+    .eq('id', storeId);
+  if (error) { console.error('reopenStore:', error); return false; }
+  return true;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -842,7 +877,7 @@ export async function fetchGuidebookItems(guidebookId: string): Promise<(Guidebo
       address_road: '', latitude: 0, longitude: 0, phone_number: null,
       thumbnail_url: '', photo_urls: [], business_hours: null, website_url: null,
       seat_status: '', outlet_status: '', noise_status: '', vibe_tags: [],
-      base_price: 0, amenities: [], badges: [],
+      base_price: 0, amenities: [], badges: [], closed_at: null,
     };
     return { ...item, store };
   });

@@ -14,6 +14,8 @@ export interface StoreItem {
   photos: string[];
   memo?: string;
   distance?: number;
+  /** 폐업/휴업 시점 — 채워져 있으면 카드에 "폐업" 표시 */
+  closedAt?: string | null;
 }
 
 interface StoreCardProps {
@@ -100,12 +102,32 @@ export default function StoreCardCollection({
           {/* 이름 / 주소 / 거리·리뷰 + 우측 버튼 */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{
-                fontWeight: 600, fontSize: 16, color: '#191F28', lineHeight: '23px',
-                marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {store.name}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <p style={{
+                  fontWeight: 600, fontSize: 16,
+                  color: store.closedAt ? '#8B95A1' : '#191F28',
+                  lineHeight: '23px',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  flex: 1, minWidth: 0,
+                  textDecoration: store.closedAt ? 'line-through' : 'none',
+                }}>
+                  {store.name}
+                </p>
+                {store.closedAt && (
+                  <span style={{
+                    flexShrink: 0,
+                    padding: '2px 6px',
+                    borderRadius: 6,
+                    background: '#FFE5E5',
+                    color: '#D6403C',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    lineHeight: 1.2,
+                  }}>
+                    폐업
+                  </span>
+                )}
+              </div>
               <p style={{
                 fontWeight: 510, fontSize: 13, color: '#6B7684', lineHeight: '17.6px',
                 marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
