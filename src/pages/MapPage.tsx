@@ -147,11 +147,12 @@ interface MapPageProps {
   onSearchOpen: () => void;
   onDetailOpen: (cafeId: string) => void;
   onGoToFavorites?: () => void;
+  onFocusModeChange?: (active: boolean) => void;
   initialState?: MapPageState;
   onStateChange?: (state: MapPageState) => void;
 }
 
-export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, initialState, onStateChange }: MapPageProps) {
+export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, initialState, onStateChange, onFocusModeChange }: MapPageProps) {
   const touchStartYRef = useRef<number>(0);
   // 드래그 도중 scrollTop===0 에 도달한 적이 있는지 — expanded 시 사용자가 위에서 아래로
   // 끝까지 끌어내려 collapse 의도를 보일 때 잡기 위함
@@ -632,6 +633,7 @@ const [filterOpen, setFilterOpen] = useState(false);
               onClose={() => { setSelectedMapCafe(null); setPanelState('half'); }}
               onSwipeDown={() => { setPanelState('half'); }}
               showHero={panelState === 'expanded'}
+              onFocusModeChange={onFocusModeChange}
             />
             {panelState !== 'expanded' && <button
               onClick={() => { setSelectedMapCafe(null); setPanelState('half'); }}

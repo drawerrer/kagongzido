@@ -371,6 +371,7 @@ function AppInner() {
             onSearchOpen={() => setShowSearch(true)}
             onDetailOpen={(id) => setDetailCafeId(id)}
             onGoToFavorites={() => setActiveTab('collection')}
+            onFocusModeChange={setIsDetailFocusMode}
           />
         )}
         {activeTab === 'guidebook' && (
