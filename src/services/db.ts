@@ -711,46 +711,30 @@ export async function deleteNotice(id: string): Promise<boolean> {
 // 회원탈퇴 — 유저 데이터 전체 삭제
 // ─────────────────────────────────────────────────────────────
 
-export async function deleteUserData(userId: string): Promise<void> {
-  if (!supabase) return;
+/**
+ * 회원 탈퇴 — 사용자 데이터 전체 삭제 + Auth 세션 로그아웃.
+ *
+ * FK ON DELETE CASCADE 정책 덕분에 users 한 줄 삭제로 모두 정리됨:
+ *   - favorites / collections / collection_stores
+ *   - reviews / reviews_likes
+ *   - reports
+ *
+ * 마지막으로 Supabase Auth 익명 세션도 로그아웃해 localStorage 토큰 제거.
+ *
+ * @returns 성공 여부 (true: 삭제 완료)
+ */
+export async function deleteUserData(userId: string): Promise<boolean> {
+  if (!supabase) return false;
 
-  // 1) 해당 유저의 collection id 목록 조회
-  const { data: cols } = await supabase
-    .from('collections')
-    .select('id')
-    .eq('user_id', userId);
+  // 1) users 행 삭제 → CASCADE 로 관련 데이터 모두 자동 삭제
+  const { error: delErr } = await supabase.from('users').delete().eq('id', userId);
+  if (delErr) { console.error('deleteUserData users:', delErr); return false; }
 
-  const colIds = (cols ?? []).map((c: Record<string, unknown>) => c.id as string);
+  // 2) Supabase Auth 익명 세션 로그아웃 (localStorage 토큰 제거)
+  const { error: signOutErr } = await supabase.auth.signOut();
+  if (signOutErr) console.error('deleteUserData signOut:', signOutErr);
 
-  // 2) collection_stores 삭제 (FK)
-  if (colIds.length > 0) {
-    const { error } = await supabase
-      .from('collection_stores')
-      .delete()
-      .in('collection_id', colIds);
-    if (error) console.error('deleteUserData collection_stores:', error);
-  }
-
-  // 3) collections 삭제
-  const { error: colErr } = await supabase
-    .from('collections')
-    .delete()
-    .eq('user_id', userId);
-  if (colErr) console.error('deleteUserData collections:', colErr);
-
-  // 4) favorites 삭제
-  const { error: favErr } = await supabase
-    .from('favorites')
-    .delete()
-    .eq('user_id', userId);
-  if (favErr) console.error('deleteUserData favorites:', favErr);
-
-  // 5) reviews 삭제
-  const { error: revErr } = await supabase
-    .from('reviews')
-    .delete()
-    .eq('user_id', userId);
-  if (revErr) console.error('deleteUserData reviews:', revErr);
+  return true;
 }
 
 // ─────────────────────────────────────────────────────────────
