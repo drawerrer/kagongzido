@@ -193,6 +193,8 @@ interface CafeDetailData {
   priceRange?: string;
   phone?: string;
   snsUrl?: string;
+  /** 폐업/휴업 시점 — 채워져 있으면 상단에 안내 배너 표시 */
+  closedAt?: string | null;
   amenities: Partial<Record<
     'parking' | 'pets' | 'noTimeLimit' | 'separateRestroom' | 'indoorRestroom' | 'groupVisit' | 'decafFree' | 'wifi' | 'takeout' | 'wheelchair',
     boolean
@@ -1102,6 +1104,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
             return result;
           })(),
           reviews: [],
+          closedAt: store.closed_at,
         });
       } else {
         setStoreData(null);
@@ -1580,6 +1583,30 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
             </div>
           );
         })()}
+
+        {/* ── 폐업/휴업 안내 배너 ── */}
+        {cafe.closedAt && (
+          <div style={{
+            margin: '16px 20px 0',
+            padding: '14px 16px',
+            borderRadius: 12,
+            background: '#FFF4F4',
+            border: '1px solid #FFD8D8',
+            display: 'flex',
+            gap: 10,
+            alignItems: 'flex-start',
+          }}>
+            <span style={{ fontSize: 18, lineHeight: 1.2, flexShrink: 0 }}>⚠️</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#D6403C', marginBottom: 2 }}>
+                폐업 또는 휴업한 카페예요
+              </p>
+              <p style={{ fontSize: 12, color: '#8B95A1', lineHeight: 1.4 }}>
+                저장한 기록은 그대로 두지만, 방문 전 운영 여부를 다시 확인해 주세요.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ── 기본 정보 섹션 ── */}
         <div ref={cafeInfoRef} style={{ padding: '20px 20px 0' }}>

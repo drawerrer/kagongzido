@@ -120,7 +120,7 @@ export async function fetchFavorites(userId: string): Promise<FavoritedStore[]> 
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('favorites')
-    .select('store_id, sort_order, stores!inner(id, api_place_id, name, address_road, thumbnail_url, photo_urls, badges)')
+    .select('store_id, sort_order, stores!inner(id, api_place_id, name, address_road, thumbnail_url, photo_urls, badges, closed_at)')
     .eq('user_id', userId)
     .order('sort_order', { ascending: true });
 
@@ -137,6 +137,7 @@ export async function fetchFavorites(userId: string): Promise<FavoritedStore[]> 
       reviewCount: 0,
       badge: ((store?.badges as string[] | null)?.[0]) ?? undefined,
       photos: (store?.photo_urls ?? []) as string[],
+      closedAt: (store?.closed_at as string | null) ?? null,
     };
   });
 }
@@ -229,7 +230,6 @@ export async function fetchCollections(userId: string): Promise<Collection[]> {
     return {
       id: col.id as string,
       name: col.name as string,
-      memo: (col.memo ?? undefined) as string | undefined,
       // UI 가 api_place_id 로 storeIds 비교하므로 api_place_id 우선 반환 (fallback: store_id uuid)
       storeIds: colStores.map((s: Record<string, unknown>) => {
         const placeId = (s.stores as Record<string, unknown> | null)?.api_place_id as string | undefined;
@@ -248,7 +248,6 @@ export async function insertCollection(userId: string, col: Omit<Collection, 'id
     .insert({
       user_id: userId,
       name: col.name,
-      memo: col.memo ?? null,
       sort_order: sortOrder,
     })
     .select('id')
@@ -260,7 +259,7 @@ export async function insertCollection(userId: string, col: Omit<Collection, 'id
 
 export async function updateCollectionDB(
   id: string,
-  updates: { name?: string; memo?: string; sort_order?: number }
+  updates: { name?: string; sort_order?: number }
 ): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase
@@ -713,46 +712,30 @@ export async function deleteNotice(id: string): Promise<boolean> {
 // 회원탈퇴 — 유저 데이터 전체 삭제
 // ─────────────────────────────────────────────────────────────
 
-export async function deleteUserData(userId: string): Promise<void> {
-  if (!supabase) return;
+/**
+ * 회원 탈퇴 — 사용자 데이터 전체 삭제 + Auth 세션 로그아웃.
+ *
+ * FK ON DELETE CASCADE 정책 덕분에 users 한 줄 삭제로 모두 정리됨:
+ *   - favorites / collections / collection_stores
+ *   - reviews / reviews_likes
+ *   - reports
+ *
+ * 마지막으로 Supabase Auth 익명 세션도 로그아웃해 localStorage 토큰 제거.
+ *
+ * @returns 성공 여부 (true: 삭제 완료)
+ */
+export async function deleteUserData(userId: string): Promise<boolean> {
+  if (!supabase) return false;
 
-  // 1) 해당 유저의 collection id 목록 조회
-  const { data: cols } = await supabase
-    .from('collections')
-    .select('id')
-    .eq('user_id', userId);
+  // 1) users 행 삭제 → CASCADE 로 관련 데이터 모두 자동 삭제
+  const { error: delErr } = await supabase.from('users').delete().eq('id', userId);
+  if (delErr) { console.error('deleteUserData users:', delErr); return false; }
 
-  const colIds = (cols ?? []).map((c: Record<string, unknown>) => c.id as string);
+  // 2) Supabase Auth 익명 세션 로그아웃 (localStorage 토큰 제거)
+  const { error: signOutErr } = await supabase.auth.signOut();
+  if (signOutErr) console.error('deleteUserData signOut:', signOutErr);
 
-  // 2) collection_stores 삭제 (FK)
-  if (colIds.length > 0) {
-    const { error } = await supabase
-      .from('collection_stores')
-      .delete()
-      .in('collection_id', colIds);
-    if (error) console.error('deleteUserData collection_stores:', error);
-  }
-
-  // 3) collections 삭제
-  const { error: colErr } = await supabase
-    .from('collections')
-    .delete()
-    .eq('user_id', userId);
-  if (colErr) console.error('deleteUserData collections:', colErr);
-
-  // 4) favorites 삭제
-  const { error: favErr } = await supabase
-    .from('favorites')
-    .delete()
-    .eq('user_id', userId);
-  if (favErr) console.error('deleteUserData favorites:', favErr);
-
-  // 5) reviews 삭제
-  const { error: revErr } = await supabase
-    .from('reviews')
-    .delete()
-    .eq('user_id', userId);
-  if (revErr) console.error('deleteUserData reviews:', revErr);
+  return true;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -779,20 +762,54 @@ export interface StoreRow {
   base_price: number;
   amenities: string[];
   badges: string[];
+  /** 폐업/휴업 시점 — NULL 이면 영업 중 */
+  closed_at: string | null;
 }
 
+/**
+ * 영업 중 매장 전체 조회 (지도/검색용).
+ * 폐업/휴업 매장은 자동으로 제외됨.
+ */
 export async function fetchAllStores(): Promise<StoreRow[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase.from('stores').select('*');
+  const { data, error } = await supabase
+    .from('stores')
+    .select('*')
+    .is('closed_at', null);  // 폐업 매장 제외
   if (error) { console.error('fetchAllStores:', error); return []; }
   // Supabase에서 배열 컬럼이 null로 내려올 수 있으므로 빈 배열로 정규화
   return (data ?? []).map((row: Record<string, unknown>) => ({
-    ...(row as StoreRow),
+    ...(row as unknown as StoreRow),
     photo_urls:  (row.photo_urls  as string[] | null) ?? [],
     vibe_tags:   (row.vibe_tags   as string[] | null) ?? [],
     amenities:   (row.amenities   as string[] | null) ?? [],
     badges:      (row.badges      as string[] | null) ?? [],
   }));
+}
+
+/**
+ * 어드민 — 매장 폐업/휴업 처리 (closed_at = now).
+ * UI 에서 'closed_at' 채워진 매장은 자동으로 "폐업" 표시되도록.
+ */
+export async function markStoreAsClosed(storeId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('stores')
+    .update({ closed_at: new Date().toISOString() })
+    .eq('id', storeId);
+  if (error) { console.error('markStoreAsClosed:', error); return false; }
+  return true;
+}
+
+/** 어드민 — 폐업 처리 취소 (재오픈). */
+export async function reopenStore(storeId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('stores')
+    .update({ closed_at: null })
+    .eq('id', storeId);
+  if (error) { console.error('reopenStore:', error); return false; }
+  return true;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -850,7 +867,7 @@ export async function fetchGuidebookItems(guidebookId: string): Promise<(Guidebo
   return rawItems.map(item => {
     const raw = storeMap.get(item.store_id) as Record<string, unknown> | undefined;
     const store: StoreRow = raw ? {
-      ...(raw as StoreRow),
+      ...(raw as unknown as StoreRow),
       photo_urls: (raw.photo_urls as string[] | null) ?? [],
       vibe_tags:  (raw.vibe_tags  as string[] | null) ?? [],
       amenities:  (raw.amenities  as string[] | null) ?? [],
@@ -860,7 +877,7 @@ export async function fetchGuidebookItems(guidebookId: string): Promise<(Guidebo
       address_road: '', latitude: 0, longitude: 0, phone_number: null,
       thumbnail_url: '', photo_urls: [], business_hours: null, website_url: null,
       seat_status: '', outlet_status: '', noise_status: '', vibe_tags: [],
-      base_price: 0, amenities: [], badges: [],
+      base_price: 0, amenities: [], badges: [], closed_at: null,
     };
     return { ...item, store };
   });

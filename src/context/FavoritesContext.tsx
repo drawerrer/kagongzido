@@ -34,6 +34,8 @@ export interface FavoritedStore {
   badge?: string;
   photos: string[];
   distance?: number;
+  /** 폐업/휴업 시점 — 채워져 있으면 UI에 "폐업" 표시 */
+  closedAt?: string | null;
 }
 
 // ─── 최근 본 카페 타입 ────────────────────────────────────────
@@ -49,8 +51,8 @@ export interface RecentCafe {
 export interface Collection {
   id: string;
   name: string;
-  memo?: string;
   storeIds: string[];
+  /** 매장별 메모 (collection_stores.memo) — key: store id */
   memos?: Record<string, string>;
 }
 
