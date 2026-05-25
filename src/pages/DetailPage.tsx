@@ -1234,10 +1234,11 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       showFavoriteSnackbar('added');
     }
   };
+  // 진입 시 1회: 하트 클릭 리스너 등록 + 페이지 이탈 시 cleanup
+  // (아이콘 자체 업데이트는 아래 isFavorite useEffect 에서 처리)
   useEffect(() => {
     if (embedded) return undefined;
     try {
-      partner.addAccessoryButton({ id: 'heart', title: '하트', icon: { name: 'icon-heart-mono' } });
       const cleanup = tdsEvent.addEventListener('navigationAccessoryEvent', {
         onEvent: ({ id }: { id: string }) => { if (id === 'heart') heartHandlerRef.current(); },
         onError: () => {},
@@ -1281,9 +1282,21 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const removedFavoriteRef = useRef<Parameters<typeof addFavorite>[0] | null>(null);
 
   const isFavorite = isFavorited(cafeId);
-  // ※ 토스 SDK 는 'icon-heart-mono' 만 인식. 'icon-heart-filled-mono' 는 미등록이라
-  //   상태별 아이콘 토글 불가 → 찜/비찜 시각 피드백은 스낵바 + 본문 UI 로 전달.
-  //   네비바 하트 등록은 진입 시 useEffect (위쪽) 에서 한 번만 수행.
+
+  // 찜 상태에 따라 네비바 하트 아이콘 토글
+  //   비찜 → icon-heart-whiteline-mono (빈 하트, outline)
+  //   찜  → icon-heart-mono           (채워진 하트)
+  // addAccessoryButton 을 같은 id 로 재호출하면 아이콘만 교체됨.
+  useEffect(() => {
+    if (embedded) return;
+    try {
+      partner.addAccessoryButton({
+        id: 'heart',
+        title: '하트',
+        icon: { name: isFavorite ? 'icon-heart-mono' : 'icon-heart-whiteline-mono' },
+      });
+    } catch { /* noop */ }
+  }, [isFavorite, embedded]);
 
   const { label: statusLabel, color: statusColor } = getStatusInfo(cafe);
   const todayKey = getTodayKey();
