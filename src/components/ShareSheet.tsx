@@ -1,5 +1,5 @@
-﻿import { useState } from 'react';
-import { share } from '@apps-in-toss/web-framework';
+﻿import { useEffect, useState } from 'react';
+import { share, getTossShareLink } from '@apps-in-toss/web-framework';
 import BottomSheet from './BottomSheet';
 import SheetCTA from './SheetCTA';
 
@@ -9,9 +9,15 @@ interface ShareSheetProps {
   onClose: () => void;
   /** 공유 대상 이름 (카페명, 컬렉션명 등) */
   shareTitle?: string;
-  /** 공유할 URL — 기본값: window.location.href */
-  shareUrl?: string;
+  /**
+   * 토스 공유 링크의 딥링크 경로 (intoss://Kagongzido[/path])
+   * 미지정 시 앱 홈으로 진입하는 기본 링크 사용.
+   */
+  sharePath?: string;
 }
+
+// 미니앱 메인 딥링크 (intoss://<appName>)
+const TOSS_APP_SCHEME = 'intoss://Kagongzido';
 
 // ─── 공유 앱 목록 ──────────────────────────────────────────────
 const SHARE_APPS = [
@@ -71,23 +77,41 @@ const SHARE_APPS = [
   },
 ];
 
-export default function ShareSheet({ isOpen, onClose, shareTitle = '카페인덱스', shareUrl }: ShareSheetProps) {
+export default function ShareSheet({ isOpen, onClose, shareTitle = '카페인덱스', sharePath }: ShareSheetProps) {
   const [copied, setCopied] = useState(false);
+  // 토스 공유 링크 (미니앱으로 딥링크) — 시트 열릴 때마다 미리 발급
+  const [tossLink, setTossLink] = useState<string>('');
 
-  const url = shareUrl ?? window.location.href;
-  const shareMessage = `${shareTitle}\n${url}`;
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const target = sharePath ? `${TOSS_APP_SCHEME}${sharePath.startsWith('/') ? sharePath : '/' + sharePath}` : TOSS_APP_SCHEME;
+        const link = await getTossShareLink(target);
+        if (!cancelled) setTossLink(link);
+      } catch (err) {
+        console.error('getTossShareLink:', err);
+        if (!cancelled) setTossLink('');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, sharePath]);
+
+  const shareMessage = tossLink ? `${shareTitle}\n${tossLink}` : shareTitle;
 
   const handleApp = async (appId: string) => {
     switch (appId) {
       case 'copy': {
+        const textToCopy = tossLink || shareTitle;
         try {
-          await navigator.clipboard.writeText(url);
+          await navigator.clipboard.writeText(textToCopy);
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         } catch {
           /* fallback */
           const el = document.createElement('input');
-          el.value = url;
+          el.value = textToCopy;
           document.body.appendChild(el);
           el.select();
           document.execCommand('copy');
@@ -187,13 +211,13 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카페인덱
           borderRadius: 12, padding: '10px 14px',
           border: '1px solid #E5E8EB',
         }}>
-          {/* URL 텍스트 */}
+          {/* 공유 링크 텍스트 — 생성 전엔 안내 문구 */}
           <span style={{
             fontWeight: 400, fontSize: 13,
             color: '#6B7684', flex: 1,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
-            {url}
+            {tossLink || '공유 링크를 만들고 있어요...'}
           </span>
           {/* 복사 버튼 */}
           <button
