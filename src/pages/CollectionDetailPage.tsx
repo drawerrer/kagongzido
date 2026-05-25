@@ -12,6 +12,7 @@ import CollectionActionSheet from '../components/CollectionActionSheet';
 import PageHeader from '../components/PageHeader';
 import StoreCountBar from '../components/StoreCountBar';
 import { Toast } from '@toss/tds-mobile';
+import { partner, tdsEvent } from '@apps-in-toss/web-framework';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import { useBackEvent } from '../hooks/useBackEvent';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
@@ -504,25 +505,42 @@ export default function CollectionDetailPage({
   // SDK 백 이벤트 — handleBack 에서 편집모드/일반모드 분기 처리
   useBackEvent(handleBack);
 
+  // ── 내비게이션 액세서리: 편집 아이콘 (편집모드 전환용) ──
+  // 일반 모드일 때만 우측 상단에 연필 아이콘 표시. 편집모드 진입 시 제거.
+  const enterEditModeRef = useRef<() => void>(() => {});
+  enterEditModeRef.current = () => enterEditMode();
+  useEffect(() => {
+    if (isEditMode) {
+      // 편집모드 중에는 액세서리 버튼 숨김 (중복 진입 방지 + 편집모드 UI 단순화)
+      try { partner.removeAccessoryButton(); } catch { /* noop */ }
+      return undefined;
+    }
+    try {
+      partner.addAccessoryButton({
+        id: 'collection-edit',
+        title: '편집',
+        icon: { name: 'icon-pencil-mono' },
+      });
+      const cleanup = tdsEvent.addEventListener('navigationAccessoryEvent', {
+        onEvent: ({ id }: { id: string }) => {
+          if (id === 'collection-edit') enterEditModeRef.current();
+        },
+        onError: () => {},
+      });
+      return () => {
+        try { partner.removeAccessoryButton(); } catch { /* noop */ }
+        cleanup?.();
+      };
+    } catch {
+      return undefined;
+    }
+  }, [isEditMode]);
+
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
-      <PageHeader
-        title={isEditMode ? '편집모드' : '컬렉션'}
-        rightButton={!isEditMode ? (
-          <button
-            onClick={() => enterEditMode()}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontWeight: 510, fontSize: 13,
-              color: 'rgba(0,19,43,0.55)',
-              padding: '4px 0',
-            }}
-          >
-            편집
-          </button>
-        ) : undefined}
-      />
+      {/* 편집 진입은 내비게이션 액세서리(연필 아이콘) 로 통일 → PageHeader.rightButton 제거 */}
+      <PageHeader title={isEditMode ? '편집모드' : '컬렉션'} />
 
       {/* ── 탭 칩 (가로 스크롤) ── */}
       <style>{`
