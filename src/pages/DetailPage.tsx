@@ -1281,17 +1281,9 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const removedFavoriteRef = useRef<Parameters<typeof addFavorite>[0] | null>(null);
 
   const isFavorite = isFavorited(cafeId);
-
-  // 찜 상태 변경 시 네비바 하트 아이콘 업데이트 (filled ↔ outline)
-  useEffect(() => {
-    if (embedded) return;
-    try {
-      partner.addAccessoryButton({
-        id: 'heart', title: '하트',
-        icon: { name: isFavorite ? 'icon-heart-filled-mono' : 'icon-heart-mono' },
-      });
-    } catch {}
-  }, [isFavorite, embedded]);
+  // ※ 토스 SDK 는 'icon-heart-mono' 만 인식. 'icon-heart-filled-mono' 는 미등록이라
+  //   상태별 아이콘 토글 불가 → 찜/비찜 시각 피드백은 스낵바 + 본문 UI 로 전달.
+  //   네비바 하트 등록은 진입 시 useEffect (위쪽) 에서 한 번만 수행.
 
   const { label: statusLabel, color: statusColor } = getStatusInfo(cafe);
   const todayKey = getTodayKey();
