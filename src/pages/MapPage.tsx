@@ -646,7 +646,13 @@ const [filterOpen, setFilterOpen] = useState(false);
           </div>
         ) : (
           <>
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '8px 16px', flexShrink: 0, scrollbarWidth: 'none' }}>
+            {/* 카테고리 칩 — 확장 상태에선 상단 패딩 20px (가이드북/모음집/컬렉션 페이지와 통일).
+                half/minimized 상태에선 핸들 바 바로 아래라 8px 유지. */}
+            <div style={{
+              display: 'flex', gap: 8, overflowX: 'auto',
+              padding: panelState === 'expanded' ? '20px 16px 8px' : '8px 16px',
+              flexShrink: 0, scrollbarWidth: 'none',
+            }}>
               {CATEGORY_CHIPS.map(chip => (
                 <Chip key={chip} label={chip} isActive={activeChip === chip} onClick={() => setActiveChip(activeChip === chip ? null : chip)} />
               ))}
