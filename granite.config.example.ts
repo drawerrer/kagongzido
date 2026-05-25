@@ -38,10 +38,12 @@ export default defineConfig({
     icon: './src/assets/LOGO/logo.png',
   },
 
-  // 토스 공통 내비게이션 바 — 자체 헤더/백버튼 미사용
+  // 토스 공통 내비게이션 바
+  // - 자체 헤더/백버튼 미사용 → 공통 백버튼만 활용
+  // - 홈버튼은 하단 탭바와 기능 중복이라 비활성
   navigationBar: {
     withBackButton: true,
-    withHomeButton: true,
+    withHomeButton: false,
   },
 
   webViewProps: {
