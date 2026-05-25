@@ -23,7 +23,7 @@ export default function CollectionPage({
   onDetailOpen,
   onCollectionOpen,
   onGoHome,
-  onBack: _onBack,
+  onBack,
   onClose: _onClose,
   onPhotoMore,
   deletedCollection,
@@ -270,8 +270,11 @@ export default function CollectionPage({
   useEffect(() => {
     if (hasOverlay) return;
     const handleBack = () => {
+      // 모드별 단계적 백 처리
       if (isEditMode) { exitEditMode(); return; }
       if (isOrganizeMode) { exitOrganizeMode(); return; }
+      // 일반 모드 — 홈으로 이동 (다른 탭 페이지와 동일 패턴)
+      onBack?.();
     };
     try {
       const unsubscribe = graniteEvent.addEventListener('backEvent', {
@@ -283,7 +286,7 @@ export default function CollectionPage({
       return undefined;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode, isOrganizeMode, hasOverlay]);
+  }, [isEditMode, isOrganizeMode, hasOverlay, onBack]);
 
 
   return (
