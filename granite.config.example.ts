@@ -10,8 +10,8 @@
 import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
-  // ⚠️ 운영용 — 출시 콘솔에 등록한 미니앱 이름과 일치해야 함
-  appName: 'Kagongzido',
+  // ⚠️ 운영용 — 출시 콘솔에 등록한 미니앱 이름과 정확히 일치해야 함 (대소문자 구분)
+  appName: 'kagongzido',
 
   web: {
     host: '0.0.0.0', // ← 본인 PC 의 IP 로 변경

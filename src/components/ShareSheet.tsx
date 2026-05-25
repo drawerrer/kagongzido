@@ -16,8 +16,8 @@ interface ShareSheetProps {
   sharePath?: string;
 }
 
-// 미니앱 메인 딥링크 (intoss://<appName>)
-const TOSS_APP_SCHEME = 'intoss://Kagongzido';
+// 미니앱 메인 딥링크 (intoss://<appName>) — 콘솔 등록명과 일치 필요 (소문자)
+const TOSS_APP_SCHEME = 'intoss://kagongzido';
 
 // ─── 공유 앱 목록 ──────────────────────────────────────────────
 const SHARE_APPS = [
