@@ -9,7 +9,6 @@ import CollectionNameSheet from '../components/CollectionNameSheet';
 import EmptyState from '../components/EmptyState';
 import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
 import CollectionActionSheet from '../components/CollectionActionSheet';
-import PageHeader from '../components/PageHeader';
 import StoreCountBar from '../components/StoreCountBar';
 import { Toast } from '@toss/tds-mobile';
 import { partner, tdsEvent } from '@apps-in-toss/web-framework';
@@ -539,8 +538,8 @@ export default function CollectionDetailPage({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F3F3F3', position: 'relative' }}>
-      {/* 편집 진입은 내비게이션 액세서리(연필 아이콘) 로 통일 → PageHeader.rightButton 제거 */}
-      <PageHeader title={isEditMode ? '편집모드' : '컬렉션'} />
+      {/* 자체 PageHeader 제거 — 토스 공통 내비게이션 ('카공지도') 사용
+          편집 진입은 내비게이션 액세서리(연필 아이콘) 로 통일 */}
 
       {/* ── 탭 칩 (가로 스크롤) ── */}
       <style>{`

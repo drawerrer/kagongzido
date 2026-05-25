@@ -7,7 +7,6 @@ import EmptyState from '../components/EmptyState';
 import CollectionNameSheet from '../components/CollectionNameSheet';
 import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
 import CollectionActionSheet from '../components/CollectionActionSheet';
-import PageHeader from '../components/PageHeader';
 import StoreCountBar from '../components/StoreCountBar';
 import SectionHeader from '../components/SectionHeader';
 import { useFavorites, FavoritedStore, haversineDistance, isRecentCollection } from '../context/FavoritesContext';
@@ -281,7 +280,7 @@ export default function CollectionPage({
       display: 'flex', flexDirection: 'column',
       height: '100%', backgroundColor: '#F3F3F3', position: 'relative',
     }}>
-      <PageHeader title={isEditMode ? '편집모드' : isOrganizeMode ? '컬렉션 선택' : '모음집'} />
+      {/* 자체 PageHeader 제거 — 토스 공통 내비게이션 ('카공지도') 사용 */}
 
       {/* ── 스크롤 본문 ── */}
       <div
