@@ -33,7 +33,7 @@ export default defineConfig({
   outdir: 'dist',
 
   brand: {
-    displayName: '카페인덱스',
+    displayName: '카공지도',
     primaryColor: '#252525',
     icon: './src/assets/LOGO/logo.png',
   },

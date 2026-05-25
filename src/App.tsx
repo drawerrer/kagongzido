@@ -108,7 +108,7 @@ function NicknameSetupPage({ userId, onDone }: { userId: string; onDone: (nickna
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff', padding: '48px 24px 32px' }}>
       <div style={{ flex: 1 }}>
         <p style={{ fontSize: 24, fontWeight: 700, color: '#191F28', marginBottom: 8, lineHeight: 1.4 }}>
-          카페인덱스에서<br />사용할 닉네임을 알려주세요
+          카공지도에서<br />사용할 닉네임을 알려주세요
         </p>
         <p style={{ fontSize: 14, color: '#6B7684', marginBottom: 32 }}>닉네임은 마이페이지에서 언제든지 바꿀 수 있어요.</p>
         <div style={{

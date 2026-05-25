@@ -77,7 +77,7 @@ const SHARE_APPS = [
   },
 ];
 
-export default function ShareSheet({ isOpen, onClose, shareTitle = '카페인덱스', sharePath }: ShareSheetProps) {
+export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도', sharePath }: ShareSheetProps) {
   const [copied, setCopied] = useState(false);
   // 토스 공유 링크 (미니앱으로 딥링크) — 시트 열릴 때마다 미리 발급
   const [tossLink, setTossLink] = useState<string>('');

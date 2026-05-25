@@ -676,7 +676,7 @@ export default function CollectionPage({
       <ShareSheet
         isOpen={showShareSheet}
         onClose={() => setShowShareSheet(false)}
-        shareTitle="카페인덱스 모음집"
+        shareTitle="카공지도 모음집"
       />
     </div>
   );
