@@ -282,9 +282,9 @@ export default function CollectionPage({
     }}>
       {/* 자체 PageHeader 제거 — 토스 공통 내비게이션 ('카공지도') 사용 */}
 
-      {/* ── 스크롤 본문 ── */}
+      {/* ── 스크롤 본문 ── 상단 패딩 20px 통일 (이전 가이드북 페이지와 동일) */}
       <div
-        style={{ flex: 1, overflowY: 'auto' }}
+        style={{ flex: 1, overflowY: 'auto', paddingTop: 20 }}
       >
 
         {/* 컬렉션 카드 가로 스크롤 — 오거나이즈 모드에서 숨김 */}
@@ -296,7 +296,7 @@ export default function CollectionPage({
           style={{
             display: 'flex', gap: 10,
             overflowX: isEditMode ? 'hidden' : 'auto',
-            padding: '12px 20px 16px',
+            padding: '0 20px 16px',
             scrollbarWidth: 'none',
             touchAction: isEditMode ? 'none' : 'pan-x',
           }}>

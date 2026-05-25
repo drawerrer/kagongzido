@@ -541,7 +541,7 @@ export default function CollectionDetailPage({
       {/* 자체 PageHeader 제거 — 토스 공통 내비게이션 ('카공지도') 사용
           편집 진입은 내비게이션 액세서리(연필 아이콘) 로 통일 */}
 
-      {/* ── 탭 칩 (가로 스크롤) ── */}
+      {/* ── 탭 칩 (가로 스크롤) ── 상단 패딩 20px 통일 (이전 가이드북 페이지와 동일) */}
       <style>{`
         @keyframes chip-wiggle {
           0%, 100% { transform: rotate(0deg); }
@@ -552,7 +552,7 @@ export default function CollectionDetailPage({
       <div
         ref={chipContainerRef}
         style={{
-          display: 'flex', gap: 8, padding: '10px 16px',
+          display: 'flex', gap: 8, padding: '20px 16px 10px',
           overflowX: 'auto', scrollbarWidth: 'none', flexShrink: 0,
         }}
       >
