@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useFavorites } from '../context/FavoritesContext';
-import { graniteEvent } from '@apps-in-toss/web-framework';
+import { useBackEvent } from '../hooks/useBackEvent';
 import { fetchAllStores, type StoreRow } from '../services/db';
 import StoreCountBar from '../components/StoreCountBar';
 
@@ -290,16 +290,7 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
   }, []);
 
   // 뒤로가기 → 홈으로 이동 (앱 종료 방지)
-  useEffect(() => {
-    try {
-      return graniteEvent.addEventListener('backEvent', {
-        onEvent: () => _onClose(),
-        onError: (err) => console.error(err),
-      });
-    } catch {
-      return undefined;
-    }
-  }, [_onClose]);
+  useBackEvent(_onClose);
 
   const handleChipPress = (chipId: string) => {
     setActiveChip(prev => prev === chipId ? null : chipId);

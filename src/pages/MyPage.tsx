@@ -1,5 +1,6 @@
 import { useState, useEffect, type RefObject } from 'react';
-import { graniteEvent, fetchAlbumPhotos, openCamera, openURL } from '@apps-in-toss/web-framework';
+import { fetchAlbumPhotos, openCamera, openURL } from '@apps-in-toss/web-framework';
+import { useBackEvent } from '../hooks/useBackEvent';
 import { Toast, BottomSheet, Button, ConfirmDialog } from '@toss/tds-mobile';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import SheetMenuRow from '../components/SheetMenuRow';
@@ -91,15 +92,7 @@ function SubHeader({
   onMore?: () => void;
   onClose?: () => void;
 }) {
-  useEffect(() => {
-    try {
-      return graniteEvent.addEventListener('backEvent', {
-        onEvent: () => onBack(),
-        onError: (err) => console.error(err),
-      });
-    } catch { return undefined; }
-  }, [onBack]);
-
+  useBackEvent(onBack);
   return null;
 }
 
@@ -120,14 +113,7 @@ function NoticesPage({ onBack }: { onBack: () => void }) {
   const [notices, setNotices] = useState<NoticeRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      return graniteEvent.addEventListener('backEvent', {
-        onEvent: () => onBack(),
-        onError: (err) => console.error(err),
-      });
-    } catch { return undefined; }
-  }, [onBack]);
+  useBackEvent(onBack);
 
   useEffect(() => {
     (async () => {

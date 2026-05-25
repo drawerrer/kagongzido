@@ -13,7 +13,7 @@ import SectionHeader from '../components/SectionHeader';
 import { useFavorites, FavoritedStore, haversineDistance, isRecentCollection } from '../context/FavoritesContext';
 import { BottomSheet, BottomCTA, CTAButton, Toast } from '@toss/tds-mobile';
 import FocusBottomCTA from '../components/FocusBottomCTA';
-import { graniteEvent } from '@apps-in-toss/web-framework';
+import { useBackEvent } from '../hooks/useBackEvent';
 
 type BottomSheetType = null | 'create' | 'select-collection' | 'rename' | 'col-action';
 type SnackbarType = null | 'deleted' | 'added' | 'renamed' | 'collection-deleted';
@@ -263,30 +263,17 @@ export default function CollectionPage({
   // 현재 rename 대상 컬렉션 이름
   const renameTargetName = collections.find(c => c.id === renameTargetId)?.name ?? '';
 
-  // SDK 네이티브 백 이벤트 등록 (Toss 앱 외부 환경에서는 무시)
-  // ※ CollectionDetailPage 등 오버레이가 열려 있으면 리스너를 등록하지 않는다.
-  //    두 리스너가 동시에 등록되면 SDK가 순서대로 하나씩 처리하여 뒤로가기를
-  //    두 번 눌러야 동작하는 버그가 발생하기 때문.
-  useEffect(() => {
-    if (hasOverlay) return;
-    const handleBack = () => {
-      // 모드별 단계적 백 처리
-      if (isEditMode) { exitEditMode(); return; }
-      if (isOrganizeMode) { exitOrganizeMode(); return; }
-      // 일반 모드 — 홈으로 이동 (다른 탭 페이지와 동일 패턴)
-      onBack?.();
-    };
-    try {
-      const unsubscribe = graniteEvent.addEventListener('backEvent', {
-        onEvent: handleBack,
-        onError: (err) => console.error(err),
-      });
-      return unsubscribe;
-    } catch {
-      return undefined;
-    }
+  // SDK 백 이벤트 — CollectionDetailPage 등 오버레이가 열려 있으면 등록 안 함
+  // (두 리스너 동시 등록 시 SDK 가 순서대로 처리해 뒤로가기 두 번 눌러야 닫히는 버그 방지)
+  const handleBack = useCallback(() => {
+    // 모드별 단계적 백 처리
+    if (isEditMode) { exitEditMode(); return; }
+    if (isOrganizeMode) { exitOrganizeMode(); return; }
+    // 일반 모드 — 홈으로 이동 (다른 탭 페이지와 동일 패턴)
+    onBack?.();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode, isOrganizeMode, hasOverlay, onBack]);
+  }, [isEditMode, isOrganizeMode, onBack]);
+  useBackEvent(handleBack, !hasOverlay);
 
 
   return (

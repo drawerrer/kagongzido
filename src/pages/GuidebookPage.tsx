@@ -2,7 +2,8 @@ import { useState, useRef, useCallback, useEffect, useMemo, useId, type RefObjec
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
-import { openURL, graniteEvent } from '@apps-in-toss/web-framework';
+import { openURL } from '@apps-in-toss/web-framework';
+import { useBackEvent } from '../hooks/useBackEvent';
 import { CTAButton } from '@toss/tds-mobile';
 import SubButton from '../components/SubButton';
 import { fetchPublishedGuidebooks, fetchGuidebookItems } from '../services/db';
@@ -833,19 +834,8 @@ export default function GuidebookPage({
     return () => onRegisterBack?.(null);
   }, [view, handleBack]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // SDK 네이티브 백 이벤트 등록 (오버레이가 열려 있으면 등록 안 함)
-  useEffect(() => {
-    if (hasOverlay) return;
-    try {
-      const unsubscribe = graniteEvent.addEventListener('backEvent', {
-        onEvent: handleBack,
-        onError: (err) => console.error(err),
-      });
-      return unsubscribe;
-    } catch {
-      return undefined;
-    }
-  }, [handleBack, hasOverlay]);
+  // SDK 백 이벤트 — 오버레이 열려 있으면 등록 안 함 (다른 리스너에 위임)
+  useBackEvent(handleBack, !hasOverlay);
 
   const handleSave = (store: GuidebookStore) => {
     if (!isFavorited(store.id)) {

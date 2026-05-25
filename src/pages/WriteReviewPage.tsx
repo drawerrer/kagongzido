@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { fetchAlbumPhotos, openCamera, graniteEvent } from '@apps-in-toss/web-framework';
+import { useState, useEffect, useCallback } from 'react';
+import { fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
+import { useBackEvent } from '../hooks/useBackEvent';
 import { insertReview } from '../services/db';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import SheetMenuRow from '../components/SheetMenuRow';
@@ -61,19 +62,11 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
   const canSubmit = allEvalSelected && text.trim().length >= 10;
 
   // ── 뒤로가기 / 닫기 핸들러 ───────────────────────────────
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (hasContent) { setShowDiscardDialog(true); } else { onBack(); }
-  };
+  }, [hasContent, onBack]);
   // 공통 내비게이션 백버튼 → handleBack 연결
-  useEffect(() => {
-    try {
-      return graniteEvent.addEventListener('backEvent', {
-        onEvent: () => handleBack(),
-        onError: (err) => console.error(err),
-      });
-    } catch { return undefined; }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasContent]);
+  useBackEvent(handleBack);
 
   // ── 칩 토글 ──────────────────────────────────────────────
   const toggleChip = (categoryId: CategoryId, option: string) => {

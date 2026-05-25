@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { openURL, partner, tdsEvent, graniteEvent } from '@apps-in-toss/web-framework';
+import { openURL, partner, tdsEvent } from '@apps-in-toss/web-framework';
+import { useBackEvent } from '../hooks/useBackEvent';
 import { ConfirmDialog, Toast } from '@toss/tds-mobile';
 import BottomSheet from '../components/BottomSheet';
 import Snackbar from '../components/Snackbar';
@@ -1174,16 +1175,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   // showPhotoReview / showWriteReview 가 state 선언 이후에 있으므로
   // deps에 넣으면 TDZ 에러 → ref를 통해 항상 최신 핸들러를 참조
   const backHandlerRef = useRef<() => void>(() => onBack());
-  useEffect(() => {
-    if (embedded) return undefined;
-    try {
-      return graniteEvent.addEventListener('backEvent', {
-        onEvent: () => backHandlerRef.current(),
-        onError: (err) => console.error(err),
-      });
-    } catch { return undefined; }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [embedded]);
+  // embedded(바텀시트 임베드 모드)일 땐 백 이벤트 등록 안 함 — 외부에서 처리
+  useBackEvent(() => backHandlerRef.current(), !embedded);
 
   // 리뷰 섹션으로 자동 스크롤 — 데이터 로딩 완료 후 실행
   useEffect(() => {

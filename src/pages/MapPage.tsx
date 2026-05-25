@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { getCurrentLocation, Accuracy, graniteEvent } from '@apps-in-toss/web-framework';
+import { getCurrentLocation, Accuracy } from '@apps-in-toss/web-framework';
+import { useBackEvent } from '../hooks/useBackEvent';
 import { Toast } from '@toss/tds-mobile';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
@@ -196,17 +197,11 @@ const [filterOpen, setFilterOpen] = useState(false);
   // cafesRef 항상 최신 유지
   useEffect(() => { cafesRef.current = cafes; }, [cafes]);
 
-  // 지도 패널 열린 상태에서 네이티브 뒤로가기 → 패널 닫기
-  useEffect(() => {
-    if (!selectedMapCafe) return;
-    try {
-      const unsubscribe = graniteEvent.addEventListener('backEvent', {
-        onEvent: () => { setSelectedMapCafe(null); setPanelState('half'); },
-        onError: (err) => console.error(err),
-      });
-      return unsubscribe;
-    } catch { return undefined; }
-  }, [selectedMapCafe]);
+  // 지도 패널 열린 상태에서 백 → 패널 닫기 (그 외엔 SDK 기본 동작 = 앱 종료)
+  useBackEvent(
+    () => { setSelectedMapCafe(null); setPanelState('half'); },
+    !!selectedMapCafe,
+  );
 
   const filterApplied =
     appliedFilters.openNow !== DEFAULT_FILTERS.openNow ||

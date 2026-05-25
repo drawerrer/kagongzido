@@ -13,7 +13,7 @@ import PageHeader from '../components/PageHeader';
 import StoreCountBar from '../components/StoreCountBar';
 import { Toast } from '@toss/tds-mobile';
 import FocusBottomCTA from '../components/FocusBottomCTA';
-import { graniteEvent } from '@apps-in-toss/web-framework';
+import { useBackEvent } from '../hooks/useBackEvent';
 import IcPencil from '../assets/icons/icon_pencil.svg?react';
 import { type StoreRow } from '../services/db';
 
@@ -501,18 +501,8 @@ export default function CollectionDetailPage({
   }, [isEditMode]);
 
 
-  // SDK 네이티브 백 이벤트 등록 (Toss 앱 외부 환경에서는 무시)
-  useEffect(() => {
-    try {
-      const unsubscribe = graniteEvent.addEventListener('backEvent', {
-        onEvent: handleBack,
-        onError: (err) => console.error(err),
-      });
-      return unsubscribe;
-    } catch {
-      return undefined;
-    }
-  }, [handleBack]);
+  // SDK 백 이벤트 — handleBack 에서 편집모드/일반모드 분기 처리
+  useBackEvent(handleBack);
 
 
   return (
