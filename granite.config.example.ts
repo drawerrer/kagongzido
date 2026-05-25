@@ -3,15 +3,22 @@
  *
  * 실제 `granite.config.ts` 는 각자 PC의 dev host IP 가 달라 .gitignore 처리되어 있어요.
  * 본인 PC 의 `granite.config.ts` 를 아래 내용 기준으로 맞춰 주세요.
- * (운영 빌드 설정 — appName / navigationBar / brand / webViewProps 일치 필수)
  *
- * 본인 dev host IP 만 다르게 두시면 돼요.
+ * ─── appName 슬롯 안내 ──────────────────────────────────────
+ *   콘솔에 두 슬롯이 등록되어 있어요. 빌드 전 용도에 맞게 변경:
+ *     1) 'cafeindex-test'  → 개발 테스트 슬롯 ("카페인덱스")
+ *     2) 'kagongzido'      → 실제 배포 슬롯  ("카공지도")
+ *   appName 이 슬롯과 다르면 콘솔 업로드 시 거부돼요.
+ *
+ * dev host IP / port 는 본인 PC 환경에 맞게 두시면 됩니다.
  */
 import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
-  // ⚠️ 운영용 — 출시 콘솔에 등록한 미니앱 이름과 정확히 일치해야 함 (대소문자 구분)
-  appName: 'kagongzido',
+  // ⚠️ 슬롯에 따라 변경:
+  //   - 개발 테스트: 'cafeindex-test'  → 콘솔 1번 슬롯
+  //   - 실제 배포 : 'kagongzido'       → 콘솔 2번 슬롯
+  appName: 'cafeindex-test',
 
   web: {
     host: '0.0.0.0', // ← 본인 PC 의 IP 로 변경
