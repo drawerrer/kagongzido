@@ -28,6 +28,7 @@ interface Report {
   content: string | null;
   photo_urls: string[];
   status: string;
+  admin_comment: string | null;
   created_at: string;
 }
 
@@ -253,20 +254,34 @@ function getStatusMeta(status: string) {
   return REPORT_STATUS_OPTIONS.find(o => o.value === status) ?? REPORT_STATUS_OPTIONS[0];
 }
 
-function ReportCard({ report, onStatusChange }: {
+function ReportCard({ report, onStatusChange, onCommentSave }: {
   report: Report;
   onStatusChange: (id: string, status: string) => Promise<void>;
+  onCommentSave: (id: string, comment: string) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [comment, setComment] = useState(report.admin_comment ?? '');
+  const [savingComment, setSavingComment] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const date = new Date(report.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
   const meta = getStatusMeta(report.status);
+  const commentDirty = comment !== (report.admin_comment ?? '');
 
   const handleChange = async (next: string) => {
     if (next === report.status || updating) return;
     setUpdating(true);
     await onStatusChange(report.id, next);
     setUpdating(false);
+  };
+
+  const handleSaveComment = async () => {
+    if (!commentDirty || savingComment) return;
+    setSavingComment(true);
+    await onCommentSave(report.id, comment.trim());
+    setSavingComment(false);
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 2000);
   };
 
   return (
@@ -339,6 +354,46 @@ function ReportCard({ report, onStatusChange }: {
             </button>
           );
         })}
+      </div>
+
+      {/* 어드민 메모 (admin_comment) */}
+      <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #F2F4F6' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <span style={{ fontSize: 12, color: '#8B95A1', fontWeight: 600 }}>어드민 메모</span>
+          {justSaved && (
+            <span style={{ fontSize: 11, color: '#00C471', fontWeight: 600 }}>✓ 저장됨</span>
+          )}
+        </div>
+        <textarea
+          value={comment}
+          onChange={e => setComment(e.target.value)}
+          placeholder="내부 검토 메모를 남기세요 (예: 방문 확인 완료, 사용자 추가 확인 필요 등)"
+          rows={3}
+          style={{
+            width: '100%', padding: '10px 12px', borderRadius: 8,
+            border: '1px solid #E5E8EB', outline: 'none',
+            fontSize: 13, fontFamily: 'inherit', resize: 'vertical',
+            lineHeight: 1.5, boxSizing: 'border-box',
+            color: '#191F28', background: '#FAFBFC',
+          }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+          <button
+            onClick={handleSaveComment}
+            disabled={!commentDirty || savingComment}
+            style={{
+              padding: '7px 16px', borderRadius: 8,
+              background: commentDirty && !savingComment ? '#3182F6' : '#E5E8EB',
+              color: commentDirty && !savingComment ? '#FFFFFF' : '#ADB5BD',
+              border: 'none',
+              fontSize: 13, fontWeight: 600,
+              cursor: (commentDirty && !savingComment) ? 'pointer' : 'default',
+              transition: 'background 0.15s',
+            }}
+          >
+            {savingComment ? '저장 중...' : '저장'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -912,6 +967,18 @@ export default function AdminApp() {
     }
   };
 
+  // 제보 어드민 메모 저장
+  const handleReportCommentSave = async (id: string, comment: string) => {
+    const next = comment.length > 0 ? comment : null;
+    setReports(prev => prev.map(r => r.id === id ? { ...r, admin_comment: next } : r));
+    const { error } = await supabase.from('reports').update({ admin_comment: next }).eq('id', id);
+    if (error) {
+      alert('메모 저장 실패: ' + error.message);
+      const { data } = await supabase.from('reports').select('*').eq('id', id).maybeSingle();
+      if (data) setReports(prev => prev.map(r => r.id === id ? (data as Report) : r));
+    }
+  };
+
   if (checkingAuth) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F9FAFB', color: '#6B7684', fontSize: 14 }}>
@@ -975,7 +1042,12 @@ export default function AdminApp() {
               <p style={{ color: '#8B95A1', textAlign: 'center', marginTop: 60 }}>제보가 없어요</p>
             ) : (
               reports.map(r => (
-                <ReportCard key={r.id} report={r} onStatusChange={handleReportStatusChange} />
+                <ReportCard
+                  key={r.id}
+                  report={r}
+                  onStatusChange={handleReportStatusChange}
+                  onCommentSave={handleReportCommentSave}
+                />
               ))
             )}
           </>
