@@ -259,7 +259,8 @@ function ReportCard({ report, onStatusChange, onCommentSave }: {
   onStatusChange: (id: string, status: string) => Promise<void>;
   onCommentSave: (id: string, comment: string) => Promise<void>;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [cardExpanded, setCardExpanded] = useState(false);
+  const [photosOpen, setPhotosOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [comment, setComment] = useState(report.admin_comment ?? '');
   const [savingComment, setSavingComment] = useState(false);
@@ -286,38 +287,65 @@ function ReportCard({ report, onStatusChange, onCommentSave }: {
 
   return (
     <div style={{ background: '#fff', borderRadius: 14, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-        <div>
-          <span style={{ fontSize: 16, fontWeight: 700, color: '#191F28' }}>{report.store_name}</span>
-          <span style={{ fontSize: 12, color: '#8B95A1', marginLeft: 8 }}>{date}</span>
+      {/* ── 요약 영역 (항상 보임) — 클릭 시 펼치기/접기 토글 ── */}
+      <div
+        onClick={() => setCardExpanded(v => !v)}
+        style={{ cursor: 'pointer' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#191F28' }}>{report.store_name}</span>
+            <span style={{ fontSize: 12, color: '#8B95A1', marginLeft: 8 }}>{date}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <span style={{
+              fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
+              background: meta.bg, color: meta.fg,
+            }}>
+              {meta.label}
+            </span>
+            <svg
+              width="16" height="16" viewBox="0 0 16 16" fill="none"
+              style={{ transition: 'transform 0.2s', transform: cardExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            >
+              <path d="M4 6L8 10L12 6" stroke="#8B95A1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
         </div>
-        <span style={{
-          fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
-          background: meta.bg, color: meta.fg,
-        }}>
-          {meta.label}
-        </span>
+
+        <div style={{ marginBottom: 10 }}>
+          <StatusBadge label="콘센트" value={report.outlet_status} />
+          <StatusBadge label="좌석" value={report.seat_status} />
+          <StatusBadge label="소음" value={report.noise_status} />
+        </div>
+
+        {report.content && (
+          <p style={{
+            fontSize: 14, color: '#4E5968', lineHeight: 1.6,
+            marginBottom: cardExpanded ? 10 : 0,
+            // 접힌 상태에선 2줄까지만 표시
+            ...(cardExpanded ? {} : {
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical' as const,
+            }),
+          }}>{report.content}</p>
+        )}
       </div>
 
-      <div style={{ marginBottom: 10 }}>
-        <StatusBadge label="콘센트" value={report.outlet_status} />
-        <StatusBadge label="좌석" value={report.seat_status} />
-        <StatusBadge label="소음" value={report.noise_status} />
-      </div>
-
-      {report.content && (
-        <p style={{ fontSize: 14, color: '#4E5968', lineHeight: 1.6, marginBottom: 10 }}>{report.content}</p>
-      )}
-
+      {/* ── 펼침 영역 (cardExpanded 시에만 표시) ── */}
+      {!cardExpanded ? null : (
+        <>
       {report.photo_urls?.length > 0 && (
         <div style={{ marginBottom: 12 }}>
           <button
-            onClick={() => setExpanded(e => !e)}
+            onClick={() => setPhotosOpen(o => !o)}
             style={{ fontSize: 13, color: '#3182F6', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 8 }}
           >
-            사진 {report.photo_urls.length}장 {expanded ? '접기 ▲' : '보기 ▼'}
+            사진 {report.photo_urls.length}장 {photosOpen ? '접기 ▲' : '보기 ▼'}
           </button>
-          {expanded && (
+          {photosOpen && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {report.photo_urls.map((url, i) => (
                 <a key={i} href={url} target="_blank" rel="noreferrer">
@@ -395,6 +423,8 @@ function ReportCard({ report, onStatusChange, onCommentSave }: {
           </button>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
