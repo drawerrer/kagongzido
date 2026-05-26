@@ -66,7 +66,7 @@ export default function AddStoreSheet({
           position: 'absolute',
           bottom: 0, left: 0, right: 0,
           height: expanded ? '92%' : '55%',
-          backgroundColor: '#F3F3F3',
+          backgroundColor: '#FFFFFF',
           borderRadius: '20px 20px 0 0',
           display: 'flex', flexDirection: 'column',
           transition: 'height 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -230,20 +230,20 @@ export default function AddStoreSheet({
           bottom: 0, left: 0, right: 0,
         }}>
           {!hasSelection ? (
-            <SheetCTA.Single label="완료" onClick={onClose} variant="secondary" background="#F3F3F3" />
+            <SheetCTA.Single label="완료" onClick={onClose} variant="secondary" background="#FFFFFF" />
           ) : (
             <SheetCTA.Double
               leftLabel="닫기"
               leftOnClick={onClose}
               rightLabel="확인"
               rightOnClick={() => onConfirm([...selectedIds])}
-              background="#F3F3F3"
+              background="#FFFFFF"
             />
           )}
-          {/* safe-area 영역 보강용 솔리드 스트립 */}
+          {/* safe-area 영역 보강용 솔리드 스트립 — 시트 본문 흰색과 일치 */}
           <div style={{
             height: 'max(12px, env(safe-area-inset-bottom))',
-            background: '#F3F3F3',
+            background: '#FFFFFF',
           }} />
         </div>
       </div>

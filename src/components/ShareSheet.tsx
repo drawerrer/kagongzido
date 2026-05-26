@@ -207,7 +207,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
           marginTop: 20,
-          backgroundColor: '#F3F3F3',
+          backgroundColor: '#FFFFFF',
           borderRadius: 12, padding: '10px 14px',
           border: '1px solid #E5E8EB',
         }}>
@@ -236,8 +236,8 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
           </button>
         </div>
 
-        {/* 닫기 버튼 (SheetCTA 통일) */}
-        <SheetCTA.Single label="닫기" onClick={onClose} variant="secondary" background="#F3F3F3" />
+        {/* 닫기 버튼 (SheetCTA 통일) — TDS 시트 기본 흰색 매칭 */}
+        <SheetCTA.Single label="닫기" onClick={onClose} variant="secondary" background="#FFFFFF" />
       </div>
     </BottomSheet>
   );

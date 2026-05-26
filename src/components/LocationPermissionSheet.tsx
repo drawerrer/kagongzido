@@ -218,25 +218,25 @@ export default function LocationPermissionSheet({
             <SheetCTA.Double
               leftLabel="아니요" leftOnClick={onClose}
               rightLabel="허용하기" rightOnClick={onAllow}
-              background="#F3F3F3"
+              background="#FFFFFF"
             />
           )}
           {type === 'denied' && (
             <SheetCTA.Double
               leftLabel="설정에서 변경하기" leftOnClick={onOpenSettings}
               rightLabel="확인" rightOnClick={onClose}
-              background="#F3F3F3"
+              background="#FFFFFF"
             />
           )}
           {type === 'reask' && (
             <SheetCTA.Double
               leftLabel="나중에" leftOnClick={onClose}
               rightLabel="허용하기" rightOnClick={onOpenSettings}
-              background="#F3F3F3"
+              background="#FFFFFF"
             />
           )}
           {type === 'granted' && (
-            <SheetCTA.Single label="확인" onClick={onClose} background="#F3F3F3" />
+            <SheetCTA.Single label="확인" onClick={onClose} background="#FFFFFF" />
           )}
         </div>
       </div>
