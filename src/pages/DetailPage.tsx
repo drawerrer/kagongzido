@@ -1234,10 +1234,12 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       showFavoriteSnackbar('added');
     }
   };
-  // 진입 시 1회: 하트 클릭 리스너 등록 + 페이지 이탈 시 cleanup
-  // (아이콘 자체 업데이트는 아래 isFavorite useEffect 에서 처리)
+  // 하트 클릭 리스너 등록 + 페이지 이탈 시 cleanup
+  // embedded(지도 바텀시트) 모드라도 expanded(showHero=true) 상태면
+  // 전체화면처럼 동작하므로 네비바 하트 액세서리 활성화.
+  const heartActive = !embedded || showHero;
   useEffect(() => {
-    if (embedded) return undefined;
+    if (!heartActive) return undefined;
     try {
       const cleanup = tdsEvent.addEventListener('navigationAccessoryEvent', {
         onEvent: ({ id }: { id: string }) => { if (id === 'heart') heartHandlerRef.current(); },
@@ -1251,7 +1253,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       return undefined;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [embedded]);
+  }, [heartActive]);
 
   const [copyToastVisible, setCopyToastVisible] = useState(false);
   const [reviewToastVisible, setReviewToastVisible] = useState(false);
@@ -1287,8 +1289,9 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   //   비찜 → icon-heart-whiteline-mono (빈 하트, outline)
   //   찜  → icon-heart-mono           (채워진 하트)
   // addAccessoryButton 을 같은 id 로 재호출하면 아이콘만 교체됨.
+  // heartActive 가 false (embedded 이면서 not expanded) 면 등록 X.
   useEffect(() => {
-    if (embedded) return;
+    if (!heartActive) return;
     try {
       partner.addAccessoryButton({
         id: 'heart',
@@ -1296,7 +1299,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         icon: { name: isFavorite ? 'icon-heart-mono' : 'icon-heart-whiteline-mono' },
       });
     } catch { /* noop */ }
-  }, [isFavorite, embedded]);
+  }, [isFavorite, heartActive]);
 
   const { label: statusLabel, color: statusColor } = getStatusInfo(cafe);
   const todayKey = getTodayKey();
