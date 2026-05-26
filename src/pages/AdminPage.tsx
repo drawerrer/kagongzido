@@ -241,9 +241,33 @@ function StatusBadge({ label, value }: { label: string; value: string | null }) 
   );
 }
 
-function ReportCard({ report }: { report: Report }) {
+// ─ 제보 상태 옵션 (DB CHECK 제약과 일치) ─
+const REPORT_STATUS_OPTIONS = [
+  { value: 'pending',   label: '대기 중',   bg: '#FFF3CD', fg: '#856404' },
+  { value: 'reviewing', label: '검토 중',   bg: '#CCE5FF', fg: '#004085' },
+  { value: 'resolved',  label: '완료',     bg: '#D4EDDA', fg: '#155724' },
+  { value: 'rejected',  label: '반려',     bg: '#F8D7DA', fg: '#721C24' },
+] as const;
+
+function getStatusMeta(status: string) {
+  return REPORT_STATUS_OPTIONS.find(o => o.value === status) ?? REPORT_STATUS_OPTIONS[0];
+}
+
+function ReportCard({ report, onStatusChange }: {
+  report: Report;
+  onStatusChange: (id: string, status: string) => Promise<void>;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const date = new Date(report.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+  const meta = getStatusMeta(report.status);
+
+  const handleChange = async (next: string) => {
+    if (next === report.status || updating) return;
+    setUpdating(true);
+    await onStatusChange(report.id, next);
+    setUpdating(false);
+  };
 
   return (
     <div style={{ background: '#fff', borderRadius: 14, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 12 }}>
@@ -254,10 +278,9 @@ function ReportCard({ report }: { report: Report }) {
         </div>
         <span style={{
           fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
-          background: report.status === 'pending' ? '#FFF3CD' : report.status === 'approved' ? '#D4EDDA' : '#F8D7DA',
-          color: report.status === 'pending' ? '#856404' : report.status === 'approved' ? '#155724' : '#721C24',
+          background: meta.bg, color: meta.fg,
         }}>
-          {report.status === 'pending' ? '검토 중' : report.status === 'approved' ? '승인' : '반려'}
+          {meta.label}
         </span>
       </div>
 
@@ -272,7 +295,7 @@ function ReportCard({ report }: { report: Report }) {
       )}
 
       {report.photo_urls?.length > 0 && (
-        <div>
+        <div style={{ marginBottom: 12 }}>
           <button
             onClick={() => setExpanded(e => !e)}
             style={{ fontSize: 13, color: '#3182F6', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 8 }}
@@ -290,6 +313,33 @@ function ReportCard({ report }: { report: Report }) {
           )}
         </div>
       )}
+
+      {/* 상태 변경 버튼 그룹 */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', borderTop: '1px solid #F2F4F6', paddingTop: 12 }}>
+        <span style={{ fontSize: 12, color: '#8B95A1', alignSelf: 'center', marginRight: 4 }}>상태 변경:</span>
+        {REPORT_STATUS_OPTIONS.map(opt => {
+          const active = opt.value === report.status;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => handleChange(opt.value)}
+              disabled={updating || active}
+              style={{
+                padding: '5px 12px', borderRadius: 8,
+                background: active ? opt.bg : '#FFFFFF',
+                color: active ? opt.fg : '#6B7684',
+                border: active ? `1px solid ${opt.fg}33` : '1px solid #E5E8EB',
+                fontSize: 12, fontWeight: 600,
+                cursor: (updating || active) ? 'default' : 'pointer',
+                opacity: updating && !active ? 0.5 : 1,
+                transition: 'all 0.15s',
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -850,6 +900,18 @@ export default function AdminApp() {
       });
   }, [authed]);
 
+  // 제보 상태 변경 (낙관적 업데이트 + Supabase 동기화)
+  const handleReportStatusChange = async (id: string, status: string) => {
+    setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+    const { error } = await supabase.from('reports').update({ status }).eq('id', id);
+    if (error) {
+      alert('상태 변경 실패: ' + error.message);
+      // 롤백
+      const { data } = await supabase.from('reports').select('*').eq('id', id).maybeSingle();
+      if (data) setReports(prev => prev.map(r => r.id === id ? (data as Report) : r));
+    }
+  };
+
   if (checkingAuth) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F9FAFB', color: '#6B7684', fontSize: 14 }}>
@@ -912,7 +974,9 @@ export default function AdminApp() {
             ) : reports.length === 0 ? (
               <p style={{ color: '#8B95A1', textAlign: 'center', marginTop: 60 }}>제보가 없어요</p>
             ) : (
-              reports.map(r => <ReportCard key={r.id} report={r} />)
+              reports.map(r => (
+                <ReportCard key={r.id} report={r} onStatusChange={handleReportStatusChange} />
+              ))
             )}
           </>
         )}
