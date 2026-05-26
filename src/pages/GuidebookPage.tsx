@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo, useId, type RefObjec
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import { useFavorites } from '../context/FavoritesContext';
-import { openURL } from '@apps-in-toss/web-framework';
+import { openURL, partner, tdsEvent } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { CTAButton } from '@toss/tds-mobile';
 import SubButton from '../components/SubButton';
@@ -836,6 +836,32 @@ export default function GuidebookPage({
 
   // SDK 백 이벤트 — 오버레이 열려 있으면 등록 안 함 (다른 리스너에 위임)
   useBackEvent(handleBack, !hasOverlay);
+
+  // ── 내비게이션 액세서리: 공유 아이콘 ──
+  // 가이드북 페이지 (모든 view) 에서 우측 상단에 공유 아이콘 노출.
+  // 클릭 시 ShareSheet 오픈.
+  useEffect(() => {
+    if (hasOverlay) return undefined;
+    try {
+      partner.addAccessoryButton({
+        id: 'guidebook-share',
+        title: '공유',
+        icon: { name: 'icon-share-mono' },
+      });
+      const cleanup = tdsEvent.addEventListener('navigationAccessoryEvent', {
+        onEvent: ({ id }: { id: string }) => {
+          if (id === 'guidebook-share') setShowShareSheet(true);
+        },
+        onError: () => {},
+      });
+      return () => {
+        try { partner.removeAccessoryButton(); } catch { /* noop */ }
+        cleanup?.();
+      };
+    } catch {
+      return undefined;
+    }
+  }, [hasOverlay]);
 
   const handleSave = (store: GuidebookStore) => {
     if (!isFavorited(store.id)) {
