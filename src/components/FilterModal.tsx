@@ -167,7 +167,6 @@ const MOOD_CHIPS = ['웜톤 조명', '화이트 조명', '로우톤 조명', '�
 
 // 피그마 옵션 칩 목록 (TDS SVG 아이콘 + 텍스트, fs=12)
 const OPTION_CHIPS: { icon: ReactNode; label: string }[] = [
-  { icon: <FiOutlet />,      label: '콘센트 충분' },
   { icon: <FiSoundOn />,     label: '소음 적당' },
   { icon: <FiSoundOff />,    label: '조용' },
   { icon: <FiPublicToilet />, label: '남/녀 화장실 구분' },

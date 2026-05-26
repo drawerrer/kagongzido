@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getCurrentLocation, Accuracy } from '@apps-in-toss/web-framework';
+import { getCurrentLocation, Accuracy, partner, tdsEvent } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { Toast } from '@toss/tds-mobile';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
@@ -176,6 +176,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
 
   const [mapLoaded, setMapLoaded] = useState(false);
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
+  const [mapBounds, setMapBounds] = useState<{ swLat: number; swLng: number; neLat: number; neLng: number } | null>(null);
   const [heading, setHeading] = useState<number | null>(null);
   const { addFavorite } = useFavorites();
 
@@ -186,6 +187,7 @@ const [filterOpen, setFilterOpen] = useState(false);
   const [panelState, setPanelState] = useState<PanelState>(initialState?.panelState ?? 'half');
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
   const [selectedMapCafe, setSelectedMapCafe] = useState<Cafe | null>(null);
+  const [detailScrolled, setDetailScrolled] = useState(false);
 
   type GpsStatus = 'granted' | 'denied' | 'unknown';
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('unknown');
@@ -196,6 +198,22 @@ const [filterOpen, setFilterOpen] = useState(false);
 
   // cafesRef 항상 최신 유지
   useEffect(() => { cafesRef.current = cafes; }, [cafes]);
+
+  // ── 네비게이션 바 우측 검색 버튼 등록 ────────────────────
+  useEffect(() => {
+    try {
+      partner.addAccessoryButton({ id: 'search', title: '검색', icon: { name: 'icon-search-mono' } });
+    } catch {}
+    let cleanup: (() => void) | undefined;
+    try {
+      cleanup = tdsEvent.addEventListener('navigationAccessoryEvent', {
+        onEvent: ({ id }: { id: string }) => {
+          if (id === 'search') onSearchOpen();
+        },
+      });
+    } catch {}
+    return () => { try { cleanup?.(); } catch {} };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 지도 패널 열린 상태에서 백 → 패널 닫기 (그 외엔 SDK 기본 동작 = 앱 종료)
   useBackEvent(
@@ -220,6 +238,14 @@ const [filterOpen, setFilterOpen] = useState(false);
 
   const filteredCafes = (() => {
     let filtered = activeChip ? cafes.filter(c => c.tags.includes(activeChip)) : [...cafes];
+    // 현재 지도 뷰에 보이는 카페만 표시
+    if (mapBounds) {
+      filtered = filtered.filter(c =>
+        c.lat != null && c.lng != null &&
+        c.lat >= mapBounds.swLat && c.lat <= mapBounds.neLat &&
+        c.lng >= mapBounds.swLng && c.lng <= mapBounds.neLng
+      );
+    }
     if (appliedFilters.moods.length > 0) filtered = filtered.filter(c => appliedFilters.moods.includes(c.mood));
     if (appliedFilters.priceMax < DEFAULT_FILTERS.priceMax) filtered = filtered.filter(c => c.priceRange <= appliedFilters.priceMax);
     if (appliedFilters.options.length > 0) filtered = filtered.filter(c => appliedFilters.options.every(opt => c.options.includes(opt)));
@@ -293,6 +319,20 @@ const [filterOpen, setFilterOpen] = useState(false);
     window.kakao.maps.event.addListener(map, 'zoom_changed', () => {
       setPanelState('minimized');
     });
+
+    // ── 현재 지도 뷰 bounds → 바텀시트 카페 필터링 ──
+    const updateBounds = () => {
+      const b = map.getBounds();
+      setMapBounds({
+        swLat: b.getSouthWest().getLat(),
+        swLng: b.getSouthWest().getLng(),
+        neLat: b.getNorthEast().getLat(),
+        neLng: b.getNorthEast().getLng(),
+      });
+    };
+    window.kakao.maps.event.addListener(map, 'bounds_changed', updateBounds);
+    // 초기 bounds 설정 (지도 렌더 완료 후)
+    setTimeout(updateBounds, 100);
 
   }, [mapLoaded]);
 
@@ -536,29 +576,13 @@ const [filterOpen, setFilterOpen] = useState(false);
         ref={mapContainerRef}
         style={{
           position: 'absolute',
-          top: 'calc(env(safe-area-inset-top) + 72px)',
+          top: 'env(safe-area-inset-top)',
           bottom: panelState === 'expanded' ? 0 : panelState === 'minimized' ? MAP_MIN_BOTTOM : 'calc(50vh - 20px)',
           left: 0, right: 0,
           zIndex: 0,
           transition: 'bottom 0.3s ease',
         }}
       />
-
-      {/* ── 상단 검색바 + 필터 ── */}
-      <div style={{ position: 'absolute', top: 'env(safe-area-inset-top)', left: 0, right: 0, zIndex: 20, padding: '14px 16px', background: '#f3f3f3' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div onClick={onSearchOpen} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: '#ffffff', borderRadius: 12, height: 44, padding: '0 10px' }}>
-            <SearchIcon />
-            <span style={{ color: 'rgba(3,24,50,0.46)', fontSize: 17, fontWeight: 510 }}>검색어를 입력하세요.</span>
-          </div>
-          <button
-            onClick={() => { setFilterOpenKey(k => k + 1); setFilterOpen(true); }}
-            style={{ width: 52, height: 32, borderRadius: 999, flexShrink: 0, background: filterApplied ? '#191F28' : 'rgba(7,25,76,0.05)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
-          >
-            <FilterIcon active={filterApplied} />
-          </button>
-        </div>
-      </div>
 
       {/* ── GPS 버튼 ── */}
       <button
@@ -624,19 +648,20 @@ const [filterOpen, setFilterOpen] = useState(false);
             <DetailPage
               embedded
               cafeId={selectedMapCafe.id}
-              onBack={() => { setSelectedMapCafe(null); setPanelState('half'); }}
-              onClose={() => { setSelectedMapCafe(null); setPanelState('half'); }}
+              onBack={() => { setSelectedMapCafe(null); setPanelState('half'); setDetailScrolled(false); }}
+              onClose={() => { setSelectedMapCafe(null); setPanelState('half'); setDetailScrolled(false); }}
               onSwipeDown={() => { setPanelState('half'); }}
               showHero={panelState === 'expanded'}
               onFocusModeChange={onFocusModeChange}
+              onScrollChange={setDetailScrolled}
             />
-            {panelState !== 'expanded' && <button
-              onClick={() => { setSelectedMapCafe(null); setPanelState('half'); }}
+            {panelState !== 'expanded' && !detailScrolled && <button
+              onClick={() => { setSelectedMapCafe(null); setPanelState('half'); setDetailScrolled(false); }}
               style={{
                 position: 'absolute', top: 20, right: 20,
                 background: 'none', border: 'none', cursor: 'pointer',
                 padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: 10,
+                zIndex: 100,
               }}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -653,6 +678,20 @@ const [filterOpen, setFilterOpen] = useState(false);
               padding: panelState === 'expanded' ? '20px 16px 8px' : '8px 16px',
               flexShrink: 0, scrollbarWidth: 'none',
             }}>
+              <button
+                onClick={() => { setFilterOpenKey(k => k + 1); setFilterOpen(true); }}
+                style={{
+                  flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  height: 32, padding: '0 12px',
+                  borderRadius: 999,
+                  background: filterApplied ? '#191F28' : 'rgba(7,25,76,0.05)',
+                  border: 'none', cursor: 'pointer',
+                  transition: 'background 0.2s',
+                }}
+              >
+                <FilterIcon active={filterApplied} />
+              </button>
               {CATEGORY_CHIPS.map(chip => (
                 <Chip key={chip} label={chip} isActive={activeChip === chip} onClick={() => setActiveChip(activeChip === chip ? null : chip)} />
               ))}
