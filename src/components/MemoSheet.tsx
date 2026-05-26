@@ -23,7 +23,7 @@ export default function MemoSheet({ initialMemo, onApply, onClose }: MemoSheetPr
       onClick={onClose}
     >
       <div style={{ margin: '0 10px' }} onClick={e => e.stopPropagation()}>
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '28px 28px 0 0', overflow: 'hidden' }}>
+        <div style={{ backgroundColor: '#F3F3F3', borderRadius: '28px 28px 0 0', overflow: 'hidden' }}>
           {/* 핸들 */}
           <div style={{ height: 41, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ width: 48, height: 4, borderRadius: 40, backgroundColor: '#e5e8eb' }} />
