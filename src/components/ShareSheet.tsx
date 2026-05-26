@@ -138,7 +138,10 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose}>
-      <div style={{ padding: '0 20px 0', paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }}>
+      <div style={{ paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }}>
+
+        {/* 콘텐츠 영역 — 좌우 20px 패딩 (SheetCTA 는 풀너비라 별도 처리) */}
+        <div style={{ padding: '0 20px' }}>
 
         {/* 타이틀 */}
         <p style={{
@@ -236,7 +239,9 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
           </button>
         </div>
 
-        {/* 닫기 버튼 (SheetCTA 통일) — TDS 시트 기본 흰색 매칭 */}
+        </div>{/* /콘텐츠 영역 */}
+
+        {/* 닫기 버튼 (SheetCTA 통일) — 시트 좌우 끝까지 풀너비 */}
         <SheetCTA.Single label="닫기" onClick={onClose} variant="secondary" background="#FFFFFF" />
       </div>
     </BottomSheet>
