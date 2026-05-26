@@ -152,12 +152,12 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
           공유하기
         </p>
 
-        {/* 앱 아이콘 가로 목록 */}
+        {/* 앱 아이콘 가로 목록 — 좌측 정렬 */}
         <div style={{
           display: 'flex', gap: 16,
           overflowX: 'auto', paddingBottom: 4,
           scrollbarWidth: 'none',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
         }}>
           {SHARE_APPS.map(app => (
             <button
