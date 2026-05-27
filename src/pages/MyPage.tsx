@@ -208,12 +208,12 @@ function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (
           const statusMeta = cafe.reportStatus ? REPORT_STATUS_META[cafe.reportStatus] : null;
           return (
           <div key={cafe.id} style={{ cursor: 'pointer' }} onClick={() => onDetailOpen?.(cafe.id)}>
-            {/* 썸네일 */}
+            {/* 썸네일 — 사진 있으면 그라데이션 위에 표시 / 없으면 흰 배경 + 로고 폴백 */}
             <div style={{
               width: '100%',
               aspectRatio: '1/1',
               borderRadius: 10,
-              background: cafe.bg,
+              background: cafe.photo ? cafe.bg : '#FFFFFF',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               marginBottom: 8,
               overflow: 'hidden',
@@ -222,13 +222,13 @@ function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (
               {cafe.photo ? (
                 <img src={cafe.photo} alt={cafe.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
               ) : (
-                // 사진 미첨부 시 서비스 로고 폴백 표시
+                // 사진 미첨부 시 서비스 로고 폴백 (흰 배경 위 원본 톤, 흐리게)
                 <img
                   src={LogoImg}
                   alt="카공지도"
                   style={{
-                    width: '40%', height: '40%', objectFit: 'contain',
-                    opacity: 0.25, filter: 'brightness(0) invert(1)',
+                    width: '50%', height: '50%', objectFit: 'contain',
+                    opacity: 0.4,
                   }}
                 />
               )}
