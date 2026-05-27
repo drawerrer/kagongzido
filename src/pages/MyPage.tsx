@@ -216,12 +216,17 @@ function CafeGrid({ cafes, onDetailOpen, cardShadow = false }: { cafes: CafeItem
           const statusMeta = cafe.reportStatus ? REPORT_STATUS_META[cafe.reportStatus] : null;
           return (
           <div key={cafe.id} style={{ cursor: 'pointer' }} onClick={() => onDetailOpen?.(cafe.id)}>
-            {/* 썸네일 — 사진 있으면 그라데이션 위에 표시 / 없으면 흰 배경 + 로고 폴백 */}
+            {/* 썸네일 — 사진 있으면 그라데이션 위에 표시 / 없으면 라디얼 그라데이션 + 로고 폴백 */}
             <div style={{
               width: '100%',
               aspectRatio: '1/1',
               borderRadius: 10,
-              background: cafe.photo ? cafe.bg : '#FFFFFF',
+              // 사진 없을 때: 중앙(#F3F3F3) → 모서리(#FFFFFF) 라디얼 그라데이션
+              //   → 로고 PNG 의 회색 배경이 카드 중앙과 매끄럽게 이어지고
+              //   → 모서리는 흰색이라 회색 페이지 배경과 카드 경계가 또렷
+              background: cafe.photo
+                ? cafe.bg
+                : 'radial-gradient(circle at center, #F3F3F3 30%, #FFFFFF 100%)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               marginBottom: 8,
               overflow: 'hidden',
@@ -229,15 +234,21 @@ function CafeGrid({ cafes, onDetailOpen, cardShadow = false }: { cafes: CafeItem
               boxShadow: cardShadow ? '0 1px 3px rgba(0,0,0,0.06)' : undefined,
             }}>
               {cafe.photo ? (
-                <img src={cafe.photo} alt={cafe.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+                <img
+                  src={cafe.photo}
+                  alt={cafe.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
+                  // 이미지 로드 실패 시 → src 제거하여 로고 폴백 보이도록
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
               ) : (
-                // 사진 미첨부 시 서비스 로고 폴백 (흰 배경 위 원본 톤, 흐리게)
+                // 사진 미첨부 시 서비스 로고 폴백 (라디얼 그라데이션 중앙에 작게)
                 <img
                   src={LogoImg}
                   alt="카공지도"
                   style={{
-                    width: '50%', height: '50%', objectFit: 'contain',
-                    opacity: 0.4,
+                    width: '35%', height: '35%', objectFit: 'contain',
+                    opacity: 0.5,
                   }}
                 />
               )}
