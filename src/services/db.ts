@@ -516,6 +516,9 @@ export interface UserReviewRow {
   store_address: string;
   store_thumbnail: string;
   content: string;
+  outlet_status: string;
+  seat_status: string;
+  noise_status: string;
   photo_urls: string[];
   created_at: string;
 }
@@ -524,7 +527,7 @@ export async function fetchUserReviews(userId: string): Promise<UserReviewRow[]>
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('reviews')
-    .select('id, store_id, content, photo_urls, created_at, stores(name, address_road, thumbnail_url, api_place_id)')
+    .select('id, store_id, content, outlet_status, seat_status, noise_status, photo_urls, created_at, stores(name, address_road, thumbnail_url, api_place_id)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -540,6 +543,9 @@ export async function fetchUserReviews(userId: string): Promise<UserReviewRow[]>
       store_address: (store?.address_road ?? '') as string,
       store_thumbnail: (store?.thumbnail_url ?? '') as string,
       content: row.content as string,
+      outlet_status: (row.outlet_status ?? '') as string,
+      seat_status: (row.seat_status ?? '') as string,
+      noise_status: (row.noise_status ?? '') as string,
       photo_urls: (row.photo_urls ?? []) as string[],
       created_at: row.created_at as string,
     };
@@ -553,9 +559,18 @@ export async function deleteReview(reviewId: string): Promise<boolean> {
   return true;
 }
 
-export async function updateReview(reviewId: string, content: string, photoUrls: string[]): Promise<boolean> {
+export async function updateReview(
+  reviewId: string,
+  content: string,
+  photoUrls: string[],
+  evalState?: { outlet_status?: string; seat_status?: string; noise_status?: string },
+): Promise<boolean> {
   if (!supabase) return false;
-  const { error } = await supabase.from('reviews').update({ content, photo_urls: photoUrls }).eq('id', reviewId);
+  const updates: Record<string, unknown> = { content, photo_urls: photoUrls };
+  if (evalState?.outlet_status !== undefined) updates.outlet_status = evalState.outlet_status;
+  if (evalState?.seat_status !== undefined) updates.seat_status = evalState.seat_status;
+  if (evalState?.noise_status !== undefined) updates.noise_status = evalState.noise_status;
+  const { error } = await supabase.from('reviews').update(updates).eq('id', reviewId);
   if (error) { console.error('updateReview:', error); return false; }
   return true;
 }

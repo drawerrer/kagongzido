@@ -56,6 +56,9 @@ interface ReviewItem {
   date: string;
   content: string;
   photos: string[];
+  outlet_status: string;
+  seat_status: string;
+  noise_status: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -85,6 +88,9 @@ function mapReviewRow(row: UserReviewRow, idx: number): ReviewItem {
     date: row.created_at.slice(0, 10).replace(/-/g, '.'),
     content: row.content,
     photos: row.photo_urls,
+    outlet_status: row.outlet_status,
+    seat_status: row.seat_status,
+    noise_status: row.noise_status,
   };
 }
 
@@ -420,6 +426,14 @@ function RecentCafePage({
 // ─────────────────────────────────────────────────────────────
 // 서브 페이지: 수정하기
 // ─────────────────────────────────────────────────────────────
+const MY_EVAL_CATEGORIES = [
+  { id: 'outlet_status' as const, label: '콘센트', options: ['부족', '적당', '넉넉'] },
+  { id: 'seat_status'   as const, label: '좌석',   options: ['불편', '적당', '편안'] },
+  { id: 'noise_status'  as const, label: '소음',   options: ['시끄러움', '적당', '조용'] },
+];
+type MyEvalId = 'outlet_status' | 'seat_status' | 'noise_status';
+type MyEvalState = Partial<Record<MyEvalId, string>>;
+
 function ReviewEditPage({
   review,
   onBack,
@@ -429,10 +443,18 @@ function ReviewEditPage({
   review: ReviewItem;
   onBack: () => void;
   onClose: () => void;
-  onSave: (text: string, photos: string[]) => void;
+  onSave: (text: string, photos: string[], evalState: MyEvalState) => void;
 }) {
   const [text, setText] = useState(review.content);
   const [photos, setPhotos] = useState<string[]>(review.photos);
+  const [evalState, setEvalState] = useState<MyEvalState>({
+    outlet_status: review.outlet_status || undefined,
+    seat_status:   review.seat_status   || undefined,
+    noise_status:  review.noise_status  || undefined,
+  });
+  const toggleChip = (id: MyEvalId, option: string) => {
+    setEvalState(prev => prev[id] === option ? { ...prev, [id]: undefined } : { ...prev, [id]: option });
+  };
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -440,7 +462,7 @@ function ReviewEditPage({
   const handleCancel = () => setShowCancelDialog(true);
 
   const handleSave = () => {
-    onSave(text, photos);
+    onSave(text, photos, evalState);
     setSaved(true);
     setTimeout(() => onBack(), 1200);
   };
@@ -492,6 +514,36 @@ function ReviewEditPage({
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{review.cafeAddress}</p>
           </div>
+        </div>
+
+        {/* 평가 칩 */}
+        <div style={{ padding: '24px 20px 0' }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28', marginBottom: 16 }}>이 카페를 평가해주세요</p>
+          {MY_EVAL_CATEGORIES.map(cat => (
+            <div key={cat.id} style={{ marginBottom: 20 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#4E5968', marginBottom: 10 }}>{cat.label}</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {cat.options.map(option => {
+                  const isSelected = evalState[cat.id] === option;
+                  return (
+                    <button
+                      key={option}
+                      onClick={() => toggleChip(cat.id, option)}
+                      style={{
+                        flex: 1, height: 40, borderRadius: 20, border: 'none',
+                        background: isSelected ? '#252525' : '#E7E8EB',
+                        color: isSelected ? '#ffffff' : 'rgba(3,18,40,0.7)',
+                        fontSize: 14, fontWeight: isSelected ? 700 : 400,
+                        transition: 'all 0.15s', cursor: 'pointer',
+                      }}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* 사진 기록 */}
@@ -1728,9 +1780,13 @@ export default function MyPage({
           review={editingReview}
           onBack={() => setEditingReview(null)}
           onClose={() => { setEditingReview(null); changeSubPage(null); }}
-          onSave={async (text, photos) => {
+          onSave={async (text, photos, evalState) => {
             if (editingReview) {
-              await updateReview(editingReview.id, text, photos);
+              await updateReview(editingReview.id, text, photos, {
+                outlet_status: evalState.outlet_status ?? '',
+                seat_status:   evalState.seat_status   ?? '',
+                noise_status:  evalState.noise_status  ?? '',
+              });
               setReviewRefreshTrigger(t => t + 1);
             }
             setEditingReview(null);

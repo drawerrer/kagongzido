@@ -176,6 +176,9 @@ interface ReviewItem {
   isReporter?: boolean;   // 카페 제보자 여부 → 항상 최상단
   likeCount?: number;     // 좋아요 수
   isMyReview?: boolean;   // 본인이 작성한 리뷰 여부
+  outlet_status?: string; // 콘센트 평가
+  seat_status?: string;   // 좌석 평가
+  noise_status?: string;  // 소음 평가
 }
 
 interface CafeDetailData {
@@ -1065,30 +1068,58 @@ function rowToReviewItem(row: ReviewRow): ReviewItem {
     content: row.content,
     photo_urls: row.photo_urls ?? [],
     likeCount: row.like_count,
+    outlet_status: row.outlet_status,
+    seat_status: row.seat_status,
+    noise_status: row.noise_status,
   };
 }
 
 // ── 내 리뷰 수정 페이지 ─────────────────────────────────────
+const REVIEW_EVAL_CATEGORIES = [
+  { id: 'outlet_status' as const, label: '콘센트', options: ['부족', '적당', '넉넉'] },
+  { id: 'seat_status'   as const, label: '좌석',   options: ['불편', '적당', '편안'] },
+  { id: 'noise_status'  as const, label: '소음',   options: ['시끄러움', '적당', '조용'] },
+];
+type ReviewEvalId = 'outlet_status' | 'seat_status' | 'noise_status';
+type ReviewEvalState = Partial<Record<ReviewEvalId, string>>;
+
 function EditMyReviewPage({
-  reviewId, cafeName, cafeAddress, initialContent, initialPhotos, onBack, onClose: _onClose, onSaved,
+  reviewId, cafeName, cafeAddress, initialContent, initialPhotos,
+  initialOutlet, initialSeat, initialNoise,
+  onBack, onClose: _onClose, onSaved,
 }: {
   reviewId: string;
   cafeName: string;
   cafeAddress: string;
   initialContent: string;
   initialPhotos: string[];
+  initialOutlet: string;
+  initialSeat: string;
+  initialNoise: string;
   onBack: () => void;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const [text, setText] = useState(initialContent);
   const [photos, setPhotos] = useState<string[]>(initialPhotos);
+  const [evalState, setEvalState] = useState<ReviewEvalState>({
+    outlet_status: initialOutlet || undefined,
+    seat_status:   initialSeat   || undefined,
+    noise_status:  initialNoise  || undefined,
+  });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
 
-  const hasChanged = text !== initialContent || photos.join(',') !== initialPhotos.join(',');
+  const toggleChip = (id: ReviewEvalId, option: string) => {
+    setEvalState(prev => prev[id] === option ? { ...prev, [id]: undefined } : { ...prev, [id]: option });
+  };
+
+  const hasChanged = text !== initialContent || photos.join(',') !== initialPhotos.join(',')
+    || evalState.outlet_status !== (initialOutlet || undefined)
+    || evalState.seat_status   !== (initialSeat   || undefined)
+    || evalState.noise_status  !== (initialNoise  || undefined);
   const handleBack = () => { if (hasChanged) { setShowCancelDialog(true); } else { onBack(); } };
   const removePhoto = (idx: number) => setPhotos(prev => prev.filter((_, i) => i !== idx));
 
@@ -1110,7 +1141,11 @@ function EditMyReviewPage({
   const handleSave = async () => {
     if (saving || saved) return;
     setSaving(true);
-    await updateReview(reviewId, text, photos);
+    await updateReview(reviewId, text, photos, {
+      outlet_status: evalState.outlet_status ?? '',
+      seat_status:   evalState.seat_status   ?? '',
+      noise_status:  evalState.noise_status  ?? '',
+    });
     setSaved(true);
     setSaving(false);
     setTimeout(() => onSaved(), 800);
@@ -1125,6 +1160,36 @@ function EditMyReviewPage({
             <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cafeName}</p>
             <p style={{ fontSize: 12, color: '#8B95A1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cafeAddress}</p>
           </div>
+        </div>
+
+        {/* 평가 칩 */}
+        <div style={{ padding: '24px 20px 0', background: '#f3f3f3' }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28', marginBottom: 16 }}>이 카페를 평가해주세요</p>
+          {REVIEW_EVAL_CATEGORIES.map(cat => (
+            <div key={cat.id} style={{ marginBottom: 20 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#4E5968', marginBottom: 10 }}>{cat.label}</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {cat.options.map(option => {
+                  const isSelected = evalState[cat.id] === option;
+                  return (
+                    <button
+                      key={option}
+                      onClick={() => toggleChip(cat.id, option)}
+                      style={{
+                        flex: 1, height: 40, borderRadius: 20, border: 'none',
+                        background: isSelected ? '#252525' : '#E7E8EB',
+                        color: isSelected ? '#ffffff' : 'rgba(3,18,40,0.7)',
+                        fontSize: 14, fontWeight: isSelected ? 700 : 400,
+                        transition: 'all 0.15s', cursor: 'pointer',
+                      }}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* 사진 기록 */}
@@ -1415,7 +1480,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
   const [deleteReviewTargetId, setDeleteReviewTargetId] = useState<string | null>(null);
-  const [editingMyReview, setEditingMyReview] = useState<{ id: string; content: string; photoUrls: string[] } | null>(null);
+  const [editingMyReview, setEditingMyReview] = useState<{ id: string; content: string; photoUrls: string[]; outlet_status: string; seat_status: string; noise_status: string } | null>(null);
 
   // 사진리뷰/리뷰작성/리뷰수정 — 탭바를 숨겨야 하는 풀스크린 액션 상태를 부모(App.tsx)에 전파
   useEffect(() => {
@@ -1610,6 +1675,9 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         cafeAddress={cafe.address}
         initialContent={editingMyReview.content}
         initialPhotos={editingMyReview.photoUrls}
+        initialOutlet={editingMyReview.outlet_status}
+        initialSeat={editingMyReview.seat_status}
+        initialNoise={editingMyReview.noise_status}
         onBack={() => setEditingMyReview(null)}
         onClose={onClose}
         onSaved={() => { setEditingMyReview(null); loadReviews(); }}
@@ -2096,7 +2164,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                         review={review}
                         initialLiked={likedReviewIds.has(review.id)}
                         onToggleLike={handleToggleReviewLike}
-                        onEditReview={() => setEditingMyReview({ id: review.id, content: review.content, photoUrls: review.photo_urls ?? [] })}
+                        onEditReview={() => setEditingMyReview({ id: review.id, content: review.content, photoUrls: review.photo_urls ?? [], outlet_status: review.outlet_status ?? '', seat_status: review.seat_status ?? '', noise_status: review.noise_status ?? '' })}
                         onDeleteReview={() => setDeleteReviewTargetId(review.id)}
                       />
                     ))}
