@@ -7,6 +7,7 @@ import { useBackEvent } from '../hooks/useBackEvent';
 import { fetchAllStores, type StoreRow } from '../services/db';
 import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
+import IcSearch from '../assets/icons/icon_search.svg?react';
 
 const SearchEmptyPlusIcon = (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
@@ -519,7 +520,7 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
           <div style={{ paddingTop: 10, paddingLeft: 10, paddingRight: 10 }}>
             {recentSearches.length === 0 ? (
               <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginTop:80, color:'rgba(3,18,40,0.30)' }}>
-                <span style={{ fontSize: 32 }}>🔍</span>
+                <IcSearch width={32} height={32} style={{ opacity: 0.45 }} />
                 <p style={{ fontSize: 14 }}>최근 검색어가 없어요</p>
               </div>
             ) : (
