@@ -29,7 +29,11 @@ export default defineConfig({
     },
   },
 
-  permissions: [{ name: 'geolocation', access: 'access' }],
+  permissions: [
+    { name: 'geolocation', access: 'access' },
+    { name: 'photos', access: 'read' },    // 제보/리뷰 사진 첨부 (갤러리)
+    { name: 'camera', access: 'access' },  // 제보/리뷰 사진 첨부 (카메라)
+  ],
   outdir: 'dist',
 
   brand: {
