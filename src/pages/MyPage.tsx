@@ -82,12 +82,15 @@ function mapReviewRow(row: UserReviewRow, idx: number): ReviewItem {
 function mapReportRow(row: UserReportRow, idx: number): CafeItem {
   // DB 의 status (text) 를 안전하게 UI 메타와 매칭. 누락/알 수 없는 값은 pending 처리.
   const status = (['pending', 'reviewing', 'resolved', 'rejected'] as const).find(s => s === row.status) ?? 'pending';
+  // 사진 첨부 시 첫 번째 사진 표시, 없으면 undefined → CafeGrid 가 그라데이션 + ☕ 이모지 노출
+  const firstPhoto = row.photo_urls?.[0];
   return {
     id: row.id,
     name: row.store_name,
     address: row.created_at.slice(0, 10).replace(/-/g, '.') + ' 제보',
     bg: CAFE_BG[idx % CAFE_BG.length],
     reportStatus: status,
+    photo: firstPhoto,
   };
 }
 
