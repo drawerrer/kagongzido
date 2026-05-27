@@ -786,10 +786,13 @@ const CHIP_OPTIONS: Record<string, string[]> = {
 function ReportCafePage({
   onBack,
   onClose,
+  onSubmitted,
   initialReport,
 }: {
   onBack: () => void;
   onClose: () => void;
+  /** 제보 INSERT 성공 시 호출 — 부모(MyPage) 가 카운트 재조회 트리거 */
+  onSubmitted?: () => void;
   /** 제공되면 읽기 전용 뷰 모드 — 사용자가 작성한 제보 내용 확인용 */
   initialReport?: UserReportRow;
 }) {
@@ -1195,6 +1198,7 @@ function ReportCafePage({
             photos,
           });
           setShowSubmitDialog(false);
+          onSubmitted?.();   // 부모(MyPage) 가 카운트 재조회
           onClose();
         }}>확인</ConfirmDialog.ConfirmButton>}
         onClose={() => setShowSubmitDialog(false)}
@@ -1234,10 +1238,11 @@ export default function MyPage({
 
   const { userId } = useFavorites();
   const [reportCount, setReportCount] = useState(0);
+  const [reportRefreshTrigger, setReportRefreshTrigger] = useState(0);
   useEffect(() => {
     if (!userId) return;
     fetchUserReports(userId).then(rows => setReportCount(rows.length));
-  }, [userId]);
+  }, [userId, reportRefreshTrigger]);
 
   // 부모(App.tsx)에 엣지스와이프용 back 핸들러 등록
   // 리뷰 작성·수정, 카페 제보, 리뷰 편집 중에는 폼 데이터 손실 방지를 위해 비활성화
@@ -1642,7 +1647,11 @@ export default function MyPage({
     {/* 스와이프 비활성 페이지 — ref 없음 */}
     {subPage === 'report-cafe' && (
       <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
-        <ReportCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} />
+        <ReportCafePage
+          onBack={() => changeSubPage(null)}
+          onClose={() => changeSubPage(null)}
+          onSubmitted={() => setReportRefreshTrigger(t => t + 1)}
+        />
       </div>
     )}
     {subPage === 'notices' && (
