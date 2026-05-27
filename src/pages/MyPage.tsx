@@ -203,7 +203,7 @@ function NoticesPage({ onBack }: { onBack: () => void }) {
 }
 
 /** 카페 2-컬럼 그리드 카드 */
-function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (id: string) => void }) {
+function CafeGrid({ cafes, onDetailOpen, cardShadow = false }: { cafes: CafeItem[]; onDetailOpen?: (id: string) => void; cardShadow?: boolean }) {
   return (
     <div style={{ padding: '16px 16px 0' }}>
       <StoreCountBar count={cafes.length} style={{ paddingLeft: 0 }} />
@@ -226,6 +226,7 @@ function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (
               marginBottom: 8,
               overflow: 'hidden',
               position: 'relative',
+              boxShadow: cardShadow ? '0 1px 3px rgba(0,0,0,0.06)' : undefined,
             }}>
               {cafe.photo ? (
                 <img src={cafe.photo} alt={cafe.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
@@ -398,7 +399,7 @@ function RecentCafePage({
             onButtonClick={onGoHome}
           />
         ) : (
-          <CafeGrid cafes={cafes} onDetailOpen={onDetailOpen} />
+          <CafeGrid cafes={cafes} onDetailOpen={onDetailOpen} cardShadow />
         )}
       </div>
     </div>
