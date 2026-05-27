@@ -64,6 +64,7 @@ export default function CollectionCard({
           border: isNew ? '1px dashed #c5c5c5' : 'none',
           borderRadius: 4, overflow: 'hidden',
           backgroundColor: '#F3F3F3', position: 'relative',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
         }}>
           {isNew ? (
             /* 새 컬렉션 */

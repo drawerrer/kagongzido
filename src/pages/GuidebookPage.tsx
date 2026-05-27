@@ -118,6 +118,7 @@ function GuideBookMainView({
             borderRadius: 6,
             overflow: 'hidden',
             position: 'relative',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
             ...cardBg,
           }}>
             {/* 딤 오버레이 */}
@@ -682,6 +683,7 @@ function GuideBookPastView({
                 borderRadius: 4,
                 overflow: 'hidden',
                 position: 'relative',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                 ...cardBg,
               }}>
                 {/* 딤 오버레이 */}

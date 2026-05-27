@@ -356,7 +356,7 @@ function ReportedCafePage({
             onButtonClick={onReportNew}
           />
         ) : (
-          <CafeGrid cafes={cafes} onDetailOpen={handleClick} />
+          <CafeGrid cafes={cafes} onDetailOpen={handleClick} cardShadow />
         )}
       </div>
     </div>
