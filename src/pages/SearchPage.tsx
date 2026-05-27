@@ -520,9 +520,9 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
         {!isTyping && activeChip === null && (
           <div style={{ paddingTop: 10, paddingLeft: 10, paddingRight: 10 }}>
             {recentSearches.length === 0 ? (
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginTop:80, color:'rgba(3,18,40,0.30)' }}>
-                <IcSearch width={32} height={32} style={{ opacity: 0.45 }} />
-                <p style={{ fontSize: 14 }}>최근 검색어가 없어요</p>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginTop:80 }}>
+                <IcSearch width={32} height={32} style={{ color: '#AAB4BE' }} />
+                <p style={{ fontSize: 14, color: 'rgba(3,18,40,0.30)' }}>최근 검색어가 없어요</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
