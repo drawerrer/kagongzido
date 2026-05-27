@@ -13,7 +13,15 @@ import {
   fetchNotices, type NoticeRow,
 } from '../services/db';
 import StoreCountBar from '../components/StoreCountBar';
+import EmptyState from '../components/EmptyState';
 import LogoImg from '../assets/LOGO/logo.png';
+
+// EmptyState 액션 버튼 공용 + 아이콘
+const EmptyPlusIcon = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+    <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round"/>
+  </svg>
+);
 
 // ─────────────────────────────────────────────────────────────
 // 타입
@@ -311,11 +319,14 @@ function ReportedCafePage({
   onBack,
   onClose,
   onReportView,
+  onReportNew,
 }: {
   onBack: () => void;
   onClose: () => void;
   /** 카드 클릭 시 호출 — 제보 원본 데이터를 부모에 전달해 뷰 모드 진입 */
   onReportView: (report: UserReportRow) => void;
+  /** 빈 상태에서 새 제보 작성 페이지로 이동 */
+  onReportNew?: () => void;
 }) {
   const { userId } = useFavorites();
   const [reports, setReports] = useState<UserReportRow[]>([]);
@@ -335,7 +346,17 @@ function ReportedCafePage({
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
       <SubHeader title="제보한 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
-        <CafeGrid cafes={cafes} onDetailOpen={handleClick} />
+        {cafes.length === 0 ? (
+          <EmptyState
+            title="아직 제보한 카페가 없어요"
+            subtitle="새로운 카페를 발견하면 제보해보세요"
+            buttonLabel="카페 제보하기"
+            buttonIcon={EmptyPlusIcon}
+            onButtonClick={onReportNew}
+          />
+        ) : (
+          <CafeGrid cafes={cafes} onDetailOpen={handleClick} />
+        )}
       </div>
     </div>
   );
@@ -348,10 +369,12 @@ function RecentCafePage({
   onBack,
   onClose,
   onDetailOpen,
+  onGoHome,
 }: {
   onBack: () => void;
   onClose: () => void;
   onDetailOpen?: (id: string) => void;
+  onGoHome?: () => void;
 }) {
   const { recentlyViewed } = useFavorites();
   const cafes: CafeItem[] = recentlyViewed.map(r => ({
@@ -367,14 +390,13 @@ function RecentCafePage({
       <SubHeader title="최근 본 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {cafes.length === 0 ? (
-          <div style={{
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            paddingTop: 80, gap: 10,
-          }}>
-            <span style={{ fontSize: 40 }}>☕</span>
-            <p style={{ fontSize: 15, color: '#8B95A1' }}>아직 최근에 본 카페가 없어요</p>
-          </div>
+          <EmptyState
+            title="아직 최근에 본 카페가 없어요"
+            subtitle="지도에서 다양한 카페를 둘러보세요"
+            buttonLabel="카페 둘러보기"
+            buttonIcon={EmptyPlusIcon}
+            onButtonClick={onGoHome}
+          />
         ) : (
           <CafeGrid cafes={cafes} onDetailOpen={onDetailOpen} />
         )}
@@ -642,11 +664,13 @@ function WrittenReviewPage({
   onClose,
   onEdit,
   refreshTrigger,
+  onGoHome,
 }: {
   onBack: () => void;
   onClose: () => void;
   onEdit: (review: ReviewItem) => void;
   refreshTrigger?: number;
+  onGoHome?: () => void;
 }) {
   const { userId } = useFavorites();
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
@@ -677,14 +701,13 @@ function WrittenReviewPage({
         <StoreCountBar count={reviews.length} />
 
         {reviews.length === 0 ? (
-          <div style={{
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            padding: '60px 0', gap: 10,
-          }}>
-            <span style={{ fontSize: 40 }}>💬</span>
-            <p style={{ fontSize: 15, color: '#8B95A1' }}>작성한 리뷰가 없어요</p>
-          </div>
+          <EmptyState
+            title="아직 작성한 리뷰가 없어요"
+            subtitle="방문한 카페에 리뷰를 남겨보세요"
+            buttonLabel="카페 둘러보기"
+            buttonIcon={EmptyPlusIcon}
+            onButtonClick={onGoHome}
+          />
         ) : (
           reviews.map(review => (
             <div
@@ -1225,12 +1248,15 @@ export default function MyPage({
   onSubPageChange,
   onRegisterBack,
   subViewRef,
+  onGoHome,
 }: {
   onDetailOpen?: (id: string) => void;
   initialSubPage?: SubPage | null;
   onSubPageChange?: (page: SubPage | null) => void;
   onRegisterBack?: (fn: (() => void) | null) => void;
   subViewRef?: RefObject<HTMLDivElement> | null;
+  /** 빈 상태 등에서 홈 탭으로 이동 */
+  onGoHome?: () => void;
 } = {}) {
   const [tab, setTab] = useState<MyTab>('내 활동');
   const [subPage, setSubPage] = useState<SubPage | null>(initialSubPage ?? null);
@@ -1625,6 +1651,7 @@ export default function MyPage({
           onBack={() => changeSubPage(null)}
           onClose={() => changeSubPage(null)}
           onReportView={(report) => setViewingReport(report)}
+          onReportNew={() => changeSubPage('report-cafe')}
         />
       </div>
     )}
@@ -1640,7 +1667,12 @@ export default function MyPage({
     )}
     {subPage === 'recent' && (
       <div ref={subViewRef ?? undefined} style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
-        <RecentCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} onDetailOpen={onDetailOpen} />
+        <RecentCafePage
+          onBack={() => changeSubPage(null)}
+          onClose={() => changeSubPage(null)}
+          onDetailOpen={onDetailOpen}
+          onGoHome={onGoHome}
+        />
       </div>
     )}
     {subPage === 'reviews' && (
@@ -1650,6 +1682,7 @@ export default function MyPage({
           onClose={() => changeSubPage(null)}
           onEdit={review => setEditingReview(review)}
           refreshTrigger={reviewRefreshTrigger}
+          onGoHome={onGoHome}
         />
       </div>
     )}

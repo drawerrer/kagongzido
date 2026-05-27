@@ -419,6 +419,7 @@ function AppInner() {
               onSubPageChange={setMyPageSubPage}
               onRegisterBack={(fn) => { myPageBackRef.current = fn; }}
               subViewRef={myPageSubViewRef}
+              onGoHome={() => setActiveTab('home')}
             />
           </div>
         )}

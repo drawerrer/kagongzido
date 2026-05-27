@@ -6,6 +6,13 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { fetchAllStores, type StoreRow } from '../services/db';
 import StoreCountBar from '../components/StoreCountBar';
+import EmptyState from '../components/EmptyState';
+
+const SearchEmptyPlusIcon = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+    <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round"/>
+  </svg>
+);
 
 interface SearchPageProps {
   onClose: () => void;
@@ -482,10 +489,13 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
           return (
             <div style={{ paddingTop: 10, paddingLeft: 10, paddingRight: 10 }}>
               {items.length === 0 ? (
-                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginTop:80, color:'rgba(3,18,40,0.30)' }}>
-                  <span style={{ fontSize: 32 }}>📂</span>
-                  <p style={{ fontSize: 14 }}>{col?.name ?? '컬렉션'}에 저장된 카페가 없어요</p>
-                </div>
+                <EmptyState
+                  title={`${col?.name ?? '컬렉션'}에 저장된 카페가 없어요`}
+                  subtitle="방문하고 싶은 카페를 추가해보세요"
+                  buttonLabel="매장 추가하기"
+                  buttonIcon={SearchEmptyPlusIcon}
+                  onButtonClick={_onClose}
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {items.map((s, i) => (
