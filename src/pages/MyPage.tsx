@@ -13,6 +13,7 @@ import {
   fetchNotices, type NoticeRow,
 } from '../services/db';
 import StoreCountBar from '../components/StoreCountBar';
+import LogoImg from '../assets/LOGO/logo.png';
 
 // ─────────────────────────────────────────────────────────────
 // 타입
@@ -221,7 +222,15 @@ function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (
               {cafe.photo ? (
                 <img src={cafe.photo} alt={cafe.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
               ) : (
-                <span style={{ fontSize: 28, opacity: 0.2 }}>☕</span>
+                // 사진 미첨부 시 서비스 로고 폴백 표시
+                <img
+                  src={LogoImg}
+                  alt="카공지도"
+                  style={{
+                    width: '40%', height: '40%', objectFit: 'contain',
+                    opacity: 0.25, filter: 'brightness(0) invert(1)',
+                  }}
+                />
               )}
               {/* 제보 상태 배지 (우측 상단) */}
               {statusMeta && (
