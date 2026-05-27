@@ -1120,7 +1120,7 @@ function EditMyReviewPage({
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative' }}>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {/* 카페 정보 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderBottom: '1px solid #F2F4F6', background: '#fff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderBottom: '1px solid #F2F4F6', background: '#f3f3f3' }}>
           <div style={{ flex: 1, overflow: 'hidden' }}>
             <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cafeName}</p>
             <p style={{ fontSize: 12, color: '#8B95A1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cafeAddress}</p>
