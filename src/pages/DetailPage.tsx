@@ -1167,7 +1167,7 @@ function EditMyReviewPage({
         </div>
 
         {/* 하단 버튼 */}
-        <div style={{ display: 'flex', gap: 10, padding: '12px 20px 24px', background: 'white', borderTop: '1px solid #F2F4F6' }}>
+        <div style={{ display: 'flex', gap: 10, padding: '12px 20px 24px', background: '#f3f3f3' }}>
           <button onClick={handleBack} style={{ flex: 1, height: 52, borderRadius: 12, background: '#EBEBEB', color: '#252525', fontSize: 16, fontWeight: 600, border: 'none', cursor: 'pointer' }}>취소하기</button>
           <button onClick={handleSave} disabled={saving} style={{ flex: 1, height: 52, borderRadius: 12, background: '#252525', color: 'white', fontSize: 16, fontWeight: 700, border: 'none', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
             {saved ? '✓ 완료' : '등록하기'}
