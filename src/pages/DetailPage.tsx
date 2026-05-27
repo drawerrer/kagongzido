@@ -1477,6 +1477,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
   const [copyToastVisible, setCopyToastVisible] = useState(false);
   const [reviewToastVisible, setReviewToastVisible] = useState(false);
+  const [reviewEditToastVisible, setReviewEditToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
   const [deleteReviewTargetId, setDeleteReviewTargetId] = useState<string | null>(null);
@@ -1680,7 +1681,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         initialNoise={editingMyReview.noise_status}
         onBack={() => setEditingMyReview(null)}
         onClose={onClose}
-        onSaved={() => { setEditingMyReview(null); loadReviews(); }}
+        onSaved={() => { setEditingMyReview(null); loadReviews(); setReviewEditToastVisible(true); }}
       />
     );
   }
@@ -2205,6 +2206,12 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         position="top"
         text="리뷰를 등록했어요"
         onClose={() => setReviewToastVisible(false)}
+      />
+      <Toast
+        open={reviewEditToastVisible}
+        position="top"
+        text="리뷰가 수정되었어요"
+        onClose={() => setReviewEditToastVisible(false)}
       />
       {/* ── 저장/해제 스낵바 ── */}
       {favoriteSnackbar === 'added' && (

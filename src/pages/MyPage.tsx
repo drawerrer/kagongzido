@@ -1340,6 +1340,7 @@ export default function MyPage({
 
   const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
   const [reviewRefreshTrigger, setReviewRefreshTrigger] = useState(0);
+  const [reviewEditToast, setReviewEditToast] = useState(false);
   /** 제보한 카페 리스트에서 클릭한 제보 — 뷰 모드로 ReportCafePage 표시 */
   const [viewingReport, setViewingReport] = useState<UserReportRow | null>(null);
 
@@ -1593,6 +1594,14 @@ export default function MyPage({
         onClose={() => setCopiedToast(false)}
       />
 
+      {/* 리뷰 수정 완료 토스트 */}
+      <Toast
+        open={reviewEditToast}
+        position="top"
+        text="리뷰가 수정되었어요"
+        onClose={() => setReviewEditToast(false)}
+      />
+
       {/* 더보기 드롭다운 팝업 */}
       {showMoreSheet && (
         <>
@@ -1788,6 +1797,7 @@ export default function MyPage({
                 noise_status:  evalState.noise_status  ?? '',
               });
               setReviewRefreshTrigger(t => t + 1);
+              setReviewEditToast(true);
             }
             setEditingReview(null);
           }}
