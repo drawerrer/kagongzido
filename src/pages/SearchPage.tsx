@@ -347,7 +347,6 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
             background: '#ffffff', borderRadius: 12, height: 44,
             paddingLeft: 10, paddingRight: 10,
           }}>
-            <ChevronLeftIcon onClick={_onClose} />
             <input
               ref={inputRef}
               value={query}
