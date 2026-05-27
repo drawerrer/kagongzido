@@ -572,7 +572,7 @@ function ReviewEditPage({
         <div style={{
           display: 'flex', gap: 10,
           padding: '12px 20px 24px',
-          background: 'white', borderTop: '1px solid #F2F4F6',
+          background: '#f3f3f3',
         }}>
         <button
           onClick={handleCancel}
