@@ -26,7 +26,17 @@ interface CafeItem {
   address: string;
   bg: string;
   photo?: string;
+  /** 제보 상태 (제보한 카페 페이지에서만 사용) */
+  reportStatus?: 'pending' | 'reviewing' | 'resolved' | 'rejected';
 }
+
+// 제보 상태 표시 메타
+const REPORT_STATUS_META: Record<NonNullable<CafeItem['reportStatus']>, { label: string; bg: string; fg: string }> = {
+  pending:   { label: '대기 중', bg: '#FFF3CD', fg: '#856404' },
+  reviewing: { label: '검토 중', bg: '#CCE5FF', fg: '#004085' },
+  resolved:  { label: '완료',   bg: '#D4EDDA', fg: '#155724' },
+  rejected:  { label: '반려',   bg: '#F8D7DA', fg: '#721C24' },
+};
 
 interface ReviewItem {
   id: string;
@@ -70,11 +80,14 @@ function mapReviewRow(row: UserReviewRow, idx: number): ReviewItem {
 }
 
 function mapReportRow(row: UserReportRow, idx: number): CafeItem {
+  // DB 의 status (text) 를 안전하게 UI 메타와 매칭. 누락/알 수 없는 값은 pending 처리.
+  const status = (['pending', 'reviewing', 'resolved', 'rejected'] as const).find(s => s === row.status) ?? 'pending';
   return {
     id: row.id,
     name: row.store_name,
     address: row.created_at.slice(0, 10).replace(/-/g, '.') + ' 제보',
     bg: CAFE_BG[idx % CAFE_BG.length],
+    reportStatus: status,
   };
 }
 
@@ -187,7 +200,9 @@ function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (
         gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
         gap: 12,
       }}>
-        {cafes.map(cafe => (
+        {cafes.map(cafe => {
+          const statusMeta = cafe.reportStatus ? REPORT_STATUS_META[cafe.reportStatus] : null;
+          return (
           <div key={cafe.id} style={{ cursor: 'pointer' }} onClick={() => onDetailOpen?.(cafe.id)}>
             {/* 썸네일 */}
             <div style={{
@@ -204,6 +219,17 @@ function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (
                 <img src={cafe.photo} alt={cafe.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
               ) : (
                 <span style={{ fontSize: 28, opacity: 0.2 }}>☕</span>
+              )}
+              {/* 제보 상태 배지 (우측 상단) */}
+              {statusMeta && (
+                <span style={{
+                  position: 'absolute', top: 8, right: 8,
+                  fontSize: 11, fontWeight: 600,
+                  padding: '3px 8px', borderRadius: 12,
+                  background: statusMeta.bg, color: statusMeta.fg,
+                }}>
+                  {statusMeta.label}
+                </span>
               )}
             </div>
             {/* 카페명 */}
@@ -222,7 +248,8 @@ function CafeGrid({ cafes, onDetailOpen }: { cafes: CafeItem[]; onDetailOpen?: (
               {cafe.address}
             </p>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

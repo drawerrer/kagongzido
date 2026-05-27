@@ -401,6 +401,8 @@ export interface UserReportRow {
   id: string;
   store_name: string;
   content: string;
+  status: string;             // pending / reviewing / resolved / rejected
+  admin_comment: string | null;
   created_at: string;
 }
 
@@ -408,7 +410,7 @@ export async function fetchUserReports(userId: string): Promise<UserReportRow[]>
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('reports')
-    .select('id, store_name, content, created_at')
+    .select('id, store_name, content, status, admin_comment, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
