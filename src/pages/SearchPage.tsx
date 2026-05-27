@@ -451,9 +451,9 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
         {!isTyping && activeChip === '즐겨찾기' && (
           <div style={{ paddingTop: 10, paddingLeft: 10, paddingRight: 10 }}>
             {favRows.length === 0 ? (
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginTop:80, color:'rgba(3,18,40,0.30)' }}>
-                <IcHeart width={32} height={32} />
-                <p style={{ fontSize: 14 }}>즐겨찾기한 카페가 없어요</p>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginTop:80 }}>
+                <IcHeart width={32} height={32} style={{ color: '#AAB4BE' }} />
+                <p style={{ fontSize: 14, color: 'rgba(3,18,40,0.30)' }}>즐겨찾기한 카페가 없어요</p>
                 <button
                   onClick={_onClose}
                   style={{
