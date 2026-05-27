@@ -76,7 +76,7 @@ const CAFE_BG = [
 function mapReviewRow(row: UserReviewRow, idx: number): ReviewItem {
   return {
     id: row.id,
-    cafeId: row.store_id,
+    cafeId: row.store_place_id, // api_place_id (Kakao) — DetailPage 이동에 필요
     cafeName: row.store_name,
     cafeAddress: row.store_address,
     cafeBg: row.store_thumbnail

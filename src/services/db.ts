@@ -511,6 +511,7 @@ async function uploadReviewPhotos(photos: string[]): Promise<string[]> {
 export interface UserReviewRow {
   id: string;
   store_id: string;
+  store_place_id: string; // stores.api_place_id (Kakao place ID) — DetailPage 이동에 사용
   store_name: string;
   store_address: string;
   store_thumbnail: string;
@@ -523,7 +524,7 @@ export async function fetchUserReviews(userId: string): Promise<UserReviewRow[]>
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('reviews')
-    .select('id, store_id, content, photo_urls, created_at, stores(name, address_road, thumbnail_url)')
+    .select('id, store_id, content, photo_urls, created_at, stores(name, address_road, thumbnail_url, api_place_id)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -534,6 +535,7 @@ export async function fetchUserReviews(userId: string): Promise<UserReviewRow[]>
     return {
       id: row.id as string,
       store_id: row.store_id as string,
+      store_place_id: (store?.api_place_id ?? row.store_id) as string,
       store_name: (store?.name ?? '') as string,
       store_address: (store?.address_road ?? '') as string,
       store_thumbnail: (store?.thumbnail_url ?? '') as string,
