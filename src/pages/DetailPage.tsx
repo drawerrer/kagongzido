@@ -1118,16 +1118,6 @@ function EditMyReviewPage({
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative' }}>
-      {/* 헤더 */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '12px 8px 12px 4px', flexShrink: 0, borderBottom: '1px solid #F2F4F6', background: '#fff' }}>
-        <button onClick={handleBack} style={{ display: 'flex', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', gap: 4, color: '#191F28' }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          <span style={{ fontSize: 17, fontWeight: 600 }}>수정하기</span>
-        </button>
-      </div>
-
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {/* 카페 정보 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderBottom: '1px solid #F2F4F6', background: '#fff' }}>
