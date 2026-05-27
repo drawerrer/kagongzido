@@ -301,27 +301,32 @@ function MenuRow({
 function ReportedCafePage({
   onBack,
   onClose,
-  onDetailOpen,
+  onReportView,
 }: {
   onBack: () => void;
   onClose: () => void;
-  onDetailOpen?: (id: string) => void;
+  /** 카드 클릭 시 호출 — 제보 원본 데이터를 부모에 전달해 뷰 모드 진입 */
+  onReportView: (report: UserReportRow) => void;
 }) {
   const { userId } = useFavorites();
-  const [cafes, setCafes] = useState<CafeItem[]>([]);
+  const [reports, setReports] = useState<UserReportRow[]>([]);
 
   useEffect(() => {
     if (!userId) return;
-    fetchUserReports(userId).then(rows => {
-      setCafes(rows.map(mapReportRow));
-    });
+    fetchUserReports(userId).then(setReports);
   }, [userId]);
+
+  const cafes = reports.map(mapReportRow);
+  const handleClick = (id: string) => {
+    const report = reports.find(r => r.id === id);
+    if (report) onReportView(report);
+  };
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
       <SubHeader title="제보한 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
-        <CafeGrid cafes={cafes} onDetailOpen={onDetailOpen} />
+        <CafeGrid cafes={cafes} onDetailOpen={handleClick} />
       </div>
     </div>
   );
@@ -778,16 +783,34 @@ const CHIP_OPTIONS: Record<string, string[]> = {
   소음: ['시끄러움', '적당', '조용'],
 };
 
-function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
+function ReportCafePage({
+  onBack,
+  onClose,
+  initialReport,
+}: {
+  onBack: () => void;
+  onClose: () => void;
+  /** 제공되면 읽기 전용 뷰 모드 — 사용자가 작성한 제보 내용 확인용 */
+  initialReport?: UserReportRow;
+}) {
   const { userId, allStores } = useFavorites();
+  const readOnly = !!initialReport;
   const [query, setQuery] = useState('');
-  const [selectedCafe, setSelectedCafe] = useState<{ id: string; name: string; address: string } | null>(null);
-  const [chips, setChips] = useState<Record<string, string>>({});
-  const [reviewText, setReviewText] = useState('');
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [selectedCafe, setSelectedCafe] = useState<{ id: string; name: string; address: string } | null>(
+    initialReport ? { id: initialReport.id, name: initialReport.store_name, address: '' } : null,
+  );
+  const [chips, setChips] = useState<Record<string, string>>(
+    initialReport ? {
+      '콘센트': initialReport.outlet_status ?? '',
+      '좌석':   initialReport.seat_status ?? '',
+      '소음':   initialReport.noise_status ?? '',
+    } : {},
+  );
+  const [reviewText, setReviewText] = useState(initialReport?.content ?? '');
+  const [photos, setPhotos] = useState<string[]>(initialReport?.photo_urls ?? []);
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [directName, setDirectName] = useState<string | null>(null);
+  const [directName, setDirectName] = useState<string | null>(initialReport && !initialReport.store_name ? null : null);
   const [directAddress, setDirectAddress] = useState('');
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
 
@@ -801,8 +824,14 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
   const isNoResult = !selectedCafe && !directName && query.trim().length > 0 && results.length === 0;
 
   const toggleChip = (category: string, option: string) => {
+    if (readOnly) return;
     setChips(prev => prev[category] === option ? { ...prev, [category]: '' } : { ...prev, [category]: option });
   };
+
+  // 뷰 모드일 때 상태 메타
+  const viewStatusMeta = readOnly && initialReport
+    ? REPORT_STATUS_META[(['pending','reviewing','resolved','rejected'] as const).find(s => s === initialReport.status) ?? 'pending']
+    : null;
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative', overflow: 'hidden' }}>
@@ -814,9 +843,37 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
         <div style={{
           height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: '#f3f3f3', borderBottom: '1px solid #F2F4F6',
+          position: 'relative',
         }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#191F28', letterSpacing: -0.2 }}>카페 제보하기</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#191F28', letterSpacing: -0.2 }}>
+            {readOnly ? '제보 내용 보기' : '카페 제보하기'}
+          </span>
+          {viewStatusMeta && (
+            <span style={{
+              position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+              fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
+              background: viewStatusMeta.bg, color: viewStatusMeta.fg,
+            }}>
+              {viewStatusMeta.label}
+            </span>
+          )}
         </div>
+
+        {/* 어드민 메모 (뷰 모드 & 메모 있을 때만) */}
+        {readOnly && initialReport?.admin_comment && (
+          <div style={{
+            margin: '16px 16px 0', padding: '14px 16px',
+            borderRadius: 12, background: '#E8F4FF',
+            border: '1px solid #B3D9FF',
+          }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#004085', marginBottom: 6 }}>
+              ✉️ 운영진 메모
+            </p>
+            <p style={{ fontSize: 13, color: '#0F2D52', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+              {initialReport.admin_comment}
+            </p>
+          </div>
+        )}
 
         {/* 카페명 섹션 */}
         <div style={{ padding: '0 16px 20px', background: '#f3f3f3' }}>
@@ -1009,7 +1066,7 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
             <span style={{ fontSize: 13, color: '#B0B8C1' }}>{photos.length}/5</span>
           </div>
           <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
-            {photos.length < 5 && (
+            {!readOnly && photos.length < 5 && (
               <button
                 onClick={() => setShowPhotoSheet(true)}
                 style={{
@@ -1023,6 +1080,9 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
                 </svg>
                 <span style={{ fontSize: 11, color: '#B0B8C1' }}>사진 추가</span>
               </button>
+            )}
+            {readOnly && photos.length === 0 && (
+              <span style={{ fontSize: 13, color: '#B0B8C1', padding: '8px 0' }}>첨부된 사진이 없어요</span>
             )}
             {photos.map((uri, i) => (
               <img key={i} src={uri} alt="" style={{ width: 80, height: 80, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
@@ -1077,9 +1137,10 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
           </div>
           <textarea
             value={reviewText}
-            onChange={e => { if (e.target.value.length <= 200) setReviewText(e.target.value); }}
+            onChange={e => { if (!readOnly && e.target.value.length <= 200) setReviewText(e.target.value); }}
             placeholder="제보하려는 카페에서 좋았던 점을 작성해 주세요 (최소 10자 이상 입력)"
             rows={6}
+            readOnly={readOnly}
             style={{
               width: '100%',
               border: '1.5px solid #E5E8EB', borderRadius: 12,
@@ -1088,7 +1149,7 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
               fontFamily: 'inherit', boxSizing: 'border-box',
               background: '#FAFBFC', transition: 'border-color 0.15s',
             }}
-            onFocus={e => { e.target.style.borderColor = '#252525'; e.target.style.background = 'white'; }}
+            onFocus={e => { if (!readOnly) { e.target.style.borderColor = '#252525'; e.target.style.background = 'white'; } }}
             onBlur={e => { e.target.style.borderColor = '#E5E8EB'; e.target.style.background = '#FAFBFC'; }}
           />
           {reviewText.length > 0 && reviewText.length < 10 && (
@@ -1100,8 +1161,8 @@ function ReportCafePage({ onBack, onClose }: { onBack: () => void; onClose: () =
 
       </div>
 
-      {/* ── 하단 고정: 제보하기 CTA (FocusBottomCTA 통일) ── */}
-      {(() => {
+      {/* ── 하단 고정: 제보하기 CTA — 뷰 모드에선 숨김 ── */}
+      {!readOnly && (() => {
         const allChipsSelected = Object.keys(CHIP_OPTIONS).every(cat => !!chips[cat]);
         const canSubmit = allChipsSelected && reviewText.trim().length >= 10;
         return (
@@ -1168,6 +1229,8 @@ export default function MyPage({
 
   const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
   const [reviewRefreshTrigger, setReviewRefreshTrigger] = useState(0);
+  /** 제보한 카페 리스트에서 클릭한 제보 — 뷰 모드로 ReportCafePage 표시 */
+  const [viewingReport, setViewingReport] = useState<UserReportRow | null>(null);
 
   const { userId } = useFavorites();
   const [reportCount, setReportCount] = useState(0);
@@ -1544,7 +1607,21 @@ export default function MyPage({
     {/* ── 서브페이지 오버레이 (스와이프 애니메이션 지원) ── */}
     {subPage === 'reported' && (
       <div ref={subViewRef ?? undefined} style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
-        <ReportedCafePage onBack={() => changeSubPage(null)} onClose={() => changeSubPage(null)} onDetailOpen={onDetailOpen} />
+        <ReportedCafePage
+          onBack={() => changeSubPage(null)}
+          onClose={() => changeSubPage(null)}
+          onReportView={(report) => setViewingReport(report)}
+        />
+      </div>
+    )}
+    {/* 제보 내용 보기 — 사용자가 작성했던 제보 폼을 읽기 전용으로 표시 */}
+    {viewingReport && (
+      <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3', zIndex: 10 }}>
+        <ReportCafePage
+          onBack={() => setViewingReport(null)}
+          onClose={() => setViewingReport(null)}
+          initialReport={viewingReport}
+        />
       </div>
     )}
     {subPage === 'recent' && (
