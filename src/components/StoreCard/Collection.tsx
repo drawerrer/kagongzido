@@ -1,6 +1,7 @@
 import React from 'react';
 import IcPencil from '../../assets/icons/icon_pencil.svg?react';
 import IcArrowUpDown from '../../assets/icons/icon_arrowupdown.svg?react';
+import IcHeart from '../../assets/icons/icon_heart.svg?react';
 import { fmtDist } from '../../context/FavoritesContext';
 
 // ─── 공통 매장 타입 ───────────────────────────────────────────
@@ -175,15 +176,10 @@ export default function StoreCardCollection({
                   width: 44, height: 44, flexShrink: 0, marginLeft: 4, marginTop: -11,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  color: heartFilled ? '#252525' : '#D1D6DB',
                 }}
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path
-                    fillRule="evenodd" clipRule="evenodd"
-                    d="M10.9038 21.2884C11.5698 21.7284 12.4288 21.7284 13.0938 21.2884C15.2088 19.8924 19.8138 16.5554 21.7978 12.8214C24.4128 7.89542 21.3418 2.98242 17.2818 2.98242C14.9678 2.98242 13.5758 4.19142 12.8058 5.23042C12.4818 5.67542 11.8588 5.77442 11.4128 5.45042C11.3278 5.38942 11.2538 5.31442 11.1928 5.23042C10.4228 4.19142 9.03076 2.98242 6.71676 2.98242C2.65676 2.98242 -0.414244 7.89542 2.20176 12.8214C4.18376 16.5554 8.79076 19.8924 10.9038 21.2884Z"
-                    fill={heartFilled ? '#252525' : '#D1D6DB'}
-                  />
-                </svg>
+                <IcHeart width={22} height={22} />
               </button>
             ) : null}
           </div>
