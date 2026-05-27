@@ -677,12 +677,14 @@ function WrittenReviewPage({
   onEdit,
   refreshTrigger,
   onGoHome,
+  onDetailOpen,
 }: {
   onBack: () => void;
   onClose: () => void;
   onEdit: (review: ReviewItem) => void;
   refreshTrigger?: number;
   onGoHome?: () => void;
+  onDetailOpen?: (cafeId: string) => void;
 }) {
   const { userId } = useFavorites();
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
@@ -731,18 +733,24 @@ function WrittenReviewPage({
               }}
             >
               {/* 썸네일 */}
-              <div style={{
-                width: 76, height: 76, borderRadius: 10,
-                background: review.cafeBg, flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer',
-              }}>
+              <div
+                onClick={() => onDetailOpen?.(review.cafeId)}
+                style={{
+                  width: 76, height: 76, borderRadius: 10,
+                  background: review.cafeBg, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: onDetailOpen ? 'pointer' : 'default',
+                }}
+              >
                 <span style={{ fontSize: 22, opacity: 0.18 }}>☕</span>
               </div>
 
               {/* 내용 */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28', marginBottom: 2 }}>
+                <p
+                  onClick={() => onDetailOpen?.(review.cafeId)}
+                  style={{ fontSize: 15, fontWeight: 700, color: '#191F28', marginBottom: 2, cursor: onDetailOpen ? 'pointer' : 'default' }}
+                >
                   {review.cafeName}
                 </p>
                 <p style={{ fontSize: 12, color: '#B0B8C1', marginBottom: 6 }}>
@@ -1695,6 +1703,7 @@ export default function MyPage({
           onEdit={review => setEditingReview(review)}
           refreshTrigger={reviewRefreshTrigger}
           onGoHome={onGoHome}
+          onDetailOpen={onDetailOpen}
         />
       </div>
     )}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { openURL, partner, tdsEvent } from '@apps-in-toss/web-framework';
+import { openURL, partner, tdsEvent, fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { ConfirmDialog, Toast } from '@toss/tds-mobile';
 import BottomSheet from '../components/BottomSheet';
@@ -10,7 +10,7 @@ import SectionHeader from '../components/SectionHeader';
 import PhotoReviewPage, { ReviewPhoto } from './PhotoReviewPage';
 import WriteReviewPage from './WriteReviewPage';
 import { useFavorites } from '../context/FavoritesContext';
-import { fetchReviews, fetchStoreByPlaceId, fetchUserLikedReviewIds, toggleReviewLike, type ReviewRow } from '../services/db';
+import { fetchReviews, fetchStoreByPlaceId, fetchUserLikedReviewIds, toggleReviewLike, deleteReview, updateReview, type ReviewRow } from '../services/db';
 import SubButton from '../components/SubButton';
 
 // ── 편의시설 SVG 아이콘 ──────────────────────────────────────
@@ -175,6 +175,7 @@ interface ReviewItem {
   photo_urls?: string[];  // 리뷰 사진 URL 배열
   isReporter?: boolean;   // 카페 제보자 여부 → 항상 최상단
   likeCount?: number;     // 좋아요 수
+  isMyReview?: boolean;   // 본인이 작성한 리뷰 여부
 }
 
 interface CafeDetailData {
@@ -666,10 +667,12 @@ const REPORT_REASONS = ['스팸/광고', '욕설/혐오 표현', '부적절한 �
 const BLOCK_REASONS = ['불쾌한 내용을 게시해요', '스팸 또는 광고성 글을 올려요', '욕설 또는 혐오 표현을 사용해요', '허위 정보를 올려요', '기타'];
 
 // ── 리뷰 카드 (강화) ─────────────────────────────────────────
-function ReviewCard({ review, initialLiked, onToggleLike }: {
+function ReviewCard({ review, initialLiked, onToggleLike, onEditReview, onDeleteReview }: {
   review: ReviewItem;
   initialLiked: boolean;
   onToggleLike: (reviewId: string) => Promise<boolean>;
+  onEditReview?: () => void;
+  onDeleteReview?: () => void;
 }) {
   const [textExpanded, setTextExpanded] = useState(false);
   const [expandedImgIdx, setExpandedImgIdx] = useState<number | null>(null);
@@ -784,17 +787,23 @@ function ReviewCard({ review, initialLiked, onToggleLike }: {
                 minWidth: 160, padding: 4,
               }}>
                 <div style={{ padding: '10px 14px 6px', fontSize: 12, fontWeight: 600, color: 'rgba(3,18,40,0.35)' }}>메뉴</div>
-                {[
-                  { label: '신고하기', action: () => { setShowMoreSheet(false); setShowReport(true); } },
-                  { label: '차단하기', action: () => { setShowMoreSheet(false); setShowBlock(true); } },
-                ].map(item => (
+                {(review.isMyReview
+                  ? [
+                      { label: '수정하기', action: () => { setShowMoreSheet(false); onEditReview?.(); } },
+                      { label: '삭제하기', action: () => { setShowMoreSheet(false); onDeleteReview?.(); }, danger: true },
+                    ]
+                  : [
+                      { label: '신고하기', action: () => { setShowMoreSheet(false); setShowReport(true); } },
+                      { label: '차단하기', action: () => { setShowMoreSheet(false); setShowBlock(true); } },
+                    ]
+                ).map(item => (
                   <button key={item.label} onClick={item.action} style={{
                     display: 'flex', alignItems: 'center', width: '100%',
                     padding: '12px 14px', borderRadius: 12,
                     textAlign: 'left', background: 'transparent',
                     border: 'none', cursor: 'pointer',
                   }}>
-                    <span style={{ fontSize: 15, fontWeight: 500, color: 'rgba(3,18,40,0.70)', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 15, fontWeight: 500, whiteSpace: 'nowrap', color: (item as any).danger ? '#F04452' : 'rgba(3,18,40,0.70)' }}>
                       {item.label}
                     </span>
                   </button>
@@ -1059,6 +1068,158 @@ function rowToReviewItem(row: ReviewRow): ReviewItem {
   };
 }
 
+// ── 내 리뷰 수정 페이지 ─────────────────────────────────────
+function EditMyReviewPage({
+  reviewId, cafeName, cafeAddress, initialContent, initialPhotos, onBack, onClose: _onClose, onSaved,
+}: {
+  reviewId: string;
+  cafeName: string;
+  cafeAddress: string;
+  initialContent: string;
+  initialPhotos: string[];
+  onBack: () => void;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [text, setText] = useState(initialContent);
+  const [photos, setPhotos] = useState<string[]>(initialPhotos);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showPhotoSheet, setShowPhotoSheet] = useState(false);
+
+  const hasChanged = text !== initialContent || photos.join(',') !== initialPhotos.join(',');
+  const handleBack = () => { if (hasChanged) { setShowCancelDialog(true); } else { onBack(); } };
+  const removePhoto = (idx: number) => setPhotos(prev => prev.filter((_, i) => i !== idx));
+
+  const handleGallery = async () => {
+    try {
+      const remaining = 5 - photos.length;
+      const results = await fetchAlbumPhotos({ maxCount: remaining, maxWidth: 1024, base64: true });
+      setPhotos(prev => [...prev, ...results.map(r => 'data:image/jpeg;base64,' + r.dataUri)].slice(0, 5));
+    } catch {}
+    setShowPhotoSheet(false);
+  };
+  const handleCamera = async () => {
+    try {
+      const result = await openCamera({ base64: true, maxWidth: 1024 });
+      setPhotos(prev => [...prev, 'data:image/jpeg;base64,' + result.dataUri].slice(0, 5));
+    } catch {}
+    setShowPhotoSheet(false);
+  };
+  const handleSave = async () => {
+    if (saving || saved) return;
+    setSaving(true);
+    await updateReview(reviewId, text, photos);
+    setSaved(true);
+    setSaving(false);
+    setTimeout(() => onSaved(), 800);
+  };
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative' }}>
+      {/* 헤더 */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '12px 8px 12px 4px', flexShrink: 0, borderBottom: '1px solid #F2F4F6', background: '#fff' }}>
+        <button onClick={handleBack} style={{ display: 'flex', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', gap: 4, color: '#191F28' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          <span style={{ fontSize: 17, fontWeight: 600 }}>수정하기</span>
+        </button>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
+        {/* 카페 정보 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderBottom: '1px solid #F2F4F6', background: '#fff' }}>
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cafeName}</p>
+            <p style={{ fontSize: 12, color: '#8B95A1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cafeAddress}</p>
+          </div>
+        </div>
+
+        {/* 사진 기록 */}
+        <div style={{ padding: '20px 20px 0', background: '#f3f3f3' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: '#191F28' }}>사진 기록</p>
+            <p style={{ fontSize: 12, color: '#B0B8C1' }}>*사진은 최대 5장까지 추가할 수 있어요</p>
+          </div>
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+            {photos.map((bg, idx) => (
+              <div key={idx} style={{ width: 80, height: 80, borderRadius: 8, flexShrink: 0, background: bg, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 18, opacity: 0.15 }}>☕</span>
+                <button onClick={() => removePhoto(idx)} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 11, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2L8 8M8 2L2 8" stroke="white" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                </button>
+              </div>
+            ))}
+            {photos.length < 5 && (
+              <button onClick={() => setShowPhotoSheet(true)} style={{ width: 80, height: 80, borderRadius: 8, flexShrink: 0, border: '1.5px dashed #C9CDD2', background: '#F3F3F3', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer' }}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4V16M4 10H16" stroke="#B0B8C1" strokeWidth="1.8" strokeLinecap="round" /></svg>
+                <span style={{ fontSize: 11, color: '#B0B8C1' }}>사진 추가</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 텍스트 입력 */}
+        <div style={{ padding: '20px', background: '#f3f3f3' }}>
+          <div style={{ border: '1.5px solid #E5E8EB', borderRadius: 12, padding: '14px', background: '#FAFBFC' }}>
+            <textarea
+              value={text}
+              onChange={e => { if (e.target.value.length <= 200) setText(e.target.value); }}
+              rows={5}
+              style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 14, color: '#191F28', lineHeight: 1.6, resize: 'none', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+              onFocus={e => { (e.target.parentElement as HTMLElement).style.borderColor = '#252525'; }}
+              onBlur={e => { (e.target.parentElement as HTMLElement).style.borderColor = '#E5E8EB'; }}
+            />
+            <div style={{ textAlign: 'right', fontSize: 12, color: '#B0B8C1' }}>{text.length}/200</div>
+          </div>
+        </div>
+
+        {/* 하단 버튼 */}
+        <div style={{ display: 'flex', gap: 10, padding: '12px 20px 24px', background: 'white', borderTop: '1px solid #F2F4F6' }}>
+          <button onClick={handleBack} style={{ flex: 1, height: 52, borderRadius: 12, background: '#EBEBEB', color: '#252525', fontSize: 16, fontWeight: 600, border: 'none', cursor: 'pointer' }}>취소하기</button>
+          <button onClick={handleSave} disabled={saving} style={{ flex: 1, height: 52, borderRadius: 12, background: '#252525', color: 'white', fontSize: 16, fontWeight: 700, border: 'none', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+            {saved ? '✓ 완료' : '등록하기'}
+          </button>
+        </div>
+      </div>
+
+      {/* 취소 확인 다이얼로그 */}
+      {showCancelDialog && (
+        <>
+          <div onClick={() => setShowCancelDialog(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200 }} />
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 201, background: 'white', borderRadius: 16, padding: '28px 24px 20px', width: 280, textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+            <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 10 }}>수정을 취소할까요?</p>
+            <p style={{ fontSize: 14, color: '#8B95A1', lineHeight: 1.5, marginBottom: 24 }}>지금 나가면 작성한 내용이 사라져요</p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowCancelDialog(false)} style={{ flex: 1, height: 44, borderRadius: 10, border: '1.5px solid #E5E8EB', background: 'white', fontSize: 15, fontWeight: 600, color: '#4E5968', cursor: 'pointer' }}>계속 수정</button>
+              <button onClick={onBack} style={{ flex: 1, height: 44, borderRadius: 10, background: '#FF4B4B', border: 'none', fontSize: 15, fontWeight: 700, color: 'white', cursor: 'pointer' }}>취소하기</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 사진 추가 바텀시트 */}
+      {showPhotoSheet && (
+        <>
+          <div onClick={() => setShowPhotoSheet(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200 }} />
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'white', borderRadius: '16px 16px 0 0', paddingTop: 16, paddingBottom: 'max(16px, env(safe-area-inset-bottom))', zIndex: 201 }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: '#E5E8EB', margin: '0 auto 18px' }} />
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#191F28', padding: '0 20px', marginBottom: 4 }}>사진 추가</p>
+            <button onClick={handleGallery} style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: '#191F28' }}>
+              <span style={{ fontSize: 20 }}>🖼️</span> 갤러리에서 선택
+            </button>
+            <button onClick={handleCamera} style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: '#191F28' }}>
+              <span style={{ fontSize: 20 }}>📷</span> 카메라로 촬영
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false, onSwipeDown, showHero = true, onFocusModeChange, onScrollChange }: DetailPageProps) {
   const [storeData, setStoreData] = useState<CafeDetailData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1127,7 +1288,10 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [likedReviewIds, setLikedReviewIds] = useState<Set<string>>(new Set());
   const loadReviews = useCallback(async () => {
     const rows = await fetchReviews(cafeId);
-    const items = rows.map(rowToReviewItem);
+    const items = rows.map(row => ({
+      ...rowToReviewItem(row),
+      isMyReview: !!userId && row.user_id === userId,
+    }));
     setDbReviews(items);
     // 좋아요 상태 prefetch
     if (userId && items.length > 0) {
@@ -1260,11 +1424,13 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [reviewToastVisible, setReviewToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
+  const [deleteReviewTargetId, setDeleteReviewTargetId] = useState<string | null>(null);
+  const [editingMyReview, setEditingMyReview] = useState<{ id: string; content: string; photoUrls: string[] } | null>(null);
 
-  // 사진리뷰/리뷰작성 — 탭바를 숨겨야 하는 풀스크린 액션 상태를 부모(App.tsx)에 전파
+  // 사진리뷰/리뷰작성/리뷰수정 — 탭바를 숨겨야 하는 풀스크린 액션 상태를 부모(App.tsx)에 전파
   useEffect(() => {
-    onFocusModeChange?.(showPhotoReview || showWriteReview);
-  }, [showPhotoReview, showWriteReview, onFocusModeChange]);
+    onFocusModeChange?.(showPhotoReview || showWriteReview || !!editingMyReview);
+  }, [showPhotoReview, showWriteReview, editingMyReview, onFocusModeChange]);
   // DetailPage 자체가 닫힐 때(unmount) focus 모드를 false로 복구해 탭바를 다시 노출
   useEffect(() => {
     return () => { onFocusModeChange?.(false); };
@@ -1275,6 +1441,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   backHandlerRef.current = () => {
     if (showPhotoReview) { setShowPhotoReview(false); return; }
     if (showWriteReview) { setShowWriteReview(false); return; }
+    if (editingMyReview) { setEditingMyReview(null); return; }
     onBack();
   };
 
@@ -1441,6 +1608,22 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#f3f3f3' }}>
         <p style={{ fontSize: 14, color: '#8B95A1' }}>불러오는 중...</p>
       </div>
+    );
+  }
+
+  // 내 리뷰 수정 페이지
+  if (editingMyReview) {
+    return (
+      <EditMyReviewPage
+        reviewId={editingMyReview.id}
+        cafeName={cafe.name}
+        cafeAddress={cafe.address}
+        initialContent={editingMyReview.content}
+        initialPhotos={editingMyReview.photoUrls}
+        onBack={() => setEditingMyReview(null)}
+        onClose={onClose}
+        onSaved={() => { setEditingMyReview(null); loadReviews(); }}
+      />
     );
   }
 
@@ -1923,6 +2106,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                         review={review}
                         initialLiked={likedReviewIds.has(review.id)}
                         onToggleLike={handleToggleReviewLike}
+                        onEditReview={() => setEditingMyReview({ id: review.id, content: review.content, photoUrls: review.photo_urls ?? [] })}
+                        onDeleteReview={() => setDeleteReviewTargetId(review.id)}
                       />
                     ))}
                     {!showAllReviews && ordered.length > 3 && (
@@ -2051,6 +2236,30 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
             </ConfirmDialog.ConfirmButton>
           }
           onClose={() => setShowUnfavoriteDialog(false)}
+        />
+      )}
+
+      {/* ── 내 리뷰 삭제 확인 다이얼로그 ── */}
+      {deleteReviewTargetId && (
+        <ConfirmDialog
+          open={true}
+          title={<ConfirmDialog.Title>리뷰를 삭제할까요?</ConfirmDialog.Title>}
+          description={<ConfirmDialog.Description>삭제한 리뷰는 복구할 수 없어요.</ConfirmDialog.Description>}
+          cancelButton={
+            <ConfirmDialog.CancelButton onClick={() => setDeleteReviewTargetId(null)}>
+              취소
+            </ConfirmDialog.CancelButton>
+          }
+          confirmButton={
+            <ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={async () => {
+              await deleteReview(deleteReviewTargetId);
+              setDeleteReviewTargetId(null);
+              loadReviews();
+            }}>
+              삭제하기
+            </ConfirmDialog.ConfirmButton>
+          }
+          onClose={() => setDeleteReviewTargetId(null)}
         />
       )}
 
