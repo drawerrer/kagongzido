@@ -697,7 +697,7 @@ function WrittenReviewPage({
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative' }}>
       <SubHeader title="작성한 리뷰" onBack={onBack} onMore={() => {}} onClose={onClose} />
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingTop: 16, paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         <StoreCountBar count={reviews.length} />
 
         {reviews.length === 0 ? (
