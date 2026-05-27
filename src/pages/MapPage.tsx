@@ -199,11 +199,9 @@ const [filterOpen, setFilterOpen] = useState(false);
   // cafesRef 항상 최신 유지
   useEffect(() => { cafesRef.current = cafes; }, [cafes]);
 
-  // ── 네비게이션 바 우측 검색 버튼 등록 ────────────────────
+  // ── 네비게이션 바 우측 검색 버튼 이벤트 리스너 등록 ────────────────────
+  // unmount(탭 이동) 시 removeAccessoryButton 으로 다른 탭에 버튼이 남지 않도록 정리
   useEffect(() => {
-    try {
-      partner.addAccessoryButton({ id: 'search', title: '검색', icon: { name: 'icon-search-mono' } });
-    } catch {}
     let cleanup: (() => void) | undefined;
     try {
       cleanup = tdsEvent.addEventListener('navigationAccessoryEvent', {
@@ -212,8 +210,21 @@ const [filterOpen, setFilterOpen] = useState(false);
         },
       });
     } catch {}
-    return () => { try { cleanup?.(); } catch {} };
+    return () => {
+      try { cleanup?.(); } catch {}
+      try { partner.removeAccessoryButton(); } catch {}
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 검색 버튼 표시 — 카페 상세 확장(expanded) 중에는 DetailPage 의 하트 버튼이 표시되므로 제외
+  // panelState 또는 selectedMapCafe 가 바뀔 때마다 재등록하여 DetailPage cleanup 으로 제거된 버튼 복구
+  useEffect(() => {
+    if (!selectedMapCafe || panelState !== 'expanded') {
+      try {
+        partner.addAccessoryButton({ id: 'search', title: '검색', icon: { name: 'icon-search-mono' } });
+      } catch {}
+    }
+  }, [selectedMapCafe, panelState]);
 
   // 지도 패널 열린 상태에서 백 → 패널 닫기 (그 외엔 SDK 기본 동작 = 앱 종료)
   useBackEvent(
