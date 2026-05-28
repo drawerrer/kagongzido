@@ -6,6 +6,7 @@ import FocusBottomCTA from '../components/FocusBottomCTA';
 import SheetMenuRow from '../components/SheetMenuRow';
 import SheetCTA from '../components/SheetCTA';
 import CafePlaceholder from '../components/CafePlaceholder';
+import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
 
 // ────────── 타입 ─────────────────────────────────────────────
 interface CafeInfo {
@@ -447,13 +448,13 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
         disabled={!canSubmit}
       />
 
-      {/* ── 작성 중단 확인 다이얼로그 ── */}
-      {showDiscardDialog && (
-        <DiscardDialog
-          onDiscard={onBack}
-          onContinue={() => setShowDiscardDialog(false)}
-        />
-      )}
+      {/* ── 작성 중단 확인 다이얼로그 (TDS ConfirmDialog 공용 컴포넌트) ── */}
+      <DiscardConfirmDialog
+        type="review"
+        open={showDiscardDialog}
+        onDiscard={onBack}
+        onContinue={() => setShowDiscardDialog(false)}
+      />
 
       {/* ── 사진 추가 바텀시트 ── */}
       {showPhotoSheet && (
@@ -480,72 +481,6 @@ function Spinner() {
     }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
-  );
-}
-
-// ────────── 작성 중단 다이얼로그 ─────────────────────────────
-function DiscardDialog({
-  onDiscard,
-  onContinue,
-}: {
-  onDiscard: () => void;
-  onContinue: () => void;
-}) {
-  return (
-    <>
-      {/* 딤 배경 */}
-      <div
-        onClick={onContinue}
-        style={{
-          position: 'absolute', inset: 0,
-          background: 'rgba(0,0,0,0.45)',
-          zIndex: 300,
-        }}
-      />
-      {/* 다이얼로그 */}
-      <div style={{
-        position: 'absolute',
-        top: '50%', left: '50%',
-        transform: 'translate(-50%,-50%)',
-        zIndex: 301,
-        background: 'white',
-        borderRadius: 16,
-        padding: '28px 24px 20px',
-        width: 280,
-        textAlign: 'center',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-      }}>
-        <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 10 }}>
-          작성을 중단할까요?
-        </p>
-        <p style={{ fontSize: 14, color: '#8B95A1', lineHeight: 1.5, marginBottom: 24 }}>
-          작성 중인 내용은 저장되지 않아요
-        </p>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={onContinue}
-            style={{
-              flex: 1, height: 44, borderRadius: 10,
-              border: '1.5px solid #E5E8EB',
-              background: 'white',
-              fontSize: 15, fontWeight: 600, color: '#4E5968',
-            }}
-          >
-            계속 작성
-          </button>
-          <button
-            onClick={onDiscard}
-            style={{
-              flex: 1, height: 44, borderRadius: 10,
-              background: '#FF4B4B',
-              fontSize: 15, fontWeight: 700, color: 'white',
-            }}
-          >
-            중단하기
-          </button>
-        </div>
-      </div>
-    </>
   );
 }
 

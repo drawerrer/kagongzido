@@ -15,6 +15,7 @@ import {
 import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
 import CafePlaceholder from '../components/CafePlaceholder';
+import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
 import LogoImg from '../assets/LOGO/logo_mockup.png';
 
 // EmptyState 액션 버튼 공용 + 아이콘
@@ -563,13 +564,12 @@ function ReviewEditPage({
             <p style={{ fontSize: 12, color: '#B0B8C1' }}>*사진은 최대 5장까지 추가할 수 있어요</p>
           </div>
           <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-            {photos.map((bg, idx) => (
+            {photos.map((uri, idx) => (
               <div key={idx} style={{
                 width: 80, height: 80, borderRadius: 8, flexShrink: 0,
-                background: bg, position: 'relative', overflow: 'hidden',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative', overflow: 'hidden',
               }}>
-                <CafePlaceholder size="45%" />
+                <img src={uri} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 <button
                   onClick={() => removePhoto(idx)}
                   style={{
@@ -659,51 +659,27 @@ function ReviewEditPage({
         </div>
       </div>
 
-      {/* 취소 확인 다이얼로그 */}
-      {showCancelDialog && (
-        <>
-          <div
-            onClick={() => setShowCancelDialog(false)}
-            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200 }}
-          />
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%,-50%)',
-            zIndex: 201, background: 'white', borderRadius: 16,
-            padding: '28px 24px 20px', width: 280, textAlign: 'center',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-          }}>
-            <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 10 }}>
-              수정을 취소할까요?
-            </p>
-            <p style={{ fontSize: 14, color: '#8B95A1', lineHeight: 1.5, marginBottom: 24 }}>
-              지금 나가면 작성한 내용이 사라져요
-            </p>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => setShowCancelDialog(false)}
-                style={{
-                  flex: 1, height: 44, borderRadius: 10,
-                  border: '1.5px solid #E5E8EB', background: 'white',
-                  fontSize: 15, fontWeight: 600, color: '#4E5968',
-                }}
-              >
-                계속 수정
-              </button>
-              <button
-                onClick={onBack}
-                style={{
-                  flex: 1, height: 44, borderRadius: 10,
-                  background: '#FF4B4B', border: 'none',
-                  fontSize: 15, fontWeight: 700, color: 'white',
-                }}
-              >
-                취소하기
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      {/* 취소 확인 다이얼로그 — TDS ConfirmDialog (컬렉션 삭제 다이얼로그와 동일 컴포넌트) */}
+      <ConfirmDialog
+        open={showCancelDialog}
+        title={<ConfirmDialog.Title>수정을 취소할까요?</ConfirmDialog.Title>}
+        description={
+          <ConfirmDialog.Description>
+            지금 나가면 작성한 내용이 사라져요
+          </ConfirmDialog.Description>
+        }
+        cancelButton={
+          <ConfirmDialog.CancelButton onClick={() => setShowCancelDialog(false)}>
+            계속 수정
+          </ConfirmDialog.CancelButton>
+        }
+        confirmButton={
+          <ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={onBack}>
+            취소하기
+          </ConfirmDialog.ConfirmButton>
+        }
+        onClose={() => setShowCancelDialog(false)}
+      />
 
       {/* 사진 추가 바텀시트 (SheetMenuRow 통일) */}
       {showPhotoSheet && (
@@ -932,6 +908,24 @@ function ReportCafePage({
   const [directName, setDirectName] = useState<string | null>(initialReport && !initialReport.store_name ? null : null);
   const [directAddress, setDirectAddress] = useState('');
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+  // 작성 중인 내용이 있는지 — 읽기 전용(뷰) 모드에서는 항상 false
+  const hasContent =
+    !readOnly && (
+      !!selectedCafe ||
+      !!directName ||
+      query.trim().length > 0 ||
+      Object.values(chips).some(v => v) ||
+      reviewText.trim().length > 0 ||
+      photos.length > 0
+    );
+
+  // 뒤로가기 핸들러 — 작성 내용 있으면 discard 다이얼로그, 없으면 즉시 onBack
+  const handleBack = () => {
+    if (hasContent) { setShowDiscardDialog(true); return; }
+    onBack();
+  };
 
   const results = query.trim()
     ? allStores
@@ -954,7 +948,7 @@ function ReportCafePage({
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative', overflow: 'hidden' }}>
-      <SubHeader onBack={onBack} />
+      <SubHeader onBack={handleBack} />
       {/* 하단 고정 CTA(52px + padding 20px*2 = 92px) + safe-area 만큼 스크롤 영역에 여백 확보 */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 92px)' }}>
 
@@ -1318,6 +1312,14 @@ function ReportCafePage({
           onClose();
         }}>확인</ConfirmDialog.ConfirmButton>}
         onClose={() => setShowSubmitDialog(false)}
+      />
+
+      {/* 작성 중단 확인 다이얼로그 (TDS ConfirmDialog 공용 컴포넌트) */}
+      <DiscardConfirmDialog
+        type="report"
+        open={showDiscardDialog}
+        onDiscard={() => { setShowDiscardDialog(false); onBack(); }}
+        onContinue={() => setShowDiscardDialog(false)}
       />
     </div>
   );

@@ -554,11 +554,15 @@ function PhotoCell({
   return (
     <div style={{
       width: size, height: size, borderRadius: radius, flexShrink: 0,
-      background: bg, overflow: 'hidden',
+      background: '#F2F4F6', overflow: 'hidden',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       position: 'relative',
     }}>
-      <CafePlaceholder size="45%" />
+      {bg ? (
+        <img src={bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : (
+        <CafePlaceholder size="45%" />
+      )}
       {label && (
         <div style={{
           position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)',
@@ -595,11 +599,15 @@ function PhotoMosaic({
       {expandedIdx !== null && (
         <div style={{
           width: '100%', aspectRatio: '4/3', borderRadius: 12, overflow: 'hidden',
-          background: allPhotos[expandedIdx],
+          background: '#F2F4F6',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           position: 'relative', marginBottom: 8,
         }}>
-          <CafePlaceholder size="35%" />
+          {allPhotos[expandedIdx] ? (
+            <img src={allPhotos[expandedIdx]} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <CafePlaceholder size="35%" />
+          )}
           <button
             onClick={() => setExpandedIdx(null)}
             style={{
@@ -629,14 +637,18 @@ function PhotoMosaic({
               onClick={() => isLastSlot ? onMore?.() : setExpandedIdx(i)}
               style={{
                 aspectRatio: '1 / 1',
-                background: bg,
+                background: '#F2F4F6',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 position: 'relative',
                 cursor: 'pointer',
                 overflow: 'hidden',
               }}
             >
-              <CafePlaceholder size="45%" />
+              {bg ? (
+                <img src={bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <CafePlaceholder size="45%" />
+              )}
               {/* 선택된 사진 하이라이트 */}
               {expandedIdx === i && !isLastSlot && (
                 <div style={{
@@ -822,12 +834,16 @@ function ReviewCard({ review, initialLiked, onToggleLike, onEditReview, onDelete
       {expandedImgIdx !== null && review.photo_urls && (
         <div style={{
           width: 343, maxWidth: '100%', aspectRatio: '4/3',
-          background: review.photo_urls[expandedImgIdx],
+          background: '#F2F4F6',
           borderRadius: 10, overflow: 'hidden',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           position: 'relative', marginBottom: 10,
         }}>
-          <CafePlaceholder size="35%" />
+          {review.photo_urls[expandedImgIdx] ? (
+            <img src={review.photo_urls[expandedImgIdx]} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <CafePlaceholder size="35%" />
+          )}
           <button
             onClick={() => setExpandedImgIdx(null)}
             style={{
@@ -1200,9 +1216,9 @@ function EditMyReviewPage({
             <p style={{ fontSize: 12, color: '#B0B8C1' }}>*사진은 최대 5장까지 추가할 수 있어요</p>
           </div>
           <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
-            {photos.map((bg, idx) => (
-              <div key={idx} style={{ width: 80, height: 80, borderRadius: 8, flexShrink: 0, background: bg, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CafePlaceholder size="45%" />
+            {photos.map((uri, idx) => (
+              <div key={idx} style={{ width: 80, height: 80, borderRadius: 8, flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+                <img src={uri} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 <button onClick={() => removePhoto(idx)} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 11, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2L8 8M8 2L2 8" stroke="white" strokeWidth="1.5" strokeLinecap="round" /></svg>
                 </button>
@@ -1241,20 +1257,27 @@ function EditMyReviewPage({
         </div>
       </div>
 
-      {/* 취소 확인 다이얼로그 */}
-      {showCancelDialog && (
-        <>
-          <div onClick={() => setShowCancelDialog(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200 }} />
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 201, background: 'white', borderRadius: 16, padding: '28px 24px 20px', width: 280, textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
-            <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28', marginBottom: 10 }}>수정을 취소할까요?</p>
-            <p style={{ fontSize: 14, color: '#8B95A1', lineHeight: 1.5, marginBottom: 24 }}>지금 나가면 작성한 내용이 사라져요</p>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setShowCancelDialog(false)} style={{ flex: 1, height: 44, borderRadius: 10, border: '1.5px solid #E5E8EB', background: 'white', fontSize: 15, fontWeight: 600, color: '#4E5968', cursor: 'pointer' }}>계속 수정</button>
-              <button onClick={onBack} style={{ flex: 1, height: 44, borderRadius: 10, background: '#FF4B4B', border: 'none', fontSize: 15, fontWeight: 700, color: 'white', cursor: 'pointer' }}>취소하기</button>
-            </div>
-          </div>
-        </>
-      )}
+      {/* 취소 확인 다이얼로그 — TDS ConfirmDialog (컬렉션 삭제 다이얼로그와 동일 컴포넌트) */}
+      <ConfirmDialog
+        open={showCancelDialog}
+        title={<ConfirmDialog.Title>수정을 취소할까요?</ConfirmDialog.Title>}
+        description={
+          <ConfirmDialog.Description>
+            지금 나가면 작성한 내용이 사라져요
+          </ConfirmDialog.Description>
+        }
+        cancelButton={
+          <ConfirmDialog.CancelButton onClick={() => setShowCancelDialog(false)}>
+            계속 수정
+          </ConfirmDialog.CancelButton>
+        }
+        confirmButton={
+          <ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={onBack}>
+            취소하기
+          </ConfirmDialog.ConfirmButton>
+        }
+        onClose={() => setShowCancelDialog(false)}
+      />
 
       {/* 사진 추가 바텀시트 */}
       {showPhotoSheet && (
@@ -1495,10 +1518,12 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   }, []);
 
   // backHandlerRef 업데이트 — 항상 최신 상태 반영
+  // 자식 페이지(WriteReview/PhotoReview/EditMyReview)는 각자 useBackEvent 를 보유하고 있어
+  // 자식이 자체적으로 닫기/다이얼로그 표시를 처리함. 부모가 동시에 닫아버리면
+  // 자식의 'discard 다이얼로그' 가 표시될 새 없이 페이지가 언마운트되는 회귀 발생 →
+  // 자식이 떠 있는 동안엔 부모 핸들러는 no-op.
   backHandlerRef.current = () => {
-    if (showPhotoReview) { setShowPhotoReview(false); return; }
-    if (showWriteReview) { setShowWriteReview(false); return; }
-    if (editingMyReview) { setEditingMyReview(null); return; }
+    if (showPhotoReview || showWriteReview || editingMyReview) return;
     onBack();
   };
 

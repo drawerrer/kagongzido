@@ -156,11 +156,16 @@ function PhotoDetailView({
             {authorPhotos.map((p, i) => (
               <div key={i} style={{
                 flexShrink: 0, width: 343, height: 343,
-                background: p.bg,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 scrollSnapAlign: 'start',
+                background: '#000',
+                position: 'relative', overflow: 'hidden',
               }}>
-                <CafePlaceholder size="35%" />
+                {p.bg ? (
+                  <img src={p.bg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                ) : (
+                  <CafePlaceholder size="35%" />
+                )}
               </div>
             ))}
           </div>
@@ -486,12 +491,16 @@ export default function PhotoReviewPage({
                   onClick={() => setDetailIndex(i)}
                   style={{
                     aspectRatio: '1 / 1',
-                    background: photo.bg,
+                    background: '#F2F4F6',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     cursor: 'pointer', position: 'relative', overflow: 'hidden',
                   }}
                 >
-                  <CafePlaceholder size="45%" />
+                  {photo.bg ? (
+                    <img src={photo.bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <CafePlaceholder size="45%" />
+                  )}
                   {/* 제보자 뱃지 */}
                   {photo.isReporter && (
                     <div style={{
