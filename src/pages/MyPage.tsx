@@ -904,7 +904,7 @@ function ReportCafePage({
   const [photos, setPhotos] = useState<string[]>(initialReport?.photo_urls ?? []);
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [directName, setDirectName] = useState<string | null>(initialReport && !initialReport.store_name ? null : null);
+  // directName 제거 — query 가 곧 카페명이 되며, blur 시 address 입력창이 자동 노출됨
   const [directAddress, setDirectAddress] = useState('');
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
@@ -916,8 +916,8 @@ function ReportCafePage({
   const hasContent =
     !readOnly && (
       !!selectedCafe ||
-      !!directName ||
       query.trim().length > 0 ||
+      directAddress.trim().length > 0 ||
       Object.values(chips).some(v => v) ||
       reviewText.trim().length > 0 ||
       photos.length > 0
@@ -935,8 +935,10 @@ function ReportCafePage({
         .slice(0, 20)
         .map(c => ({ id: c.id, name: c.name, address: c.address_road }))
     : [];
-  const isSearching = !selectedCafe && !directName && query.trim().length > 0 && results.length > 0;
-  const isNoResult = !selectedCafe && !directName && query.trim().length > 0 && results.length === 0;
+  // 검색 결과는 포커스 중에만 노출 (blur 시 address 입력창이 대신 등장)
+  const isSearching = !selectedCafe && nameInputFocused && query.trim().length > 0 && results.length > 0;
+  // blur 됐고 카페명 입력은 있는데 선택된 카페 없을 때 → '주소 입력' 모드
+  const showAddressInput = !selectedCafe && !nameInputFocused && query.trim().length > 0;
 
   const toggleChip = (category: string, option: string) => {
     if (readOnly) return;
@@ -974,11 +976,8 @@ function ReportCafePage({
           )}
         </div>
 
-        {/* 어드민 메모 (뷰 모드 & 메모 있을 때만)
-            배경: 카페명 인풋바 색(#ffffff)
-            헤더 텍스트: '사진 첨부' 스타일 (15/700/#000000)
-            본문 텍스트: 카페명 인풋바 텍스트 스타일 (14/510/#252525)
-            섹션 간격: 카페명 ↔ 평가 사이와 동일 (24px top, 20px bottom, divider) */}
+        {/* 어드민 메모 (뷰 모드 & 메모 있을 때만) — 뷰 모드 전용 영역이라
+            아래의 일반 섹션 구분(8px 갭 블록 / 패딩 만)과 다르게 1px divider 로 명확히 분리 */}
         {readOnly && initialReport?.admin_comment && (
           <>
             <div style={{ padding: '24px 16px 20px', background: '#f3f3f3' }}>
@@ -995,7 +994,7 @@ function ReportCafePage({
                 </p>
               </div>
             </div>
-            {/* 구분선 — 카페명 ↔ 평가 사이와 동일 */}
+            {/* 운영진 메모 ↔ 카페명 구분선 — 뷰 모드 전용 영역과 일반 폼 영역을 시각적으로 구별 */}
             <div style={{ height: 1, background: 'rgba(0,27,55,0.1)' }} />
           </>
         )}
@@ -1015,7 +1014,7 @@ function ReportCafePage({
             transition: 'background 0.15s',
           }}>
             {selectedCafe ? (
-              /* 선택 완료: 카페명 + 주소 표시 */
+              /* 선택 완료: 카페명 + 주소 표시 — 클리어 시 query·주소도 리셋 */
               <>
                 <span style={{ fontSize: 14, fontWeight: 510, color: '#252525', lineHeight: '17.5px', flexShrink: 0 }}>
                   {selectedCafe.name}
@@ -1027,24 +1026,7 @@ function ReportCafePage({
                   {selectedCafe.address}
                 </span>
                 <button
-                  onClick={() => { setSelectedCafe(null); setQuery(''); setDirectName(null); setDirectAddress(''); }}
-                  style={{ padding: 0, lineHeight: 0, flexShrink: 0 }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" fill="#E5E8EB" />
-                    <line x1="15" y1="9" x2="9" y2="15" stroke="#6B7684" strokeWidth="1.5" strokeLinecap="round" />
-                    <line x1="9" y1="9" x2="15" y2="15" stroke="#6B7684" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                </button>
-              </>
-            ) : directName !== null ? (
-              /* 직접 입력 모드: 카페명 표시 + X */
-              <>
-                <span style={{ fontSize: 14, fontWeight: 510, color: '#252525', lineHeight: '17.5px', flex: 1 }}>
-                  {directName}
-                </span>
-                <button
-                  onClick={() => { setDirectName(null); setDirectAddress(''); setQuery(''); }}
+                  onClick={() => { setSelectedCafe(null); setQuery(''); setDirectAddress(''); }}
                   style={{ padding: 0, lineHeight: 0, flexShrink: 0 }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -1055,13 +1037,13 @@ function ReportCafePage({
                 </button>
               </>
             ) : (
-              /* 검색 인풋 — 텍스트 스타일 카페명 표시(14/510/#252525)와 통일 */
+              /* 검색 + 직접 입력 통합 인풋 — 검색 결과가 없어도 그대로 타이핑 가능 */
               <input
                 value={query}
-                onChange={e => { setQuery(e.target.value); setSelectedCafe(null); }}
+                onChange={e => { setQuery(e.target.value); }}
                 onFocus={() => setNameInputFocused(true)}
                 onBlur={() => setNameInputFocused(false)}
-                placeholder="카페 이름을 검색해 보세요"
+                placeholder="카페 이름을 검색하거나 직접 입력해 주세요"
                 style={{
                   flex: 1, border: 'none', outline: 'none', background: 'transparent',
                   fontSize: 14, fontWeight: 510, color: '#252525', fontFamily: 'inherit',
@@ -1070,8 +1052,9 @@ function ReportCafePage({
             )}
           </div>
 
-          {/* 인풋 2: 주소 입력 (직접 입력 모드) — textarea 와 동일 패턴 */}
-          {directName !== null && (
+          {/* 인풋 2: 주소 입력 — 카페명 인풋이 blur 됐고 query 가 있고 selectedCafe 없을 때 자동 노출
+              저장 버튼 → query + directAddress 를 selectedCafe 로 묶어 인풋 1 에 카페명+주소 형태로 표시 */}
+          {showAddressInput && (
             <div style={{
               marginTop: 8,
               background: addressInputFocused ? '#ffffff' : '#FAFBFC',
@@ -1080,7 +1063,6 @@ function ReportCafePage({
               transition: 'background 0.15s',
             }}>
               <input
-                autoFocus
                 value={directAddress}
                 onChange={e => setDirectAddress(e.target.value)}
                 onFocus={() => setAddressInputFocused(true)}
@@ -1092,15 +1074,22 @@ function ReportCafePage({
                 }}
               />
               <button
-                onClick={() => {
-                  setSelectedCafe({ id: `manual-${directName}`, name: directName, address: directAddress });
-                  setDirectName(null);
+                onMouseDown={(e) => {
+                  // address input blur 이전에 처리하여 의도치 않은 추가 동작 방지
+                  e.preventDefault();
+                  const name = query.trim();
+                  if (!name) return;
+                  setSelectedCafe({ id: `manual-${name}`, name, address: directAddress.trim() });
+                  setQuery('');
                   setDirectAddress('');
                 }}
+                disabled={query.trim().length === 0}
                 style={{
                   flexShrink: 0, height: 28, padding: '0 10px', borderRadius: 8,
                   background: '#252525', color: '#ffffff',
-                  fontSize: 13, fontWeight: 590, border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 590, border: 'none',
+                  cursor: query.trim().length === 0 ? 'default' : 'pointer',
+                  opacity: query.trim().length === 0 ? 0.4 : 1,
                 }}
               >
                 저장
@@ -1108,40 +1097,19 @@ function ReportCafePage({
             </div>
           )}
 
-          {/* 검색 결과 없음 */}
-          {isNoResult && (
-            <div style={{
-              marginTop: 16, padding: '32px 0',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
-            }}>
-              <span style={{ fontSize: 15, fontWeight: 510, color: '#8B95A1', textAlign: 'center' }}>
-                찾으시는 카페가 아직 없어요!
-              </span>
-              <button
-                onClick={() => { setDirectName(query); setQuery(''); }}
-                style={{
-                  height: 38, borderRadius: 10,
-                  backgroundColor: 'rgba(211,211,223,0.19)',
-                  border: 'none', cursor: 'pointer',
-                  display: 'inline-flex', alignItems: 'center',
-                  padding: '0 16px', gap: 6, flexShrink: 0,
-                }}
-              >
-                <span style={{ fontWeight: 590, fontSize: 15, color: '#252525', whiteSpace: 'nowrap' }}>
-                  &ldquo;{query}&rdquo; 직접 입력하기
-                </span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                  <path d="M12 5v14M5 12h14" stroke="#252525" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-          )}
+          {/* 검색 결과 — 포커스 중 + 매칭되는 결과 있을 때만 노출
+              onMouseDown + preventDefault 로 input blur 이전에 선택 처리 (DOM 사라짐 방지) */}
           {isSearching && results.map(cafe => {
             const isDark = hoveredId === cafe.id;
             return (
               <div
                 key={cafe.id}
-                onClick={() => { setSelectedCafe(cafe); setQuery(''); setHoveredId(null); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setSelectedCafe(cafe);
+                  setQuery('');
+                  setHoveredId(null);
+                }}
                 onMouseEnter={() => setHoveredId(cafe.id)}
                 onMouseLeave={() => setHoveredId(null)}
                 style={{
@@ -1159,10 +1127,7 @@ function ReportCafePage({
           })}
         </div>
 
-        {/* 구분선 */}
-        <div style={{ height: 1, background: 'rgba(0,27,55,0.1)' }} />
-
-        {/* 편의시설 칩 */}
+        {/* 편의시설 칩 — 카페명 padding-bottom 20 + padding-top 24 로 자연 간격 (라인 제거) */}
         <div style={{ padding: '24px 20px 0', background: '#f3f3f3' }}>
           {/* 섹션 헤더 — WriteReviewPage 평가 섹션과 동일 패턴 */}
           <p style={{ fontSize: 15, fontWeight: 700, color: '#000000', marginBottom: 16 }}>
@@ -1197,8 +1162,8 @@ function ReportCafePage({
           ))}
         </div>
 
-        {/* 구분선 */}
-        <div style={{ height: 1, background: 'rgba(0,27,55,0.1)' }} />
+        {/* 구분선 갭 — WriteReviewPage 평가↔사진 사이와 동일 (height 8, margin 8/0) */}
+        <div style={{ height: 8, background: '#F3F3F3', margin: '8px 0' }} />
 
         {/* 사진 첨부 */}
         <div style={{ padding: '20px 20px 0', background: '#f3f3f3' }}>
@@ -1268,6 +1233,9 @@ function ReportCafePage({
           );
         })()}
 
+        {/* 구분선 갭 — WriteReviewPage 사진↔텍스트 사이와 동일 (height 8, margin 20/0/0) */}
+        <div style={{ height: 8, background: '#F3F3F3', margin: '20px 0 0' }} />
+
         {/* 리뷰 작성 */}
         <div style={{ padding: '20px', background: '#f3f3f3' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -1328,7 +1296,7 @@ function ReportCafePage({
         confirmButton={<ConfirmDialog.ConfirmButton onClick={async () => {
           await insertCafeReport({
             user_id: userId,
-            store_name: selectedCafe?.name ?? directName ?? '',
+            store_name: selectedCafe?.name ?? query.trim() ?? '',
             outlet_status: chips['콘센트'] || null,
             seat_status: chips['좌석'] || null,
             noise_status: chips['소음'] || null,
