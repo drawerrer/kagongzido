@@ -114,16 +114,20 @@ function mapReportRow(row: UserReportRow, idx: number): CafeItem {
 // ─────────────────────────────────────────────────────────────
 
 
-/** 서브페이지 백버튼 핸들러 (TDS 네비바가 시각적 헤더 담당) */
+/** 서브페이지 백버튼 핸들러 (TDS 네비바가 시각적 헤더 담당)
+ *  enabled=false 시 backEvent 등록 X — 상위 오버레이가 떠 있을 때 위임
+ */
 function SubHeader({
   onBack,
+  enabled = true,
 }: {
   title?: string;
   onBack: () => void;
   onMore?: () => void;
   onClose?: () => void;
+  enabled?: boolean;
 }) {
-  useBackEvent(onBack);
+  useBackEvent(onBack, enabled);
   return null;
 }
 
@@ -139,12 +143,12 @@ function formatNoticeDate(iso: string): string {
   return `${yy}/${mm}/${dd}`;
 }
 
-function NoticesPage({ onBack }: { onBack: () => void }) {
+function NoticesPage({ onBack, enabled = true }: { onBack: () => void; enabled?: boolean }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [notices, setNotices] = useState<NoticeRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useBackEvent(onBack);
+  useBackEvent(onBack, enabled);
 
   useEffect(() => {
     (async () => {
@@ -338,6 +342,7 @@ function ReportedCafePage({
   onClose,
   onReportView,
   onReportNew,
+  hasOverlay = false,
 }: {
   onBack: () => void;
   onClose: () => void;
@@ -345,6 +350,8 @@ function ReportedCafePage({
   onReportView: (report: UserReportRow) => void;
   /** 빈 상태에서 새 제보 작성 페이지로 이동 */
   onReportNew?: () => void;
+  /** 위에 다른 오버레이가 떠 있을 때 SubHeader backEvent 비활성화 */
+  hasOverlay?: boolean;
 }) {
   const { userId } = useFavorites();
   const [reports, setReports] = useState<UserReportRow[]>([]);
@@ -362,7 +369,7 @@ function ReportedCafePage({
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
-      <SubHeader title="제보한 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
+      <SubHeader title="제보한 카페" onBack={onBack} onMore={() => {}} onClose={onClose} enabled={!hasOverlay} />
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {cafes.length === 0 ? (
           <EmptyState
@@ -388,11 +395,13 @@ function RecentCafePage({
   onClose,
   onDetailOpen,
   onGoHome,
+  hasOverlay = false,
 }: {
   onBack: () => void;
   onClose: () => void;
   onDetailOpen?: (id: string) => void;
   onGoHome?: () => void;
+  hasOverlay?: boolean;
 }) {
   const { recentlyViewed } = useFavorites();
   const cafes: CafeItem[] = recentlyViewed.map(r => ({
@@ -405,7 +414,7 @@ function RecentCafePage({
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
-      <SubHeader title="최근 본 카페" onBack={onBack} onMore={() => {}} onClose={onClose} />
+      <SubHeader title="최근 본 카페" onBack={onBack} onMore={() => {}} onClose={onClose} enabled={!hasOverlay} />
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {cafes.length === 0 ? (
           <EmptyState
@@ -730,6 +739,7 @@ function WrittenReviewPage({
   refreshTrigger,
   onGoHome,
   onDetailOpen,
+  hasOverlay = false,
 }: {
   onBack: () => void;
   onClose: () => void;
@@ -737,6 +747,7 @@ function WrittenReviewPage({
   refreshTrigger?: number;
   onGoHome?: () => void;
   onDetailOpen?: (cafeId: string) => void;
+  hasOverlay?: boolean;
 }) {
   const { userId } = useFavorites();
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
@@ -761,7 +772,7 @@ function WrittenReviewPage({
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3', position: 'relative' }}>
-      <SubHeader title="작성한 리뷰" onBack={onBack} onMore={() => {}} onClose={onClose} />
+      <SubHeader title="작성한 리뷰" onBack={onBack} onMore={() => {}} onClose={onClose} enabled={!hasOverlay} />
 
       <div style={{ flex: 1, overflowY: 'auto', paddingTop: 16, paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {reviews.length > 0 && <StoreCountBar count={reviews.length} />}
@@ -1321,6 +1332,7 @@ export default function MyPage({
   onRegisterBack,
   subViewRef,
   onGoHome,
+  hasDetailOverlay = false,
 }: {
   onDetailOpen?: (id: string) => void;
   initialSubPage?: SubPage | null;
@@ -1329,6 +1341,8 @@ export default function MyPage({
   subViewRef?: RefObject<HTMLDivElement> | null;
   /** 빈 상태 등에서 홈 탭으로 이동 */
   onGoHome?: () => void;
+  /** App 상위에서 DetailPage 등 오버레이가 떠 있는지 — 하위 SubHeader backEvent 위임용 */
+  hasDetailOverlay?: boolean;
 } = {}) {
   const [tab, setTab] = useState<MyTab>('내 활동');
   const [subPage, setSubPage] = useState<SubPage | null>(initialSubPage ?? null);
@@ -1733,6 +1747,7 @@ export default function MyPage({
           onClose={() => changeSubPage(null)}
           onReportView={(report) => setViewingReport(report)}
           onReportNew={() => changeSubPage('report-cafe')}
+          hasOverlay={hasDetailOverlay || !!viewingReport}
         />
       </div>
     )}
@@ -1753,6 +1768,7 @@ export default function MyPage({
           onClose={() => changeSubPage(null)}
           onDetailOpen={onDetailOpen}
           onGoHome={onGoHome}
+          hasOverlay={hasDetailOverlay}
         />
       </div>
     )}
@@ -1765,6 +1781,7 @@ export default function MyPage({
           refreshTrigger={reviewRefreshTrigger}
           onGoHome={onGoHome}
           onDetailOpen={onDetailOpen}
+          hasOverlay={hasDetailOverlay || !!editingReview}
         />
       </div>
     )}
@@ -1780,7 +1797,7 @@ export default function MyPage({
     )}
     {subPage === 'notices' && (
       <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
-        <NoticesPage onBack={() => changeSubPage(null)} />
+        <NoticesPage onBack={() => changeSubPage(null)} enabled={!hasDetailOverlay} />
       </div>
     )}
     {editingReview && (

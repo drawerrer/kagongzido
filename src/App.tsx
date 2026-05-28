@@ -420,6 +420,7 @@ function AppInner() {
               onRegisterBack={(fn) => { myPageBackRef.current = fn; }}
               subViewRef={myPageSubViewRef}
               onGoHome={() => setActiveTab('home')}
+              hasDetailOverlay={!!detailCafeId}
             />
           </div>
         )}
