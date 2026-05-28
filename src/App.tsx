@@ -22,6 +22,7 @@ import GuidebookPage from './pages/GuidebookPage';
 import MyPage from './pages/MyPage';
 import DetailPage from './pages/DetailPage';
 import PhotoReviewPage from './pages/PhotoReviewPage';
+import PlaceholderPreviewPage from './pages/PlaceholderPreviewPage';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { useFavorites } from './context/FavoritesContext';
 
@@ -160,6 +161,12 @@ function NicknameSetupPage({ userId, onDone }: { userId: string; onDone: (nickna
 }
 
 export default function App() {
+  // ── 개발용 미리보기 라우트 (?preview=placeholder) ─────────────
+  // 모든 hook 호출은 early return 이전에 선언 (Rules of Hooks)
+  const [previewMode, setPreviewMode] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return new URLSearchParams(window.location.search).get('preview');
+  });
   const [userId, setUserId] = useState<string | null>(null);
   const [nickname, setNickname] = useState<string | null>(null);
   const [needsNickname, setNeedsNickname] = useState(false);
@@ -211,6 +218,16 @@ export default function App() {
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 미리보기 모드 — 인증 로딩 건너뛰고 즉시 진입
+  if (previewMode === 'placeholder') {
+    return (
+      <PlaceholderPreviewPage onClose={() => {
+        window.history.replaceState({}, '', window.location.pathname);
+        setPreviewMode(null);
+      }} />
+    );
+  }
 
   if (!userId) return null;
 

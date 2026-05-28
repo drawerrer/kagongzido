@@ -1,4 +1,5 @@
 import { useFavorites, fmtDist } from '../../context/FavoritesContext';
+import CafePlaceholder from '../CafePlaceholder';
 
 export interface HomeCafe {
   id: string;
@@ -72,7 +73,7 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange }: StoreCa
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
         ) : (
-          <span style={{ fontSize: 28 }}>☕</span>
+          <CafePlaceholder size="45%" />
         )}
       </div>
 

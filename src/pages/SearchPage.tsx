@@ -9,6 +9,7 @@ import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
 import IcSearch from '../assets/icons/icon_search.svg?react';
 import IcHeart from '../assets/icons/icon_heart.svg?react';
+import CafePlaceholder from '../components/CafePlaceholder';
 
 const SearchEmptyPlusIcon = (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
@@ -199,7 +200,7 @@ function SearchCafeRow({ store, onTap }: { store: StoreRow; onTap?: () => void }
           : '#F2F4F6',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        {!store.thumbnail_url && <span style={{ fontSize: 28 }}>☕</span>}
+        {!store.thumbnail_url && <CafePlaceholder size="45%" />}
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2, minWidth: 0 }}>
         <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{store.name}</p>

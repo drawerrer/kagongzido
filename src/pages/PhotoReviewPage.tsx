@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useBackEvent } from '../hooks/useBackEvent';
 import BottomSheet from '../components/BottomSheet';
+import CafePlaceholder from '../components/CafePlaceholder';
 
 // ────────── 타입 ─────────────────────────────────────────────
 export interface ReviewPhoto {
@@ -159,7 +160,7 @@ function PhotoDetailView({
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 scrollSnapAlign: 'start',
               }}>
-                <span style={{ fontSize: 90, opacity: 0.08 }}>☕</span>
+                <CafePlaceholder size="35%" />
               </div>
             ))}
           </div>
@@ -490,7 +491,7 @@ export default function PhotoReviewPage({
                     cursor: 'pointer', position: 'relative', overflow: 'hidden',
                   }}
                 >
-                  <span style={{ fontSize: 22, opacity: 0.15 }}>☕</span>
+                  <CafePlaceholder size="45%" />
                   {/* 제보자 뱃지 */}
                   {photo.isReporter && (
                     <div style={{

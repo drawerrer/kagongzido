@@ -11,6 +11,8 @@ import { fetchAllStores, type StoreRow } from '../services/db';
 import Chip from '../components/Chip';
 import StoreCardHome, { type HomeCafe } from '../components/StoreCard/Home';
 import StoreCountBar from '../components/StoreCountBar';
+import CafePlaceholder from '../components/CafePlaceholder';
+import LogoImg from '../assets/LOGO/logo_mockup.png';
 
 declare global {
   interface Window { kakao: any; }
@@ -83,7 +85,9 @@ function makePillHtml(cafeId: string, name: string, selected: boolean): string {
   const color = selected ? '#ffffff' : '#191F28';
   const shadow = selected ? '0 2px 10px rgba(0,0,0,0.45)' : '0 2px 6px rgba(0,0,0,0.18)';
   const border = selected ? 'none' : '1px solid #e5e8eb';
-  return `<div data-cafe-id="${cafeId}" style="display:inline-flex;align-items:center;gap:4px;background:${bg};color:${color};border-radius:999px;padding:5px 10px 5px 8px;box-shadow:${shadow};white-space:nowrap;font-size:12px;font-weight:600;font-family:Pretendard,sans-serif;border:${border};cursor:pointer;"><span style="font-size:13px;">☕</span>${label}</div>`;
+  // ☕ 이모지 → 카공지도 로고 PNG (선택 시 흰 배경 위라 opacity 0.9, 비선택 시 0.7)
+  const logoOpacity = selected ? 0.95 : 0.75;
+  return `<div data-cafe-id="${cafeId}" style="display:inline-flex;align-items:center;gap:4px;background:${bg};color:${color};border-radius:999px;padding:5px 10px 5px 8px;box-shadow:${shadow};white-space:nowrap;font-size:12px;font-weight:600;font-family:Pretendard,sans-serif;border:${border};cursor:pointer;"><img src="${LogoImg}" alt="" style="width:14px;height:14px;object-fit:contain;opacity:${logoOpacity};display:block;" draggable="false"/>${label}</div>`;
 }
 
 // ── 아이콘 ────────────────────────────────
@@ -782,7 +786,7 @@ const [filterOpen, setFilterOpen] = useState(false);
                 ))
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginTop: 32, color: '#B0B8C1' }}>
-                  <span style={{ fontSize: 32 }}>☕</span>
+                  <CafePlaceholder size={42} />
                   <p style={{ fontSize: 14 }}>해당 카테고리의 카페가 없어요</p>
                 </div>
               )}

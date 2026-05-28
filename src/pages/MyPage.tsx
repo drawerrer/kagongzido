@@ -14,7 +14,8 @@ import {
 } from '../services/db';
 import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
-import LogoImg from '../assets/LOGO/logo.png';
+import CafePlaceholder from '../components/CafePlaceholder';
+import LogoImg from '../assets/LOGO/logo_mockup.png';
 
 // EmptyState 액션 버튼 공용 + 아이콘
 const EmptyPlusIcon = (
@@ -97,7 +98,7 @@ function mapReviewRow(row: UserReviewRow, idx: number): ReviewItem {
 function mapReportRow(row: UserReportRow, idx: number): CafeItem {
   // DB 의 status (text) 를 안전하게 UI 메타와 매칭. 누락/알 수 없는 값은 pending 처리.
   const status = (['pending', 'reviewing', 'resolved', 'rejected'] as const).find(s => s === row.status) ?? 'pending';
-  // 사진 첨부 시 첫 번째 사진 표시, 없으면 undefined → CafeGrid 가 그라데이션 + ☕ 이모지 노출
+  // 사진 첨부 시 첫 번째 사진 표시, 없으면 undefined → CafeGrid 가 그라데이션 + 로고 폴백 노출
   const firstPhoto = row.photo_urls?.[0];
   return {
     id: row.id,
@@ -258,7 +259,7 @@ function CafeGrid({ cafes, onDetailOpen, cardShadow = false }: { cafes: CafeItem
                   alt="카공지도"
                   style={{
                     width: '25%', height: '25%', objectFit: 'contain',
-                    opacity: 0.5,
+                    opacity: 0.75,
                   }}
                 />
               )}
@@ -511,7 +512,7 @@ function ReviewEditPage({
             background: review.cafeBg, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <span style={{ fontSize: 20, opacity: 0.2 }}>☕</span>
+            <CafePlaceholder size="45%" />
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
             <p style={{
@@ -568,7 +569,7 @@ function ReviewEditPage({
                 background: bg, position: 'relative', overflow: 'hidden',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <span style={{ fontSize: 18, opacity: 0.15 }}>☕</span>
+                <CafePlaceholder size="45%" />
                 <button
                   onClick={() => removePhoto(idx)}
                   style={{
@@ -805,7 +806,7 @@ function WrittenReviewPage({
                   cursor: onDetailOpen ? 'pointer' : 'default',
                 }}
               >
-                <span style={{ fontSize: 22, opacity: 0.18 }}>☕</span>
+                <CafePlaceholder size="45%" />
               </div>
 
               {/* 내용 */}

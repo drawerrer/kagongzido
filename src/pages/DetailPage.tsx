@@ -12,6 +12,7 @@ import WriteReviewPage from './WriteReviewPage';
 import { useFavorites } from '../context/FavoritesContext';
 import { fetchReviews, fetchStoreByPlaceId, fetchUserLikedReviewIds, toggleReviewLike, deleteReview, updateReview, type ReviewRow } from '../services/db';
 import SubButton from '../components/SubButton';
+import CafePlaceholder from '../components/CafePlaceholder';
 
 // ── 편의시설 SVG 아이콘 ──────────────────────────────────────
 function IcParking() {
@@ -557,7 +558,7 @@ function PhotoCell({
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       position: 'relative',
     }}>
-      <span style={{ fontSize: typeof size === 'number' ? size * 0.28 : 22, opacity: 0.18 }}>☕</span>
+      <CafePlaceholder size="45%" />
       {label && (
         <div style={{
           position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)',
@@ -598,7 +599,7 @@ function PhotoMosaic({
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           position: 'relative', marginBottom: 8,
         }}>
-          <span style={{ fontSize: 60, opacity: 0.15 }}>☕</span>
+          <CafePlaceholder size="35%" />
           <button
             onClick={() => setExpandedIdx(null)}
             style={{
@@ -635,7 +636,7 @@ function PhotoMosaic({
                 overflow: 'hidden',
               }}
             >
-              <span style={{ fontSize: 22, opacity: 0.18 }}>☕</span>
+              <CafePlaceholder size="45%" />
               {/* 선택된 사진 하이라이트 */}
               {expandedIdx === i && !isLastSlot && (
                 <div style={{
@@ -826,7 +827,7 @@ function ReviewCard({ review, initialLiked, onToggleLike, onEditReview, onDelete
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           position: 'relative', marginBottom: 10,
         }}>
-          <span style={{ fontSize: 50, opacity: 0.15 }}>☕</span>
+          <CafePlaceholder size="35%" />
           <button
             onClick={() => setExpandedImgIdx(null)}
             style={{
@@ -1201,7 +1202,7 @@ function EditMyReviewPage({
           <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
             {photos.map((bg, idx) => (
               <div key={idx} style={{ width: 80, height: 80, borderRadius: 8, flexShrink: 0, background: bg, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 18, opacity: 0.15 }}>☕</span>
+                <CafePlaceholder size="45%" />
                 <button onClick={() => removePhoto(idx)} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 11, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2L8 8M8 2L2 8" stroke="white" strokeWidth="1.5" strokeLinecap="round" /></svg>
                 </button>
@@ -1651,7 +1652,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   if (!loading && !storeData) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12, color: '#6B7684' }}>
-        <span style={{ fontSize: 48 }}>☕</span>
+        <CafePlaceholder size={64} />
         <p style={{ fontSize: 16, fontWeight: 600, color: '#191F28' }}>매장 정보를 찾을 수 없어요</p>
         <p style={{ fontSize: 14 }}>삭제되었거나 존재하지 않는 매장이에요</p>
       </div>
@@ -1823,7 +1824,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                       scrollSnapAlign: 'start',
                     }}
                   >
-                    {!img.url && <span style={{ fontSize: 72, opacity: 0.5 }}>☕</span>}
+                    {!img.url && <CafePlaceholder size={100} />}
                   </div>
                 ))}
               </div>

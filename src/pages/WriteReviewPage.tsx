@@ -5,6 +5,7 @@ import { insertReview } from '../services/db';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import SheetMenuRow from '../components/SheetMenuRow';
 import SheetCTA from '../components/SheetCTA';
+import CafePlaceholder from '../components/CafePlaceholder';
 
 // ────────── 타입 ─────────────────────────────────────────────
 interface CafeInfo {
@@ -269,7 +270,7 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
             flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <span style={{ fontSize: 22, opacity: 0.3 }}>☕</span>
+            <CafePlaceholder size="45%" />
           </div>
           {/* 이름 + 주소 */}
           <div style={{ flex: 1, overflow: 'hidden' }}>
