@@ -257,7 +257,7 @@ function CafeGrid({ cafes, onDetailOpen, cardShadow = false }: { cafes: CafeItem
                   src={LogoImg}
                   alt="카공지도"
                   style={{
-                    width: '35%', height: '35%', objectFit: 'contain',
+                    width: '25%', height: '25%', objectFit: 'contain',
                     opacity: 0.5,
                   }}
                 />
