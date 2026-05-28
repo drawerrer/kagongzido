@@ -7,12 +7,16 @@ import SheetMenuRow from '../components/SheetMenuRow';
 import SheetCTA from '../components/SheetCTA';
 import CafePlaceholder from '../components/CafePlaceholder';
 import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
+import IcPhoto from '../assets/icons/icon_photo.svg?react';
+import IcCamera from '../assets/icons/icon_camera.svg?react';
 
 // ────────── 타입 ─────────────────────────────────────────────
 interface CafeInfo {
   name: string;
   address: string;
   thumbnailBg?: string;
+  /** stores.thumbnail_url — 있으면 우선 노출, 없으면 CafePlaceholder 폴백 */
+  thumbnailUrl?: string;
 }
 
 interface WriteReviewPageProps {
@@ -264,14 +268,25 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
           borderBottom: '1px solid #F2F4F6',
           background: '#f3f3f3',
         }}>
-          {/* 썸네일 */}
+          {/* 썸네일 — thumbnailUrl 있으면 실제 이미지, 없으면 폴백 */}
           <div style={{
             width: 52, height: 52, borderRadius: 10,
-            background: cafe.thumbnailBg ?? 'linear-gradient(145deg,#1a1a2e 0%,#2d2d44 100%)',
+            background: cafe.thumbnailUrl ? '#F2F4F6' : (cafe.thumbnailBg ?? 'linear-gradient(145deg,#1a1a2e 0%,#2d2d44 100%)'),
             flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden',
+            position: 'relative',
           }}>
-            <CafePlaceholder size="45%" />
+            {cafe.thumbnailUrl ? (
+              <img
+                src={cafe.thumbnailUrl}
+                alt={cafe.name}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+              />
+            ) : (
+              <CafePlaceholder size="45%" />
+            )}
           </div>
           {/* 이름 + 주소 */}
           <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -292,7 +307,7 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
 
         {/* ── 평가 칩 섹션 ── */}
         <div style={{ padding: '24px 20px 0' }}>
-          <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28', marginBottom: 16 }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: '#000000', marginBottom: 16 }}>
             이 카페를 평가해주세요
           </p>
 
@@ -400,7 +415,7 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
         {/* ── 텍스트 입력 섹션 ── */}
         <div style={{ padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28' }}>리뷰 작성</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#000000' }}>리뷰 작성</p>
             <span style={{ fontSize: 13, color: text.length >= 10 ? '#252525' : '#B0B8C1' }}>
               {text.length}/200
             </span>
@@ -415,21 +430,22 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
             rows={5}
             style={{
               width: '100%',
-              border: '1.5px solid #E5E8EB',
+              border: 'none',
               borderRadius: 12,
               padding: '14px',
               fontSize: 14,
-              color: '#191F28',
+              fontWeight: 510,
+              color: '#252525',
               lineHeight: 1.6,
               resize: 'none',
               outline: 'none',
               fontFamily: 'inherit',
               boxSizing: 'border-box',
               background: '#FAFBFC',
-              transition: 'border-color 0.15s',
+              transition: 'background 0.15s',
             }}
-            onFocus={e => { e.target.style.borderColor = '#252525'; e.target.style.background = 'white'; }}
-            onBlur={e => { e.target.style.borderColor = '#E5E8EB'; e.target.style.background = '#FAFBFC'; }}
+            onFocus={e => { e.target.style.background = '#ffffff'; }}
+            onBlur={e => { e.target.style.background = '#FAFBFC'; }}
           />
 
           {/* 최소 글자 안내 */}
@@ -494,17 +510,9 @@ function PhotoSourceSheet({
   onCamera: () => void;
   onClose: () => void;
 }) {
-  const IconGallery = (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path fillRule="evenodd" clipRule="evenodd" d="M16.003 10.668C15.7647 10.6736 15.5277 10.6314 15.3059 10.5441C15.0841 10.4567 14.8821 10.3259 14.7116 10.1593C14.5411 9.99272 14.4057 9.79372 14.3132 9.57402C14.2207 9.35432 14.1732 9.11835 14.1732 8.87999C14.1733 8.64163 14.221 8.40568 14.3136 8.18604C14.4062 7.96639 14.5417 7.76747 14.7123 7.60097C14.8829 7.43448 15.085 7.30377 15.3069 7.21653C15.5287 7.1293 15.7657 7.0873 16.004 7.093C16.4708 7.10417 16.9146 7.29747 17.2407 7.63158C17.5669 7.96569 17.7494 8.4141 17.7492 8.88099C17.7491 9.34787 17.5663 9.79619 17.24 10.1301C16.9137 10.464 16.4698 10.6571 16.003 10.668ZM14.279 16.78H8.255C8.04261 16.7803 7.83407 16.7233 7.6513 16.6152C7.46853 16.507 7.31828 16.3515 7.21637 16.1652C7.11445 15.9789 7.06462 15.7685 7.07212 15.5562C7.07962 15.344 7.14418 15.1377 7.259 14.959L10.272 10.264C10.3789 10.097 10.5261 9.95955 10.7001 9.86435C10.8741 9.76916 11.0692 9.71926 11.2675 9.71926C11.4658 9.71926 11.6609 9.76916 11.8349 9.86435C12.0089 9.95955 12.1561 10.097 12.263 10.264L15.274 14.959C15.3888 15.1376 15.4533 15.3438 15.4609 15.556C15.4684 15.7682 15.4187 15.9785 15.3169 16.1648C15.2151 16.3511 15.065 16.5065 14.8823 16.6148C14.6997 16.723 14.4913 16.7801 14.279 16.78ZM19.287 2.25H4.713C4.05977 2.25 3.4333 2.50949 2.9714 2.9714C2.50949 3.4333 2.25 4.05977 2.25 4.713V19.287C2.25 19.9402 2.50949 20.5667 2.9714 21.0286C3.4333 21.4905 4.05977 21.75 4.713 21.75H19.287C19.9402 21.75 20.5667 21.4905 21.0286 21.0286C21.4905 20.5667 21.75 19.9402 21.75 19.287V4.713C21.75 4.05977 21.4905 3.4333 21.0286 2.9714C20.5667 2.50949 19.9402 2.25 19.287 2.25Z" fill="#141414"/>
-    </svg>
-  );
-  const IconCamera = (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path fillRule="evenodd" clipRule="evenodd" d="M12.0002 18.2662C10.6094 18.2646 9.27595 17.7114 8.29248 16.7279C7.30901 15.7444 6.7558 14.411 6.75421 13.0202C6.75553 11.6292 7.30863 10.2955 8.29213 9.3118C9.27563 8.32811 10.6092 7.77476 12.0002 7.77317C13.3912 7.77476 14.7248 8.32811 15.7083 9.3118C16.6918 10.2955 17.2449 11.6292 17.2462 13.0202C17.2446 14.411 16.6914 15.7444 15.7079 16.7279C14.7245 17.7114 13.391 18.2646 12.0002 18.2662ZM20.1132 5.13517H17.1592L16.0462 2.96617C15.8697 2.6228 15.602 2.33473 15.2724 2.13362C14.9429 1.9325 14.5643 1.82612 14.1782 1.82617H9.76521C9.37154 1.82613 8.98579 1.93673 8.65196 2.14538C8.31813 2.35402 8.04967 2.65229 7.87721 3.00617L6.84121 5.13517H3.88721C3.5562 5.13504 3.2284 5.20013 2.92254 5.32671C2.61669 5.45329 2.33876 5.63889 2.10466 5.87291C1.87055 6.10693 1.68483 6.38477 1.55813 6.69058C1.43143 6.99638 1.36621 7.32416 1.36621 7.65517V19.2562C1.36621 19.5872 1.43143 19.915 1.55813 20.2208C1.68483 20.5266 1.87055 20.8044 2.10466 21.0384C2.33876 21.2725 2.61669 21.4581 2.92254 21.5846C3.2284 21.7112 3.5562 21.7763 3.88721 21.7762H20.1132C20.4442 21.7763 20.772 21.7112 21.0779 21.5846C21.3837 21.4581 21.6617 21.2725 21.8958 21.0384C22.1299 20.8044 22.3156 20.5266 22.4423 20.2208C22.569 19.915 22.6342 19.5872 22.6342 19.2562V7.65517C22.6342 7.32416 22.569 6.99638 22.4423 6.69058C22.3156 6.38477 22.1299 6.10693 21.8958 5.87291C21.6617 5.63889 21.3837 5.45329 21.0779 5.32671C20.772 5.20013 20.4442 5.13504 20.1132 5.13517Z" fill="#141414"/>
-      <path fillRule="evenodd" clipRule="evenodd" d="M12 9.66406C11.1104 9.66512 10.2575 10.0191 9.62849 10.6482C8.99951 11.2774 8.64581 12.1304 8.64502 13.0201C8.64555 13.9098 8.99916 14.7629 9.6282 15.3922C10.2572 16.0214 11.1103 16.3753 12 16.3761C12.8897 16.3753 13.7428 16.0214 14.3718 15.3922C15.0009 14.7629 15.3545 13.9098 15.355 13.0201C15.3542 12.1304 15.0005 11.2774 14.3715 10.6482C13.7426 10.0191 12.8897 9.66512 12 9.66406Z" fill="#141414"/>
-    </svg>
-  );
+  // 모음집 액션시트(CollectionActionSheet)와 동일 톤 — #333D4B
+  const IconGallery = <IcPhoto width={24} height={24} style={{ color: '#333D4B', display: 'block' }} />;
+  const IconCamera = <IcCamera width={24} height={24} style={{ color: '#333D4B', display: 'block' }} />;
   return (
     <>
       <div

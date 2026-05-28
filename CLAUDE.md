@@ -30,7 +30,6 @@
 src/
 ├── pages/          # 화면 단위 컴포넌트 (피그마 Frame과 1:1 대응)
 │   ├── MapPage.tsx       → 피그마 "홈 - 지도" 화면
-│   ├── FavoritesPage.tsx → 피그마 "즐겨찾기" 화면
 │   └── MyPage.tsx        → 피그마 "마이페이지" 화면
 ├── components/     # 재사용 UI 컴포넌트 (피그마 Component와 1:1 대응)
 ├── hooks/          # 비즈니스 로직 (위치, API 호출 등)
@@ -87,6 +86,12 @@ main              ← 배포 브랜치 (직접 커밋 금지)
 - 컴포넌트는 함수형으로만 작성
 - CSS는 CSS 변수(`--color-*`, `--space-*`) 적극 활용
 - 새 페이지는 `src/pages/` 에, 공통 컴포넌트는 `src/components/` 에
+- **이모지 사용 금지 (서비스 UI 전반)** — ☕, ⚠️, 📷, 🖼️ 등 모든 이모지는
+  SVG 아이콘으로 처리한다. 새 이모지가 필요하면 코드에 넣기 전에
+  사용자에게 경고하고 SVG 자산(`src/assets/icons/icon_*.svg`) 생성을 안내할 것.
+  - 카페 폴백: `<CafePlaceholder />` 사용
+  - 인앱 아이콘: SVG component import (`?react`) 후 `color` prop 으로 톤 통일
+  - 모음집 액션시트(#333D4B) 톤을 표준으로 함
 
 ---
 

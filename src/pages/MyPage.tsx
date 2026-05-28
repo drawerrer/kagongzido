@@ -16,6 +16,9 @@ import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
 import CafePlaceholder from '../components/CafePlaceholder';
 import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
+import IcPhoto from '../assets/icons/icon_photo.svg?react';
+import IcCamera from '../assets/icons/icon_camera.svg?react';
+import IcMail from '../assets/icons/icon_mail.svg?react';
 import LogoImg from '../assets/LOGO/logo_mockup.png';
 
 // EmptyState 액션 버튼 공용 + 아이콘
@@ -468,14 +471,13 @@ function ReviewEditPage({
   };
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
-  const [saved, setSaved] = useState(false);
+  // saved 상태는 토스트로 대체되어 제거 — 상위 reviewEditToast 가 안내
 
   const handleCancel = () => setShowCancelDialog(true);
 
   const handleSave = () => {
     onSave(text, photos, evalState);
-    setSaved(true);
-    setTimeout(() => onBack(), 1200);
+    onBack();
   };
 
   const removePhoto = (idx: number) => setPhotos(prev => prev.filter((_, i) => i !== idx));
@@ -654,7 +656,7 @@ function ReviewEditPage({
             fontSize: 16, fontWeight: 700,
           }}
         >
-          {saved ? '✓ 완료' : '등록하기'}
+          등록하기
         </button>
         </div>
       </div>
@@ -697,8 +699,8 @@ function ReviewEditPage({
           }}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: '#E5E8EB', margin: '0 auto 18px' }} />
             <p style={{ fontSize: 16, fontWeight: 700, color: '#191F28', padding: '0 20px', marginBottom: 4 }}>사진 추가</p>
-            <SheetMenuRow icon={<span style={{ fontSize: 20 }}>🖼️</span>} label="갤러리에서 선택" onClick={handleGallery} />
-            <SheetMenuRow icon={<span style={{ fontSize: 20 }}>📷</span>} label="카메라로 촬영" onClick={handleCamera} />
+            <SheetMenuRow icon={<IcPhoto width={20} height={20} style={{ color: '#333D4B', display: 'block' }} />} label="갤러리에서 선택" onClick={handleGallery} />
+            <SheetMenuRow icon={<IcCamera width={20} height={20} style={{ color: '#333D4B', display: 'block' }} />} label="카메라로 촬영" onClick={handleCamera} />
           </div>
         </>
       )}
@@ -909,6 +911,9 @@ function ReportCafePage({
   const [directAddress, setDirectAddress] = useState('');
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+  // 인풋바 focus 추적 — textarea 와 동일 패턴(#FAFBFC ↔ #ffffff) 적용용
+  const [nameInputFocused, setNameInputFocused] = useState(false);
+  const [addressInputFocused, setAddressInputFocused] = useState(false);
 
   // 작성 중인 내용이 있는지 — 읽기 전용(뷰) 모드에서는 항상 false
   const hasContent =
@@ -972,17 +977,20 @@ function ReportCafePage({
           )}
         </div>
 
-        {/* 어드민 메모 (뷰 모드 & 메모 있을 때만) */}
+        {/* 어드민 메모 (뷰 모드 & 메모 있을 때만)
+            배경: 카페명 인풋바 색(#ffffff)
+            헤더 텍스트: '사진 첨부' 스타일 (15/700/#000000)
+            본문 텍스트: 카페명 인풋바 텍스트 스타일 (14/510/#252525) */}
         {readOnly && initialReport?.admin_comment && (
           <div style={{
             margin: '16px 16px 0', padding: '14px 16px',
-            borderRadius: 12, background: '#E8F4FF',
-            border: '1px solid #B3D9FF',
+            borderRadius: 12, background: '#ffffff',
           }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#004085', marginBottom: 6 }}>
-              ✉️ 운영진 메모
-            </p>
-            <p style={{ fontSize: 13, color: '#0F2D52', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <IcMail width={18} height={18} style={{ color: '#000000', display: 'block', flexShrink: 0 }} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#000000' }}>운영진 메모</span>
+            </div>
+            <p style={{ fontSize: 14, fontWeight: 510, color: '#252525', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
               {initialReport.admin_comment}
             </p>
           </div>
@@ -990,12 +998,14 @@ function ReportCafePage({
 
         {/* 카페명 섹션 */}
         <div style={{ padding: '0 16px 20px', background: '#f3f3f3' }}>
-          <span style={{ display: 'block', fontSize: 14, fontWeight: 590, color: '#000000', lineHeight: '25.5px', marginBottom: 8 }}>카페명</span>
+          <span style={{ display: 'block', fontSize: 15, fontWeight: 700, color: '#000000', marginBottom: 8 }}>카페명</span>
 
-          {/* 인풋 1: 카페명 검색 / 선택완료 / 직접입력 */}
+          {/* 인풋 1: 카페명 검색 / 선택완료 / 직접입력 — textarea 와 동일 패턴 */}
           <div style={{
-            background: '#ffffff', borderRadius: 12, height: 44,
+            background: nameInputFocused ? '#ffffff' : '#FAFBFC',
+            borderRadius: 12, height: 44,
             display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10, gap: 6,
+            transition: 'background 0.15s',
           }}>
             {selectedCafe ? (
               /* 선택 완료: 카페명 + 주소 표시 */
@@ -1038,34 +1048,40 @@ function ReportCafePage({
                 </button>
               </>
             ) : (
-              /* 검색 인풋 */
+              /* 검색 인풋 — 텍스트 스타일 카페명 표시(14/510/#252525)와 통일 */
               <input
                 value={query}
                 onChange={e => { setQuery(e.target.value); setSelectedCafe(null); }}
+                onFocus={() => setNameInputFocused(true)}
+                onBlur={() => setNameInputFocused(false)}
                 placeholder="카페 이름을 검색해 보세요"
                 style={{
                   flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                  fontSize: 17, fontWeight: 510, color: '#191f28', fontFamily: 'inherit',
+                  fontSize: 14, fontWeight: 510, color: '#252525', fontFamily: 'inherit',
                 }}
               />
             )}
           </div>
 
-          {/* 인풋 2: 주소 입력 (직접 입력 모드) */}
+          {/* 인풋 2: 주소 입력 (직접 입력 모드) — textarea 와 동일 패턴 */}
           {directName !== null && (
             <div style={{
               marginTop: 8,
-              background: '#ffffff', borderRadius: 12, height: 44,
+              background: addressInputFocused ? '#ffffff' : '#FAFBFC',
+              borderRadius: 12, height: 44,
               display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10, gap: 6,
+              transition: 'background 0.15s',
             }}>
               <input
                 autoFocus
                 value={directAddress}
                 onChange={e => setDirectAddress(e.target.value)}
+                onFocus={() => setAddressInputFocused(true)}
+                onBlur={() => setAddressInputFocused(false)}
                 placeholder="제보하시려는 카페의 주소를 알려주세요"
                 style={{
                   flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                  fontSize: 14, fontWeight: 510, color: '#191f28', fontFamily: 'inherit',
+                  fontSize: 14, fontWeight: 510, color: '#252525', fontFamily: 'inherit',
                 }}
               />
               <button
@@ -1141,9 +1157,14 @@ function ReportCafePage({
 
         {/* 편의시설 칩 */}
         <div style={{ padding: '24px 20px 0', background: '#f3f3f3' }}>
+          {/* 섹션 헤더 — WriteReviewPage 평가 섹션과 동일 패턴 */}
+          <p style={{ fontSize: 15, fontWeight: 700, color: '#000000', marginBottom: 16 }}>
+            이 카페를 평가해주세요
+          </p>
           {Object.entries(CHIP_OPTIONS).map(([category, options]) => (
             <div key={category} style={{ marginBottom: 20 }}>
-              <p style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#000000', marginBottom: 10, margin: '0 0 10px 0' }}>{category}</p>
+              {/* 카테고리 라벨 — WriteReviewPage 와 동일 (13/600/#4E5968) */}
+              <p style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4E5968', marginBottom: 10, margin: '0 0 10px 0' }}>{category}</p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {options.map(opt => {
                   const isSel = chips[category] === opt;
@@ -1243,7 +1264,7 @@ function ReportCafePage({
         {/* 리뷰 작성 */}
         <div style={{ padding: '20px', background: '#f3f3f3' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28' }}>리뷰 작성</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#000000' }}>리뷰 작성</p>
             <span style={{ fontSize: 13, color: reviewText.length >= 10 ? '#252525' : '#B0B8C1' }}>
               {reviewText.length}/200
             </span>
@@ -1256,14 +1277,14 @@ function ReportCafePage({
             readOnly={readOnly}
             style={{
               width: '100%',
-              border: '1.5px solid #E5E8EB', borderRadius: 12,
-              padding: '14px', fontSize: 14, color: '#191F28',
+              border: 'none', borderRadius: 12,
+              padding: '14px', fontSize: 14, fontWeight: 510, color: '#252525',
               lineHeight: 1.6, resize: 'none', outline: 'none',
               fontFamily: 'inherit', boxSizing: 'border-box',
-              background: '#FAFBFC', transition: 'border-color 0.15s',
+              background: '#FAFBFC', transition: 'background 0.15s',
             }}
-            onFocus={e => { if (!readOnly) { e.target.style.borderColor = '#252525'; e.target.style.background = 'white'; } }}
-            onBlur={e => { e.target.style.borderColor = '#E5E8EB'; e.target.style.background = '#FAFBFC'; }}
+            onFocus={e => { if (!readOnly) e.target.style.background = '#ffffff'; }}
+            onBlur={e => { e.target.style.background = '#FAFBFC'; }}
           />
           {reviewText.length > 0 && reviewText.length < 10 && (
             <p style={{ fontSize: 12, color: '#FF6B6B', marginTop: 6 }}>
@@ -1330,6 +1351,7 @@ function ReportCafePage({
 // ─────────────────────────────────────────────────────────────
 export default function MyPage({
   onDetailOpen,
+  onDetailOpenToReview,
   initialSubPage,
   onSubPageChange,
   onRegisterBack,
@@ -1338,6 +1360,8 @@ export default function MyPage({
   hasDetailOverlay = false,
 }: {
   onDetailOpen?: (id: string) => void;
+  /** 카페 상세 진입 + 리뷰 섹션으로 자동 스크롤 */
+  onDetailOpenToReview?: (id: string) => void;
   initialSubPage?: SubPage | null;
   onSubPageChange?: (page: SubPage | null) => void;
   onRegisterBack?: (fn: (() => void) | null) => void;
@@ -1364,6 +1388,7 @@ export default function MyPage({
   const { userId } = useFavorites();
   const [reportCount, setReportCount] = useState(0);
   const [reportRefreshTrigger, setReportRefreshTrigger] = useState(0);
+  const [reportSubmitToast, setReportSubmitToast] = useState(false);
   useEffect(() => {
     if (!userId) return;
     fetchUserReports(userId).then(rows => setReportCount(rows.length));
@@ -1619,6 +1644,14 @@ export default function MyPage({
         onClose={() => setReviewEditToast(false)}
       />
 
+      {/* 제보 등록 완료 토스트 */}
+      <Toast
+        open={reportSubmitToast}
+        position="top"
+        text="제보를 등록했어요"
+        onClose={() => setReportSubmitToast(false)}
+      />
+
       {/* 더보기 드롭다운 팝업 */}
       {showMoreSheet && (
         <>
@@ -1783,7 +1816,7 @@ export default function MyPage({
           onEdit={review => setEditingReview(review)}
           refreshTrigger={reviewRefreshTrigger}
           onGoHome={onGoHome}
-          onDetailOpen={onDetailOpen}
+          onDetailOpen={onDetailOpenToReview ?? onDetailOpen}
           hasOverlay={hasDetailOverlay || !!editingReview}
         />
       </div>
@@ -1794,7 +1827,10 @@ export default function MyPage({
         <ReportCafePage
           onBack={() => changeSubPage(null)}
           onClose={() => changeSubPage(null)}
-          onSubmitted={() => setReportRefreshTrigger(t => t + 1)}
+          onSubmitted={() => {
+            setReportRefreshTrigger(t => t + 1);
+            setReportSubmitToast(true);
+          }}
         />
       </div>
     )}

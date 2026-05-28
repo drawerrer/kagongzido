@@ -23,6 +23,7 @@ import MyPage from './pages/MyPage';
 import DetailPage from './pages/DetailPage';
 import PhotoReviewPage from './pages/PhotoReviewPage';
 import PlaceholderPreviewPage from './pages/PlaceholderPreviewPage';
+import ClosedStorePreviewPage from './pages/ClosedStorePreviewPage';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { useFavorites } from './context/FavoritesContext';
 
@@ -223,6 +224,14 @@ export default function App() {
   if (previewMode === 'placeholder') {
     return (
       <PlaceholderPreviewPage onClose={() => {
+        window.history.replaceState({}, '', window.location.pathname);
+        setPreviewMode(null);
+      }} />
+    );
+  }
+  if (previewMode === 'closed-store') {
+    return (
+      <ClosedStorePreviewPage onClose={() => {
         window.history.replaceState({}, '', window.location.pathname);
         setPreviewMode(null);
       }} />
@@ -432,6 +441,7 @@ function AppInner() {
             <MyPage
               key={tabKeys.mypage}
               onDetailOpen={(id) => setDetailCafeId(id)}
+              onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
               initialSubPage={myPageSubPage as any}
               onSubPageChange={setMyPageSubPage}
               onRegisterBack={(fn) => { myPageBackRef.current = fn; }}

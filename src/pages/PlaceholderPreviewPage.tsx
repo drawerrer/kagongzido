@@ -4,6 +4,9 @@
 // ───────────────────────────────────────────────────────────────
 
 import CafePlaceholder from '../components/CafePlaceholder';
+import IcWarning from '../assets/icons/icon_warning.svg?react';
+import IcPhoto from '../assets/icons/icon_photo.svg?react';
+import IcCamera from '../assets/icons/icon_camera.svg?react';
 
 export default function PlaceholderPreviewPage({ onClose }: { onClose: () => void }) {
   return (
@@ -158,6 +161,48 @@ export default function PlaceholderPreviewPage({ onClose }: { onClose: () => voi
             </Sample>
             <Sample label="선택됨" bg="transparent">
               <div dangerouslySetInnerHTML={{ __html: PIN_HTML(true) }} />
+            </Sample>
+          </Row>
+        </Section>
+
+        {/* 섹션 9: 폐업 매장 경고 배너 (DetailPage) */}
+        <Section title="⑨ 폐업/휴업 경고 배너" subtitle="DetailPage 상단 — 실제 폐업 매장 없을 때 미리보기용">
+          <div style={{
+            margin: '0 0 8px',
+            padding: '14px 16px',
+            borderRadius: 12,
+            background: '#FFF4F4',
+            display: 'flex',
+            gap: 10,
+            alignItems: 'flex-start',
+          }}>
+            <IcWarning width={18} height={18} style={{ color: '#D6403C', flexShrink: 0, display: 'block', marginTop: 1 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#D6403C', marginBottom: 2 }}>
+                폐업 또는 휴업한 카페예요
+              </p>
+              <p style={{ fontSize: 12, color: '#8B95A1', lineHeight: 1.4 }}>
+                저장한 기록은 그대로 두지만, 방문 전 운영 여부를 다시 확인해 주세요.
+              </p>
+            </div>
+          </div>
+          <p style={{ fontSize: 11, color: '#6B7684', fontWeight: 500, textAlign: 'center', marginTop: 8 }}>
+            ⚠️ 이모지 → icon_warning.svg (#D6403C)
+          </p>
+        </Section>
+
+        {/* 섹션 10: 사진/카메라 시트 아이콘 */}
+        <Section title="⑩ 사진 추가 시트 아이콘 (#333D4B)" subtitle="모음집 액션시트와 동일 톤">
+          <Row>
+            <Sample label="icon_photo" bg="transparent">
+              <div style={{ width: 56, height: 56, borderRadius: 12, background: '#FFFFFF', border: '1px solid #E5E8EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <IcPhoto width={24} height={24} style={{ color: '#333D4B', display: 'block' }} />
+              </div>
+            </Sample>
+            <Sample label="icon_camera" bg="transparent">
+              <div style={{ width: 56, height: 56, borderRadius: 12, background: '#FFFFFF', border: '1px solid #E5E8EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <IcCamera width={24} height={24} style={{ color: '#333D4B', display: 'block' }} />
+              </div>
             </Sample>
           </Row>
         </Section>

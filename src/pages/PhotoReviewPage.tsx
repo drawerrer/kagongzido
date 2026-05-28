@@ -434,13 +434,17 @@ export default function PhotoReviewPage({
   cafeName: _cafeName,
   isFavorite: _isFavorite,
   onFavoriteToggle: _onFavoriteToggle,
-  onBack: _onBack,
+  onBack,
   onClose: _onClose,
   userId: _userId,
   initialLikedReviewIds,
   onToggleReviewLike,
 }: PhotoReviewPageProps) {
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
+
+  // 백버튼 — 상세 뷰 떠 있을 땐 PhotoDetailView 가 자체 처리 (위임)
+  // 그리드 뷰에서는 onBack(=상위에서 PhotoReviewPage 닫기) 호출
+  useBackEvent(onBack, detailIndex === null);
 
   // 상세 뷰 — isFavorite/onFavoriteToggle 전달
   if (detailIndex !== null) {

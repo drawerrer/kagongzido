@@ -13,6 +13,12 @@ import { useFavorites } from '../context/FavoritesContext';
 import { fetchReviews, fetchStoreByPlaceId, fetchUserLikedReviewIds, toggleReviewLike, deleteReview, updateReview, type ReviewRow } from '../services/db';
 import SubButton from '../components/SubButton';
 import CafePlaceholder from '../components/CafePlaceholder';
+import IcPhoto from '../assets/icons/icon_photo.svg?react';
+import IcCamera from '../assets/icons/icon_camera.svg?react';
+import IcWarning from '../assets/icons/icon_warning.svg?react';
+import IcX from '../assets/icons/icon_x.svg?react';
+import IcOpen from '../assets/icons/icon_open.svg?react';
+import IcCopy from '../assets/icons/icon_copy.svg?react';
 
 // ── 편의시설 SVG 아이콘 ──────────────────────────────────────
 function IcParking() {
@@ -404,23 +410,8 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
   );
 }
 
-function CopyIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <path fillRule="evenodd" clipRule="evenodd" d="M19.0998 8.30078H17.4998V10.7008H19.0998C19.7998 10.7008 20.2998 11.2008 20.2998 11.9008V19.1008C20.2998 19.8008 19.7998 20.3008 19.0998 20.3008H11.8998C11.1998 20.3008 10.6998 19.8008 10.6998 19.1008V17.7008H8.2998V19.1008C8.2998 21.1008 9.8998 22.7008 11.8998 22.7008H19.0998C21.0998 22.7008 22.6998 21.1008 22.6998 19.1008V11.9008C22.6998 9.90078 21.0998 8.30078 19.0998 8.30078Z" fill="#6B7684"/>
-      <path fillRule="evenodd" clipRule="evenodd" d="M4.8998 3.70078C4.1998 3.70078 3.6998 4.20078 3.6998 4.90078V12.1008C3.6998 12.8008 4.1998 13.3008 4.8998 13.3008H12.0998C12.7998 13.3008 13.2998 12.8008 13.2998 12.1008V4.90078C13.2998 4.20078 12.7998 3.70078 12.0998 3.70078H4.8998ZM12.0998 15.7008H4.8998C2.8998 15.7008 1.2998 14.1008 1.2998 12.1008V4.90078C1.2998 2.90078 2.8998 1.30078 4.8998 1.30078H12.0998C14.0998 1.30078 15.6998 2.90078 15.6998 4.90078V12.1008C15.6998 14.1008 14.0998 15.7008 12.0998 15.7008Z" fill="#6B7684"/>
-    </svg>
-  );
-}
-
-function LinkIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <path fillRule="evenodd" clipRule="evenodd" d="M20.5609 14.0198C19.9539 14.0198 19.4609 14.5118 19.4609 15.1198V18.1628C19.4609 18.8788 18.8779 19.4628 18.1609 19.4628H5.83789C5.12089 19.4628 4.53789 18.8788 4.53789 18.1628V5.83984C4.53789 5.12284 5.12089 4.53984 5.83789 4.53984H8.87789C9.48589 4.53984 9.97789 4.04784 9.97789 3.43984C9.97789 2.83184 9.48589 2.33984 8.87789 2.33984H5.83789C3.90889 2.33984 2.33789 3.90984 2.33789 5.83984V18.1628C2.33789 20.0928 3.90889 21.6628 5.83789 21.6628H18.1609C20.0909 21.6628 21.6609 20.0928 21.6609 18.1628V15.1198C21.6609 14.5118 21.1689 14.0198 20.5609 14.0198Z" fill="#6B7684"/>
-      <path fillRule="evenodd" clipRule="evenodd" d="M21.3388 2.64182C21.1088 2.41782 20.8058 2.32282 20.5078 2.33982H13.1608C12.5528 2.33982 12.0608 2.83182 12.0608 3.43982C12.0608 4.04782 12.5528 4.53982 13.1608 4.53982H17.9048L11.4128 11.0318C11.2058 11.2378 11.0898 11.5178 11.0908 11.8098C11.0908 12.4168 11.5838 12.9098 12.1908 12.9098H12.1918C12.4838 12.9098 12.7628 12.7948 12.9688 12.5878L19.4608 6.09482V10.8398C19.4608 11.4478 19.9528 11.9398 20.5608 11.9398C21.1688 11.9398 21.6608 11.4478 21.6608 10.8398V3.46882C21.6718 3.16982 21.5698 2.86782 21.3378 2.64182H21.3388Z" fill="#6B7684"/>
-    </svg>
-  );
-}
+// CopyIcon · LinkIcon 인라인 SVG 제거 — icon_copy.svg / icon_open.svg 로 통일
+// 둘 다 동일 stroke-width(2.2) 로 만들어서 같은 16×16 에서 두께가 일치하도록 조정
 
 // ────────── (NavBar icon helpers removed) ─────────────────────
 
@@ -518,11 +509,15 @@ function InfoRow({
           </span>
         )}
         {isLink && value && (
-          <button onClick={() => openURL(value)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0 }}><LinkIcon /></button>
+          <button onClick={() => openURL(value)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0 }}>
+            {/* 연락처의 CopyIcon 과 동일 스펙: 16×16 / #6B7684 */}
+            <IcOpen width={16} height={16} style={{ color: '#6B7684', display: 'block' }} />
+          </button>
         )}
         {onCopy && value && (
           <button onClick={onCopy} style={{ flexShrink: 0, padding: 4, background: 'none', border: 'none', cursor: 'pointer' }}>
-            <CopyIcon />
+            {/* IcOpen 과 동일 스펙: 16×16 / #6B7684 / stroke-width 2.2 */}
+            <IcCopy width={16} height={16} style={{ color: '#6B7684', display: 'block' }} />
           </button>
         )}
       </div>
@@ -615,9 +610,10 @@ function PhotoMosaic({
               width: 30, height: 30, borderRadius: 15,
               background: 'rgba(0,0,0,0.5)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', fontSize: 15,
+              color: 'white', border: 'none', cursor: 'pointer',
             }}
-          >✕</button>
+            aria-label="닫기"
+          ><IcX width={12} height={12} style={{ color: 'white', display: 'block' }} /></button>
         </div>
       )}
 
@@ -851,9 +847,10 @@ function ReviewCard({ review, initialLiked, onToggleLike, onEditReview, onDelete
               width: 28, height: 28, borderRadius: 14,
               background: 'rgba(0,0,0,0.5)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', fontSize: 13,
+              color: 'white', border: 'none', cursor: 'pointer',
             }}
-          >✕</button>
+            aria-label="닫기"
+          ><IcX width={11} height={11} style={{ color: 'white', display: 'block' }} /></button>
         </div>
       )}
 
@@ -1125,7 +1122,7 @@ function EditMyReviewPage({
     noise_status:  initialNoise  || undefined,
   });
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  // saved 상태는 상위 reviewEditToast 토스트로 대체되어 제거
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
 
@@ -1156,16 +1153,15 @@ function EditMyReviewPage({
     setShowPhotoSheet(false);
   };
   const handleSave = async () => {
-    if (saving || saved) return;
+    if (saving) return;
     setSaving(true);
     await updateReview(reviewId, text, photos, {
       outlet_status: evalState.outlet_status ?? '',
       seat_status:   evalState.seat_status   ?? '',
       noise_status:  evalState.noise_status  ?? '',
     });
-    setSaved(true);
     setSaving(false);
-    setTimeout(() => onSaved(), 800);
+    onSaved();
   };
 
   return (
@@ -1252,7 +1248,7 @@ function EditMyReviewPage({
         <div style={{ display: 'flex', gap: 10, padding: '12px 20px 24px', background: '#f3f3f3' }}>
           <button onClick={handleBack} style={{ flex: 1, height: 52, borderRadius: 12, background: '#EBEBEB', color: '#252525', fontSize: 16, fontWeight: 600, border: 'none', cursor: 'pointer' }}>취소하기</button>
           <button onClick={handleSave} disabled={saving} style={{ flex: 1, height: 52, borderRadius: 12, background: '#252525', color: 'white', fontSize: 16, fontWeight: 700, border: 'none', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
-            {saved ? '✓ 완료' : '등록하기'}
+            등록하기
           </button>
         </div>
       </div>
@@ -1287,10 +1283,10 @@ function EditMyReviewPage({
             <div style={{ width: 36, height: 4, borderRadius: 2, background: '#E5E8EB', margin: '0 auto 18px' }} />
             <p style={{ fontSize: 16, fontWeight: 700, color: '#191F28', padding: '0 20px', marginBottom: 4 }}>사진 추가</p>
             <button onClick={handleGallery} style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: '#191F28' }}>
-              <span style={{ fontSize: 20 }}>🖼️</span> 갤러리에서 선택
+              <IcPhoto width={20} height={20} style={{ color: '#333D4B', display: 'block' }} /> 갤러리에서 선택
             </button>
             <button onClick={handleCamera} style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: '#191F28' }}>
-              <span style={{ fontSize: 20 }}>📷</span> 카메라로 촬영
+              <IcCamera width={20} height={20} style={{ color: '#333D4B', display: 'block' }} /> 카메라로 촬영
             </button>
           </div>
         </>
@@ -1716,7 +1712,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   if (showWriteReview) {
     return (
       <WriteReviewPage
-        cafe={{ name: cafe.name, address: cafe.address }}
+        cafe={{ name: cafe.name, address: cafe.address, thumbnailUrl: cafe.thumbnailUrl }}
         cafeId={cafeId}
         userId={userId}
         onBack={() => setShowWriteReview(false)}
@@ -1888,12 +1884,11 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
             padding: '14px 16px',
             borderRadius: 12,
             background: '#FFF4F4',
-            border: '1px solid #FFD8D8',
             display: 'flex',
             gap: 10,
             alignItems: 'flex-start',
           }}>
-            <span style={{ fontSize: 18, lineHeight: 1.2, flexShrink: 0 }}>⚠️</span>
+            <IcWarning width={18} height={18} style={{ color: '#D6403C', flexShrink: 0, display: 'block', marginTop: 1 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: '#D6403C', marginBottom: 2 }}>
                 폐업 또는 휴업한 카페예요

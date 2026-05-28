@@ -9,6 +9,7 @@ import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
 import IcSearch from '../assets/icons/icon_search.svg?react';
 import IcHeart from '../assets/icons/icon_heart.svg?react';
+import IcMap from '../assets/icons/icon_map.svg?react';
 import CafePlaceholder from '../components/CafePlaceholder';
 
 const SearchEmptyPlusIcon = (
@@ -327,7 +328,7 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
 
       {/* ── 지도 배경 ── */}
       <div style={{ position: 'absolute', inset: 0, background: '#E8EAED', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-        <span style={{ fontSize: 44 }}>🗺️</span>
+        <IcMap width={44} height={44} style={{ color: '#AAB4BE', display: 'block' }} />
         <p style={{ fontSize: 14, color: '#6B7684', fontWeight: 500 }}>카카오맵이 표시됩니다</p>
       </div>
 
