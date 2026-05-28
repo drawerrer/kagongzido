@@ -155,9 +155,11 @@ interface MapPageProps {
   onFocusModeChange?: (active: boolean) => void;
   initialState?: MapPageState;
   onStateChange?: (state: MapPageState) => void;
+  /** 상위 App 에서 DetailPage/Search 등 오버레이가 떠 있는지 — 닫혔을 때 search accessory button 복구 트리거 */
+  hasOverlay?: boolean;
 }
 
-export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, initialState, onStateChange, onFocusModeChange }: MapPageProps) {
+export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, initialState, onStateChange, onFocusModeChange, hasOverlay = false }: MapPageProps) {
   const touchStartYRef = useRef<number>(0);
   // 드래그 도중 scrollTop===0 에 도달한 적이 있는지 — expanded 시 사용자가 위에서 아래로
   // 끝까지 끌어내려 collapse 의도를 보일 때 잡기 위함
@@ -221,14 +223,16 @@ const [filterOpen, setFilterOpen] = useState(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 검색 버튼 표시 — 카페 상세 확장(expanded) 중에는 DetailPage 의 하트 버튼이 표시되므로 제외
-  // panelState 또는 selectedMapCafe 가 바뀔 때마다 재등록하여 DetailPage cleanup 으로 제거된 버튼 복구
+  // panelState / selectedMapCafe / hasOverlay 가 바뀔 때마다 재등록
+  //   → DetailPage / SearchPage 가 닫혀 hasOverlay=false 가 되면 search 버튼 복구
   useEffect(() => {
+    if (hasOverlay) return;            // 오버레이 떠 있을 땐 자식 페이지가 자체 버튼 관리
     if (!selectedMapCafe || panelState !== 'expanded') {
       try {
         partner.addAccessoryButton({ id: 'search', title: '검색', icon: { name: 'icon-search-mono' } });
       } catch {}
     }
-  }, [selectedMapCafe, panelState]);
+  }, [selectedMapCafe, panelState, hasOverlay]);
 
   // 지도 패널 열린 상태에서 백 → 패널 닫기 (그 외엔 SDK 기본 동작 = 앱 종료)
   useBackEvent(

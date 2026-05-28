@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, Component } from 'react';
-import { getAnonymousKey } from '@apps-in-toss/web-framework';
+import { getAnonymousKey, partner } from '@apps-in-toss/web-framework';
 import { getOrCreateUser, getOrCreateUserWithAuth, updateUserNickname } from './services/db';
 import { supabase } from './services/supabase';
 import type { ReactNode, ErrorInfo } from 'react';
@@ -398,6 +398,7 @@ function AppInner() {
             onDetailOpen={(id) => setDetailCafeId(id)}
             onGoToFavorites={() => setActiveTab('collection')}
             onFocusModeChange={setIsDetailFocusMode}
+            hasOverlay={!!detailCafeId || showSearch}
           />
         )}
         {activeTab === 'guidebook' && (
@@ -489,6 +490,12 @@ function AppInner() {
                   setGuidebookStoreIndex(0);
                   setMyPageSubPage(null);
                 };
+                // 탭 전환 직전 — 이전 페이지의 accessoryButton(검색/하트/공유 등) 즉시 정리
+                //   각 페이지의 useEffect cleanup 만 의존하면 unmount 타이밍에 따라
+                //   다음 탭에서도 이전 버튼이 잠깐 잔존하는 케이스가 있어서 click 시 선제 정리
+                if (tab.id !== activeTab) {
+                  try { partner.removeAccessoryButton(); } catch {}
+                }
                 const now = Date.now();
                 const last = lastTabTapRef.current;
                 if (last?.id === tab.id && now - last.time < 400) {

@@ -19,6 +19,7 @@ import IcWarning from '../assets/icons/icon_warning.svg?react';
 import IcX from '../assets/icons/icon_x.svg?react';
 import IcOpen from '../assets/icons/icon_open.svg?react';
 import IcCopy from '../assets/icons/icon_copy.svg?react';
+import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
 
 // ── 편의시설 SVG 아이콘 ──────────────────────────────────────
 function IcParking() {
@@ -593,7 +594,7 @@ function PhotoMosaic({
       {/* 확장 뷰 */}
       {expandedIdx !== null && (
         <div style={{
-          width: '100%', aspectRatio: '4/3', borderRadius: 12, overflow: 'hidden',
+          width: '100%', aspectRatio: '4/3', borderRadius: 6, overflow: 'hidden',
           background: '#F2F4F6',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           position: 'relative', marginBottom: 8,
@@ -617,13 +618,13 @@ function PhotoMosaic({
         </div>
       )}
 
-      {/* 썸네일 그리드 */}
+      {/* 썸네일 그리드 — 항상 3열 유지 (셀 크기 일관성)
+          단, 사진 1·2장일 때 빈 셀이 우측에 생기지 않게 컬럼 수만 채워질 만큼 노출
+          모서리 둥글기는 각 셀에 직접 적용 (4px — StoreCard 썸네일과 동일) */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
         gap: 3,
-        borderRadius: 12,
-        overflow: 'hidden',
       }}>
         {visible.map((bg, i) => {
           const isLastSlot = i === maxVisible - 1 && remaining > 0;
@@ -638,6 +639,7 @@ function PhotoMosaic({
                 position: 'relative',
                 cursor: 'pointer',
                 overflow: 'hidden',
+                borderRadius: 4,
               }}
             >
               {bg ? (
@@ -831,7 +833,7 @@ function ReviewCard({ review, initialLiked, onToggleLike, onEditReview, onDelete
         <div style={{
           width: 343, maxWidth: '100%', aspectRatio: '4/3',
           background: '#F2F4F6',
-          borderRadius: 10, overflow: 'hidden',
+          borderRadius: 6, overflow: 'hidden',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           position: 'relative', marginBottom: 10,
         }}>
@@ -862,7 +864,7 @@ function ReviewCard({ review, initialLiked, onToggleLike, onEditReview, onDelete
         }}>
           {review.photo_urls.map((bg, i) => (
             <div key={i} onClick={() => setExpandedImgIdx(i)} style={{ cursor: 'pointer' }}>
-              <PhotoCell bg={bg} size={80} radius={8} />
+              <PhotoCell bg={bg} size={80} radius={4} />
             </div>
           ))}
         </div>
@@ -1253,26 +1255,12 @@ function EditMyReviewPage({
         </div>
       </div>
 
-      {/* 취소 확인 다이얼로그 — TDS ConfirmDialog (컬렉션 삭제 다이얼로그와 동일 컴포넌트) */}
-      <ConfirmDialog
+      {/* 취소 확인 다이얼로그 — DiscardConfirmDialog 공용 컴포넌트 (type='edit') */}
+      <DiscardConfirmDialog
+        type="edit"
         open={showCancelDialog}
-        title={<ConfirmDialog.Title>수정을 취소할까요?</ConfirmDialog.Title>}
-        description={
-          <ConfirmDialog.Description>
-            지금 나가면 작성한 내용이 사라져요
-          </ConfirmDialog.Description>
-        }
-        cancelButton={
-          <ConfirmDialog.CancelButton onClick={() => setShowCancelDialog(false)}>
-            계속 수정
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={onBack}>
-            취소하기
-          </ConfirmDialog.ConfirmButton>
-        }
-        onClose={() => setShowCancelDialog(false)}
+        onDiscard={onBack}
+        onContinue={() => setShowCancelDialog(false)}
       />
 
       {/* 사진 추가 바텀시트 */}

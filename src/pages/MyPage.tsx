@@ -473,7 +473,18 @@ function ReviewEditPage({
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
   // saved 상태는 토스트로 대체되어 제거 — 상위 reviewEditToast 가 안내
 
-  const handleCancel = () => setShowCancelDialog(true);
+  // 초기값 대비 변경 여부 — 변경 없으면 다이얼로그 없이 즉시 나감
+  const hasChanged =
+    text !== review.content ||
+    photos.join(',') !== review.photos.join(',') ||
+    evalState.outlet_status !== (review.outlet_status || undefined) ||
+    evalState.seat_status   !== (review.seat_status   || undefined) ||
+    evalState.noise_status  !== (review.noise_status  || undefined);
+
+  const handleCancel = () => {
+    if (hasChanged) { setShowCancelDialog(true); return; }
+    onBack();
+  };
 
   const handleSave = () => {
     onSave(text, photos, evalState);
@@ -661,26 +672,12 @@ function ReviewEditPage({
         </div>
       </div>
 
-      {/* 취소 확인 다이얼로그 — TDS ConfirmDialog (컬렉션 삭제 다이얼로그와 동일 컴포넌트) */}
-      <ConfirmDialog
+      {/* 취소 확인 다이얼로그 — DiscardConfirmDialog 공용 컴포넌트 (type='edit') */}
+      <DiscardConfirmDialog
+        type="edit"
         open={showCancelDialog}
-        title={<ConfirmDialog.Title>수정을 취소할까요?</ConfirmDialog.Title>}
-        description={
-          <ConfirmDialog.Description>
-            지금 나가면 작성한 내용이 사라져요
-          </ConfirmDialog.Description>
-        }
-        cancelButton={
-          <ConfirmDialog.CancelButton onClick={() => setShowCancelDialog(false)}>
-            계속 수정
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton color="danger" variant="weak" onClick={onBack}>
-            취소하기
-          </ConfirmDialog.ConfirmButton>
-        }
-        onClose={() => setShowCancelDialog(false)}
+        onDiscard={onBack}
+        onContinue={() => setShowCancelDialog(false)}
       />
 
       {/* 사진 추가 바텀시트 (SheetMenuRow 통일) */}
@@ -980,24 +977,34 @@ function ReportCafePage({
         {/* 어드민 메모 (뷰 모드 & 메모 있을 때만)
             배경: 카페명 인풋바 색(#ffffff)
             헤더 텍스트: '사진 첨부' 스타일 (15/700/#000000)
-            본문 텍스트: 카페명 인풋바 텍스트 스타일 (14/510/#252525) */}
+            본문 텍스트: 카페명 인풋바 텍스트 스타일 (14/510/#252525)
+            섹션 간격: 카페명 ↔ 평가 사이와 동일 (24px top, 20px bottom, divider) */}
         {readOnly && initialReport?.admin_comment && (
-          <div style={{
-            margin: '16px 16px 0', padding: '14px 16px',
-            borderRadius: 12, background: '#ffffff',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <IcMail width={18} height={18} style={{ color: '#000000', display: 'block', flexShrink: 0 }} />
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#000000' }}>운영진 메모</span>
+          <>
+            <div style={{ padding: '24px 16px 20px', background: '#f3f3f3' }}>
+              <div style={{
+                padding: '14px 16px',
+                borderRadius: 12, background: '#ffffff',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <IcMail width={18} height={18} style={{ color: '#000000', display: 'block', flexShrink: 0 }} />
+                  <span style={{ fontSize: 15, fontWeight: 700, color: '#000000' }}>운영진 메모</span>
+                </div>
+                <p style={{ fontSize: 14, fontWeight: 510, color: '#252525', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+                  {initialReport.admin_comment}
+                </p>
+              </div>
             </div>
-            <p style={{ fontSize: 14, fontWeight: 510, color: '#252525', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
-              {initialReport.admin_comment}
-            </p>
-          </div>
+            {/* 구분선 — 카페명 ↔ 평가 사이와 동일 */}
+            <div style={{ height: 1, background: 'rgba(0,27,55,0.1)' }} />
+          </>
         )}
 
-        {/* 카페명 섹션 */}
-        <div style={{ padding: '0 16px 20px', background: '#f3f3f3' }}>
+        {/* 카페명 섹션 — 운영진 메모 + divider 가 위에 있을 땐 평가 섹션과 동일하게 24px top */}
+        <div style={{
+          padding: (readOnly && initialReport?.admin_comment) ? '24px 16px 20px' : '0 16px 20px',
+          background: '#f3f3f3',
+        }}>
           <span style={{ display: 'block', fontSize: 15, fontWeight: 700, color: '#000000', marginBottom: 8 }}>카페명</span>
 
           {/* 인풋 1: 카페명 검색 / 선택완료 / 직접입력 — textarea 와 동일 패턴 */}

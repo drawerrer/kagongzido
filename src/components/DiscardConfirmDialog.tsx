@@ -28,9 +28,9 @@ const DIALOG_CONTENT: Record<DiscardDialogType, {
   // 기존 리뷰 수정 중단
   edit: {
     title: '수정을 취소할까요?',
-    description: '지금 나가면 작성한 내용이 사라져요',
+    description: '지금 나가면 수정한 내용이 사라져요',
     continueLabel: '계속 수정',
-    discardLabel: '취소하기',
+    discardLabel: '나가기',
   },
   // 카페 제보 작성 중단
   report: {
