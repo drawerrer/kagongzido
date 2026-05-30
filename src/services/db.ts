@@ -380,7 +380,7 @@ export async function fetchReviews(storeId: string): Promise<ReviewRow[]> {
   if (!storeUuid) return [];
   const { data, error } = await supabase
     .from('reviews')
-    .select('*, reviews_likes(count), users(nickname)')
+    .select('*, reviews_likes(count), public_user_nicknames(nickname)')
     .eq('store_id', storeUuid)
     .order('created_at', { ascending: false });
 
@@ -389,7 +389,7 @@ export async function fetchReviews(storeId: string): Promise<ReviewRow[]> {
   return (data ?? []).map((row: Record<string, unknown>) => ({
     ...(row as Omit<ReviewRow, 'like_count' | 'author_nickname'>),
     like_count: (row.reviews_likes as { count: number }[])?.[0]?.count ?? 0,
-    author_nickname: ((row.users as { nickname: string | null } | null)?.nickname) ?? null,
+    author_nickname: ((row.public_user_nicknames as { nickname: string | null } | null)?.nickname) ?? null,
   }));
 }
 
