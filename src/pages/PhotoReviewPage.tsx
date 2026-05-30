@@ -70,8 +70,8 @@ function PhotoDetailView({
   initialLikedReviewIds: Set<string>;
   onToggleReviewLike?: (reviewId: string) => Promise<boolean>;
 }) {
-  // 같은 작성자의 사진만 표시
-  const authorPhotos = photos.filter(p => p.reviewAuthor === photos[initialIndex].reviewAuthor);
+  // 선택한 사진 하나만 표시
+  const authorPhotos = [photos[initialIndex]];
   const reviewId = authorPhotos[0]?.reviewId ?? '';
 
   const [liked, setLiked] = useState(initialLikedReviewIds.has(reviewId));
@@ -441,8 +441,9 @@ export default function PhotoReviewPage({
   userId: _userId,
   initialLikedReviewIds,
   onToggleReviewLike,
+  initialIndex,
 }: PhotoReviewPageProps) {
-  const [detailIndex, setDetailIndex] = useState<number | null>(null);
+  const [detailIndex, setDetailIndex] = useState<number | null>(initialIndex ?? null);
 
   // 백버튼 — 상세 뷰 떠 있을 땐 PhotoDetailView 가 자체 처리 (위임)
   // 그리드 뷰에서는 onBack(=상위에서 PhotoReviewPage 닫기) 호출
@@ -484,53 +485,34 @@ export default function PhotoReviewPage({
           gap: 1,
           padding: '0 16px',
         }}>
-          {(() => {
-            // 작성자별 첫 번째 사진만 노출 (순서 유지)
-            const seen = new Set<string>();
-            return photos.map((photo, i) => {
-              if (seen.has(photo.reviewAuthor)) return null;
-              seen.add(photo.reviewAuthor);
-              const count = photos.filter(p => p.reviewAuthor === photo.reviewAuthor).length;
-              return (
-                <div
-                  key={i}
-                  onClick={() => setDetailIndex(i)}
-                  style={{
-                    aspectRatio: '1 / 1',
-                    background: '#F2F4F6',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                  }}
-                >
-                  {photo.bg ? (
-                    <img src={photo.bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <CafePlaceholder size="45%" />
-                  )}
-                  {/* 제보자 뱃지 */}
-                  {photo.isReporter && (
-                    <div style={{
-                      position: 'absolute', top: 6, left: 6,
-                      background: '#252525', borderRadius: 4,
-                      padding: '2px 6px', fontSize: 9, fontWeight: 700, color: 'white',
-                    }}>
-                      제보
-                    </div>
-                  )}
-                  {/* 이미지 여러장 아이콘 */}
-                  {count > 1 && (
-                    <div style={{ position: 'absolute', top: 6, right: 6 }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <rect x="3" y="7" width="13" height="13" rx="2" fill="white" opacity="0.9"/>
-                        <rect x="6" y="4" width="13" height="13" rx="2" stroke="white" strokeWidth="1.5" fill="none" opacity="0.7"/>
-                        <rect x="3" y="7" width="13" height="13" rx="2" stroke="white" strokeWidth="1.5" fill="none"/>
-                      </svg>
-                    </div>
-                  )}
+          {photos.map((photo, i) => (
+            <div
+              key={i}
+              onClick={() => setDetailIndex(i)}
+              style={{
+                aspectRatio: '1 / 1',
+                background: '#F2F4F6',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', position: 'relative', overflow: 'hidden',
+              }}
+            >
+              {photo.bg ? (
+                <img src={photo.bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <CafePlaceholder size="45%" />
+              )}
+              {/* 제보자 뱃지 */}
+              {photo.isReporter && (
+                <div style={{
+                  position: 'absolute', top: 6, left: 6,
+                  background: '#252525', borderRadius: 4,
+                  padding: '2px 6px', fontSize: 9, fontWeight: 700, color: 'white',
+                }}>
+                  제보
                 </div>
-              );
-            }).filter(Boolean);
-          })()}
+              )}
+            </div>
+          ))}
         </div>
         <div style={{ height: 32 }} />
       </div>

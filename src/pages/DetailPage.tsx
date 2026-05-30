@@ -1690,7 +1690,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         userId={userId}
         initialLikedReviewIds={likedReviewIds}
         onToggleReviewLike={handleToggleReviewLike}
-        initialIndex={photoStartIndex}
+        initialIndex={photoStartIndex >= 0 ? photoStartIndex : undefined}
       />
     );
   }
@@ -2093,7 +2093,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                 <PhotoMosaic
                   allPhotos={allReviewPhotos}
                   maxVisible={6}
-                  onMore={() => { setPhotoStartIndex(0); setShowPhotoReview(true); }}
+                  onMore={() => { setPhotoStartIndex(-1); setShowPhotoReview(true); }}
                   onPhotoClick={i => { setPhotoStartIndex(i); setShowPhotoReview(true); }}
                 />
               )}
