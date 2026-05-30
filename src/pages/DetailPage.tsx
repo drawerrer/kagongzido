@@ -577,13 +577,13 @@ function PhotoMosaic({
   allPhotos,
   maxVisible = 6,
   onMore,
+  onPhotoClick,
 }: {
   allPhotos: string[];
   maxVisible?: number;
   onMore?: () => void;
+  onPhotoClick?: (index: number) => void;
 }) {
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
-
   if (allPhotos.length === 0) return null;
 
   const visible = allPhotos.slice(0, maxVisible);
@@ -591,33 +591,6 @@ function PhotoMosaic({
 
   return (
     <div style={{ marginBottom: 20 }}>
-      {/* 확장 뷰 */}
-      {expandedIdx !== null && (
-        <div style={{
-          width: '100%', aspectRatio: '4/3', borderRadius: 6, overflow: 'hidden',
-          background: '#F2F4F6',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          position: 'relative', marginBottom: 8,
-        }}>
-          {allPhotos[expandedIdx] ? (
-            <img src={allPhotos[expandedIdx]} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <CafePlaceholder size="35%" />
-          )}
-          <button
-            onClick={() => setExpandedIdx(null)}
-            style={{
-              position: 'absolute', top: 10, right: 10,
-              width: 30, height: 30, borderRadius: 15,
-              background: 'rgba(0,0,0,0.5)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', border: 'none', cursor: 'pointer',
-            }}
-            aria-label="닫기"
-          ><IcX width={12} height={12} style={{ color: 'white', display: 'block' }} /></button>
-        </div>
-      )}
-
       {/* 썸네일 그리드 — 항상 3열 유지 (셀 크기 일관성)
           단, 사진 1·2장일 때 빈 셀이 우측에 생기지 않게 컬럼 수만 채워질 만큼 노출
           모서리 둥글기는 각 셀에 직접 적용 (4px — StoreCard 썸네일과 동일) */}
@@ -631,7 +604,7 @@ function PhotoMosaic({
           return (
             <div
               key={i}
-              onClick={() => isLastSlot ? onMore?.() : setExpandedIdx(i)}
+              onClick={() => isLastSlot ? onMore?.() : onPhotoClick?.(i)}
               style={{
                 aspectRatio: '1 / 1',
                 background: '#F2F4F6',
@@ -646,13 +619,6 @@ function PhotoMosaic({
                 <img src={bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <CafePlaceholder size="45%" />
-              )}
-              {/* 선택된 사진 하이라이트 */}
-              {expandedIdx === i && !isLastSlot && (
-                <div style={{
-                  position: 'absolute', inset: 0,
-                  boxShadow: 'inset 0 0 0 3px #252525',
-                }} />
               )}
               {/* 마지막 슬롯 더보기 오버레이 */}
               {isLastSlot && (
@@ -1487,6 +1453,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const [reviewToastVisible, setReviewToastVisible] = useState(false);
   const [reviewEditToastVisible, setReviewEditToastVisible] = useState(false);
   const [showPhotoReview, setShowPhotoReview] = useState(false);
+  const [photoStartIndex, setPhotoStartIndex] = useState(0);
   const [showWriteReview, setShowWriteReview] = useState(false);
   const [deleteReviewTargetId, setDeleteReviewTargetId] = useState<string | null>(null);
   const [editingMyReview, setEditingMyReview] = useState<{ id: string; content: string; photoUrls: string[]; outlet_status: string; seat_status: string; noise_status: string } | null>(null);
@@ -1723,6 +1690,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         userId={userId}
         initialLikedReviewIds={likedReviewIds}
         onToggleReviewLike={handleToggleReviewLike}
+        initialIndex={photoStartIndex}
       />
     );
   }
@@ -2125,7 +2093,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                 <PhotoMosaic
                   allPhotos={allReviewPhotos}
                   maxVisible={6}
-                  onMore={() => setShowPhotoReview(true)}
+                  onMore={() => { setPhotoStartIndex(0); setShowPhotoReview(true); }}
+                  onPhotoClick={i => { setPhotoStartIndex(i); setShowPhotoReview(true); }}
                 />
               )}
 

@@ -27,6 +27,8 @@ interface PhotoReviewPageProps {
   initialLikedReviewIds?: Set<string>;
   /** (옵션) 좋아요 토글 — DB 동기화 후 최종 좋아요 상태 반환. 없으면 로컬 토글만 */
   onToggleReviewLike?: (reviewId: string) => Promise<boolean>;
+  /** (옵션) 처음 보여줄 사진 인덱스 */
+  initialIndex?: number;
 }
 
 // ────────── 상수 ─────────────────────────────────────────────
