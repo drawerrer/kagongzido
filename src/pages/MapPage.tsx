@@ -64,6 +64,9 @@ function storeToOptions(store: StoreRow): string[] {
   if (store.amenities?.includes('noTimeLimit')) opts.push('시간제한 없음');
   if (store.amenities?.includes('parking')) opts.push('주차 가능');
   if (store.amenities?.includes('decafFree')) opts.push('디카페인 무료 변경');
+  if (store.amenities?.includes('wifi')) opts.push('무선 인터넷');
+  if (store.amenities?.includes('takeout')) opts.push('포장 가능');
+  if (store.amenities?.includes('wheelchair')) opts.push('휠체어 이용');
   return opts;
 }
 
@@ -268,7 +271,7 @@ const [filterOpen, setFilterOpen] = useState(false);
     }
     if (appliedFilters.moods.length > 0) filtered = filtered.filter(c => appliedFilters.moods.includes(c.mood));
     if (appliedFilters.priceMax < DEFAULT_FILTERS.priceMax) filtered = filtered.filter(c => c.priceRange <= appliedFilters.priceMax);
-    if (appliedFilters.options.length > 0) filtered = filtered.filter(c => appliedFilters.options.every(opt => c.options.includes(opt)));
+    if (appliedFilters.options.length > 0) filtered = filtered.filter(c => appliedFilters.options.some(opt => c.options.includes(opt)));
     return filtered;
   })();
 
