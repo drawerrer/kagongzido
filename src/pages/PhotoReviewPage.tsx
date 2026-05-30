@@ -477,13 +477,13 @@ export default function PhotoReviewPage({
         </span>
       </div>
 
-      {/* ── 3열 그리드 (작성자 단위) ── */}
+      {/* ── 2열 그리드 ── */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 1,
-          padding: '0 16px',
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gap: 12,
+          padding: 16,
         }}>
           {photos.map((photo, i) => (
             <div
@@ -491,6 +491,7 @@ export default function PhotoReviewPage({
               onClick={() => setDetailIndex(i)}
               style={{
                 aspectRatio: '1 / 1',
+                borderRadius: 10,
                 background: '#F2F4F6',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', position: 'relative', overflow: 'hidden',
