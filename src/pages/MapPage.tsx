@@ -194,6 +194,7 @@ const [filterOpen, setFilterOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
   const [selectedMapCafe, setSelectedMapCafe] = useState<Cafe | null>(null);
   const [detailScrolled, setDetailScrolled] = useState(false);
+  const [detailHasSubPage, setDetailHasSubPage] = useState(false);
 
   type GpsStatus = 'granted' | 'denied' | 'unknown';
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('unknown');
@@ -237,7 +238,7 @@ const [filterOpen, setFilterOpen] = useState(false);
   // 지도 패널 열린 상태에서 백 → 패널 닫기 (그 외엔 SDK 기본 동작 = 앱 종료)
   useBackEvent(
     () => { setSelectedMapCafe(null); setPanelState('half'); },
-    !!selectedMapCafe,
+    !!selectedMapCafe && !detailHasSubPage,
   );
 
   const filterApplied =
@@ -667,11 +668,11 @@ const [filterOpen, setFilterOpen] = useState(false);
             <DetailPage
               embedded
               cafeId={selectedMapCafe.id}
-              onBack={() => { setSelectedMapCafe(null); setPanelState('half'); setDetailScrolled(false); }}
-              onClose={() => { setSelectedMapCafe(null); setPanelState('half'); setDetailScrolled(false); }}
+              onBack={() => { setSelectedMapCafe(null); setPanelState('half'); setDetailScrolled(false); setDetailHasSubPage(false); }}
+              onClose={() => { setSelectedMapCafe(null); setPanelState('half'); setDetailScrolled(false); setDetailHasSubPage(false); }}
               onSwipeDown={() => { setPanelState('half'); }}
               showHero={panelState === 'expanded'}
-              onFocusModeChange={onFocusModeChange}
+              onFocusModeChange={(active) => { setDetailHasSubPage(active); onFocusModeChange?.(active); }}
               onScrollChange={setDetailScrolled}
             />
           </div>
