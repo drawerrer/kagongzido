@@ -444,6 +444,9 @@ export default function PhotoReviewPage({
   initialIndex,
 }: PhotoReviewPageProps) {
   const [detailIndex, setDetailIndex] = useState<number | null>(initialIndex ?? null);
+  // true: 그리드에서 탭해서 진입 → 뒤로가기 시 그리드로 복귀
+  // false: 상세페이지 모자이크에서 직접 진입 → 뒤로가기 시 상세페이지로 복귀
+  const [detailFromGrid, setDetailFromGrid] = useState<boolean>(false);
 
   // 백버튼 — 상세 뷰 떠 있을 땐 PhotoDetailView 가 자체 처리 (위임)
   // 그리드 뷰에서는 onBack(=상위에서 PhotoReviewPage 닫기) 호출
@@ -455,7 +458,7 @@ export default function PhotoReviewPage({
       <PhotoDetailView
         photos={photos}
         initialIndex={detailIndex}
-        onBack={() => setDetailIndex(null)}
+        onBack={detailFromGrid ? () => setDetailIndex(null) : onBack}
         initialLikedReviewIds={initialLikedReviewIds ?? new Set()}
         onToggleReviewLike={onToggleReviewLike}
       />
@@ -488,7 +491,7 @@ export default function PhotoReviewPage({
           {photos.map((photo, i) => (
             <div
               key={i}
-              onClick={() => setDetailIndex(i)}
+              onClick={() => { setDetailFromGrid(true); setDetailIndex(i); }}
               style={{
                 aspectRatio: '1 / 1',
                 borderRadius: 10,
