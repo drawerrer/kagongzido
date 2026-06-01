@@ -688,6 +688,9 @@ const [filterOpen, setFilterOpen] = useState(false);
               padding: panelState === 'expanded' ? '20px 16px 8px' : '8px 16px',
               flexShrink: 0, scrollbarWidth: 'none',
             }}>
+              {CATEGORY_CHIPS.map(chip => (
+                <Chip key={chip} label={chip} isActive={activeChip === chip} onClick={() => setActiveChip(activeChip === chip ? null : chip)} />
+              ))}
               <button
                 onClick={() => { setFilterOpenKey(k => k + 1); setFilterOpen(true); }}
                 style={{
@@ -702,9 +705,6 @@ const [filterOpen, setFilterOpen] = useState(false);
               >
                 <FilterIcon active={filterApplied} />
               </button>
-              {CATEGORY_CHIPS.map(chip => (
-                <Chip key={chip} label={chip} isActive={activeChip === chip} onClick={() => setActiveChip(activeChip === chip ? null : chip)} />
-              ))}
             </div>
 
             <div style={{ flexShrink: 0 }}>
