@@ -102,7 +102,12 @@ function NicknameSetupPage({ userId, onDone }: { userId: string; onDone: (nickna
     const name = draft.trim();
     if (!name) return;
     setSaving(true);
-    await updateUserNickname(userId, name);
+    const ok = await updateUserNickname(userId, name);
+    if (!ok) {
+      console.error('[NicknameSetupPage] DB 저장 실패 — userId:', userId);
+      setSaving(false);
+      return;
+    }
     onDone(name);
   };
 
@@ -171,15 +176,43 @@ export default function App() {
   const [userId, setUserId] = useState<string | null>(null);
   const [nickname, setNickname] = useState<string | null>(null);
   const [needsNickname, setNeedsNickname] = useState(false);
+  const tossIdRef = useRef<string | null>(null);
+
+  const USER_CACHE_KEY = 'cafeindex_user_v2';
+  const getCachedUser = (tossId: string) => {
+    try {
+      const cached = localStorage.getItem(USER_CACHE_KEY);
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (data.tossId === tossId && data.userId && data.nickname) return data as { userId: string; nickname: string };
+      }
+    } catch {}
+    return null;
+  };
+  const setCachedUser = (tossId: string, uid: string, nick: string) => {
+    try { localStorage.setItem(USER_CACHE_KEY, JSON.stringify({ tossId, userId: uid, nickname: nick })); } catch {}
+  };
 
   useEffect(() => {
     // 1) 토스 익명 해시 발급
-    // 2) Supabase Anonymous Auth 로그인 → auth.uid 발급
-    // 3) tossUserId + authUserId 로 users 행 매핑 (RLS 동작에 필수)
-    // 4) Auth 실패 시 RLS 우회 모드로 폴백 (개발 환경)
+    // 2) 로컬 캐시 확인 → 히트 시 즉시 진입 (Supabase 세션 만료돼도 닉네임 유지)
+    // 3) Supabase Anonymous Auth 로그인 → auth.uid 발급
+    // 4) tossUserId + authUserId 로 users 행 매핑 (RLS 동작에 필수)
+    // 5) Auth 실패 시 RLS 우회 모드로 폴백 (개발 환경)
     (async () => {
       const tossId = await getTossUserId();
+      tossIdRef.current = tossId;
       console.log('[AUTH] tossUserId:', tossId);
+
+      // ── 로컬 캐시 확인 ─────────────────────────────────────
+      const cached = getCachedUser(tossId);
+      if (cached) {
+        console.log('[AUTH] using cached user');
+        setUserId(cached.userId);
+        setNickname(cached.nickname);
+        setNeedsNickname(false);
+        return;
+      }
 
       // ── Supabase Anonymous Auth ────────────────────────────
       let authUid: string | null = null;
@@ -211,6 +244,7 @@ export default function App() {
         setUserId(info.id);
         setNickname(info.nickname);
         setNeedsNickname(!info.nickname);
+        if (info.nickname) setCachedUser(tossId, info.id, info.nickname);
       } else {
         // 모두 실패 시 마지막 폴백 — 토스 해시를 그대로 userId 로 사용
         setUserId(tossId);
@@ -244,7 +278,11 @@ export default function App() {
     return (
       <NicknameSetupPage
         userId={userId}
-        onDone={(name) => { setNickname(name); setNeedsNickname(false); }}
+        onDone={(name) => {
+          setNickname(name);
+          setNeedsNickname(false);
+          if (userId && tossIdRef.current) setCachedUser(tossIdRef.current, userId, name);
+        }}
       />
     );
   }
@@ -555,6 +593,7 @@ function AppInner() {
             onCollectionDeleted={(data) => { setCollectionDetail(null); setDeletedCollectionData(data); }}
             onGoHome={() => { setCollectionDetail(null); setActiveTab('home'); }}
             onEditModeChange={setIsCollectionEditMode}
+            hasDetailOverlay={!!detailCafeId}
           />
         </div>
       )}
@@ -571,6 +610,7 @@ function AppInner() {
               setActiveTab('mypage');
               setMyPageSubPage('report-cafe');
             }}
+            hasDetailOverlay={!!detailCafeId}
           />
         </div>
       )}

@@ -43,6 +43,7 @@ export default function CollectionDetailPage({
   onCollectionDeleted,
   onGoHome,
   onEditModeChange,
+  hasDetailOverlay = false,
 }: {
   collectionName: string;
   collectionId: string;
@@ -53,6 +54,7 @@ export default function CollectionDetailPage({
   onCollectionDeleted?: (data: { id: string; name: string; storeIds: string[] }) => void;
   onGoHome?: () => void;
   onEditModeChange?: (active: boolean) => void;
+  hasDetailOverlay?: boolean;
 }) {
   const {
     recentlyViewed, allStores, userLocation, favorites, collections,
@@ -501,8 +503,8 @@ export default function CollectionDetailPage({
   }, [isEditMode]);
 
 
-  // SDK 백 이벤트 — handleBack 에서 편집모드/일반모드 분기 처리
-  useBackEvent(handleBack);
+  // SDK 백 이벤트 — handleBack 에서 편집모드/일반모드 분기 처리 (DetailPage가 열려있으면 비활성화)
+  useBackEvent(handleBack, !hasDetailOverlay);
 
   // ── 내비게이션 액세서리: 편집 아이콘 (편집모드 전환용) ──
   // 일반 모드일 때만 우측 상단에 연필 아이콘 표시. 편집모드 진입 시 제거.

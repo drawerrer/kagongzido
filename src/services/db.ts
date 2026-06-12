@@ -89,9 +89,15 @@ export async function getOrCreateUserWithAuth(
   return { id: (created as Record<string, string>).id, nickname: null, isNew: true };
 }
 
-export async function updateUserNickname(userId: string, nickname: string): Promise<void> {
-  if (!supabase) return;
-  await supabase.from('users').update({ nickname }).eq('id', userId);
+export async function updateUserNickname(userId: string, nickname: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('users').update({ nickname }).eq('id', userId);
+  if (error) {
+    console.error('[updateUserNickname] 실패:', error.code, error.message, '| userId:', userId);
+    return false;
+  }
+  console.log('[updateUserNickname] 성공 | userId:', userId, '| nickname:', nickname);
+  return true;
 }
 
 // ─────────────────────────────────────────────────────────────
