@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { insertReview } from '../services/db';
+import { trackReviewWriteComplete } from '../services/analytics';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import SheetMenuRow from '../components/SheetMenuRow';
 import SheetCTA from '../components/SheetCTA';
@@ -133,6 +134,7 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
       photo_urls: photos,
     });
     if (success) {
+      trackReviewWriteComplete(cafeId, photos.length > 0);
       onReviewSubmitted?.();
       onBack();
     } else {

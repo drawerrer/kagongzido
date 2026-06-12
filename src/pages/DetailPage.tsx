@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { openURL, partner, tdsEvent, fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
+import { trackMapOpen, trackShareCafe } from '../services/analytics';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { ConfirmDialog, Toast } from '@toss/tds-mobile';
 import BottomSheet from '../components/BottomSheet';
@@ -992,6 +993,7 @@ function ReviewCard({ review, initialLiked, onToggleLike, onEditReview, onDelete
 // SDK 규정: 앱 딥링크 사용 금지 → 타사 웹사이트 URL(https://)만 허용
 // lat/lng로 정확한 위치를 열고, 없으면 이름+주소 검색으로 폴백
 function openKakaoMapWeb(cafe: CafeDetailData) {
+  trackMapOpen(cafe.id, cafe.name);
   const query = encodeURIComponent(`${cafe.name} ${cafe.address}`);
   openURL(`https://map.naver.com/v5/search/${query}`);
 }
@@ -2312,6 +2314,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         isOpen={showShareSheet}
         onClose={() => setShowShareSheet(false)}
         shareTitle={cafe.name}
+        onShare={(method) => trackShareCafe(cafe.id, method)}
       />
     </div>
   );

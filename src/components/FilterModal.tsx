@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { trackFilterReset } from '../services/analytics';
 import SheetCTA from './SheetCTA';
 
 // ── 옵션 칩 TDS SVG 아이콘 ─────────────────────
@@ -518,7 +519,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
         >
           <SheetCTA.Double
             leftLabel="초기화"
-            leftOnClick={() => setFilters(DEFAULT_FILTERS)}
+            leftOnClick={() => { setFilters(DEFAULT_FILTERS); trackFilterReset(); }}
             leftWidth={88}
             rightLabel="적용하기"
             rightOnClick={handleApply}

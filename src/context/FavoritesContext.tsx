@@ -6,6 +6,7 @@ import {
   updateCollectionsOrder, addStoresToCollectionDB, removeStoresFromCollectionDB,
   updateStoreMemo, fetchAllStores, updateUserNickname, type StoreRow,
 } from '../services/db';
+import { trackCafeFavoriteAdd, trackCollectionAddCafe } from '../services/analytics';
 
 // ─── 거리 계산 유틸 (Haversine) ───────────────────────────────
 export function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -227,6 +228,7 @@ export function FavoritesProvider({
       const next = [...prev, store];
       insertFavorite(userId, store, next.length - 1);
       lsSet(`favorites_${userId}`, next);
+      trackCafeFavoriteAdd(store.id);
       return next;
     });
   }, [userId]);
@@ -323,6 +325,7 @@ export function FavoritesProvider({
       return next;
     });
     addStoresToCollectionDB(collectionId, storeIds);
+    storeIds.forEach(id => trackCollectionAddCafe(id));
   }, [userId]);
 
   const removeStoresFromCollection = useCallback((collectionId: string, storeIds: string[]) => {

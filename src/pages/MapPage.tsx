@@ -3,6 +3,7 @@ import { getCurrentLocation, Accuracy, partner, tdsEvent } from '@apps-in-toss/w
 import { useBackEvent } from '../hooks/useBackEvent';
 import { Toast } from '@toss/tds-mobile';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
+import { trackFilterOpen, trackFilterApply, trackChipTap, trackCafeDetailView, trackViewModeChange } from '../services/analytics';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
@@ -244,6 +245,16 @@ const [filterOpen, setFilterOpen] = useState(false);
     !!selectedMapCafe && !detailHasSubPage && !hasOverlay,
   );
 
+  // 탐색 모드 트래킹: expanded → list, minimized → map
+  const prevPanelStateRef = useRef<PanelState>(panelState);
+  useEffect(() => {
+    const prev = prevPanelStateRef.current;
+    prevPanelStateRef.current = panelState;
+    if (panelState === prev) return;
+    if (panelState === 'expanded') trackViewModeChange('list');
+    else if (panelState === 'minimized') trackViewModeChange('map');
+  }, [panelState]);
+
   const filterApplied =
     appliedFilters.openNow !== DEFAULT_FILTERS.openNow ||
     appliedFilters.moods.length > 0 ||
@@ -415,6 +426,7 @@ const [filterOpen, setFilterOpen] = useState(false);
       if (!cafeId) return;
       const cafe = cafesRef.current.find(c => c.id === cafeId);
       if (cafe) {
+        trackCafeDetailView(cafe.id, 'map_marker');
         setSelectedMapCafe(cafe);
         setPanelState('half');
       }
@@ -693,11 +705,15 @@ const [filterOpen, setFilterOpen] = useState(false);
             }}>
               <div style={{ display: 'flex', gap: 8 }}>
                 {CATEGORY_CHIPS.map(chip => (
-                  <Chip key={chip} label={chip} isActive={activeChip === chip} onClick={() => setActiveChip(activeChip === chip ? null : chip)} />
+                  <Chip key={chip} label={chip} isActive={activeChip === chip} onClick={() => {
+                    const next = activeChip === chip ? null : chip;
+                    trackChipTap(chip, next === chip);
+                    setActiveChip(next);
+                  }} />
                 ))}
               </div>
               <button
-                onClick={() => { setFilterOpenKey(k => k + 1); setFilterOpen(true); }}
+                onClick={() => { setFilterOpenKey(k => k + 1); setFilterOpen(true); trackFilterOpen(); }}
                 style={{
                   flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -793,7 +809,7 @@ const [filterOpen, setFilterOpen] = useState(false);
                   <CafeRow
                     key={cafe.id}
                     cafe={cafe}
-                    onTap={() => onDetailOpen(cafe.id)}
+                    onTap={() => { trackCafeDetailView(cafe.id, 'list'); onDetailOpen(cafe.id); }}
                     onFavoriteChange={(type, cafe) => showFavoriteSnackbar(type, cafe)}
                   />
                 ))
@@ -814,7 +830,23 @@ const [filterOpen, setFilterOpen] = useState(false);
         isOpen={filterOpen}
         initialFilters={appliedFilters}
         onClose={() => setFilterOpen(false)}
-        onApply={(f) => { setAppliedFilters(f); setFilterOpen(false); }}
+        onApply={(f) => {
+          // 적용 시점의 결과 수 계산
+          let preview = activeChip ? cafes.filter(c => c.tags.includes(activeChip)) : [...cafes];
+          if (mapBounds) {
+            preview = preview.filter(c =>
+              c.lat != null && c.lng != null &&
+              c.lat >= mapBounds.swLat && c.lat <= mapBounds.neLat &&
+              c.lng >= mapBounds.swLng && c.lng <= mapBounds.neLng
+            );
+          }
+          if (f.moods.length > 0) preview = preview.filter(c => f.moods.some(m => c.moods.includes(m)));
+          if (f.priceMax < DEFAULT_FILTERS.priceMax) preview = preview.filter(c => c.priceRange <= f.priceMax);
+          if (f.options.length > 0) preview = preview.filter(c => f.options.some(opt => c.options.includes(opt)));
+          trackFilterApply(f, preview.length);
+          setAppliedFilters(f);
+          setFilterOpen(false);
+        }}
       />
 
       {/* ── 위치 권한 바텀시트 ── */}

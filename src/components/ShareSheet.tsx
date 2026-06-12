@@ -14,6 +14,8 @@ interface ShareSheetProps {
    * 미지정 시 앱 홈으로 진입하는 기본 링크 사용.
    */
   sharePath?: string;
+  /** 공유 방법이 선택됐을 때 호출 (method: copy→link_copy, 그 외 appId 그대로) */
+  onShare?: (method: string) => void;
 }
 
 // 미니앱 메인 딥링크 (intoss://<appName>) — 콘솔 등록명과 일치 필요 (소문자)
@@ -77,7 +79,7 @@ const SHARE_APPS = [
   },
 ];
 
-export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도', sharePath }: ShareSheetProps) {
+export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도', sharePath, onShare }: ShareSheetProps) {
   const [copied, setCopied] = useState(false);
   // 토스 공유 링크 (미니앱으로 딥링크) — 시트 열릴 때마다 미리 발급
   const [tossLink, setTossLink] = useState<string>('');
@@ -119,6 +121,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         }
+        onShare?.('link_copy');
         break;
       }
       // 카카오톡·인스타그램·X·더보기 → SDK 네이티브 공유 시트 사용
@@ -130,6 +133,7 @@ export default function ShareSheet({ isOpen, onClose, shareTitle = '카공지도
         try {
           await share({ message: shareMessage });
         } catch { /* 사용자 취소 등 무시 */ }
+        onShare?.(appId);
         onClose();
         break;
       }

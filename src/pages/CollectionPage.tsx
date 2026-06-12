@@ -10,6 +10,7 @@ import CollectionActionSheet from '../components/CollectionActionSheet';
 import StoreCountBar from '../components/StoreCountBar';
 import SectionHeader from '../components/SectionHeader';
 import { useFavorites, FavoritedStore, haversineDistance, isRecentCollection } from '../context/FavoritesContext';
+import { trackCollectionCreate } from '../services/analytics';
 import { BottomSheet, BottomCTA, CTAButton, Toast } from '@toss/tds-mobile';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import { useBackEvent } from '../hooks/useBackEvent';
@@ -230,6 +231,7 @@ export default function CollectionPage({
   const createCollection = () => {
     if (!newCollectionName.trim()) return;
     const newId = addCollection({ name: newCollectionName.trim() });
+    trackCollectionCreate();
     setNewCollectionName('');
 
     if (isOrganizeMode) {

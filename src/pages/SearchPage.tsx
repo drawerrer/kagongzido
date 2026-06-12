@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useFavorites } from '../context/FavoritesContext';
 import { useBackEvent } from '../hooks/useBackEvent';
+import { trackSearchUse, trackCafeDetailView } from '../services/analytics';
 import { fetchAllStores, type StoreRow } from '../services/db';
 import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
@@ -22,6 +23,7 @@ interface SearchPageProps {
   onClose: () => void;
   onDetailOpen?: (cafeId: string) => void;
   onReportCafe?: () => void;
+  hasDetailOverlay?: boolean;
 }
 
 // ── 아이콘 ────────────────────────────────────────────────────
@@ -279,7 +281,7 @@ function Chip({
 }
 
 // ── SearchPage ────────────────────────────────────────────────
-export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCafe }: SearchPageProps) {
+export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCafe, hasDetailOverlay = false }: SearchPageProps) {
   const [query, setQuery]           = useState('');
   const [activeChip, setActiveChip] = useState<string | null>(null);
   const [recentSearches, setRecentSearches] = useState<{ keyword: string; date: string }[]>([]);
@@ -300,8 +302,8 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
     return () => clearTimeout(t);
   }, []);
 
-  // 뒤로가기 → 홈으로 이동 (앱 종료 방지)
-  useBackEvent(_onClose);
+  // 뒤로가기 → 홈으로 이동 (DetailPage가 열려있으면 비활성화)
+  useBackEvent(_onClose, !hasDetailOverlay);
 
   const handleChipPress = (chipId: string) => {
     setActiveChip(prev => prev === chipId ? null : chipId);
@@ -312,6 +314,19 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
     setQuery(v);
     if (v.trim()) setActiveChip(null);
   };
+
+  // 1초 디바운스 후 실제 검색어 트래킹 (result_count 포함)
+  useEffect(() => {
+    if (!query.trim()) return;
+    const timer = setTimeout(() => {
+      const q = query.trim();
+      const count = allStores.filter(s =>
+        s.name.includes(q) || (s.address_road ?? '').includes(q)
+      ).length;
+      trackSearchUse(q, count);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [query, allStores]);
 
   const removeRecent  = (kw: string) => setRecentSearches(p => p.filter(r => r.keyword !== kw));
   const clearAllRecent = () => setRecentSearches([]);
@@ -439,7 +454,7 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
                 <div>
                   <StoreCountBar count={filteredResults.length} />
                   {filteredResults.map(s => (
-                    <SearchCafeRow key={s.api_place_id} store={s} onTap={() => onDetailOpen?.(s.api_place_id)} />
+                    <SearchCafeRow key={s.api_place_id} store={s} onTap={() => { trackCafeDetailView(s.api_place_id, 'search'); onDetailOpen?.(s.api_place_id); }} />
                   ))}
                 </div>
               )}
