@@ -27,7 +27,7 @@ interface Cafe {
   rating: number;
   reviewCount: number;
   tags: string[];
-  mood: string;
+  moods: string[];
   priceRange: number;
   options: string[];
   lat?: number;
@@ -241,7 +241,7 @@ const [filterOpen, setFilterOpen] = useState(false);
   // 지도 패널 열린 상태에서 백 → 패널 닫기 (그 외엔 SDK 기본 동작 = 앱 종료)
   useBackEvent(
     () => { setSelectedMapCafe(null); setPanelState('half'); },
-    !!selectedMapCafe && !detailHasSubPage,
+    !!selectedMapCafe && !detailHasSubPage && !hasOverlay,
   );
 
   const filterApplied =
@@ -269,7 +269,7 @@ const [filterOpen, setFilterOpen] = useState(false);
         c.lng >= mapBounds.swLng && c.lng <= mapBounds.neLng
       );
     }
-    if (appliedFilters.moods.length > 0) filtered = filtered.filter(c => appliedFilters.moods.includes(c.mood));
+    if (appliedFilters.moods.length > 0) filtered = filtered.filter(c => appliedFilters.moods.some(m => c.moods.includes(m)));
     if (appliedFilters.priceMax < DEFAULT_FILTERS.priceMax) filtered = filtered.filter(c => c.priceRange <= appliedFilters.priceMax);
     if (appliedFilters.options.length > 0) filtered = filtered.filter(c => appliedFilters.options.some(opt => c.options.includes(opt)));
     return filtered;
@@ -518,7 +518,10 @@ const [filterOpen, setFilterOpen] = useState(false);
         rating: 0,
         reviewCount: 0,
         tags: store.badges ?? [],
-        mood: (store.vibe_tags ?? [])[0] || '모던한',
+        moods: (store.vibe_tags ?? [])
+          .flatMap(t => t.split('\n').flatMap(s => s.split('&')))
+          .map(t => t.trim())
+          .filter(Boolean),
         priceRange: store.base_price,
         options: storeToOptions(store),
         lat: store.latitude,
