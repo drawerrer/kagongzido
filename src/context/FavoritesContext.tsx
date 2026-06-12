@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
+import NicknameRequiredSheet from '../components/NicknameRequiredSheet';
 import { getCurrentLocation, Accuracy } from '@apps-in-toss/web-framework';
 import {
   fetchFavorites, insertFavorite, deleteFavorite, updateFavoritesOrder,
@@ -88,6 +89,16 @@ interface FavoritesContextType {
   userId: string;
   nickname: string | null;
   updateNickname: (name: string) => void;
+  /**
+   * 닉네임이 이미 있으면 즉시 true 반환.
+   * 없으면 닉네임 입력 시트 노출 → 저장 시 true / 취소 시 false 로 resolve.
+   *
+   * 사용 예 (리뷰 작성 진입 시):
+   *   const ok = await requireNickname();
+   *   if (!ok) return;
+   *   setShowWriteReview(true);
+   */
+  requireNickname: () => Promise<boolean>;
   isLoading: boolean;
   allStores: StoreRow[];
   userLocation: { lat: number; lng: number } | null;
@@ -127,6 +138,35 @@ export function FavoritesProvider({
     setNickname(name);
     updateUserNickname(userId, name);
   }, [userId]);
+
+  // ── 닉네임 입력 시트 (전역 1개) ───────────────────────────────
+  // 어디서든 requireNickname() 호출 시 nickname 없으면 시트 표시.
+  // 사용자 동작 결과를 Promise 로 호출자에게 전달.
+  const [nicknameSheetOpen, setNicknameSheetOpen] = useState(false);
+  const nicknameResolverRef = useRef<((ok: boolean) => void) | null>(null);
+
+  const requireNickname = useCallback((): Promise<boolean> => {
+    // 이미 닉네임 있으면 즉시 통과
+    if (nickname && nickname.trim()) return Promise.resolve(true);
+    return new Promise<boolean>((resolve) => {
+      nicknameResolverRef.current = resolve;
+      setNicknameSheetOpen(true);
+    });
+  }, [nickname]);
+
+  const handleNicknameSubmit = useCallback((name: string) => {
+    setNickname(name);
+    updateUserNickname(userId, name);
+    setNicknameSheetOpen(false);
+    nicknameResolverRef.current?.(true);
+    nicknameResolverRef.current = null;
+  }, [userId]);
+
+  const handleNicknameClose = useCallback(() => {
+    setNicknameSheetOpen(false);
+    nicknameResolverRef.current?.(false);
+    nicknameResolverRef.current = null;
+  }, []);
 
   // 전체 매장 데이터 (앱 시작 시 1회 로드, 컬렉션·검색 등에서 공유)
   const [allStores, setAllStores] = useState<StoreRow[]>([]);
@@ -357,7 +397,7 @@ export function FavoritesProvider({
 
   return (
     <FavoritesContext.Provider value={{
-      userId, nickname, updateNickname, isLoading,
+      userId, nickname, updateNickname, requireNickname, isLoading,
       allStores, userLocation,
       favorites, isFavorited, addFavorite, removeFavorite, reorderFavorites,
       recentlyViewed, addRecentlyViewed,
@@ -366,6 +406,15 @@ export function FavoritesProvider({
       reorderCollections,
     }}>
       {children}
+      {/* 어디서든 requireNickname() 호출 시 노출되는 전역 시트
+          — 조건부 렌더로 표시 제어 (MemoSheet 와 동일 패턴) */}
+      {nicknameSheetOpen && (
+        <NicknameRequiredSheet
+          initialName={nickname}
+          onSubmit={handleNicknameSubmit}
+          onClose={handleNicknameClose}
+        />
+      )}
     </FavoritesContext.Provider>
   );
 }

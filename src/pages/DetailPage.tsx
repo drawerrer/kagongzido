@@ -1312,7 +1312,14 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const scrollRef = useRef<HTMLDivElement>(null);
   const reviewSectionRef = useRef<HTMLDivElement>(null);
   const cafeInfoRef = useRef<HTMLDivElement>(null);
-  const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed, userId, collections } = useFavorites();
+  const { isFavorited, addFavorite, removeFavorite, addRecentlyViewed, userId, collections, requireNickname } = useFavorites();
+
+  // 리뷰 작성 진입 — 닉네임 없으면 입력 시트 먼저 띄움
+  const handleOpenWriteReview = async () => {
+    const ok = await requireNickname();
+    if (!ok) return;
+    setShowWriteReview(true);
+  };
 
   // ── DB 리뷰 로딩 + 본인 좋아요 prefetch ──────────────────
   const [dbReviews, setDbReviews] = useState<ReviewItem[]>([]);
@@ -2072,7 +2079,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               </div>
               {/* 리뷰 쓰기 버튼 */}
               <button
-                onClick={() => setShowWriteReview(true)}
+                onClick={handleOpenWriteReview}
                 style={{
                   width: '100%',
                   height: 38,
@@ -2114,7 +2121,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowWriteReview(true)}
+                  onClick={handleOpenWriteReview}
                   style={{
                     width: '100%',
                     height: 38,

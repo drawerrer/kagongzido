@@ -16,6 +16,7 @@ import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
 import CafePlaceholder from '../components/CafePlaceholder';
 import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
+import NicknameRequiredSheet from '../components/NicknameRequiredSheet';
 import IcPhoto from '../assets/icons/icon_photo.svg?react';
 import IcCamera from '../assets/icons/icon_camera.svg?react';
 import IcMail from '../assets/icons/icon_mail.svg?react';
@@ -1383,14 +1384,25 @@ export default function MyPage({
   }, [subPage, editingReview]); // eslint-disable-line react-hooks/exhaustive-deps
   const [versionToast, setVersionToast] = useState(false);
   const [showMoreSheet, setShowMoreSheet] = useState(false);
-  const { nickname, updateNickname } = useFavorites();
-  const [displayName, setDisplayName] = useState(nickname ?? '카페인덱서');
-  useEffect(() => { if (nickname) setDisplayName(nickname); }, [nickname]);
+  const { nickname, updateNickname, requireNickname } = useFavorites();
+  // 닉네임 없을 땐 안내 텍스트 — 마이페이지에서 직접 클릭해 설정 가능
+  const NICKNAME_PLACEHOLDER = '닉네임을 설정해주세요';
+  const [displayName, setDisplayName] = useState(nickname ?? NICKNAME_PLACEHOLDER);
+  useEffect(() => {
+    setDisplayName(nickname ?? NICKNAME_PLACEHOLDER);
+  }, [nickname]);
+  const hasNickname = !!nickname;
+
+  // 제보 작성 진입 — 닉네임 없으면 입력 시트 먼저 띄움
+  const handleOpenReportCafe = async () => {
+    const ok = await requireNickname();
+    if (!ok) return;
+    changeSubPage('report-cafe');
+  };
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [showContactPopup, setShowContactPopup] = useState(false);
   const [copiedToast, setCopiedToast] = useState(false);
   const [showNameSheet, setShowNameSheet] = useState(false);
-  const [draftName, setDraftName] = useState('');
 
 
   const showVersionToast = () => {
@@ -1425,7 +1437,7 @@ export default function MyPage({
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 18, fontWeight: 510, color: '#101010', lineHeight: '23px' }}>{displayName}</span>
               <button
-                onClick={() => { setDraftName(displayName); setShowNameSheet(true); }}
+                onClick={() => setShowNameSheet(true)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -1443,7 +1455,7 @@ export default function MyPage({
               </div>
               <div style={{ flex: 1 }} />
               <button
-                onClick={() => changeSubPage('report-cafe')}
+                onClick={handleOpenReportCafe}
                 style={{
                   background: '#252525', borderRadius: 13,
                   height: 29, padding: '0 10px',
@@ -1673,49 +1685,19 @@ export default function MyPage({
         </>
       )}
 
-      {/* 이름 변경 바텀시트 */}
-      <BottomSheet
-        open={showNameSheet}
-        header={<BottomSheet.Header>변경할 이름</BottomSheet.Header>}
-        onClose={() => setShowNameSheet(false)}
-        hasTextField
-      >
-        <div style={{ padding: '8px 20px 16px' }}>
-          <input
-            autoFocus
-            value={draftName}
-            onChange={e => { if (e.target.value.length <= 45) setDraftName(e.target.value); }}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && draftName.trim() && draftName.trim() !== displayName) {
-                const name = draftName.trim();
-                setDisplayName(name);
-                updateNickname(name);
-                setShowNameSheet(false);
-              }
-            }}
-            maxLength={45}
-            placeholder={displayName}
-            style={{
-              width: '100%', height: 48, borderRadius: 10,
-              border: '1px solid rgba(0,0,0,0.12)',
-              padding: '0 14px', fontSize: 17, outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
-            <span style={{ fontSize: 12, color: 'rgba(0,19,43,0.38)' }}>{draftName.length}/45</span>
-          </div>
-        </div>
-        <Button
-          color="primary"
-          size="xlarge"
-          style={{ width: '100%' }}
-          onClick={() => { const name = draftName.trim(); setDisplayName(name); updateNickname(name); setShowNameSheet(false); }}
-          disabled={!draftName.trim() || draftName.trim() === displayName}
-        >
-          적용하기
-        </Button>
-      </BottomSheet>
+      {/* 닉네임 변경 바텀시트 — 공용 NicknameRequiredSheet 사용
+          (텍스트·디자인 모두 컴포넌트 내부 그대로 — 다른 진입 시점과 통일) */}
+      {showNameSheet && (
+        <NicknameRequiredSheet
+          initialName={nickname}
+          onSubmit={(name) => {
+            setDisplayName(name);
+            updateNickname(name);
+            setShowNameSheet(false);
+          }}
+          onClose={() => setShowNameSheet(false)}
+        />
+      )}
 
       {/* 회원탈퇴 확인 다이얼로그 — open={false} 시에도 DOM 마운트되면 TDS backdrop이 터치를 차단하므로 조건부 마운트 */}
       {showWithdrawDialog && (
@@ -1757,7 +1739,7 @@ export default function MyPage({
           onBack={() => changeSubPage(null)}
           onClose={() => changeSubPage(null)}
           onReportView={(report) => setViewingReport(report)}
-          onReportNew={() => changeSubPage('report-cafe')}
+          onReportNew={handleOpenReportCafe}
           hasOverlay={hasDetailOverlay || !!viewingReport}
         />
       </div>

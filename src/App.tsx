@@ -24,6 +24,7 @@ import DetailPage from './pages/DetailPage';
 import PhotoReviewPage from './pages/PhotoReviewPage';
 import PlaceholderPreviewPage from './pages/PlaceholderPreviewPage';
 import ClosedStorePreviewPage from './pages/ClosedStorePreviewPage';
+import NicknameSheetPreviewPage from './pages/NicknameSheetPreviewPage';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { useFavorites } from './context/FavoritesContext';
 
@@ -175,9 +176,11 @@ export default function App() {
   });
   const [userId, setUserId] = useState<string | null>(null);
   const [nickname, setNickname] = useState<string | null>(null);
-  const [needsNickname, setNeedsNickname] = useState(false);
+  // needsNickname 상태 제거 — 첫 진입 시 닉네임 강제 입력 X.
+  //   대신 리뷰 작성 · 제보 작성 · 마이페이지 닉네임 변경 시점에 시트로 받음.
   const tossIdRef = useRef<string | null>(null);
 
+  // 로컬 캐시 — Supabase 세션 만료/콜드 런치 시에도 닉네임 즉시 표시 보강
   const USER_CACHE_KEY = 'cafeindex_user_v2';
   const getCachedUser = (tossId: string) => {
     try {
@@ -210,7 +213,6 @@ export default function App() {
         console.log('[AUTH] using cached user');
         setUserId(cached.userId);
         setNickname(cached.nickname);
-        setNeedsNickname(false);
         return;
       }
 
@@ -243,12 +245,11 @@ export default function App() {
       if (info) {
         setUserId(info.id);
         setNickname(info.nickname);
-        setNeedsNickname(!info.nickname);
+        // 닉네임 있으면 캐시 — 콜드 런치/세션 만료 후에도 즉시 노출 가능
         if (info.nickname) setCachedUser(tossId, info.id, info.nickname);
       } else {
         // 모두 실패 시 마지막 폴백 — 토스 해시를 그대로 userId 로 사용
         setUserId(tossId);
-        setNeedsNickname(true);
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -271,22 +272,18 @@ export default function App() {
       }} />
     );
   }
-
-  if (!userId) return null;
-
-  if (needsNickname) {
+  if (previewMode === 'nickname') {
     return (
-      <NicknameSetupPage
-        userId={userId}
-        onDone={(name) => {
-          setNickname(name);
-          setNeedsNickname(false);
-          if (userId && tossIdRef.current) setCachedUser(tossIdRef.current, userId, name);
-        }}
-      />
+      <NicknameSheetPreviewPage onClose={() => {
+        window.history.replaceState({}, '', window.location.pathname);
+        setPreviewMode(null);
+      }} />
     );
   }
 
+  if (!userId) return null;
+
+  // 닉네임이 비어있어도 메인 진입 가능 — 필요한 시점(리뷰/제보/마이)에 시트로 입력 받음
   return (
     <FavoritesProvider userId={userId} initialNickname={nickname}>
       <AppInner />

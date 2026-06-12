@@ -38,11 +38,14 @@ export async function getOrCreateUser(tossUserId: string): Promise<UserInfo | nu
  * @param authUserId Supabase auth.uid() — signInAnonymously() 후 발급
  *
  * 동작:
- *  1) tossUserId 로 users 행 조회
- *  2) 있으면: auth_user_id 가 다르거나 비었으면 → 갱신 (localStorage 초기화 등으로 세션 재발급된 케이스)
- *  3) 없으면: INSERT (toss_user_id + auth_user_id)
+ *  - Postgres RPC `upsert_user_by_toss_id` (SECURITY DEFINER) 한 번 호출
+ *  - 함수 내부에서 toss_user_id 기준 조회 → 있으면 auth_user_id 최신화 / 없으면 INSERT
+ *  - 토스 앱 콜드 런치마다 auth.uid() 가 새로 발급돼도 안정적으로 동일 row 회수
  *
- * RLS 정책상 INSERT/UPDATE 모두 auth_user_id = auth.uid() 일 때만 허용됨.
+ * 왜 RPC 인가:
+ *  - Anonymous Auth 세션이 토스 WebView 콜드 런치 시 재발급되면 auth.uid 가 매번 달라짐
+ *  - 기존 RLS 정책(auth_user_id = auth.uid)으로는 자기 row 도 SELECT 불가
+ *  - SECURITY DEFINER 함수로 RLS 우회하여 toss_user_id 라는 안정적 ID 로만 조회/생성
  */
 export async function getOrCreateUserWithAuth(
   tossUserId: string,
@@ -50,50 +53,45 @@ export async function getOrCreateUserWithAuth(
 ): Promise<UserInfo | null> {
   if (!supabase) return null;
 
-  // 1) 기존 row 조회
-  const { data: existing, error: selErr } = await supabase
-    .from('users')
-    .select('id, nickname, auth_user_id')
-    .eq('toss_user_id', tossUserId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('upsert_user_by_toss_id', {
+    p_toss_user_id: tossUserId,
+    p_auth_user_id: authUserId,
+  });
 
-  if (selErr) {
-    console.error('getOrCreateUserWithAuth select:', selErr);
+  if (error) {
+    console.error('upsert_user_by_toss_id RPC:', error);
     return null;
   }
 
-  if (existing?.id) {
-    const row = existing as { id: string; nickname: string | null; auth_user_id: string | null };
-    // auth_user_id 재매핑이 필요한 경우 (NULL 또는 다른 값)
-    if (row.auth_user_id !== authUserId) {
-      const { error: updErr } = await supabase
-        .from('users')
-        .update({ auth_user_id: authUserId })
-        .eq('id', row.id);
-      if (updErr) console.error('getOrCreateUserWithAuth remap:', updErr);
-    }
-    return { id: row.id, nickname: row.nickname, isNew: false };
-  }
-
-  // 2) 신규 row INSERT
-  const { data: created, error: insErr } = await supabase
-    .from('users')
-    .insert({ toss_user_id: tossUserId, auth_user_id: authUserId })
-    .select('id, nickname')
-    .single();
-
-  if (insErr) {
-    console.error('getOrCreateUserWithAuth insert:', insErr);
+  // RPC 결과는 TABLE 반환 → 배열 형태로 옴
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
+    console.error('upsert_user_by_toss_id: empty result');
     return null;
   }
-  return { id: (created as Record<string, string>).id, nickname: null, isNew: true };
+
+  return {
+    id: row.id as string,
+    nickname: (row.nickname as string | null) ?? null,
+    isNew: row.is_new as boolean,
+  };
 }
 
+/**
+ * 닉네임 변경.
+ * RPC (SECURITY DEFINER) 사용 — 콜드 런치마다 새로 발급되는 auth.uid 와
+ * users.auth_user_id 불일치로 인한 RLS 차단을 우회.
+ *
+ * @returns 성공 시 true, 실패 시 false (호출자가 에러 처리·재시도 가능)
+ */
 export async function updateUserNickname(userId: string, nickname: string): Promise<boolean> {
   if (!supabase) return false;
-  const { error } = await supabase.from('users').update({ nickname }).eq('id', userId);
+  const { error } = await supabase.rpc('update_user_nickname', {
+    p_user_id: userId,
+    p_nickname: nickname,
+  });
   if (error) {
-    console.error('[updateUserNickname] 실패:', error.code, error.message, '| userId:', userId);
+    console.error('[updateUserNickname] RPC 실패:', error.code, error.message, '| userId:', userId);
     return false;
   }
   console.log('[updateUserNickname] 성공 | userId:', userId, '| nickname:', nickname);
