@@ -25,6 +25,7 @@ import PhotoReviewPage from './pages/PhotoReviewPage';
 import PlaceholderPreviewPage from './pages/PlaceholderPreviewPage';
 import ClosedStorePreviewPage from './pages/ClosedStorePreviewPage';
 import NicknameSheetPreviewPage from './pages/NicknameSheetPreviewPage';
+import { getCachedUser, setCachedUser } from './utils/userCache';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { useFavorites } from './context/FavoritesContext';
 
@@ -179,22 +180,6 @@ export default function App() {
   // needsNickname 상태 제거 — 첫 진입 시 닉네임 강제 입력 X.
   //   대신 리뷰 작성 · 제보 작성 · 마이페이지 닉네임 변경 시점에 시트로 받음.
   const tossIdRef = useRef<string | null>(null);
-
-  // 로컬 캐시 — Supabase 세션 만료/콜드 런치 시에도 닉네임 즉시 표시 보강
-  const USER_CACHE_KEY = 'cafeindex_user_v2';
-  const getCachedUser = (tossId: string) => {
-    try {
-      const cached = localStorage.getItem(USER_CACHE_KEY);
-      if (cached) {
-        const data = JSON.parse(cached);
-        if (data.tossId === tossId && data.userId && data.nickname) return data as { userId: string; nickname: string };
-      }
-    } catch {}
-    return null;
-  };
-  const setCachedUser = (tossId: string, uid: string, nick: string) => {
-    try { localStorage.setItem(USER_CACHE_KEY, JSON.stringify({ tossId, userId: uid, nickname: nick })); } catch {}
-  };
 
   useEffect(() => {
     // 1) 토스 익명 해시 발급

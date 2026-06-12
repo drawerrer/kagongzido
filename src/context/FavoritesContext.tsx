@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import NicknameRequiredSheet from '../components/NicknameRequiredSheet';
+import { updateCachedNickname } from '../utils/userCache';
 import { getCurrentLocation, Accuracy } from '@apps-in-toss/web-framework';
 import {
   fetchFavorites, insertFavorite, deleteFavorite, updateFavoritesOrder,
@@ -136,6 +137,7 @@ export function FavoritesProvider({
   const [nickname, setNickname] = useState<string | null>(initialNickname);
   const updateNickname = useCallback((name: string) => {
     setNickname(name);
+    updateCachedNickname(name);   // 로컬 캐시 즉시 갱신 — 다음 콜드 런치 시 새 이름 노출
     updateUserNickname(userId, name);
   }, [userId]);
 
@@ -156,6 +158,7 @@ export function FavoritesProvider({
 
   const handleNicknameSubmit = useCallback((name: string) => {
     setNickname(name);
+    updateCachedNickname(name);   // 캐시도 즉시 갱신
     updateUserNickname(userId, name);
     setNicknameSheetOpen(false);
     nicknameResolverRef.current?.(true);
