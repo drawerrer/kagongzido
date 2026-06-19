@@ -94,6 +94,22 @@ export function trackCafeFavoriteAdd(cafeId: string) {
   ga('cafe_favorite_add', params);
 }
 
+// ── UTM 유입 추적 ─────────────────────────────────────────────
+export function trackUtmEntry(params: {
+  utm_source: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+}) {
+  const eventParams = {
+    log_name: 'utm_entry',
+    utm_source: params.utm_source,
+    utm_medium: params.utm_medium ?? '(none)',
+    utm_campaign: params.utm_campaign ?? '(none)',
+  };
+  ait(eventParams);
+  ga('utm_entry', eventParams);
+}
+
 // ── 모음집 ────────────────────────────────────────────────────
 export function trackCollectionCreate() {
   ait({ log_name: 'collection_create' });

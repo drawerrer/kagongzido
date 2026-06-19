@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, Component } from 'react';
 import { getAnonymousKey, partner } from '@apps-in-toss/web-framework';
 import { getOrCreateUser, getOrCreateUserWithAuth, updateUserNickname } from './services/db';
+import { trackUtmEntry } from './services/analytics';
 import { supabase } from './services/supabase';
 import type { ReactNode, ErrorInfo } from 'react';
 
@@ -182,6 +183,17 @@ export default function App() {
   const tossIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // ── UTM 유입 추적 ──────────────────────────────────────────
+    const sp = new URLSearchParams(window.location.search);
+    const utmSource = sp.get('utm_source');
+    if (utmSource) {
+      trackUtmEntry({
+        utm_source: utmSource,
+        utm_medium: sp.get('utm_medium') ?? undefined,
+        utm_campaign: sp.get('utm_campaign') ?? undefined,
+      });
+    }
+
     // 1) 토스 익명 해시 발급
     // 2) 로컬 캐시 확인 → 히트 시 즉시 진입 (Supabase 세션 만료돼도 닉네임 유지)
     // 3) Supabase Anonymous Auth 로그인 → auth.uid 발급
