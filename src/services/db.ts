@@ -848,6 +848,7 @@ export interface GuidebookRow {
   title: string;
   is_published: boolean;
   created_at: string;
+  view_count: number;
 }
 
 export interface GuidebookItemRow {
@@ -867,6 +868,52 @@ export async function fetchPublishedGuidebooks(): Promise<GuidebookRow[]> {
     .order('created_at', { ascending: false });
   if (error) { console.error('fetchPublishedGuidebooks:', error); return []; }
   return (data ?? []) as GuidebookRow[];
+}
+
+export interface PlaceRow {
+  id: string;
+  name: string;
+  address_road: string;
+  latitude: number;
+  longitude: number;
+  phone_number: string | null;
+  thumbnail_url: string | null;
+  photo_urls: string[] | null;
+  business_hours: string | null;
+  lt_seat_status: string | null;   // 노트북 가능 여부
+  ent_condition: string | null;    // 입장 조건
+  ent_price: string | null;        // 입장료
+  facilities: string[] | null;     // 시설 태그
+  amenities: string[] | null;
+  website_url: string | null;
+}
+
+export async function fetchLibraries(): Promise<PlaceRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from('libraries').select('*');
+  if (error) { console.error('fetchLibraries:', error); return []; }
+  return (data ?? []) as PlaceRow[];
+}
+
+export async function fetchSharedSpaces(): Promise<PlaceRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from('shared_spaces').select('*');
+  if (error) { console.error('fetchSharedSpaces:', error); return []; }
+  return (data ?? []) as PlaceRow[];
+}
+
+export async function incrementGuidebookViewCount(id: string): Promise<void> {
+  if (!supabase) return;
+  const { data } = await supabase
+    .from('guidebooks')
+    .select('view_count')
+    .eq('id', id)
+    .single();
+  const current = (data?.view_count as number) ?? 0;
+  await supabase
+    .from('guidebooks')
+    .update({ view_count: current + 1 })
+    .eq('id', id);
 }
 
 export async function fetchGuidebookItems(guidebookId: string): Promise<(GuidebookItemRow & { store: StoreRow })[]> {

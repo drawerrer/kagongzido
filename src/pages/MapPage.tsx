@@ -8,7 +8,8 @@ import LocationPermissionSheet, { LocationSheetType } from '../components/Locati
 import { useFavorites } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
 import DetailPage from './DetailPage';
-import { fetchAllStores, type StoreRow } from '../services/db';
+import PlaceDetailPage from './PlaceDetailPage';
+import { fetchAllStores, fetchLibraries, fetchSharedSpaces, type StoreRow } from '../services/db';
 import Chip from '../components/Chip';
 import StoreCardHome, { type HomeCafe } from '../components/StoreCard/Home';
 import StoreCountBar from '../components/StoreCountBar';
@@ -20,6 +21,25 @@ declare global {
 }
 
 // ── 타입 ─────────────────────────────────
+export interface PlaceItem {
+  id: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  thumbnailUrl?: string;
+  photos?: string[];
+  phone?: string;
+  businessHours?: string;
+  ltSeatStatus?: string;   // 노트북 가능 여부
+  entCondition?: string;   // 입장 조건
+  entPrice?: string;       // 입장료
+  facilities?: string[];   // 시설 태그
+  amenities?: string[];
+  websiteUrl?: string;
+  placeType: 'library' | 'shared_space';
+}
+
 interface Cafe {
   id: string;
   name: string;
@@ -38,7 +58,8 @@ interface Cafe {
 }
 
 
-const CATEGORY_CHIPS = ['콘센트 넉넉', '대형 공간', '편안한 좌석'];
+const CATEGORY_CHIPS = ['전체', '카페', '도서관', '공유공간'];
+const PLACE_CHIPS = new Set(['도서관', '공유공간']);
 
 // ── 유틸 ─────────────────────────────────
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -122,6 +143,44 @@ function GpsIcon() {
 }
 
 
+function makePlacePillHtml(placeId: string, name: string, placeType: 'library' | 'shared_space', selected: boolean): string {
+  const label = name.length > 8 ? name.slice(0, 8) + '…' : name;
+  const bg = selected ? '#252525' : '#ffffff';
+  const color = selected ? '#ffffff' : '#191F28';
+  const shadow = selected ? '0 2px 10px rgba(0,0,0,0.45)' : '0 2px 6px rgba(0,0,0,0.18)';
+  const border = selected ? 'none' : '1px solid #e5e8eb';
+  const icon = placeType === 'library' ? '📚' : '🏛️';
+  return `<div data-place-id="${placeId}" style="display:inline-flex;align-items:center;gap:4px;background:${bg};color:${color};border-radius:999px;padding:5px 10px 5px 8px;box-shadow:${shadow};white-space:nowrap;font-size:12px;font-weight:600;font-family:Pretendard,sans-serif;border:${border};cursor:pointer;">${icon} ${label}</div>`;
+}
+
+function PlaceRow({ place, onTap }: { place: PlaceItem; onTap?: () => void }) {
+  const typeLabel = place.placeType === 'library' ? '도서관' : '공유공간';
+  const typeColor = place.placeType === 'library' ? '#3182F6' : '#00B493';
+  return (
+    <div onClick={onTap} style={{ display: 'flex', gap: 12, padding: '12px 16px', alignItems: 'center', cursor: onTap ? 'pointer' : 'default' }}>
+      <div style={{
+        width: 72, height: 72, borderRadius: 8, flexShrink: 0, overflow: 'hidden',
+        background: '#f2f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {place.thumbnailUrl
+          ? <img src={place.thumbnailUrl} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <span style={{ fontSize: 28 }}>{place.placeType === 'library' ? '📚' : '🏛️'}</span>
+        }
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          <span style={{ fontSize: 11, fontWeight: 590, color: typeColor, background: `${typeColor}18`, borderRadius: 4, padding: '2px 6px' }}>{typeLabel}</span>
+        </div>
+        <p style={{ fontSize: 15, fontWeight: 590, color: '#191F28', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{place.name}</p>
+        <p style={{ fontSize: 12, color: '#8B95A1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{place.address}</p>
+        {place.businessHours && (
+          <p style={{ fontSize: 12, color: '#8B95A1', marginTop: 2 }}>{place.businessHours}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => void; onFavoriteChange?: (type: 'added' | 'removed', cafe: Cafe) => void }) {
   return (
     <StoreCardHome
@@ -180,6 +239,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
   const clustererRef = useRef<any>(null);
   const overlaysRef = useRef<Map<string, any>>(new Map());   // cafeId → CustomOverlay
   const markersRef = useRef<Map<string, any>>(new Map());    // cafeId → (투명) Marker
+  const placeOverlaysRef = useRef<Map<string, any>>(new Map()); // placeId → CustomOverlay
+  const placeItemsRef = useRef<PlaceItem[]>([]);
   const userOverlayRef = useRef<any>(null);
   const cafesRef = useRef<Cafe[]>([]);
   const pendingCenterRef = useRef<[number, number] | null>(null);
@@ -191,7 +252,10 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
   const { addFavorite } = useFavorites();
 
   const [cafes, setCafes] = useState<Cafe[]>([]);
-  const [activeChip, setActiveChip] = useState<string | null>(initialState?.activeChip ?? null);
+  const [libraries, setLibraries] = useState<PlaceItem[]>([]);
+  const [sharedSpaces, setSharedSpaces] = useState<PlaceItem[]>([]);
+  const [selectedPlace, setSelectedPlace] = useState<PlaceItem | null>(null);
+  const [activeChip, setActiveChip] = useState<string | null>(initialState?.activeChip ?? '전체');
 const [filterOpen, setFilterOpen] = useState(false);
   const [filterOpenKey, setFilterOpenKey] = useState(0);
   const [panelState, setPanelState] = useState<PanelState>(initialState?.panelState ?? 'half');
@@ -270,9 +334,14 @@ const [filterOpen, setFilterOpen] = useState(false);
     setFavoriteSnackbar(type);
   };
 
+  const isPlaceChip = PLACE_CHIPS.has(activeChip ?? '');
+  const showCafes = activeChip === '전체' || activeChip === '카페' || !activeChip;
+  const showLibraries = activeChip === '전체' || activeChip === '도서관';
+  const showSharedSpaces = activeChip === '전체' || activeChip === '공유공간';
+
   const filteredCafes = (() => {
-    let filtered = activeChip ? cafes.filter(c => c.tags.includes(activeChip)) : [...cafes];
-    // 현재 지도 뷰에 보이는 카페만 표시
+    if (!showCafes) return [];
+    let filtered = [...cafes];
     if (mapBounds) {
       filtered = filtered.filter(c =>
         c.lat != null && c.lng != null &&
@@ -285,6 +354,13 @@ const [filterOpen, setFilterOpen] = useState(false);
     if (appliedFilters.options.length > 0) filtered = filtered.filter(c => appliedFilters.options.some(opt => c.options.includes(opt)));
     return filtered;
   })();
+
+  const boundsFilter = (p: PlaceItem) => !mapBounds || (
+    p.lat >= mapBounds.swLat && p.lat <= mapBounds.neLat &&
+    p.lng >= mapBounds.swLng && p.lng <= mapBounds.neLng
+  );
+  const filteredLibraries = showLibraries ? libraries.filter(boundsFilter) : [];
+  const filteredSharedSpaces = showSharedSpaces ? sharedSpaces.filter(boundsFilter) : [];
 
   // ── Kakao Maps SDK 초기화 (index.html에서 정적 로드 완료) ──
   useEffect(() => {
@@ -547,6 +623,81 @@ const [filterOpen, setFilterOpen] = useState(false);
     load();
   }, []);
 
+  // ── 도서관 / 공유공간 데이터 마운트 시 로드 ─────────────────
+  useEffect(() => {
+    const load = async () => {
+      const [libRows, spRows] = await Promise.all([fetchLibraries(), fetchSharedSpaces()]);
+      const MOCK_ACHASAN: PlaceItem = {
+        id: 'mock-achasan-library',
+        name: '아차산 숲속도서관',
+        address: '서울 광진구 아차산로 608',
+        lat: 37.5586,
+        lng: 127.0780,
+        businessHours: '매일 09:00~18:00 화 정기휴무',
+        ltSeatStatus: '일부 좌석에서만 가능',
+        entCondition: '조건 없음',
+        entPrice: '무료',
+        facilities: ['지상 1~2층(71석)'],
+        amenities: ['wifi', 'separateRestroom', 'indoorRestroom'],
+        websiteUrl: 'https://www.gwangjinlib.seoul.kr/achasan/index.do',
+        placeType: 'library',
+      };
+      const toItem = (type: PlaceItem['placeType']) => (r: import('../services/db').PlaceRow): PlaceItem => ({
+        id: r.id, name: r.name, address: r.address_road,
+        lat: r.latitude, lng: r.longitude,
+        thumbnailUrl: r.thumbnail_url || undefined,
+        photos: r.photo_urls || undefined,
+        phone: r.phone_number || undefined,
+        businessHours: r.business_hours || undefined,
+        ltSeatStatus: r.lt_seat_status || undefined,
+        entCondition: r.ent_condition || undefined,
+        entPrice: r.ent_price || undefined,
+        facilities: r.facilities || undefined,
+        amenities: r.amenities || undefined,
+        websiteUrl: r.website_url || undefined,
+        placeType: type,
+      });
+      setLibraries([MOCK_ACHASAN, ...libRows.map(toItem('library'))]);
+      setSharedSpaces(spRows.map(toItem('shared_space')));
+    };
+    load();
+  }, []);
+
+  // ── 카페 마커 표시/숨김 ───────────────────────────────────
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current) return;
+    const shouldShow = activeChip === '전체' || activeChip === '카페' || !activeChip;
+    if (shouldShow) {
+      try { clustererRef.current?.setMap(mapRef.current); } catch {}
+      overlaysRef.current.forEach(ov => { try { ov.setMap(mapRef.current); } catch {} });
+    } else {
+      try { clustererRef.current?.setMap(null); } catch {}
+      overlaysRef.current.forEach(ov => { try { ov.setMap(null); } catch {} });
+    }
+  }, [activeChip, mapLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── 장소 마커 관리 (칩 / 데이터 변경 시 재구성) ──────────────
+  useEffect(() => {
+    if (!mapRef.current || !mapLoaded) return;
+    const map = mapRef.current;
+    placeOverlaysRef.current.forEach(ov => { try { ov.setMap(null); } catch {} });
+    placeOverlaysRef.current.clear();
+    const toRender = [
+      ...(activeChip === '전체' || activeChip === '도서관' ? libraries : []),
+      ...(activeChip === '전체' || activeChip === '공유공간' ? sharedSpaces : []),
+    ];
+    toRender.forEach(place => {
+      const div = document.createElement('div');
+      div.innerHTML = makePlacePillHtml(place.id, place.name, place.placeType, false);
+      const overlay = new window.kakao.maps.CustomOverlay({
+        position: new window.kakao.maps.LatLng(place.lat, place.lng),
+        content: div, map, yAnchor: 1.3, zIndex: 3,
+      });
+      placeOverlaysRef.current.set(place.id, overlay);
+    });
+    placeItemsRef.current = toRender;
+  }, [activeChip, libraries, sharedSpaces, mapLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── GPS 권한 초기 확인 ────────────────────
   useEffect(() => {
     getCurrentLocation.getPermission()
@@ -706,9 +857,9 @@ const [filterOpen, setFilterOpen] = useState(false);
               <div style={{ display: 'flex', gap: 8 }}>
                 {CATEGORY_CHIPS.map(chip => (
                   <Chip key={chip} label={chip} isActive={activeChip === chip} onClick={() => {
-                    const next = activeChip === chip ? null : chip;
-                    trackChipTap(chip, next === chip);
-                    setActiveChip(next);
+                    if (activeChip === chip) return;
+                    trackChipTap(chip, true);
+                    setActiveChip(chip);
                   }} />
                 ))}
               </div>
@@ -729,7 +880,7 @@ const [filterOpen, setFilterOpen] = useState(false);
             </div>
 
             <div style={{ flexShrink: 0 }}>
-              <StoreCountBar count={filteredCafes.length} />
+              <StoreCountBar count={filteredCafes.length + filteredLibraries.length + filteredSharedSpaces.length} />
             </div>
 
             <div
@@ -804,19 +955,23 @@ const [filterOpen, setFilterOpen] = useState(false);
                 }
               }}
             >
-              {filteredCafes.length > 0 ? (
-                filteredCafes.map(cafe => (
-                  <CafeRow
-                    key={cafe.id}
-                    cafe={cafe}
-                    onTap={() => { trackCafeDetailView(cafe.id, 'list'); onDetailOpen(cafe.id); }}
-                    onFavoriteChange={(type, cafe) => showFavoriteSnackbar(type, cafe)}
-                  />
-                ))
+              {filteredCafes.length + filteredLibraries.length + filteredSharedSpaces.length > 0 ? (
+                <>
+                  {filteredCafes.map(cafe => (
+                    <CafeRow
+                      key={cafe.id}
+                      cafe={cafe}
+                      onTap={() => { trackCafeDetailView(cafe.id, 'list'); onDetailOpen(cafe.id); }}
+                      onFavoriteChange={(type, cafe) => showFavoriteSnackbar(type, cafe)}
+                    />
+                  ))}
+                  {filteredLibraries.map(place => <PlaceRow key={place.id} place={place} onTap={() => setSelectedPlace(place)} />)}
+                  {filteredSharedSpaces.map(place => <PlaceRow key={place.id} place={place} onTap={() => setSelectedPlace(place)} />)}
+                </>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginTop: 32, color: '#B0B8C1' }}>
                   <CafePlaceholder size={42} />
-                  <p style={{ fontSize: 14 }}>해당 카테고리의 카페가 없어요</p>
+                  <p style={{ fontSize: 14 }}>주변에 장소가 없어요</p>
                 </div>
               )}
             </div>
@@ -832,7 +987,7 @@ const [filterOpen, setFilterOpen] = useState(false);
         onClose={() => setFilterOpen(false)}
         onApply={(f) => {
           // 적용 시점의 결과 수 계산
-          let preview = activeChip ? cafes.filter(c => c.tags.includes(activeChip)) : [...cafes];
+          let preview = [...cafes];
           if (mapBounds) {
             preview = preview.filter(c =>
               c.lat != null && c.lng != null &&
@@ -861,6 +1016,14 @@ const [filterOpen, setFilterOpen] = useState(false);
 
       {/* ── GPS 실패 토스트 ── */}
       <Toast open={gpsToast} position="top" text="현재 위치를 가져오지 못했어요. 다시 시도해주세요" onClose={() => setGpsToast(false)} />
+
+      {/* ── 장소 상세 오버레이 (도서관 / 공유공간) ── */}
+      {selectedPlace && (
+        <PlaceDetailPage
+          place={selectedPlace}
+          onBack={() => setSelectedPlace(null)}
+        />
+      )}
 
       {/* ── 찜 스낵바 ── */}
       {favoriteSnackbar === 'added' && (

@@ -6,7 +6,7 @@ import { openURL, partner, tdsEvent } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { CTAButton } from '@toss/tds-mobile';
 import SubButton from '../components/SubButton';
-import { fetchPublishedGuidebooks, fetchGuidebookItems } from '../services/db';
+import { fetchPublishedGuidebooks, fetchGuidebookItems, incrementGuidebookViewCount } from '../services/db';
 
 // ─── 아이콘 ────────────────────────────────────────────────────
 function IcSeat() {
@@ -58,6 +58,7 @@ interface GuidebookItem {
   coverUrl?: string;    // 대표 이미지 URL (첫 번째 매장 thumbnail)
   gradient: [string, string];
   stores: GuidebookStore[];
+  viewCount: number;
 }
 
 type GuideView = 'main' | 'detail' | 'past';
@@ -139,7 +140,7 @@ function GuideBookMainView({
                 {guidebook.title}
               </p>
               <span style={{ fontWeight: 400, fontSize: 18, color: '#fff' }}>
-                {guidebook.stores.length} places
+                {guidebook.stores.length} places · {guidebook.viewCount.toLocaleString()} views
               </span>
             </div>
           </div>
@@ -423,7 +424,7 @@ function GuideBookDetailView({
             {guidebook.title.replace('\n', ' ')}
           </p>
           <p style={{ fontWeight: 400, fontSize: 14, color: '#000000' }}>
-            {guidebook.stores.length} places
+            {guidebook.stores.length} places · {guidebook.viewCount.toLocaleString()} views
           </p>
         </div>
 
@@ -705,7 +706,7 @@ function GuideBookPastView({
                     fontSize: 9,
                     color: '#fff',
                   }}>
-                    {g.stores.length} places
+                    {g.stores.length} places · {g.viewCount.toLocaleString()} views
                   </p>
                 </div>
               </div>
@@ -790,6 +791,7 @@ export default function GuidebookPage({
             coverUrl,
             gradient: pickGradient(row.id),
             stores,
+            viewCount: row.view_count ?? 0,
           };
         })
       );
@@ -805,6 +807,13 @@ export default function GuidebookPage({
 
   const featuredGuidebook = guidebooks[0] ?? null;
   const pastGuidebooks = guidebooks.slice(1);
+
+  const openDetail = (g: GuidebookItem) => {
+    const updated = { ...g, viewCount: g.viewCount + 1 };
+    setActiveGuidebook(updated);
+    incrementGuidebookViewCount(g.id);
+    changeView('detail');
+  };
 
   const changeView = (v: GuideView) => {
     setPreviousView(view);
@@ -901,8 +910,8 @@ export default function GuidebookPage({
 
       {/* Main view always rendered as background (visible during sub-view swipe-back) */}
       <GuideBookMainView
-        guidebook={featuredGuidebook}
-        onCardPress={() => { setActiveGuidebook(featuredGuidebook); changeView('detail'); }}
+        guidebook={view === 'detail' && activeGuidebook?.id === featuredGuidebook?.id ? activeGuidebook! : featuredGuidebook!}
+        onCardPress={() => openDetail(featuredGuidebook!)}
         onPastPress={() => changeView('past')}
       />
 
@@ -923,7 +932,7 @@ export default function GuidebookPage({
         <div ref={subViewRef ?? undefined} style={{ position: 'absolute', inset: 0, backgroundColor: '#F3F3F3' }}>
           <GuideBookPastView
             guidebooks={pastGuidebooks}
-            onCardPress={(g) => { setActiveGuidebook(g); changeView('detail'); }}
+            onCardPress={(g) => openDetail(g)}
           />
         </div>
       )}
