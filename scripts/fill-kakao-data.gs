@@ -288,6 +288,225 @@ function uploadToSupabase() {
   );
 }
 
+// ════════════════════════════════════════════════════════════════
+// 도서관 / 공유공간 시트 전용 함수
+// ════════════════════════════════════════════════════════════════
+
+// ── 열 인덱스 (0-based, 카페DB와 동일 구조) ───────────────────────
+// 수동 입력 열 (A~O)
+const PLACE_COL_NO             = 0;   // A: no.
+const PLACE_COL_REGION         = 1;   // B: region
+const PLACE_COL_NAME           = 2;   // C: name
+const PLACE_COL_CATEGORY       = 3;   // D: category
+const PLACE_COL_BUSINESS_HOURS = 4;   // E: business_hours
+const PLACE_COL_ENT_PRICE      = 5;   // F: ent_price
+const PLACE_COL_BADGES         = 6;   // G: badges
+const PLACE_COL_FACILITIES     = 7;   // H: facilities
+const PLACE_COL_ENT_CONDITION  = 8;   // I: ent_condition
+const PLACE_COL_LT_SEAT_STATUS = 9;   // J: ltseat_status
+const PLACE_COL_NOISE_STATUS   = 10;  // K: noise_status
+const PLACE_COL_AMENITIES      = 11;  // L: amenities
+const PLACE_COL_WEBSITE_URL    = 12;  // M: website_url
+const PLACE_COL_PHOTO_URLS     = 13;  // N: photo_urls
+const PLACE_COL_THUMBNAIL_URL  = 14;  // O: thumbnail_url
+
+// 카카오 API 자동 입력 열 (P~U) — 카페DB와 동일 인덱스
+const PLACE_COL_API_PLACE_ID   = 15;  // P: api_place_id
+const PLACE_COL_ADDRESS_ROAD   = 16;  // Q: address_road
+const PLACE_COL_LATITUDE       = 17;  // R: latitude
+const PLACE_COL_LONGITUDE      = 18;  // S: longitude
+const PLACE_COL_PHONE_NUMBER   = 19;  // T: phone_number
+const PLACE_COL_NAME_KAKAO     = 20;  // U: name_kakao
+
+const PLACE_TOTAL_COLS = 21;
+
+// ── 도서관/공유공간 카카오 데이터 자동 입력 ───────────────────────
+// 카페DB의 fillKakaoData()와 동일하게 동작하지만
+// 카페 카테고리(CE7) 없이 키워드 검색만 수행 (도서관/공유공간에 적합)
+function fillPlaceKakaoData() {
+  const kakaoKey = PropertiesService.getScriptProperties().getProperty('KAKAO_REST_KEY');
+  if (!kakaoKey) {
+    SpreadsheetApp.getUi().alert('먼저 setupKakao()을 실행해서 카카오 REST 키를 저장해주세요.');
+    return;
+  }
+
+  const ss        = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet     = ss.getActiveSheet();
+  const sheetName = sheet.getName();
+
+  if (sheetName !== '도서관' && sheetName !== '공유공간') {
+    SpreadsheetApp.getUi().alert('도서관 또는 공유공간 시트에서 실행해주세요.\n현재 시트: ' + sheetName);
+    return;
+  }
+
+  // P~U 헤더 자동 세팅 (비어있을 때만)
+  const headers = sheet.getRange(1, 1, 1, PLACE_TOTAL_COLS).getValues()[0];
+  if (!headers[PLACE_COL_API_PLACE_ID]) {
+    sheet.getRange(1, PLACE_COL_API_PLACE_ID + 1).setValue('api_place_id');
+    sheet.getRange(1, PLACE_COL_ADDRESS_ROAD  + 1).setValue('address_road');
+    sheet.getRange(1, PLACE_COL_LATITUDE      + 1).setValue('latitude');
+    sheet.getRange(1, PLACE_COL_LONGITUDE     + 1).setValue('longitude');
+    sheet.getRange(1, PLACE_COL_PHONE_NUMBER  + 1).setValue('phone_number');
+    sheet.getRange(1, PLACE_COL_NAME_KAKAO    + 1).setValue('name_kakao');
+  }
+
+  const lastRow = sheet.getLastRow();
+  let filled = 0, skipped = 0, failed = 0;
+
+  for (let row = 2; row <= lastRow; row++) {
+    const rowData    = sheet.getRange(row, 1, 1, PLACE_TOTAL_COLS).getValues()[0];
+    const name       = String(rowData[PLACE_COL_NAME]   || '').trim();
+    const region     = String(rowData[PLACE_COL_REGION] || '').trim();
+    const alreadyDone = rowData[PLACE_COL_API_PLACE_ID];
+
+    if (!name || (alreadyDone && !String(rowData[PLACE_COL_NAME_KAKAO]).startsWith('❌'))) {
+      skipped++;
+      continue;
+    }
+
+    const query = region ? name + ' ' + region : name;
+
+    // 카테고리 없이 키워드 검색 (도서관/공유공간은 카페 카테고리 X)
+    const result = searchKakao(query, kakaoKey, '');
+
+    if (result) {
+      sheet.getRange(row, PLACE_COL_API_PLACE_ID + 1).setValue(result.id);
+      sheet.getRange(row, PLACE_COL_ADDRESS_ROAD  + 1).setValue(result.road_address_name || result.address_name || '');
+      sheet.getRange(row, PLACE_COL_LATITUDE      + 1).setValue(parseFloat(result.y));
+      sheet.getRange(row, PLACE_COL_LONGITUDE     + 1).setValue(parseFloat(result.x));
+      sheet.getRange(row, PLACE_COL_PHONE_NUMBER  + 1).setValue(result.phone || '');
+      sheet.getRange(row, PLACE_COL_NAME_KAKAO    + 1).setValue(result.place_name);
+      filled++;
+    } else {
+      sheet.getRange(row, PLACE_COL_NAME_KAKAO + 1).setValue('❌ 검색 실패');
+      failed++;
+    }
+
+    Utilities.sleep(200);
+  }
+
+  SpreadsheetApp.getUi().alert(
+    '완료!\n✅ ' + filled + '개 자동 입력\n⏭️ ' + skipped + '개 건너뜀 (이미 완료 또는 이름 없음)\n❌ ' + failed + '개 검색 실패 (name_kakao 열 확인)'
+  );
+}
+
+// ── 도서관/공유공간 → Supabase 업로드 ────────────────────────────
+// 활성 시트 이름 기준으로 테이블 자동 선택:
+//   도서관   → libraries
+//   공유공간 → shared_spaces
+// name 컬럼을 upsert 기준 키로 사용 (Supabase unique 제약 필요)
+function uploadPlacesToSupabase() {
+  const props       = PropertiesService.getScriptProperties();
+  const supabaseUrl = props.getProperty('SUPABASE_URL');
+  const anonKey     = props.getProperty('SUPABASE_ANON_KEY');
+
+  if (!supabaseUrl || !anonKey) {
+    SpreadsheetApp.getUi().alert('먼저 setupSupabase()를 실행해서 Supabase 설정을 저장해주세요.');
+    return;
+  }
+
+  const ss        = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet     = ss.getActiveSheet();
+  const sheetName = sheet.getName();
+
+  let tableName;
+  if      (sheetName === '도서관')   tableName = 'libraries';
+  else if (sheetName === '공유공간') tableName = 'shared_spaces';
+  else {
+    SpreadsheetApp.getUi().alert('도서관 또는 공유공간 시트에서 실행해주세요.\n현재 시트: ' + sheetName);
+    return;
+  }
+
+  const ui = SpreadsheetApp.getUi();
+  const confirm = ui.alert(
+    'Supabase 업로드',
+    '"' + sheetName + '" 시트를 ' + tableName + ' 테이블에 업로드할까요?',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (confirm !== ui.Button.OK) return;
+
+  const data = sheet.getDataRange().getValues();
+  const rows = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const r    = data[i];
+    const name = String(r[PLACE_COL_NAME] || '').trim();
+    if (!name) continue; // 이름 없는 행 제외
+
+    rows.push({
+      name:            name,
+      address_road:    String(r[PLACE_COL_ADDRESS_ROAD]   || ''),
+      latitude:        Number(r[PLACE_COL_LATITUDE])  || null,
+      longitude:       Number(r[PLACE_COL_LONGITUDE]) || null,
+      phone_number:    r[PLACE_COL_PHONE_NUMBER]  ? String(r[PLACE_COL_PHONE_NUMBER])  : null,
+      thumbnail_url:   r[PLACE_COL_THUMBNAIL_URL] ? String(r[PLACE_COL_THUMBNAIL_URL]) : null,
+      photo_urls:      r[PLACE_COL_PHOTO_URLS]
+                         ? String(r[PLACE_COL_PHOTO_URLS]).split(',').map(function(s) { return s.trim(); }).filter(Boolean)
+                         : [],
+      business_hours:  r[PLACE_COL_BUSINESS_HOURS] ? String(r[PLACE_COL_BUSINESS_HOURS]) : null,
+      ent_price:       r[PLACE_COL_ENT_PRICE]      ? String(r[PLACE_COL_ENT_PRICE])      : null,
+      ent_condition:   r[PLACE_COL_ENT_CONDITION]  ? String(r[PLACE_COL_ENT_CONDITION])  : null,
+      lt_seat_status:  r[PLACE_COL_LT_SEAT_STATUS] ? String(r[PLACE_COL_LT_SEAT_STATUS]) : null,
+      noise_status:    r[PLACE_COL_NOISE_STATUS]   ? String(r[PLACE_COL_NOISE_STATUS])   : null,
+      facilities:      r[PLACE_COL_FACILITIES]
+                         ? String(r[PLACE_COL_FACILITIES]).split(',').map(function(s) { return s.trim(); }).filter(Boolean)
+                         : [],
+      amenities:       r[PLACE_COL_AMENITIES]
+                         ? String(r[PLACE_COL_AMENITIES]).split(',').map(function(s) { return s.trim(); }).filter(Boolean)
+                         : [],
+      badges:          r[PLACE_COL_BADGES]
+                         ? String(r[PLACE_COL_BADGES]).split(',').map(function(s) { return s.trim(); }).filter(Boolean)
+                         : [],
+      website_url:     r[PLACE_COL_WEBSITE_URL] ? String(r[PLACE_COL_WEBSITE_URL]) : null,
+    });
+  }
+
+  if (rows.length === 0) {
+    ui.alert('업로드할 데이터가 없어요. 이름(C열)이 채워진 행이 있는지 확인해주세요.');
+    return;
+  }
+
+  const BATCH_SIZE = 50;
+  let success = 0, failed = 0;
+  // ?on_conflict=name → name 기준으로 upsert (중복 시 업데이트)
+  const endpoint = supabaseUrl.replace(/\/$/, '') + '/rest/v1/' + tableName + '?on_conflict=name';
+
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+
+    try {
+      const res = UrlFetchApp.fetch(endpoint, {
+        method:             'POST',
+        headers: {
+          'apikey':        anonKey,
+          'Authorization': 'Bearer ' + anonKey,
+          'Content-Type':  'application/json',
+          'Prefer':        'resolution=merge-duplicates',
+        },
+        payload:            JSON.stringify(batch),
+        muteHttpExceptions: true,
+      });
+
+      const code = res.getResponseCode();
+      if (code === 200 || code === 201) {
+        success += batch.length;
+      } else {
+        Logger.log('Supabase 오류 [batch ' + i + ']: ' + res.getContentText());
+        failed += batch.length;
+      }
+    } catch (e) {
+      Logger.log('fetch 오류 [batch ' + i + ']: ' + e.message);
+      failed += batch.length;
+    }
+
+    Utilities.sleep(300);
+  }
+
+  ui.alert(
+    'Supabase 업로드 완료!\n✅ ' + success + '개 성공\n❌ ' + failed + '개 실패\n\n실패 항목은 Apps Script → 실행 로그에서 확인하세요.'
+  );
+}
+
 // ── (참고용) Logger에 JSON 출력 ────────────────────────────────
 function exportToJson() {
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
