@@ -873,6 +873,7 @@ const [filterOpen, setFilterOpen] = useState(false);
               place={selectedPlace}
               showHero={panelState === 'expanded'}
               onBack={() => { setSelectedPlace(null); setPanelState('half'); }}
+              onFocusModeChange={(active) => onFocusModeChange?.(active)}
             />
           </div>
         ) : (

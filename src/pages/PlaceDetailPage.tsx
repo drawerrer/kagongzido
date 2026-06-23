@@ -224,6 +224,7 @@ interface PlaceDetailPageProps {
   place: PlaceItem;
   onBack: () => void;
   showHero?: boolean;
+  onFocusModeChange?: (active: boolean) => void;
 }
 
 function ChevronIcon({ expanded }: { expanded: boolean }) {
@@ -235,7 +236,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
   );
 }
 
-export default function PlaceDetailPage({ place, onBack, showHero = true }: PlaceDetailPageProps) {
+export default function PlaceDetailPage({ place, onBack, showHero = true, onFocusModeChange }: PlaceDetailPageProps) {
   const [heroIdx, setHeroIdx] = useState(0);
   const heroScrollRef = useRef<HTMLDivElement>(null);
   const [hoursExpanded, setHoursExpanded] = useState(false);
@@ -280,7 +281,13 @@ export default function PlaceDetailPage({ place, onBack, showHero = true }: Plac
   const handleOpenWriteReview = async () => {
     const ok = await requireNickname();
     if (!ok) return;
+    onFocusModeChange?.(true);
     setShowWriteReview(true);
+  };
+
+  const handleCloseWriteReview = () => {
+    onFocusModeChange?.(false);
+    setShowWriteReview(false);
   };
 
   if (showWriteReview) {
@@ -290,9 +297,9 @@ export default function PlaceDetailPage({ place, onBack, showHero = true }: Plac
           cafe={{ name: place.name, address: place.address, thumbnailUrl: place.thumbnailUrl ?? '' }}
           cafeId={place.id}
           userId={userId}
-          onBack={() => setShowWriteReview(false)}
+          onBack={handleCloseWriteReview}
           onClose={onBack}
-          onReviewSubmitted={() => setShowWriteReview(false)}
+          onReviewSubmitted={handleCloseWriteReview}
         />
       </div>
     );
