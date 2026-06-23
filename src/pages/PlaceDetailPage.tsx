@@ -6,6 +6,8 @@ import SectionHeader from '../components/SectionHeader';
 import SubButton from '../components/SubButton';
 import IcOpen from '../assets/icons/icon_open.svg?react';
 import type { PlaceItem } from './MapPage';
+import { useFavorites } from '../context/FavoritesContext';
+import WriteReviewPage from './WriteReviewPage';
 
 // ── 편의시설 SVG 아이콘 ──────────────────────────────────────
 function IcParking() {
@@ -239,6 +241,8 @@ export default function PlaceDetailPage({ place, onBack, showHero = true }: Plac
   const [hoursExpanded, setHoursExpanded] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [showWriteReview, setShowWriteReview] = useState(false);
+  const { requireNickname, userId } = useFavorites();
 
   const handleScroll = () => {
     if (!scrollRef.current) return;
@@ -272,6 +276,25 @@ export default function PlaceDetailPage({ place, onBack, showHero = true }: Plac
     const name = encodeURIComponent(place.name);
     openURL(`nmap://navigation?dlat=${place.lat}&dlng=${place.lng}&dname=${name}&appname=kr.co.zido.kagong`);
   };
+
+  const handleOpenWriteReview = async () => {
+    const ok = await requireNickname();
+    if (!ok) return;
+    setShowWriteReview(true);
+  };
+
+  if (showWriteReview) {
+    return (
+      <WriteReviewPage
+        cafe={{ name: place.name, address: place.address, thumbnailUrl: place.thumbnailUrl ?? '' }}
+        cafeId={place.id}
+        userId={userId}
+        onBack={() => setShowWriteReview(false)}
+        onClose={onBack}
+        onReviewSubmitted={() => setShowWriteReview(false)}
+      />
+    );
+  }
 
   const CloseBtn = () => (
     <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -526,6 +549,7 @@ export default function PlaceDetailPage({ place, onBack, showHero = true }: Plac
             <p style={{ fontSize: 13, color: '#8B95A1' }}>{place.name}에 첫 번째로 리뷰를 남겨보세요</p>
           </div>
           <button
+            onClick={handleOpenWriteReview}
             style={{
               width: '100%', height: 38, borderRadius: 10,
               backgroundColor: '#252525', color: '#ffffff',
