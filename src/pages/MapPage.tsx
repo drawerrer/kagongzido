@@ -239,6 +239,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
   const userOverlayRef = useRef<any>(null);
   const cafesRef = useRef<Cafe[]>([]);
   const pendingCenterRef = useRef<[number, number] | null>(null);
+  const clusterClickRef = useRef<boolean>(false);
 
   const [mapLoaded, setMapLoaded] = useState(false);
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
@@ -412,11 +413,18 @@ const [filterOpen, setFilterOpen] = useState(false);
 
     // 클러스터 클릭 시 포함된 마커가 모두 보이도록 bounds 맞춤
     window.kakao.maps.event.addListener(clusterer, 'clusterclick', (cluster: any) => {
+      // dragstart 이벤트가 잘못 발화되어 panelState가 바뀌는 것을 방지
+      clusterClickRef.current = true;
       const markers = cluster.getMarkers();
       const bounds = new window.kakao.maps.LatLngBounds();
       markers.forEach((m: any) => bounds.extend(m.getPosition()));
       map.setBounds(bounds, 80);
-      setTimeout(() => map.relayout(), 50);
+      // CSS transition(300ms) 완료 후 relayout — 그 전에 호출하면 컨테이너 크기가
+      // 미확정 상태라 타일이 빈 영역으로 깨짐
+      setTimeout(() => {
+        map.relayout();
+        clusterClickRef.current = false;
+      }, 350);
     });
 
     // 클러스터링 이벤트: 묶인 마커의 overlay 숨김 처리
@@ -431,7 +439,9 @@ const [filterOpen, setFilterOpen] = useState(false);
 
     // 사용자가 지도를 직접 드래그할 때 시트를 minimized 로 자동 축소 (지도 시야 확보)
     // zoom_changed 대신 dragstart 사용: setBounds 등 프로그래밍 줌은 제외
+    // clusterclick 처리 중에는 dragstart를 무시 (클러스터 탭 시 오발화 방지)
     window.kakao.maps.event.addListener(map, 'dragstart', () => {
+      if (clusterClickRef.current) return;
       setPanelState('minimized');
     });
 
