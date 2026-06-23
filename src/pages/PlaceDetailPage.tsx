@@ -285,14 +285,16 @@ export default function PlaceDetailPage({ place, onBack, showHero = true }: Plac
 
   if (showWriteReview) {
     return (
-      <WriteReviewPage
-        cafe={{ name: place.name, address: place.address, thumbnailUrl: place.thumbnailUrl ?? '' }}
-        cafeId={place.id}
-        userId={userId}
-        onBack={() => setShowWriteReview(false)}
-        onClose={onBack}
-        onReviewSubmitted={() => setShowWriteReview(false)}
-      />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: '#f3f3f3' }}>
+        <WriteReviewPage
+          cafe={{ name: place.name, address: place.address, thumbnailUrl: place.thumbnailUrl ?? '' }}
+          cafeId={place.id}
+          userId={userId}
+          onBack={() => setShowWriteReview(false)}
+          onClose={onBack}
+          onReviewSubmitted={() => setShowWriteReview(false)}
+        />
+      </div>
     );
   }
 
