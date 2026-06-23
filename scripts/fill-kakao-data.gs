@@ -85,9 +85,19 @@ function setupSupabase() {
   const key = keyResult.getResponseText().trim();
   if (!key) { ui.alert('키를 입력해주세요.'); return; }
 
+  const serviceKeyResult = ui.prompt(
+    'Supabase Service Role Key 입력',
+    'Settings → API → service_role 키를 입력하세요\n(업로드 전용, 프론트엔드엔 절대 사용 금지):',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (serviceKeyResult.getSelectedButton() !== ui.Button.OK) return;
+  const serviceKey = serviceKeyResult.getResponseText().trim();
+  if (!serviceKey) { ui.alert('service_role 키를 입력해주세요.'); return; }
+
   const props = PropertiesService.getScriptProperties();
-  props.setProperty('SUPABASE_URL',      url);
-  props.setProperty('SUPABASE_ANON_KEY', key);
+  props.setProperty('SUPABASE_URL',          url);
+  props.setProperty('SUPABASE_ANON_KEY',     key);
+  props.setProperty('SUPABASE_SERVICE_KEY',  serviceKey);
   ui.alert('✅ Supabase 설정 저장 완료!\n이제 uploadToSupabase()를 실행하세요.');
 }
 
@@ -129,13 +139,19 @@ function fillKakaoData() {
 
     const query  = region ? `${name} ${region}` : name;
 
-    // 1차: 카페(CE7) 카테고리로 검색
+    // 1차: "매장명 지역" + 카페(CE7) 카테고리
     let result = searchKakao(query, kakaoKey, 'CE7');
 
-    // 2차: 카페로 안 잡히면 카테고리 없이 재시도 (빵집·베이커리 등 다른 카테고리 매장 대응)
+    // 2차: "매장명 지역" + 카테고리 없이 (베이커리·디저트 등 다른 카테고리 대응)
     if (!result) {
       Utilities.sleep(150);
       result = searchKakao(query, kakaoKey, '');
+    }
+
+    // 3차: 지역 빼고 매장명만으로 재시도 (지역 조합이 검색을 방해하는 경우 대응)
+    if (!result && region) {
+      Utilities.sleep(150);
+      result = searchKakaoBestMatch(name, kakaoKey, region);
     }
 
     if (result) {
@@ -147,7 +163,27 @@ function fillKakaoData() {
       sheet.getRange(row, COL_NAME_KAKAO    + 1).setValue(result.place_name);
       filled++;
     } else {
-      // 검색 실패 표시 — 수동으로 확인 후 직접 입력
+      // 검색 실패 — name-only 로 카카오가 뭘 반환하는지 로그에 남김 (디버그용)
+      try {
+        const debugUrl = 'https://dapi.kakao.com/v2/local/search/keyword.json'
+                       + '?query=' + encodeURIComponent(name) + '&size=3';
+        const debugRes  = UrlFetchApp.fetch(debugUrl, {
+          headers: { 'Authorization': 'KakaoAK ' + kakaoKey },
+          muteHttpExceptions: true,
+        });
+        const debugDocs = JSON.parse(debugRes.getContentText()).documents || [];
+        Logger.log('❌ [행' + row + '] "' + name + '" 검색 실패');
+        if (debugDocs.length > 0) {
+          debugDocs.forEach(function(d, i) {
+            Logger.log('  ' + (i+1) + '. place_name="' + d.place_name
+              + '"  code=' + d.category_group_code
+              + '  addr=' + (d.road_address_name || d.address_name));
+          });
+        } else {
+          Logger.log('  → 카카오 결과 없음 (0건)');
+        }
+      } catch(e) { /* 디버그 로그 실패는 무시 */ }
+
       sheet.getRange(row, COL_NAME_KAKAO + 1).setValue('❌ 검색 실패');
       failed++;
     }
@@ -180,11 +216,83 @@ function searchKakao(query, key, categoryCode) {
   }
 }
 
+// ── 매장명만으로 최적 결과 검색 (지역 없이 name만 사용) ──────────
+// 1) 이름 일치 → 2) 지역 주소 일치 → 3) "팝업" 제거 후 재검색 순으로 시도
+function searchKakaoBestMatch(name, key, region) {
+  // 시트 region("서울 강남구")의 마지막 단어("강남구")를 주소 필터로 활용
+  const regionParts  = region ? region.trim().split(/\s+/) : [];
+  const regionFilter = regionParts[regionParts.length - 1] || ''; // "강남구", "수원시", "성동구" 등
+
+  function fetchDocs(query) {
+    const url = 'https://dapi.kakao.com/v2/local/search/keyword.json'
+              + '?query=' + encodeURIComponent(query)
+              + '&size=5';
+    try {
+      const res  = UrlFetchApp.fetch(url, {
+        headers:           { 'Authorization': 'KakaoAK ' + key },
+        muteHttpExceptions: true,
+      });
+      return JSON.parse(res.getContentText()).documents || [];
+    } catch (e) {
+      Logger.log('fetchDocs error [' + query + ']: ' + e.message);
+      return [];
+    }
+  }
+
+  function pickBest(docs, queryName) {
+    if (docs.length === 0) return null;
+    const nl = queryName.toLowerCase().replace(/\s/g, '');
+
+    // 1순위: place_name 정확 일치 (공백 무시)
+    const exact = docs.find(d => d.place_name.toLowerCase().replace(/\s/g, '') === nl);
+    if (exact) return exact;
+
+    // 2순위: place_name 포함 관계 (공백 무시)
+    const partial = docs.find(d => {
+      const pn = d.place_name.toLowerCase().replace(/\s/g, '');
+      return pn.includes(nl) || nl.includes(pn);
+    });
+    if (partial) return partial;
+
+    // 3순위: 주소에 regionFilter 포함 (같은 지역 내 첫 번째 결과)
+    if (regionFilter) {
+      const inRegion = docs.find(d =>
+        (d.road_address_name || d.address_name || '').includes(regionFilter)
+      );
+      if (inRegion) return inRegion;
+    }
+
+    // 4순위: 결과가 1개뿐이면 반환 (이름으로만 검색했으니 거의 맞는 결과)
+    if (docs.length === 1) return docs[0];
+
+    return null;
+  }
+
+  // ── 시도 1: 매장명 그대로 검색
+  let docs   = fetchDocs(name);
+  let result = pickBest(docs, name);
+  if (result) return result;
+
+  // ── 시도 2: 이름에 "팝업"이 포함된 경우 제거 후 재검색
+  //   ("낯가리는카페 팝업" → "낯가리는카페" 로 재검색)
+  if (/팝업|popup|pop.up/i.test(name)) {
+    Utilities.sleep(150);
+    const nameNoPopup = name.replace(/\s*팝업\s*/gi, '').replace(/\s*pop.?up\s*/gi, '').trim();
+    docs   = fetchDocs(nameNoPopup);
+    result = pickBest(docs, nameNoPopup);
+    if (result) return result;
+  }
+
+  return null;
+}
+
 // ── Supabase upsert ───────────────────────────────────────────
 function uploadToSupabase() {
-  const props      = PropertiesService.getScriptProperties();
+  const props       = PropertiesService.getScriptProperties();
   const supabaseUrl = props.getProperty('SUPABASE_URL');
-  const anonKey    = props.getProperty('SUPABASE_ANON_KEY');
+  const anonKey     = props.getProperty('SUPABASE_ANON_KEY');
+  // service_role 키가 있으면 우선 사용 (RLS 우회), 없으면 anon 키 사용
+  const uploadKey   = props.getProperty('SUPABASE_SERVICE_KEY') || anonKey;
 
   if (!supabaseUrl || !anonKey) {
     SpreadsheetApp.getUi().alert('먼저 setupSupabase()를 실행해서 Supabase 설정을 저장해주세요.');
@@ -250,7 +358,7 @@ function uploadToSupabase() {
   // 중복 api_place_id가 있으면 의도적으로 23505 오류 발생 → 시트에서 수동 제거
   const BATCH_SIZE = 50;
   let success = 0, failed = 0;
-  const endpoint = supabaseUrl.replace(/\/$/, '') + '/rest/v1/stores';
+  const endpoint = supabaseUrl.replace(/\/$/, '') + '/rest/v1/stores?on_conflict=api_place_id';
 
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE);
@@ -259,8 +367,8 @@ function uploadToSupabase() {
       const res = UrlFetchApp.fetch(endpoint, {
         method:             'POST',
         headers: {
-          'apikey':        anonKey,
-          'Authorization': 'Bearer ' + anonKey,
+          'apikey':        uploadKey,
+          'Authorization': 'Bearer ' + uploadKey,
           'Content-Type':  'application/json',
           'Prefer':        'resolution=merge-duplicates',  // upsert
         },
@@ -288,6 +396,7 @@ function uploadToSupabase() {
   );
 }
 
+<<<<<<< Updated upstream
 // ════════════════════════════════════════════════════════════════
 // 도서관 / 공유공간 시트 전용 함수
 // ════════════════════════════════════════════════════════════════
@@ -505,6 +614,78 @@ function uploadPlacesToSupabase() {
   ui.alert(
     'Supabase 업로드 완료!\n✅ ' + success + '개 성공\n❌ ' + failed + '개 실패\n\n실패 항목은 Apps Script → 실행 로그에서 확인하세요.'
   );
+=======
+// ── 수동 보조: 구글맵 URL로 좌표 추출 → 카카오 place ID 자동 채우기 ──
+// 키워드 검색으로 못 찾은 매장을 좌표 기반으로 보완할 때 사용
+function fillByGoogleMapUrl() {
+  const ui  = SpreadsheetApp.getUi();
+  const key = PropertiesService.getScriptProperties().getProperty('KAKAO_REST_KEY');
+  if (!key) { ui.alert('먼저 setupKakao()을 실행해주세요.'); return; }
+
+  // ── 행 번호 입력
+  const rowRes = ui.prompt(
+    '행 번호 입력',
+    '채울 행 번호를 입력하세요 (숫자만, 헤더 제외 2행부터):',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (rowRes.getSelectedButton() !== ui.Button.OK) return;
+  const row = parseInt(rowRes.getResponseText().trim());
+  if (isNaN(row) || row < 2) { ui.alert('올바른 행 번호를 입력해주세요.'); return; }
+
+  // ── 구글맵 URL 입력
+  const urlRes = ui.prompt(
+    '구글맵 URL 붙여넣기',
+    '구글맵에서 매장 클릭 후 주소창 URL 전체를 붙여넣으세요:',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (urlRes.getSelectedButton() !== ui.Button.OK) return;
+  const gmUrl = urlRes.getResponseText().trim();
+
+  // ── URL에서 좌표 추출 (3d위도!4d경도 패턴)
+  const coordMatch = gmUrl.match(/3d(-?\d+\.\d+).*?4d(-?\d+\.\d+)/);
+  if (!coordMatch) {
+    ui.alert('좌표를 찾지 못했어요.\nURL에 3d위도!4d경도 형태가 포함되어 있는지 확인해주세요.');
+    return;
+  }
+  const lat = parseFloat(coordMatch[1]);
+  const lng = parseFloat(coordMatch[2]);
+
+  // ── 시트에서 매장명 읽기
+  const sheet   = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const rowData = sheet.getRange(row, 1, 1, TOTAL_COLS).getValues()[0];
+  const name    = String(rowData[COL_NAME] || '').trim();
+
+  // ── 카카오 키워드 검색 (좌표 + 반경 100m)
+  const searchUrl = 'https://dapi.kakao.com/v2/local/search/keyword.json'
+                  + '?query=' + encodeURIComponent(name || '카페')
+                  + '&x=' + lng + '&y=' + lat
+                  + '&radius=150&size=5';
+
+  const res  = UrlFetchApp.fetch(searchUrl, {
+    headers:           { 'Authorization': 'KakaoAK ' + key },
+    muteHttpExceptions: true,
+  });
+  const docs = JSON.parse(res.getContentText()).documents || [];
+
+  if (docs.length > 0) {
+    // 카카오에서 찾은 경우 — 공식 카카오 데이터로 채우기
+    const d = docs[0];
+    sheet.getRange(row, COL_API_PLACE_ID + 1).setValue(d.id);
+    sheet.getRange(row, COL_ADDRESS_ROAD  + 1).setValue(d.road_address_name || d.address_name || '');
+    sheet.getRange(row, COL_LATITUDE      + 1).setValue(parseFloat(d.y));
+    sheet.getRange(row, COL_LONGITUDE     + 1).setValue(parseFloat(d.x));
+    sheet.getRange(row, COL_PHONE_NUMBER  + 1).setValue(d.phone || '');
+    sheet.getRange(row, COL_NAME_KAKAO    + 1).setValue(d.place_name);
+    ui.alert('완료!\n카카오 결과: "' + d.place_name + '"\n주소: ' + (d.road_address_name || d.address_name)
+           + '\n\n추출 좌표: ' + lat + ', ' + lng);
+  } else {
+    // 카카오에서도 못 찾은 경우 — 구글맵 좌표만 입력
+    sheet.getRange(row, COL_LATITUDE  + 1).setValue(lat);
+    sheet.getRange(row, COL_LONGITUDE + 1).setValue(lng);
+    sheet.getRange(row, COL_NAME_KAKAO + 1).setValue('⚠️ 좌표만입력(ID없음)');
+    ui.alert('카카오 place ID를 찾지 못했어요.\n구글맵 좌표(' + lat + ', ' + lng + ')만 입력했어요.\nP열(api_place_id)은 카카오맵에서 직접 확인 후 입력해주세요.');
+  }
+>>>>>>> Stashed changes
 }
 
 // ── (참고용) Logger에 JSON 출력 ────────────────────────────────
