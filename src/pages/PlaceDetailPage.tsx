@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { expandHours, getHoursStatus, getTodayKey, DAY_ORDER } from '../utils/hours';
 import { openURL } from '@apps-in-toss/web-framework';
 import SectionHeader from '../components/SectionHeader';
 import SubButton from '../components/SubButton';
@@ -220,11 +221,41 @@ function AmenityBadge({ icon, label }: { icon: ReactNode; label: string }) {
 interface PlaceDetailPageProps {
   place: PlaceItem;
   onBack: () => void;
+  showHero?: boolean;
 }
 
-export default function PlaceDetailPage({ place, onBack }: PlaceDetailPageProps) {
-  const heroPhoto = place.photos?.[0] ?? place.thumbnailUrl;
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B0B8C1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+      style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
+export default function PlaceDetailPage({ place, onBack, showHero = true }: PlaceDetailPageProps) {
+  const [heroIdx, setHeroIdx] = useState(0);
+  const heroScrollRef = useRef<HTMLDivElement>(null);
+  const [hoursExpanded, setHoursExpanded] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    setScrolled(scrollRef.current.scrollTop > 60);
+  };
   const placeLabel = place.placeType === 'library' ? '도서관' : '공유공간';
+
+  const { hours, regularHoliday } = expandHours(place.businessHours ?? null);
+  const hasHoursData = Object.keys(hours).length > 0 || !!place.businessHours;
+  const { label: statusLabel, color: statusColor } = getHoursStatus(hours, regularHoliday);
+  const todayKey = getTodayKey();
+  const todayHours = hours[todayKey];
+
+  const heroImages: string[] = [
+    ...(place.thumbnailUrl ? [place.thumbnailUrl] : []),
+    ...(place.photos ?? []),
+  ];
 
   // 편의시설 키 배열로 변환
   const amenityKeys: string[] = [];
@@ -237,47 +268,196 @@ export default function PlaceDetailPage({ place, onBack }: PlaceDetailPageProps)
 
   const facilitiesText = place.facilities?.join(', ') || undefined;
 
-  const openKakaoMap = () => {
-    openURL(`kakaomap://look?p=${place.lat},${place.lng}`);
+  const openNaverMap = () => {
+    const name = encodeURIComponent(place.name);
+    openURL(`nmap://navigation?dlat=${place.lat}&dlng=${place.lng}&dname=${name}&appname=kr.co.zido.kagong`);
   };
 
-  return (
-    <div style={{
-      position: 'absolute', inset: 0, zIndex: 99,
-      background: '#f3f3f3', overflowY: 'auto',
-      display: 'flex', flexDirection: 'column',
-      paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)',
-    }}>
-      {/* 히어로 이미지 */}
-      <div style={{ position: 'relative', width: '100%', height: 260, flexShrink: 0, background: 'linear-gradient(160deg, #6B7684 0%, #4E5968 40%, #252525 100%)' }}>
-        {heroPhoto ? (
-          <img src={heroPhoto} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : null}
-        {/* 상단 그라디언트 오버레이 */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: 120,
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 100%)',
-          pointerEvents: 'none',
-        }} />
+  const CloseBtn = () => (
+    <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fillRule="evenodd" clipRule="evenodd" d="M13.8151 11.9991L19.4661 6.34814C19.5775 6.23672 19.666 6.10442 19.7264 5.95881C19.7867 5.8132 19.8178 5.65712 19.8179 5.4995C19.8179 5.34187 19.7869 5.18577 19.7266 5.04013C19.6664 4.89448 19.578 4.76213 19.4666 4.65064C19.3551 4.53915 19.2228 4.4507 19.0772 4.39033C18.9316 4.32997 18.7755 4.29887 18.6179 4.29883C18.4603 4.29878 18.3042 4.32978 18.1585 4.39006C18.0129 4.45034 17.8805 4.53872 17.7691 4.65014L12.1181 10.3021L6.46605 4.65014C6.23841 4.43752 5.93706 4.32166 5.62561 4.32701C5.31416 4.33237 5.01698 4.45853 4.79678 4.67885C4.57658 4.89918 4.4506 5.19644 4.44543 5.50789C4.44026 5.81934 4.5563 6.12062 4.76905 6.34814L10.4211 11.9991L4.76905 17.6501C4.60201 17.8183 4.48843 18.0322 4.4426 18.2647C4.39677 18.4973 4.42073 18.7383 4.51147 18.9573C4.60221 19.1763 4.75568 19.3635 4.95258 19.4955C5.14947 19.6275 5.381 19.6984 5.61805 19.6991C5.92505 19.6991 6.23205 19.5821 6.46605 19.3481L12.1181 13.6961L17.7691 19.3481C17.8803 19.4598 18.0126 19.5484 18.1582 19.6088C18.3038 19.6693 18.4599 19.7004 18.6176 19.7004C18.7752 19.7004 18.9313 19.6693 19.0769 19.6088C19.2225 19.5484 19.3548 19.4598 19.4661 19.3481C19.5776 19.2367 19.6661 19.1043 19.7265 18.9587C19.7869 18.813 19.818 18.6568 19.818 18.4991C19.818 18.3414 19.7869 18.1853 19.7265 18.0396C19.6661 17.8939 19.5776 17.7616 19.4661 17.6501L13.8151 11.9991Z" fill="#B0B8C1"/>
+      </svg>
+    </button>
+  );
 
+  return (
+    <div style={{ position: 'relative', height: '100%', overflow: 'hidden', background: '#f3f3f3' }}>
+      {/* 확장 모드 닫기 버튼 */}
+      {showHero && (
+        <button onClick={onBack} style={{
+          position: 'absolute', top: 16, right: 20, zIndex: 99,
+          background: 'none', border: 'none', cursor: 'pointer',
+          padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fillRule="evenodd" clipRule="evenodd" d="M13.8151 11.9991L19.4661 6.34814C19.5775 6.23672 19.666 6.10442 19.7264 5.95881C19.7867 5.8132 19.8178 5.65712 19.8179 5.4995C19.8179 5.34187 19.7869 5.18577 19.7266 5.04013C19.6664 4.89448 19.578 4.76213 19.4666 4.65064C19.3551 4.53915 19.2228 4.4507 19.0772 4.39033C18.9316 4.32997 18.7755 4.29887 18.6179 4.29883C18.4603 4.29878 18.3042 4.32978 18.1585 4.39006C18.0129 4.45034 17.8805 4.53872 17.7691 4.65014L12.1181 10.3021L6.46605 4.65014C6.23841 4.43752 5.93706 4.32166 5.62561 4.32701C5.31416 4.33237 5.01698 4.45853 4.79678 4.67885C4.57658 4.89918 4.4506 5.19644 4.44543 5.50789C4.44026 5.81934 4.5563 6.12062 4.76905 6.34814L10.4211 11.9991L4.76905 17.6501C4.60201 17.8183 4.48843 18.0322 4.4426 18.2647C4.39677 18.4973 4.42073 18.7383 4.51147 18.9573C4.60221 19.1763 4.75568 19.3635 4.95258 19.4955C5.14947 19.6275 5.381 19.6984 5.61805 19.6991C5.92505 19.6991 6.23205 19.5821 6.46605 19.3481L12.1181 13.6961L17.7691 19.3481C17.8803 19.4598 18.0126 19.5484 18.1582 19.6088C18.3038 19.6693 18.4599 19.7004 18.6176 19.7004C18.7752 19.7004 18.9313 19.6693 19.0769 19.6088C19.2225 19.5484 19.3548 19.4598 19.4661 19.3481C19.5776 19.2367 19.6661 19.1043 19.7265 18.9587C19.7869 18.813 19.818 18.6568 19.818 18.4991C19.818 18.3414 19.7869 18.1853 19.7265 18.0396C19.6661 17.8939 19.5776 17.7616 19.4661 17.6501L13.8151 11.9991Z" fill="#B0B8C1"/>
+          </svg>
+        </button>
+      )}
+
+      {/* 스크롤 시 노출되는 상단 sticky 헤더 */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0,
+        zIndex: 98,
+        background: '#f3f3f3',
+        padding: '10px 20px 14px',
+        borderBottom: '1px solid #F2F4F6',
+        opacity: scrolled ? 1 : 0,
+        pointerEvents: scrolled ? 'auto' : 'none',
+        transform: scrolled ? 'translateY(0)' : 'translateY(-6px)',
+        transition: 'opacity 0.2s, transform 0.2s',
+      }}>
+        <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28', marginBottom: 4, lineHeight: 1.3 }}>
+          {place.name}
+        </p>
+        <p style={{ fontSize: 13, color: '#6B7684', marginBottom: hasHoursData ? 6 : 0, lineHeight: 1.4 }}>
+          {place.address}
+        </p>
+        {hasHoursData && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              fontSize: 12, fontWeight: 700, color: statusColor,
+              background: `${statusColor}18`, borderRadius: 4, padding: '2px 6px',
+            }}>
+              {statusLabel}
+            </span>
+            {todayHours && (
+              <span style={{ fontSize: 12, color: '#8B95A1' }}>
+                {todayHours.open} – {todayHours.close}
+              </span>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* 스크롤 컨텐츠 */}
+      <div ref={scrollRef} onScroll={handleScroll} style={{
+        height: '100%', overflowY: 'auto',
+        display: 'flex', flexDirection: 'column',
+      }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 'calc(100% + 200px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
+      {/* 히어로 이미지 슬라이더 */}
+      {showHero && (
+        <div style={{ height: 260, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+          <div
+            ref={heroScrollRef}
+            onScroll={() => {
+              if (!heroScrollRef.current) return;
+              setHeroIdx(Math.round(heroScrollRef.current.scrollLeft / heroScrollRef.current.offsetWidth));
+            }}
+            style={{
+              display: 'flex', width: '100%', height: '100%',
+              overflowX: 'auto', scrollSnapType: 'x mandatory',
+              scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
+            }}
+          >
+            {heroImages.length > 0 ? heroImages.map((url, i) => (
+              <div key={i} style={{
+                flexShrink: 0, width: '100%', height: '100%',
+                background: `url(${url}) center/cover no-repeat`,
+                scrollSnapAlign: 'start',
+              }} />
+            )) : (
+              <div style={{
+                flexShrink: 0, width: '100%', height: '100%',
+                background: 'linear-gradient(160deg, #6B7684 0%, #4E5968 40%, #252525 100%)',
+                scrollSnapAlign: 'start',
+              }} />
+            )}
+          </div>
+          {/* 상단 그라디언트 */}
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 120,
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 100%)',
+            pointerEvents: 'none',
+          }} />
+          {/* 인디케이터 */}
+          {heroImages.length > 1 && (
+            <div style={{
+              position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
+              display: 'flex', gap: 6, pointerEvents: 'none',
+            }}>
+              {heroImages.map((_, i) => (
+                <div key={i} style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: i === heroIdx ? 'white' : 'rgba(255,255,255,0.4)',
+                  transition: 'background 0.2s',
+                }} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 이름 + 주소 + 길안내 + 운영시간 */}
       <div style={{ padding: '20px 20px 0' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', width: '100%', marginBottom: 10 }}>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#191F28', margin: 0, flex: 1 }}>{place.name}</h1>
+          {!showHero && <CloseBtn />}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <p style={{ fontSize: 14, color: '#6B7684', flex: 1, lineHeight: 1.4 }}>{place.address}</p>
           <div style={{ display: 'flex', gap: 8, marginLeft: 10, flexShrink: 0 }}>
-            <SubButton label="길 안내" onClick={openKakaoMap} />
+            <SubButton label="길 안내" onClick={openNaverMap} />
           </div>
         </div>
-        {place.businessHours && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0 16px' }}>
-            <span style={{ fontSize: 13, color: '#6B7684' }}>
-              {place.businessHours}
+        {hasHoursData && (
+          <button
+            onClick={() => setHoursExpanded(e => !e)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              width: '100%', textAlign: 'left', padding: '4px 0 16px',
+              background: 'none', border: 'none', cursor: 'pointer',
+            }}
+          >
+            <span style={{
+              fontSize: 13, fontWeight: 700, color: statusColor,
+              background: `${statusColor}18`, borderRadius: 6, padding: '3px 8px',
+            }}>
+              {statusLabel}
             </span>
+            {todayHours && (
+              <span style={{ fontSize: 13, color: '#6B7684' }}>
+                {todayHours.open} - {todayHours.close}
+              </span>
+            )}
+            {statusLabel === '휴무' && (
+              <span style={{ fontSize: 13, color: '#8B95A1' }}>오늘은 휴무예요</span>
+            )}
+            {Object.keys(hours).length > 0 && (
+              <span style={{ marginLeft: 'auto' }}>
+                <ChevronIcon expanded={hoursExpanded} />
+              </span>
+            )}
+          </button>
+        )}
+        {hoursExpanded && Object.keys(hours).length > 0 && (
+          <div style={{
+            background: '#F3F3F3', borderRadius: 12,
+            padding: '12px 16px', marginBottom: 16,
+          }}>
+            {DAY_ORDER.map(day => {
+              const h = hours[day];
+              const isToday = day === todayKey;
+              const isHoliday = regularHoliday.includes(day) || h === null;
+              const label = isHoliday
+                ? '정기휴무'
+                : h === undefined
+                ? '정보 없음'
+                : `${h.open} - ${h.close}`;
+              return (
+                <div key={day} style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  padding: '5px 0', fontSize: 14,
+                  fontWeight: isToday ? 700 : 400,
+                  color: isToday ? '#252525' : '#4E5968',
+                }}>
+                  <span>{day}요일</span>
+                  <span style={{ color: isHoliday ? '#8B95A1' : undefined }}>{label}</span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -340,7 +520,6 @@ export default function PlaceDetailPage({ place, onBack }: PlaceDetailPageProps)
       {/* 리뷰 섹션 */}
       <div style={{ padding: '20px' }}>
         <SectionHeader title={<>리뷰&nbsp;<span style={{ color: '#252525' }}>(0)</span></>} marginBottom={16} />
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
             <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', marginBottom: 4 }}>아직 리뷰가 없어요!</p>
@@ -348,15 +527,9 @@ export default function PlaceDetailPage({ place, onBack }: PlaceDetailPageProps)
           </div>
           <button
             style={{
-              width: '100%',
-              height: 38,
-              borderRadius: 10,
-              backgroundColor: '#252525',
-              color: '#ffffff',
-              fontSize: 15,
-              fontWeight: 590,
-              border: 'none',
-              cursor: 'pointer',
+              width: '100%', height: 38, borderRadius: 10,
+              backgroundColor: '#252525', color: '#ffffff',
+              fontSize: 15, fontWeight: 590, border: 'none', cursor: 'pointer',
             }}
           >
             리뷰 쓰기
@@ -365,6 +538,8 @@ export default function PlaceDetailPage({ place, onBack }: PlaceDetailPageProps)
       </div>
 
       <div style={{ height: 40 }} />
+      </div>
+    </div>
     </div>
   );
 }

@@ -14,7 +14,9 @@ import Chip from '../components/Chip';
 import StoreCardHome, { type HomeCafe } from '../components/StoreCard/Home';
 import StoreCountBar from '../components/StoreCountBar';
 import CafePlaceholder from '../components/CafePlaceholder';
-import LogoImg from '../assets/LOGO/logo_mockup.png';
+import IcCafe from '../assets/icons/ic_cafe_mono.svg';
+import IcLibrary from '../assets/icons/ic_library_mono.svg';
+import IcShared from '../assets/icons/ic_shared_mono.svg';
 
 declare global {
   interface Window { kakao: any; }
@@ -111,8 +113,8 @@ function makePillHtml(cafeId: string, name: string, selected: boolean): string {
   const shadow = selected ? '0 2px 10px rgba(0,0,0,0.45)' : '0 2px 6px rgba(0,0,0,0.18)';
   const border = selected ? 'none' : '1px solid #e5e8eb';
   // ☕ 이모지 → 카공지도 로고 PNG (선택 시 흰 배경 위라 opacity 0.9, 비선택 시 0.7)
-  const logoOpacity = selected ? 0.95 : 0.75;
-  return `<div data-cafe-id="${cafeId}" style="display:inline-flex;align-items:center;gap:4px;background:${bg};color:${color};border-radius:999px;padding:5px 10px 5px 8px;box-shadow:${shadow};white-space:nowrap;font-size:12px;font-weight:600;font-family:Pretendard,sans-serif;border:${border};cursor:pointer;"><img src="${LogoImg}" alt="" style="width:14px;height:14px;object-fit:contain;opacity:${logoOpacity};display:block;" draggable="false"/>${label}</div>`;
+  const iconOpacity = selected ? 0.95 : 0.75;
+  return `<div data-cafe-id="${cafeId}" style="display:inline-flex;align-items:center;gap:4px;background:${bg};color:${color};border-radius:999px;padding:5px 10px 5px 8px;box-shadow:${shadow};white-space:nowrap;font-size:12px;font-weight:600;font-family:Pretendard,sans-serif;border:${border};cursor:pointer;"><img src="${IcCafe}" alt="" style="width:14px;height:14px;object-fit:contain;opacity:${iconOpacity};display:block;" draggable="false"/>${label}</div>`;
 }
 
 // ── 아이콘 ────────────────────────────────
@@ -149,33 +151,26 @@ function makePlacePillHtml(placeId: string, name: string, placeType: 'library' |
   const color = selected ? '#ffffff' : '#191F28';
   const shadow = selected ? '0 2px 10px rgba(0,0,0,0.45)' : '0 2px 6px rgba(0,0,0,0.18)';
   const border = selected ? 'none' : '1px solid #e5e8eb';
-  const icon = placeType === 'library' ? '📚' : '🏛️';
-  return `<div data-place-id="${placeId}" style="display:inline-flex;align-items:center;gap:4px;background:${bg};color:${color};border-radius:999px;padding:5px 10px 5px 8px;box-shadow:${shadow};white-space:nowrap;font-size:12px;font-weight:600;font-family:Pretendard,sans-serif;border:${border};cursor:pointer;">${icon} ${label}</div>`;
+  const iconSrc = placeType === 'library' ? IcLibrary : IcShared;
+  const iconOpacity = selected ? 0.95 : 0.75;
+  return `<div data-place-id="${placeId}" style="display:inline-flex;align-items:center;gap:4px;background:${bg};color:${color};border-radius:999px;padding:5px 10px 5px 8px;box-shadow:${shadow};white-space:nowrap;font-size:12px;font-weight:600;font-family:Pretendard,sans-serif;border:${border};cursor:pointer;"><img src="${iconSrc}" alt="" style="width:14px;height:14px;object-fit:contain;opacity:${iconOpacity};display:block;" draggable="false"/>${label}</div>`;
 }
 
 function PlaceRow({ place, onTap }: { place: PlaceItem; onTap?: () => void }) {
-  const typeLabel = place.placeType === 'library' ? '도서관' : '공유공간';
-  const typeColor = place.placeType === 'library' ? '#3182F6' : '#00B493';
   return (
-    <div onClick={onTap} style={{ display: 'flex', gap: 12, padding: '12px 16px', alignItems: 'center', cursor: onTap ? 'pointer' : 'default' }}>
+    <div onClick={onTap} style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid #F2F4F6', cursor: onTap ? 'pointer' : 'default' }}>
       <div style={{
-        width: 72, height: 72, borderRadius: 8, flexShrink: 0, overflow: 'hidden',
-        background: '#f2f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 80, height: 80, borderRadius: 4, flexShrink: 0, overflow: 'hidden',
+        background: '#F2F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         {place.thumbnailUrl
-          ? <img src={place.thumbnailUrl} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <span style={{ fontSize: 28 }}>{place.placeType === 'library' ? '📚' : '🏛️'}</span>
+          ? <img src={place.thumbnailUrl} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          : <CafePlaceholder size="45%" />
         }
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-          <span style={{ fontSize: 11, fontWeight: 590, color: typeColor, background: `${typeColor}18`, borderRadius: 4, padding: '2px 6px' }}>{typeLabel}</span>
-        </div>
-        <p style={{ fontSize: 15, fontWeight: 590, color: '#191F28', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{place.name}</p>
-        <p style={{ fontSize: 12, color: '#8B95A1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{place.address}</p>
-        {place.businessHours && (
-          <p style={{ fontSize: 12, color: '#8B95A1', marginTop: 2 }}>{place.businessHours}</p>
-        )}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{place.name}</p>
+        <p style={{ fontSize: 12, color: '#6B7684', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 0 }}>{place.address}</p>
       </div>
     </div>
   );
@@ -415,6 +410,15 @@ const [filterOpen, setFilterOpen] = useState(false);
     });
     clustererRef.current = clusterer;
 
+    // 클러스터 클릭 시 포함된 마커가 모두 보이도록 bounds 맞춤
+    window.kakao.maps.event.addListener(clusterer, 'clusterclick', (cluster: any) => {
+      const markers = cluster.getMarkers();
+      const bounds = new window.kakao.maps.LatLngBounds();
+      markers.forEach((m: any) => bounds.extend(m.getPosition()));
+      map.setBounds(bounds, 80);
+      setTimeout(() => map.relayout(), 50);
+    });
+
     // 클러스터링 이벤트: 묶인 마커의 overlay 숨김 처리
     window.kakao.maps.event.addListener(clusterer, 'clustered', (clusters: any[]) => {
       const clusteredSet = new Set<any>();
@@ -425,8 +429,9 @@ const [filterOpen, setFilterOpen] = useState(false);
       });
     });
 
-    // 사용자가 지도 확대/축소 시 시트를 minimized 로 자동 축소 (지도 시야 확보)
-    window.kakao.maps.event.addListener(map, 'zoom_changed', () => {
+    // 사용자가 지도를 직접 드래그할 때 시트를 minimized 로 자동 축소 (지도 시야 확보)
+    // zoom_changed 대신 dragstart 사용: setBounds 등 프로그래밍 줌은 제외
+    window.kakao.maps.event.addListener(map, 'dragstart', () => {
       setPanelState('minimized');
     });
 
@@ -503,12 +508,29 @@ const [filterOpen, setFilterOpen] = useState(false);
       const cafe = cafesRef.current.find(c => c.id === cafeId);
       if (cafe) {
         trackCafeDetailView(cafe.id, 'map_marker');
+        setSelectedPlace(null);
         setSelectedMapCafe(cafe);
         setPanelState('half');
       }
     };
     container.addEventListener('click', handleClick);
     return () => container.removeEventListener('click', handleClick);
+  }, [mapLoaded]);
+
+  // ── 장소 마커 클릭 (이벤트 위임) ────────────
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    const container = mapContainerRef.current;
+    const handlePlaceClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('[data-place-id]');
+      if (!target) return;
+      const placeId = target.getAttribute('data-place-id');
+      if (!placeId) return;
+      const place = placeItemsRef.current.find(p => p.id === placeId);
+      if (place) { setSelectedMapCafe(null); setSelectedPlace(place); setPanelState('half'); }
+    };
+    container.addEventListener('click', handlePlaceClick);
+    return () => container.removeEventListener('click', handlePlaceClick);
   }, [mapLoaded]);
 
   // ── 선택된 마커 스타일 업데이트 ───────────
@@ -817,7 +839,7 @@ const [filterOpen, setFilterOpen] = useState(false);
           position: 'absolute', bottom: 0, left: 0, right: 0,
           zIndex: panelState === 'expanded' ? 25 : 10,
           background: '#f3f3f3',
-          borderRadius: (selectedMapCafe && panelState === 'expanded') ? 0 : '16px 16px 0 0',
+          borderRadius: ((selectedMapCafe || selectedPlace) && panelState === 'expanded') ? 0 : '16px 16px 0 0',
           height: panelState === 'expanded' ? '100%' : panelState === 'minimized' ? SHEET_MIN_TOP : '50vh',
           transition: 'height 0.3s ease',
           display: 'flex', flexDirection: 'column',
@@ -843,6 +865,14 @@ const [filterOpen, setFilterOpen] = useState(false);
               showHero={panelState === 'expanded'}
               onFocusModeChange={(active) => { setDetailHasSubPage(active); onFocusModeChange?.(active); }}
               onScrollChange={setDetailScrolled}
+            />
+          </div>
+        ) : selectedPlace ? (
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <PlaceDetailPage
+              place={selectedPlace}
+              showHero={panelState === 'expanded'}
+              onBack={() => { setSelectedPlace(null); setPanelState('half'); }}
             />
           </div>
         ) : (
@@ -1016,14 +1046,6 @@ const [filterOpen, setFilterOpen] = useState(false);
 
       {/* ── GPS 실패 토스트 ── */}
       <Toast open={gpsToast} position="top" text="현재 위치를 가져오지 못했어요. 다시 시도해주세요" onClose={() => setGpsToast(false)} />
-
-      {/* ── 장소 상세 오버레이 (도서관 / 공유공간) ── */}
-      {selectedPlace && (
-        <PlaceDetailPage
-          place={selectedPlace}
-          onBack={() => setSelectedPlace(null)}
-        />
-      )}
 
       {/* ── 찜 스낵바 ── */}
       {favoriteSnackbar === 'added' && (

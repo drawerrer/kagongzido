@@ -222,9 +222,12 @@ export function FavoritesProvider({
 
       setAllStores(stores);
 
-      // favorites — 항상 Supabase 결과로 덮어씀 (빈 배열 포함)
-      setFavorites(favs);
-      lsSet(`favorites_${userId}`, favs);
+      // favorites — Supabase에 데이터가 있을 때만 덮어씀.
+      // 빈 배열 반환은 세션/RLS 오류일 수 있으므로 로컬 캐시를 유지함.
+      if (favs.length > 0) {
+        setFavorites(favs);
+        lsSet(`favorites_${userId}`, favs);
+      }
 
       // collections
       if (cols.length > 0) {
@@ -250,11 +253,16 @@ export function FavoritesProvider({
           lsSet(`collections_${userId}`, deduped);
         }
       } else {
-        // 첫 접속 또는 전체 삭제: 기본 컬렉션 DB에 생성
-        const recentId = await insertCollection(userId, { name: '최근' }, 0);
-        const recentCol: Collection = { id: recentId ?? 'recent', name: '최근', storeIds: [] };
-        setCollections([recentCol]);
-        lsSet(`collections_${userId}`, [recentCol]);
+        // Supabase 빈 결과: 세션 오류인지 진짜 첫 접속인지 구분
+        const localCols = lsGet<Collection[]>(`collections_${userId}`, []);
+        if (localCols.length === 0) {
+          // 진짜 첫 접속 또는 전체 삭제: 기본 컬렉션 DB에 생성
+          const recentId = await insertCollection(userId, { name: '최근' }, 0);
+          const recentCol: Collection = { id: recentId ?? 'recent', name: '최근', storeIds: [] };
+          setCollections([recentCol]);
+          lsSet(`collections_${userId}`, [recentCol]);
+        }
+        // else: 로컬에 데이터 있음 → 세션 오류일 가능성 → 로컬 유지
       }
 
       setIsLoading(false);
