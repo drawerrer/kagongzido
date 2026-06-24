@@ -99,6 +99,28 @@ function IcCoffee() {
   );
 }
 
+// ── 체크박스 ─────────────────────────────────────────────────
+function Checkbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); onToggle(); }}
+      style={{
+        width: 20, height: 20, borderRadius: 5,
+        border: checked ? 'none' : '1.5px solid #D1D6DB',
+        background: checked ? '#252525' : 'white',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, cursor: 'pointer',
+      }}
+    >
+      {checked && (
+        <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+          <path d="M1.5 5L4.5 8L10.5 2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 // ── 칩 버튼 ──────────────────────────────────────────────────
 function Chip({
   label,
@@ -210,7 +232,7 @@ export default function PlaceFilterModal({ isOpen, initialFilters, placeType, on
       <div style={{
         position: 'fixed', left: 0, right: 0, bottom: 0,
         zIndex: 200,
-        background: '#ffffff',
+        background: '#f3f3f3',
         borderRadius: '20px 20px 0 0',
         maxHeight: '80vh',
         display: 'flex', flexDirection: 'column',
@@ -220,7 +242,6 @@ export default function PlaceFilterModal({ isOpen, initialFilters, placeType, on
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '20px 20px 16px',
-          borderBottom: '1px solid #F2F4F6',
           flexShrink: 0,
         }}>
           <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28' }}>{placeType} 필터</p>
@@ -238,27 +259,17 @@ export default function PlaceFilterModal({ isOpen, initialFilters, placeType, on
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 0' }}>
 
           {/* 지금 영업 중 */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            paddingBottom: 20, borderBottom: '1px solid #F2F4F6', marginBottom: 20,
-          }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28' }}>지금 영업 중</p>
-            <button
-              onClick={() => setF(prev => ({ ...prev, openNow: !prev.openNow }))}
-              style={{
-                width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-                background: f.openNow ? '#252525' : '#E5E8EB',
-                position: 'relative', transition: 'background 0.2s',
-              }}
-            >
-              <div style={{
-                position: 'absolute', top: 4,
-                left: f.openNow ? 24 : 4,
-                width: 20, height: 20, borderRadius: '50%', background: '#ffffff',
-                transition: 'left 0.2s',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
-              }} />
-            </button>
+          <div
+            onClick={() => setF(prev => ({ ...prev, openNow: !prev.openNow }))}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              height: 39, marginBottom: 16, cursor: 'pointer',
+            }}
+          >
+            <Checkbox checked={f.openNow} onToggle={() => setF(prev => ({ ...prev, openNow: !prev.openNow }))} />
+            <span style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: '#777777', userSelect: 'none' }}>
+              지금 영업 중
+            </span>
           </div>
 
           {/* 노트북 사용 — 도서관만 */}
@@ -323,7 +334,7 @@ export default function PlaceFilterModal({ isOpen, initialFilters, placeType, on
           leftWidth={88}
           rightLabel="적용하기"
           rightOnClick={() => onApply(f)}
-          background="#ffffff"
+          background="#f3f3f3"
         />
         <div style={{ height: 'max(env(safe-area-inset-bottom, 0px), 16px)' }} />
       </div>
