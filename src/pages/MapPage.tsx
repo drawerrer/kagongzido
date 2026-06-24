@@ -370,20 +370,25 @@ const [filterOpen, setFilterOpen] = useState(false);
         return getHoursStatus(hours, regularHoliday).label === '영업 중';
       });
     }
-    if (pf.laptopOk === true) {
-      result = result.filter(p => p.ltSeatStatus && /가능/.test(p.ltSeatStatus));
-    }
-    if (pf.laptopOk === false) {
-      result = result.filter(p => !p.ltSeatStatus || /불가/.test(p.ltSeatStatus));
-    }
-    if (pf.freeOnly === true) {
+    if (pf.laptopStatus.length > 0) {
       result = result.filter(p =>
-        p.entPrice === '무료' || /무료/.test(p.entCondition ?? '') || /무료/.test(p.entPrice ?? '')
+        pf.laptopStatus.some(chip => {
+          if (chip === '가능') return p.ltSeatStatus === '가능' || (!!p.ltSeatStatus && /가능/.test(p.ltSeatStatus) && !/지정|일부/.test(p.ltSeatStatus));
+          if (chip === '불가') return !p.ltSeatStatus || /불가/.test(p.ltSeatStatus);
+          if (chip === '지정 좌석에서만 가능') return !!p.ltSeatStatus && /지정|일부/.test(p.ltSeatStatus);
+          return false;
+        })
       );
     }
-    if (pf.freeOnly === false) {
+    if (pf.entConditions.length > 0) {
       result = result.filter(p =>
-        p.entPrice !== '무료' && !/무료/.test(p.entCondition ?? '') && !/무료/.test(p.entPrice ?? '')
+        pf.entConditions.some(cond => {
+          if (cond === '조건 없음') return !p.entCondition || /조건\s*없|무료/.test(p.entCondition);
+          if (cond === '유료') return /유료/.test(p.entCondition ?? '') || /유료/.test(p.entPrice ?? '');
+          if (cond === '이용권') return /이용권/.test(p.entCondition ?? '');
+          if (cond === '회원제') return /회원/.test(p.entCondition ?? '');
+          return false;
+        })
       );
     }
     if (pf.amenities.length > 0) {
