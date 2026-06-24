@@ -8,7 +8,6 @@ import IcOpen from '../assets/icons/icon_open.svg?react';
 import type { PlaceItem } from './MapPage';
 import { useFavorites } from '../context/FavoritesContext';
 import WriteReviewPage from './WriteReviewPage';
-import SheetCTA from '../components/SheetCTA';
 
 // ── 편의시설 SVG 아이콘 ──────────────────────────────────────
 function IcParking() {
@@ -369,7 +368,7 @@ export default function PlaceDetailPage({ place, onBack, showHero = true, onFocu
         height: '100%', overflowY: 'auto',
         display: 'flex', flexDirection: 'column',
       }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 'calc(100% + 200px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 160px)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 'calc(100% + 200px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
       {/* 히어로 이미지 슬라이더 */}
       {showHero && (
         <div style={{ height: 260, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
@@ -558,25 +557,21 @@ export default function PlaceDetailPage({ place, onBack, showHero = true, onFocu
             <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', marginBottom: 4 }}>아직 리뷰가 없어요!</p>
             <p style={{ fontSize: 13, color: '#8B95A1' }}>{place.name}에 첫 번째로 리뷰를 남겨보세요</p>
           </div>
+          <button
+            onClick={handleOpenWriteReview}
+            style={{
+              width: '100%', height: 38, borderRadius: 10,
+              backgroundColor: '#252525', color: '#ffffff',
+              fontSize: 15, fontWeight: 590, border: 'none', cursor: 'pointer',
+            }}
+          >
+            리뷰 쓰기
+          </button>
         </div>
       </div>
 
-      <div style={{ height: 40 }} />
+      <div style={{ height: 88 }} />
       </div>
-    </div>
-
-    {/* ── 탭바 위 고정 '리뷰 쓰기' CTA ── */}
-    <div style={{
-      position: 'absolute',
-      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)',
-      left: 0, right: 0,
-      zIndex: 50,
-    }}>
-      <SheetCTA.Single
-        label="리뷰 쓰기"
-        onClick={handleOpenWriteReview}
-        background="#f3f3f3"
-      />
     </div>
     </div>
   );
