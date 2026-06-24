@@ -570,7 +570,8 @@ export default function PlaceDetailPage({ place, onBack, showHero = true, onFocu
         </div>
       </div>
 
-      <div style={{ height: 88 }} />
+      {/* 탭바(safe-area + 64px) + 여유 공간 확보 — WebKit flex paddingBottom 버그 대응 */}
+      <div style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 80px)', flexShrink: 0 }} />
       </div>
     </div>
     </div>
