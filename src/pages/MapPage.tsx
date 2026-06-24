@@ -59,6 +59,8 @@ interface Cafe {
   lng?: number;
   thumbnailUrl?: string;
   badges: string[];
+  ltSeatStatus?: string;
+  entCondition?: string;
 }
 
 
@@ -321,6 +323,8 @@ const [filterOpen, setFilterOpen] = useState(false);
   const isPlaceModeChip = activeChip === '도서관' || activeChip === '공유공간';
   const cafeFilterApplied =
     appliedFilters.openNow !== DEFAULT_FILTERS.openNow ||
+    appliedFilters.laptopStatus.length > 0 ||
+    appliedFilters.entConditions.length > 0 ||
     appliedFilters.moods.length > 0 ||
     appliedFilters.priceMax !== DEFAULT_FILTERS.priceMax ||
     appliedFilters.options.length > 0;
@@ -353,6 +357,26 @@ const [filterOpen, setFilterOpen] = useState(false);
     if (appliedFilters.moods.length > 0) filtered = filtered.filter(c => appliedFilters.moods.some(m => c.moods.includes(m)));
     if (appliedFilters.priceMax < DEFAULT_FILTERS.priceMax) filtered = filtered.filter(c => c.priceRange <= appliedFilters.priceMax);
     if (appliedFilters.options.length > 0) filtered = filtered.filter(c => appliedFilters.options.some(opt => c.options.includes(opt)));
+    if (appliedFilters.laptopStatus.length > 0) {
+      filtered = filtered.filter(c =>
+        appliedFilters.laptopStatus.some(chip => {
+          if (chip === '가능') return !!c.ltSeatStatus && /가능/.test(c.ltSeatStatus);
+          if (chip === '불가') return !c.ltSeatStatus || /불가/.test(c.ltSeatStatus);
+          return false;
+        })
+      );
+    }
+    if (appliedFilters.entConditions.length > 0) {
+      filtered = filtered.filter(c =>
+        appliedFilters.entConditions.some(cond => {
+          if (cond === '조건 없음') return !c.entCondition || /조건\s*없|무료/.test(c.entCondition);
+          if (cond === '유료') return /유료/.test(c.entCondition ?? '');
+          if (cond === '이용권') return /이용권/.test(c.entCondition ?? '');
+          if (cond === '회원제') return /회원/.test(c.entCondition ?? '');
+          return false;
+        })
+      );
+    }
     return filtered;
   })();
 
@@ -1084,6 +1108,18 @@ const [filterOpen, setFilterOpen] = useState(false);
             if (f.moods.length > 0) preview = preview.filter(c => f.moods.some(m => c.moods.includes(m)));
             if (f.priceMax < DEFAULT_FILTERS.priceMax) preview = preview.filter(c => c.priceRange <= f.priceMax);
             if (f.options.length > 0) preview = preview.filter(c => f.options.some(opt => c.options.includes(opt)));
+            if (f.laptopStatus.length > 0) preview = preview.filter(c => f.laptopStatus.some(chip => {
+              if (chip === '가능') return !!c.ltSeatStatus && /가능/.test(c.ltSeatStatus);
+              if (chip === '불가') return !c.ltSeatStatus || /불가/.test(c.ltSeatStatus);
+              return false;
+            }));
+            if (f.entConditions.length > 0) preview = preview.filter(c => f.entConditions.some(cond => {
+              if (cond === '조건 없음') return !c.entCondition || /조건\s*없|무료/.test(c.entCondition);
+              if (cond === '유료') return /유료/.test(c.entCondition ?? '');
+              if (cond === '이용권') return /이용권/.test(c.entCondition ?? '');
+              if (cond === '회원제') return /회원/.test(c.entCondition ?? '');
+              return false;
+            }));
             trackFilterApply(f, preview.length);
             setAppliedFilters(f);
             setFilterOpen(false);

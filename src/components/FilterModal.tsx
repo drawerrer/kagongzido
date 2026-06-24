@@ -173,6 +173,8 @@ function FiWheelchair() {
 // ── 타입 ─────────────────────────────────
 export interface FilterState {
   openNow: boolean;
+  laptopStatus: string[];   // '가능' | '불가'
+  entConditions: string[];  // '조건 없음' | '유료' | '이용권' | '회원제'
   moods: string[];
   priceMax: number;
   options: string[];
@@ -188,10 +190,15 @@ interface FilterModalProps {
 // ── 상수 ─────────────────────────────────
 export const DEFAULT_FILTERS: FilterState = {
   openNow: true,
+  laptopStatus: [],
+  entConditions: [],
   moods: [],
   priceMax: 15000,
   options: [],
 };
+
+const LAPTOP_CHIPS = ['가능', '불가'];
+const ENT_CONDITION_CHIPS = ['조건 없음', '유료', '이용권', '회원제'];
 
 // 피그마 분위기 칩 목록 (조용한 → 모던한 → 개방적인 → 활기찬 → 아늑한 → 따뜻한 → 자연 → 빈티지)
 const MOOD_CHIPS = ['웜톤 조명', '화이트 조명', '로우톤 조명', '우드', '메탈', '화이트', '블랙', '플랜트', '스톤'];
@@ -297,19 +304,14 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
 
   if (!isOpen) return null;
 
-  const toggleMood = (m: string) => {
-    setFilters(f => ({
-      ...f,
-      moods: f.moods.includes(m) ? f.moods.filter(x => x !== m) : [...f.moods, m],
-    }));
-  };
+  const toggleArr = (key: string, arr: string[]) =>
+    arr.includes(key) ? arr.filter(x => x !== key) : [...arr, key];
 
-  const toggleOption = (o: string) => {
-    setFilters(f => ({
-      ...f,
-      options: f.options.includes(o) ? f.options.filter(x => x !== o) : [...f.options, o],
-    }));
-  };
+  const toggleMood = (m: string) =>
+    setFilters(f => ({ ...f, moods: toggleArr(m, f.moods) }));
+
+  const toggleOption = (o: string) =>
+    setFilters(f => ({ ...f, options: toggleArr(o, f.options) }));
 
   const handleApply = () => {
     onApply(filters);
@@ -377,6 +379,48 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
               지금 영업중인 카페만 보기
             </span>
           </div>
+
+          {/* 노트북 사용 섹션 */}
+          <div>
+            <div style={{ height: 40, display: 'flex', alignItems: 'center' }}>
+              <h3 style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)' }}>
+                노트북 사용
+              </h3>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 8 }}>
+              {LAPTOP_CHIPS.map(chip => (
+                <Chip
+                  key={chip}
+                  label={chip}
+                  selected={filters.laptopStatus.includes(chip)}
+                  onClick={() => setFilters(f => ({ ...f, laptopStatus: toggleArr(chip, f.laptopStatus) }))}
+                />
+              ))}
+            </div>
+          </div>
+
+          <Divider />
+
+          {/* 입장 조건 섹션 */}
+          <div>
+            <div style={{ height: 40, display: 'flex', alignItems: 'center' }}>
+              <h3 style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)' }}>
+                입장 조건
+              </h3>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 8 }}>
+              {ENT_CONDITION_CHIPS.map(chip => (
+                <Chip
+                  key={chip}
+                  label={chip}
+                  selected={filters.entConditions.includes(chip)}
+                  onClick={() => setFilters(f => ({ ...f, entConditions: toggleArr(chip, f.entConditions) }))}
+                />
+              ))}
+            </div>
+          </div>
+
+          <Divider />
 
           {/* 분위기 섹션
               피그마: 섹션 타이틀 fs=14 fw=400 lh=18.9 fill=#000c1e a=0.80, Title h=40

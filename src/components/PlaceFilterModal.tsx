@@ -137,28 +137,26 @@ function Chip({
     <button
       onClick={onClick}
       style={{
-        display: 'inline-flex', alignItems: 'center', gap: 4,
-        height: 32, padding: '0 12px',
-        borderRadius: 999,
-        border: selected ? 'none' : '1px solid rgba(0,23,51,0.02)',
-        background: selected ? 'rgba(0,12,30,0.80)' : 'rgba(7,25,76,0.05)',
-        color: selected ? '#ffffff' : 'rgba(3,18,40,0.70)',
-        fontSize: 12, fontWeight: 590, whiteSpace: 'nowrap',
+        display: 'inline-flex', alignItems: 'center', gap: icon ? 4 : 0,
+        height: 32, padding: icon ? '0 12px' : '0 14px',
+        borderRadius: 8,
+        border: 'none',
+        background: selected ? '#252525' : 'rgba(46,46,46,0.08)',
+        color: selected ? '#ffffff' : 'rgba(0,0,0,0.7)',
+        fontSize: 13, fontWeight: 590, whiteSpace: 'nowrap',
         cursor: 'pointer', transition: 'background 0.15s',
+        flexShrink: 0,
       }}
     >
-      {icon}
+      {icon && <span style={{ display: 'flex', alignItems: 'center', color: 'inherit' }}>{icon}</span>}
       {label}
     </button>
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <p style={{ fontSize: 15, fontWeight: 700, color: '#191F28', marginBottom: 12 }}>
-      {children}
-    </p>
-  );
+// ── 구분선 ────────────────────────────────────────────────────
+function Divider() {
+  return <div style={{ height: 1, background: '#F2F4F6', margin: '0 -20px' }} />;
 }
 
 // ── 타입 ─────────────────────────────────────────────────────
@@ -221,50 +219,41 @@ export default function PlaceFilterModal({ isOpen, initialFilters, placeType, on
   const reset = () => setF(DEFAULT_PLACE_FILTERS);
 
   return (
-    <>
-      {/* 백드롭 */}
+    <div style={{ position: 'fixed', inset: 0, zIndex: 300 }}>
+      {/* 딤 배경 */}
       <div
         onClick={onClose}
-        style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'rgba(0,0,0,0.4)' }}
+        style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.20)' }}
       />
 
-      {/* 모달 시트 */}
+      {/* 시트 */}
       <div style={{
-        position: 'fixed', left: 0, right: 0, bottom: 0,
-        zIndex: 200,
+        position: 'absolute', bottom: 0, left: 10, right: 10,
         background: '#f3f3f3',
-        borderRadius: '20px 20px 0 0',
-        maxHeight: '80vh',
+        borderRadius: 28,
+        maxHeight: '92vh',
         display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
+        animation: 'filterSlideUp 0.25s ease',
       }}>
-        {/* 헤더 */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '20px 20px 16px',
-          flexShrink: 0,
-        }}>
-          <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28' }}>{placeType} 필터</p>
-          <button
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path fillRule="evenodd" clipRule="evenodd" d="M13.8151 11.9991L19.4661 6.34814C19.818 5.94864 19.818 5.34924 19.4661 4.94974C19.1142 4.55024 18.5178 4.55024 18.1659 4.94974L12.1181 10.9976L6.07034 4.94974C5.71844 4.55024 5.12204 4.55024 4.77014 4.94974C4.41824 5.34924 4.41824 5.94864 4.77014 6.34814L10.8179 11.9991L4.77014 17.6501C4.41824 18.0496 4.41824 18.649 4.77014 19.0485C5.12204 19.448 5.71844 19.448 6.07034 19.0485L12.1181 13.0006L18.1659 19.0485C18.5178 19.448 19.1142 19.448 19.4661 19.0485C19.818 18.649 19.818 18.0496 19.4661 17.6501L13.8151 11.9991Z" fill="#B0B8C1"/>
-            </svg>
-          </button>
+        {/* 핸들 */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 20 }}>
+          <div style={{ width: 48, height: 4, borderRadius: 40, background: '#e5e8eb' }} />
+        </div>
+
+        {/* 타이틀 */}
+        <div style={{ height: 48, display: 'flex', alignItems: 'center', padding: '0 24px' }}>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: 'rgba(0,12,30,0.80)', lineHeight: '27px' }}>
+            {placeType} 필터
+          </h2>
         </div>
 
         {/* 스크롤 콘텐츠 */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 0' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px' }}>
 
           {/* 지금 영업 중 */}
           <div
             onClick={() => setF(prev => ({ ...prev, openNow: !prev.openNow }))}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              height: 39, marginBottom: 16, cursor: 'pointer',
-            }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, height: 39, cursor: 'pointer' }}
           >
             <Checkbox checked={f.openNow} onToggle={() => setF(prev => ({ ...prev, openNow: !prev.openNow }))} />
             <span style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: '#777777', userSelect: 'none' }}>
@@ -274,29 +263,37 @@ export default function PlaceFilterModal({ isOpen, initialFilters, placeType, on
 
           {/* 노트북 사용 — 도서관만 */}
           {isLibrary && (
-            <div style={{ marginBottom: 24 }}>
-              <SectionTitle>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <IcLaptop />노트북 사용
-                </span>
-              </SectionTitle>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {LAPTOP_CHIPS.map(chip => (
-                  <Chip
-                    key={chip}
-                    label={chip}
-                    selected={f.laptopStatus.includes(chip)}
-                    onClick={() => setF(prev => ({ ...prev, laptopStatus: toggleArr(chip, prev.laptopStatus) }))}
-                  />
-                ))}
+            <>
+              <div>
+                <div style={{ height: 40, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <IcLaptop />
+                  <h3 style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)' }}>
+                    노트북 사용
+                  </h3>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 8 }}>
+                  {LAPTOP_CHIPS.map(chip => (
+                    <Chip
+                      key={chip}
+                      label={chip}
+                      selected={f.laptopStatus.includes(chip)}
+                      onClick={() => setF(prev => ({ ...prev, laptopStatus: toggleArr(chip, prev.laptopStatus) }))}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+              <Divider />
+            </>
           )}
 
           {/* 입장 조건 */}
-          <div style={{ marginBottom: 24 }}>
-            <SectionTitle>입장 조건</SectionTitle>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div>
+            <div style={{ height: 40, display: 'flex', alignItems: 'center' }}>
+              <h3 style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)' }}>
+                입장 조건
+              </h3>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 8 }}>
               {ENT_CONDITION_CHIPS.map(chip => (
                 <Chip
                   key={chip}
@@ -308,9 +305,15 @@ export default function PlaceFilterModal({ isOpen, initialFilters, placeType, on
             </div>
           </div>
 
+          <Divider />
+
           {/* 편의시설 */}
-          <div style={{ marginBottom: 24 }}>
-            <SectionTitle>편의시설</SectionTitle>
+          <div style={{ paddingBottom: 12 }}>
+            <div style={{ height: 40, display: 'flex', alignItems: 'center' }}>
+              <h3 style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)' }}>
+                편의시설
+              </h3>
+            </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {AMENITY_OPTIONS.map(opt => (
                 <Chip
@@ -324,20 +327,28 @@ export default function PlaceFilterModal({ isOpen, initialFilters, placeType, on
             </div>
           </div>
 
-          <div style={{ height: 8 }} />
+          <div style={{ height: 16 }} />
         </div>
 
         {/* CTA */}
-        <SheetCTA.Double
-          leftLabel="초기화"
-          leftOnClick={reset}
-          leftWidth={88}
-          rightLabel="적용하기"
-          rightOnClick={() => onApply(f)}
-          background="#f3f3f3"
-        />
-        <div style={{ height: 'max(env(safe-area-inset-bottom, 0px), 16px)' }} />
+        <div style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 16px)` }}>
+          <SheetCTA.Double
+            leftLabel="초기화"
+            leftOnClick={reset}
+            leftWidth={88}
+            rightLabel="적용하기"
+            rightOnClick={() => onApply(f)}
+            background="#f3f3f3"
+          />
+        </div>
       </div>
-    </>
+
+      <style>{`
+        @keyframes filterSlideUp {
+          from { transform: translateY(100%); }
+          to   { transform: translateY(0); }
+        }
+      `}</style>
+    </div>
   );
 }
