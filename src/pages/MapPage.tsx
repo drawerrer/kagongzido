@@ -3,6 +3,8 @@ import { getCurrentLocation, Accuracy, partner, tdsEvent } from '@apps-in-toss/w
 import { useBackEvent } from '../hooks/useBackEvent';
 import { Toast } from '@toss/tds-mobile';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
+import PlaceFilterModal, { PlaceFilterState, DEFAULT_PLACE_FILTERS, isPlaceFilterActive } from '../components/PlaceFilterModal';
+import { expandHours, getHoursStatus } from '../utils/hours';
 import { trackFilterOpen, trackFilterApply, trackChipTap, trackCafeDetailView, trackViewModeChange } from '../services/analytics';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
@@ -256,6 +258,7 @@ const [filterOpen, setFilterOpen] = useState(false);
   const [filterOpenKey, setFilterOpenKey] = useState(0);
   const [panelState, setPanelState] = useState<PanelState>(initialState?.panelState ?? 'half');
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
+  const [placeAppliedFilters, setPlaceAppliedFilters] = useState<PlaceFilterState>(DEFAULT_PLACE_FILTERS);
   const [selectedMapCafe, setSelectedMapCafe] = useState<Cafe | null>(null);
   const [detailScrolled, setDetailScrolled] = useState(false);
   const [detailHasSubPage, setDetailHasSubPage] = useState(false);
@@ -315,11 +318,14 @@ const [filterOpen, setFilterOpen] = useState(false);
     else if (panelState === 'minimized') trackViewModeChange('map');
   }, [panelState]);
 
-  const filterApplied =
+  const isPlaceModeChip = activeChip === '도서관' || activeChip === '공유공간';
+  const cafeFilterApplied =
     appliedFilters.openNow !== DEFAULT_FILTERS.openNow ||
     appliedFilters.moods.length > 0 ||
     appliedFilters.priceMax !== DEFAULT_FILTERS.priceMax ||
     appliedFilters.options.length > 0;
+  const placeFilterApplied = isPlaceFilterActive(placeAppliedFilters);
+  const filterApplied = isPlaceModeChip ? placeFilterApplied : cafeFilterApplied;
 
   useEffect(() => {
     onStateChange?.({ activeChip, panelState, appliedFilters, filterApplied });
@@ -330,7 +336,6 @@ const [filterOpen, setFilterOpen] = useState(false);
     setFavoriteSnackbar(type);
   };
 
-  const isPlaceChip = PLACE_CHIPS.has(activeChip ?? '');
   const showCafes = activeChip === '전체' || activeChip === '카페' || !activeChip;
   const showLibraries = activeChip === '전체' || activeChip === '도서관';
   const showSharedSpaces = activeChip === '전체' || activeChip === '공유공간';
@@ -355,8 +360,42 @@ const [filterOpen, setFilterOpen] = useState(false);
     p.lat >= mapBounds.swLat && p.lat <= mapBounds.neLat &&
     p.lng >= mapBounds.swLng && p.lng <= mapBounds.neLng
   );
-  const filteredLibraries = showLibraries ? libraries.filter(boundsFilter) : [];
-  const filteredSharedSpaces = showSharedSpaces ? sharedSpaces.filter(boundsFilter) : [];
+
+  const applyPlaceFilters = (items: PlaceItem[]): PlaceItem[] => {
+    let result = items;
+    const pf = placeAppliedFilters;
+    if (pf.openNow) {
+      result = result.filter(p => {
+        const { hours, regularHoliday } = expandHours(p.businessHours ?? null);
+        return getHoursStatus(hours, regularHoliday).label === '영업 중';
+      });
+    }
+    if (pf.laptopOk === true) {
+      result = result.filter(p => p.ltSeatStatus && /가능/.test(p.ltSeatStatus));
+    }
+    if (pf.laptopOk === false) {
+      result = result.filter(p => !p.ltSeatStatus || /불가/.test(p.ltSeatStatus));
+    }
+    if (pf.freeOnly === true) {
+      result = result.filter(p =>
+        p.entPrice === '무료' || /무료/.test(p.entCondition ?? '') || /무료/.test(p.entPrice ?? '')
+      );
+    }
+    if (pf.freeOnly === false) {
+      result = result.filter(p =>
+        p.entPrice !== '무료' && !/무료/.test(p.entCondition ?? '') && !/무료/.test(p.entPrice ?? '')
+      );
+    }
+    if (pf.amenities.length > 0) {
+      result = result.filter(p =>
+        pf.amenities.every(key => p.amenities?.includes(key))
+      );
+    }
+    return result;
+  };
+
+  const filteredLibraries = showLibraries ? applyPlaceFilters(libraries.filter(boundsFilter)) : [];
+  const filteredSharedSpaces = showSharedSpaces ? applyPlaceFilters(sharedSpaces.filter(boundsFilter)) : [];
 
   // ── Kakao Maps SDK 초기화 (index.html에서 정적 로드 완료) ──
   useEffect(() => {
@@ -1021,29 +1060,46 @@ const [filterOpen, setFilterOpen] = useState(false);
       </div>
 
       {/* ── 필터 모달 ── */}
-      <FilterModal
-        key={filterOpenKey}
-        isOpen={filterOpen}
-        initialFilters={appliedFilters}
-        onClose={() => setFilterOpen(false)}
-        onApply={(f) => {
-          // 적용 시점의 결과 수 계산
-          let preview = [...cafes];
-          if (mapBounds) {
-            preview = preview.filter(c =>
-              c.lat != null && c.lng != null &&
-              c.lat >= mapBounds.swLat && c.lat <= mapBounds.neLat &&
-              c.lng >= mapBounds.swLng && c.lng <= mapBounds.neLng
-            );
-          }
-          if (f.moods.length > 0) preview = preview.filter(c => f.moods.some(m => c.moods.includes(m)));
-          if (f.priceMax < DEFAULT_FILTERS.priceMax) preview = preview.filter(c => c.priceRange <= f.priceMax);
-          if (f.options.length > 0) preview = preview.filter(c => f.options.some(opt => c.options.includes(opt)));
-          trackFilterApply(f, preview.length);
-          setAppliedFilters(f);
-          setFilterOpen(false);
-        }}
-      />
+      {/* 카페 필터 — 카페 / 전체 칩 선택 시 */}
+      {!isPlaceModeChip && (
+        <FilterModal
+          key={filterOpenKey}
+          isOpen={filterOpen}
+          initialFilters={appliedFilters}
+          onClose={() => setFilterOpen(false)}
+          onApply={(f) => {
+            let preview = [...cafes];
+            if (mapBounds) {
+              preview = preview.filter(c =>
+                c.lat != null && c.lng != null &&
+                c.lat >= mapBounds.swLat && c.lat <= mapBounds.neLat &&
+                c.lng >= mapBounds.swLng && c.lng <= mapBounds.neLng
+              );
+            }
+            if (f.moods.length > 0) preview = preview.filter(c => f.moods.some(m => c.moods.includes(m)));
+            if (f.priceMax < DEFAULT_FILTERS.priceMax) preview = preview.filter(c => c.priceRange <= f.priceMax);
+            if (f.options.length > 0) preview = preview.filter(c => f.options.some(opt => c.options.includes(opt)));
+            trackFilterApply(f, preview.length);
+            setAppliedFilters(f);
+            setFilterOpen(false);
+          }}
+        />
+      )}
+
+      {/* 공간 필터 — 도서관 / 공유공간 칩 선택 시 */}
+      {isPlaceModeChip && (
+        <PlaceFilterModal
+          key={filterOpenKey}
+          isOpen={filterOpen}
+          initialFilters={placeAppliedFilters}
+          placeType={activeChip as '도서관' | '공유공간'}
+          onClose={() => setFilterOpen(false)}
+          onApply={(f) => {
+            setPlaceAppliedFilters(f);
+            setFilterOpen(false);
+          }}
+        />
+      )}
 
       {/* ── 위치 권한 바텀시트 ── */}
       {locSheet && (
