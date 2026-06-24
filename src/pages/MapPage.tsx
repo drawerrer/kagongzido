@@ -3,7 +3,6 @@ import { getCurrentLocation, Accuracy, partner, tdsEvent } from '@apps-in-toss/w
 import { useBackEvent } from '../hooks/useBackEvent';
 import { Toast } from '@toss/tds-mobile';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
-import PlaceFilterModal, { PlaceFilterState, DEFAULT_PLACE_FILTERS, isPlaceFilterActive } from '../components/PlaceFilterModal';
 import { expandHours, getHoursStatus } from '../utils/hours';
 import { trackFilterOpen, trackFilterApply, trackChipTap, trackCafeDetailView, trackViewModeChange } from '../services/analytics';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
@@ -65,7 +64,23 @@ interface Cafe {
 
 
 const CATEGORY_CHIPS = ['전체', '카페', '도서관', '공유공간'];
-const PLACE_CHIPS = new Set(['도서관', '공유공간']);
+
+// amenity key → cafe option 라벨 매핑 (storeToOptions와 동기화)
+const AMENITY_TO_CAFE_OPTION: Record<string, string> = {
+  'sound-moderate': '소음 적당',
+  'quiet': '조용',
+  'separateRestroom': '남/녀 화장실 구분',
+  'indoorRestroom': '내부 화장실',
+  'groupVisit': '단체 방문 가능',
+  'pets': '반려동물 동반 가능',
+  'noTimeLimit': '시간제한 없음',
+  'parking': '주차 가능',
+  'coffeeMachine': '커피머신',
+  'decafFree': '디카페인 무료 변경',
+  'wifi': '무선 인터넷',
+  'takeout': '포장 가능',
+  'wheelchair': '휠체어 이용',
+};
 
 // ── 유틸 ─────────────────────────────────
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -91,6 +106,7 @@ function storeToOptions(store: StoreRow): string[] {
   if (store.amenities?.includes('pets')) opts.push('반려동물 동반 가능');
   if (store.amenities?.includes('noTimeLimit')) opts.push('시간제한 없음');
   if (store.amenities?.includes('parking')) opts.push('주차 가능');
+  if (store.amenities?.includes('coffeeMachine')) opts.push('커피머신');
   if (store.amenities?.includes('decafFree')) opts.push('디카페인 무료 변경');
   if (store.amenities?.includes('wifi')) opts.push('무선 인터넷');
   if (store.amenities?.includes('takeout')) opts.push('포장 가능');
@@ -260,7 +276,6 @@ const [filterOpen, setFilterOpen] = useState(false);
   const [filterOpenKey, setFilterOpenKey] = useState(0);
   const [panelState, setPanelState] = useState<PanelState>(initialState?.panelState ?? 'half');
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
-  const [placeAppliedFilters, setPlaceAppliedFilters] = useState<PlaceFilterState>(DEFAULT_PLACE_FILTERS);
   const [selectedMapCafe, setSelectedMapCafe] = useState<Cafe | null>(null);
   const [detailScrolled, setDetailScrolled] = useState(false);
   const [detailHasSubPage, setDetailHasSubPage] = useState(false);
@@ -320,16 +335,41 @@ const [filterOpen, setFilterOpen] = useState(false);
     else if (panelState === 'minimized') trackViewModeChange('map');
   }, [panelState]);
 
-  const isPlaceModeChip = activeChip === '도서관' || activeChip === '공유공간';
-  const cafeFilterApplied =
+  const isCafeChip  = activeChip === '카페';
+  const isPlaceChip = activeChip === '도서관' || activeChip === '공유공간';
+
+  // 카테고리가 바뀌면 해당 카테고리와 무관한 필터 값 초기화
+  useEffect(() => {
+    setAppliedFilters(prev => {
+      if (activeChip === '카페') {
+        return {
+          ...prev,
+          laptopStatus: [],
+          entConditions: [],
+          amenities: prev.amenities.filter(k => k !== 'coffeeMachine'),
+        };
+      }
+      if (activeChip === '공유공간') {
+        // 노트북 사용만 초기화, 입장 조건은 공유공간에서도 유효
+        return { ...prev, laptopStatus: [] };
+      }
+      if (activeChip === '도서관' || activeChip === '공유공간') {
+        return {
+          ...prev,
+          moods: [],
+          priceMax: DEFAULT_FILTERS.priceMax,
+          amenities: prev.amenities.filter(k => k !== 'decafFree'),
+        };
+      }
+      return prev;
+    });
+  }, [activeChip]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const filterApplied =
     appliedFilters.openNow !== DEFAULT_FILTERS.openNow ||
-    appliedFilters.laptopStatus.length > 0 ||
-    appliedFilters.entConditions.length > 0 ||
-    appliedFilters.moods.length > 0 ||
-    appliedFilters.priceMax !== DEFAULT_FILTERS.priceMax ||
-    appliedFilters.options.length > 0;
-  const placeFilterApplied = isPlaceFilterActive(placeAppliedFilters);
-  const filterApplied = isPlaceModeChip ? placeFilterApplied : cafeFilterApplied;
+    (!isCafeChip && (appliedFilters.laptopStatus.length > 0 || appliedFilters.entConditions.length > 0)) ||
+    (!isPlaceChip && (appliedFilters.moods.length > 0 || appliedFilters.priceMax !== DEFAULT_FILTERS.priceMax)) ||
+    appliedFilters.amenities.length > 0;
 
   useEffect(() => {
     onStateChange?.({ activeChip, panelState, appliedFilters, filterApplied });
@@ -356,7 +396,14 @@ const [filterOpen, setFilterOpen] = useState(false);
     }
     if (appliedFilters.moods.length > 0) filtered = filtered.filter(c => appliedFilters.moods.some(m => c.moods.includes(m)));
     if (appliedFilters.priceMax < DEFAULT_FILTERS.priceMax) filtered = filtered.filter(c => c.priceRange <= appliedFilters.priceMax);
-    if (appliedFilters.options.length > 0) filtered = filtered.filter(c => appliedFilters.options.some(opt => c.options.includes(opt)));
+    if (appliedFilters.amenities.length > 0) {
+      filtered = filtered.filter(c =>
+        appliedFilters.amenities.some(key => {
+          const label = AMENITY_TO_CAFE_OPTION[key];
+          return label ? c.options.includes(label) : false;
+        })
+      );
+    }
     if (appliedFilters.laptopStatus.length > 0) {
       filtered = filtered.filter(c =>
         appliedFilters.laptopStatus.some(chip => {
@@ -387,16 +434,16 @@ const [filterOpen, setFilterOpen] = useState(false);
 
   const applyPlaceFilters = (items: PlaceItem[]): PlaceItem[] => {
     let result = items;
-    const pf = placeAppliedFilters;
-    if (pf.openNow) {
+    const af = appliedFilters;
+    if (af.openNow) {
       result = result.filter(p => {
         const { hours, regularHoliday } = expandHours(p.businessHours ?? null);
         return getHoursStatus(hours, regularHoliday).label === '영업 중';
       });
     }
-    if (pf.laptopStatus.length > 0) {
+    if (af.laptopStatus.length > 0) {
       result = result.filter(p =>
-        pf.laptopStatus.some(chip => {
+        af.laptopStatus.some(chip => {
           if (chip === '가능') return p.ltSeatStatus === '가능' || (!!p.ltSeatStatus && /가능/.test(p.ltSeatStatus) && !/지정|일부/.test(p.ltSeatStatus));
           if (chip === '불가') return !p.ltSeatStatus || /불가/.test(p.ltSeatStatus);
           if (chip === '지정 좌석에서만 가능') return !!p.ltSeatStatus && /지정|일부/.test(p.ltSeatStatus);
@@ -404,20 +451,22 @@ const [filterOpen, setFilterOpen] = useState(false);
         })
       );
     }
-    if (pf.entConditions.length > 0) {
+    if (af.entConditions.length > 0) {
       result = result.filter(p =>
-        pf.entConditions.some(cond => {
-          if (cond === '조건 없음') return !p.entCondition || /조건\s*없|무료/.test(p.entCondition);
-          if (cond === '유료') return /유료/.test(p.entCondition ?? '') || /유료/.test(p.entPrice ?? '');
-          if (cond === '이용권') return /이용권/.test(p.entCondition ?? '');
-          if (cond === '회원제') return /회원/.test(p.entCondition ?? '');
+        af.entConditions.some(cond => {
+          if (cond === '조건 없음')  return !p.entCondition || /조건\s*없|무료/.test(p.entCondition);
+          if (cond === '예약 필요')  return /예약/.test(p.entCondition ?? '');
+          if (cond === '입장료')     return /입장료|유료/.test(p.entCondition ?? '') || /유료/.test(p.entPrice ?? '');
+          if (cond === '회원 가입')  return /회원/.test(p.entCondition ?? '');
+          if (cond === '열람증 발급') return /열람증/.test(p.entCondition ?? '');
+          if (cond === '연령 제한')  return /연령|나이|제한/.test(p.entCondition ?? '');
           return false;
         })
       );
     }
-    if (pf.amenities.length > 0) {
+    if (af.amenities.length > 0) {
       result = result.filter(p =>
-        pf.amenities.every(key => p.amenities?.includes(key))
+        af.amenities.some(key => p.amenities?.includes(key))
       );
     }
     return result;
@@ -727,21 +776,6 @@ const [filterOpen, setFilterOpen] = useState(false);
   useEffect(() => {
     const load = async () => {
       const [libRows, spRows] = await Promise.all([fetchLibraries(), fetchSharedSpaces()]);
-      const MOCK_ACHASAN: PlaceItem = {
-        id: 'mock-achasan-library',
-        name: '아차산 숲속도서관',
-        address: '서울 광진구 아차산로 608',
-        lat: 37.5586,
-        lng: 127.0780,
-        businessHours: '매일 09:00~18:00 화 정기휴무',
-        ltSeatStatus: '일부 좌석에서만 가능',
-        entCondition: '조건 없음',
-        entPrice: '무료',
-        facilities: ['지상 1~2층(71석)'],
-        amenities: ['wifi', 'separateRestroom', 'indoorRestroom'],
-        websiteUrl: 'https://www.gwangjinlib.seoul.kr/achasan/index.do',
-        placeType: 'library',
-      };
       const toItem = (type: PlaceItem['placeType']) => (r: import('../services/db').PlaceRow): PlaceItem => ({
         id: r.id, name: r.name, address: r.address_road,
         lat: r.latitude, lng: r.longitude,
@@ -757,7 +791,7 @@ const [filterOpen, setFilterOpen] = useState(false);
         websiteUrl: r.website_url || undefined,
         placeType: type,
       });
-      setLibraries([MOCK_ACHASAN, ...libRows.map(toItem('library'))]);
+      setLibraries(libRows.map(toItem('library')));
       setSharedSpaces(spRows.map(toItem('shared_space')));
     };
     load();
@@ -1088,59 +1122,47 @@ const [filterOpen, setFilterOpen] = useState(false);
         )}
       </div>
 
-      {/* ── 필터 모달 ── */}
-      {/* 카페 필터 — 카페 / 전체 칩 선택 시 */}
-      {!isPlaceModeChip && (
-        <FilterModal
-          key={filterOpenKey}
-          isOpen={filterOpen}
-          initialFilters={appliedFilters}
-          onClose={() => setFilterOpen(false)}
-          onApply={(f) => {
-            let preview = [...cafes];
-            if (mapBounds) {
-              preview = preview.filter(c =>
-                c.lat != null && c.lng != null &&
-                c.lat >= mapBounds.swLat && c.lat <= mapBounds.neLat &&
-                c.lng >= mapBounds.swLng && c.lng <= mapBounds.neLng
-              );
-            }
-            if (f.moods.length > 0) preview = preview.filter(c => f.moods.some(m => c.moods.includes(m)));
-            if (f.priceMax < DEFAULT_FILTERS.priceMax) preview = preview.filter(c => c.priceRange <= f.priceMax);
-            if (f.options.length > 0) preview = preview.filter(c => f.options.some(opt => c.options.includes(opt)));
-            if (f.laptopStatus.length > 0) preview = preview.filter(c => f.laptopStatus.some(chip => {
-              if (chip === '가능') return !!c.ltSeatStatus && /가능/.test(c.ltSeatStatus);
-              if (chip === '불가') return !c.ltSeatStatus || /불가/.test(c.ltSeatStatus);
-              return false;
-            }));
-            if (f.entConditions.length > 0) preview = preview.filter(c => f.entConditions.some(cond => {
-              if (cond === '조건 없음') return !c.entCondition || /조건\s*없|무료/.test(c.entCondition);
-              if (cond === '유료') return /유료/.test(c.entCondition ?? '');
-              if (cond === '이용권') return /이용권/.test(c.entCondition ?? '');
-              if (cond === '회원제') return /회원/.test(c.entCondition ?? '');
-              return false;
-            }));
-            trackFilterApply(f, preview.length);
-            setAppliedFilters(f);
-            setFilterOpen(false);
-          }}
-        />
-      )}
-
-      {/* 공간 필터 — 도서관 / 공유공간 칩 선택 시 */}
-      {isPlaceModeChip && (
-        <PlaceFilterModal
-          key={filterOpenKey}
-          isOpen={filterOpen}
-          initialFilters={placeAppliedFilters}
-          placeType={activeChip as '도서관' | '공유공간'}
-          onClose={() => setFilterOpen(false)}
-          onApply={(f) => {
-            setPlaceAppliedFilters(f);
-            setFilterOpen(false);
-          }}
-        />
-      )}
+      {/* ── 필터 모달 (전체/카페/도서관/공유공간 통합) ── */}
+      <FilterModal
+        key={filterOpenKey}
+        isOpen={filterOpen}
+        initialFilters={appliedFilters}
+        category={activeChip ?? '전체'}
+        onClose={() => setFilterOpen(false)}
+        onApply={(f) => {
+          let preview = [...cafes];
+          if (mapBounds) {
+            preview = preview.filter(c =>
+              c.lat != null && c.lng != null &&
+              c.lat >= mapBounds.swLat && c.lat <= mapBounds.neLat &&
+              c.lng >= mapBounds.swLng && c.lng <= mapBounds.neLng
+            );
+          }
+          if (f.moods.length > 0) preview = preview.filter(c => f.moods.some(m => c.moods.includes(m)));
+          if (f.priceMax < DEFAULT_FILTERS.priceMax) preview = preview.filter(c => c.priceRange <= f.priceMax);
+          if (f.amenities.length > 0) preview = preview.filter(c =>
+            f.amenities.some(key => {
+              const label = AMENITY_TO_CAFE_OPTION[key];
+              return label ? c.options.includes(label) : false;
+            })
+          );
+          if (f.laptopStatus.length > 0) preview = preview.filter(c => f.laptopStatus.some(chip => {
+            if (chip === '가능') return !!c.ltSeatStatus && /가능/.test(c.ltSeatStatus);
+            if (chip === '불가') return !c.ltSeatStatus || /불가/.test(c.ltSeatStatus);
+            return false;
+          }));
+          if (f.entConditions.length > 0) preview = preview.filter(c => f.entConditions.some(cond => {
+            if (cond === '조건 없음') return !c.entCondition || /조건\s*없|무료/.test(c.entCondition);
+            if (cond === '유료') return /유료/.test(c.entCondition ?? '');
+            if (cond === '이용권') return /이용권/.test(c.entCondition ?? '');
+            if (cond === '회원제') return /회원/.test(c.entCondition ?? '');
+            return false;
+          }));
+          trackFilterApply(f, preview.length);
+          setAppliedFilters(f);
+          setFilterOpen(false);
+        }}
+      />
 
       {/* ── 위치 권한 바텀시트 ── */}
       {locSheet && (
