@@ -4,25 +4,6 @@ import { trackFilterReset } from '../services/analytics';
 import SheetCTA from './SheetCTA';
 
 // ── 옵션 칩 TDS SVG 아이콘 ─────────────────────
-function FiOutlet() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <g clipPath="url(#clip_plug_filter)">
-        <path d="M8.72512 8.01953L7.91992 8.01953L7.91992 2.79113C7.91992 2.68452 7.96228 2.58226 8.03767 2.50688C8.11306 2.43149 8.21531 2.38913 8.32192 2.38913C8.42854 2.38913 8.53079 2.43149 8.60618 2.50688C8.68157 2.58226 8.72392 2.68452 8.72392 2.79113L8.72512 8.01953Z" fill="currentColor"/>
-        <path d="M6.99463 2.79051L6.99463 8.94531L9.65143 8.94531L9.65143 2.79051C9.65143 2.4382 9.51147 2.10032 9.26235 1.85119C9.01323 1.60207 8.67534 1.46211 8.32303 1.46211C7.97072 1.46211 7.63283 1.60207 7.38371 1.85119C7.13459 2.10032 6.99463 2.4382 6.99463 2.79051Z" fill="currentColor"/>
-        <path d="M16.1532 8.01953L15.3486 8.01953L15.3486 2.79113C15.3527 2.68712 15.3968 2.58871 15.4718 2.51655C15.5468 2.44438 15.6468 2.40407 15.7509 2.40407C15.855 2.40407 15.9551 2.44438 16.0301 2.51655C16.1051 2.58871 16.1492 2.68712 16.1532 2.79113L16.1532 8.01953Z" fill="currentColor"/>
-        <path d="M14.4224 2.79051L14.4224 8.94531L17.0798 8.94531L17.0798 2.79051C17.0724 2.44301 16.9291 2.11223 16.6808 1.86907C16.4324 1.62592 16.0986 1.48975 15.7511 1.48975C15.4035 1.48975 15.0697 1.62592 14.8214 1.86907C14.573 2.11223 14.4297 2.44301 14.4224 2.79051Z" fill="currentColor"/>
-        <path d="M19.6537 7.56985L4.42089 7.56985C4.25735 7.56978 4.09539 7.60192 3.94427 7.66445C3.79315 7.72698 3.65583 7.81868 3.54016 7.93429C3.42449 8.04991 3.33273 8.18719 3.27012 8.33828C3.20752 8.48936 3.17529 8.65131 3.17529 8.81485L3.17529 10.9395L20.8987 10.9395L20.8987 8.81485C20.8987 8.65136 20.8665 8.48946 20.8039 8.33841C20.7414 8.18736 20.6496 8.05011 20.534 7.93451C20.4184 7.8189 20.2812 7.72719 20.1301 7.66462C19.9791 7.60206 19.8172 7.56985 19.6537 7.56985Z" fill="currentColor"/>
-        <path d="M15.1051 22.4629L8.96949 22.4629C8.72866 22.463 8.49304 22.3928 8.29157 22.2608C8.09011 22.1289 7.93159 21.9409 7.83549 21.7201L3.17529 10.9399L20.8987 10.9399L16.2385 21.7201C16.1425 21.9409 15.9841 22.1288 15.7827 22.2608C15.5814 22.3927 15.3458 22.463 15.1051 22.4629Z" fill="currentColor"/>
-      </g>
-      <defs>
-        <clipPath id="clip_plug_filter">
-          <rect width="24" height="24" fill="white" transform="translate(1.04907e-06 24) rotate(-90)"/>
-        </clipPath>
-      </defs>
-    </svg>
-  );
-}
 function FiSoundOn() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -173,11 +154,11 @@ function FiWheelchair() {
 // ── 타입 ─────────────────────────────────
 export interface FilterState {
   openNow: boolean;
-  laptopStatus: string[];   // '가능' | '불가'
+  laptopStatus: string[];   // '가능' | '지정 좌석에서만 가능' | '불가'
   entConditions: string[];  // '조건 없음' | '유료' | '이용권' | '회원제'
   moods: string[];
   priceMax: number;
-  options: string[];
+  amenities: string[];      // amenity keys (통합)
 }
 
 interface FilterModalProps {
@@ -185,6 +166,8 @@ interface FilterModalProps {
   initialFilters: FilterState;
   onClose: () => void;
   onApply: (filters: FilterState) => void;
+  /** '전체' | '카페' | '도서관' | '공유공간' */
+  category?: string;
 }
 
 // ── 상수 ─────────────────────────────────
@@ -194,30 +177,38 @@ export const DEFAULT_FILTERS: FilterState = {
   entConditions: [],
   moods: [],
   priceMax: 15000,
-  options: [],
+  amenities: [],
 };
 
-const LAPTOP_CHIPS = ['가능', '불가'];
-const ENT_CONDITION_CHIPS = ['조건 없음', '유료', '이용권', '회원제'];
+const LAPTOP_CHIPS = ['가능', '지정 좌석에서만 가능', '불가'];
+
+// 통합 입장 조건 칩 (전 카테고리 동일)
+const ENT_CONDITION_CHIPS = ['조건 없음', '예약 필요', '입장료', '회원 가입', '열람증 발급', '연령 제한'];
+
+// 카테고리별 비활성화할 입장 조건 칩
+const ENT_DISABLED_LIBRARY = new Set(['연령 제한']);
+const ENT_DISABLED_SHARED  = new Set(['예약 필요', '입장료', '열람증 발급']);
+
+// ── 통합 편의시설 칩 (카페 + 도서관 + 공유공간) ─────────────────
+const AMENITY_CHIPS: { key: string; icon: ReactNode; label: string }[] = [
+  { key: 'sound-moderate', icon: <FiSoundOn />,      label: '소음 적당' },
+  { key: 'quiet',          icon: <FiSoundOff />,     label: '조용' },
+  { key: 'separateRestroom', icon: <FiPublicToilet />, label: '남/녀 화장실 구분' },
+  { key: 'indoorRestroom', icon: <FiToilet />,       label: '내부 화장실' },
+  { key: 'groupVisit',     icon: <FiPeople />,       label: '단체 방문 가능' },
+  { key: 'pets',           icon: <FiDog />,          label: '반려동물 동반' },
+  { key: 'noTimeLimit',    icon: <FiTimerOff />,     label: '시간제한 없음' },
+  { key: 'parking',        icon: <FiParking />,      label: '주차 가능' },
+  { key: 'coffeeMachine',  icon: <FiCoffee />,       label: '커피머신' },
+  { key: 'decafFree',      icon: <FiCoffee />,       label: '디카페인 무료 변경' },
+  { key: 'wifi',           icon: <FiWifi />,         label: '무선 인터넷' },
+  { key: 'takeout',        icon: <FiTakeout />,      label: '포장 가능' },
+  { key: 'wheelchair',     icon: <FiWheelchair />,   label: '휠체어 이용' },
+];
 
 // 피그마 분위기 칩 목록 (조용한 → 모던한 → 개방적인 → 활기찬 → 아늑한 → 따뜻한 → 자연 → 빈티지)
 const MOOD_CHIPS = ['웜톤 조명', '화이트 조명', '로우톤 조명', '우드', '메탈', '화이트', '블랙', '플랜트', '스톤'];
 
-// 피그마 옵션 칩 목록 (TDS SVG 아이콘 + 텍스트, fs=12)
-const OPTION_CHIPS: { icon: ReactNode; label: string }[] = [
-  { icon: <FiSoundOn />,     label: '소음 적당' },
-  { icon: <FiSoundOff />,    label: '조용' },
-  { icon: <FiPublicToilet />, label: '남/녀 화장실 구분' },
-  { icon: <FiToilet />,      label: '내부 화장실' },
-  { icon: <FiPeople />,      label: '단체 방문 가능' },
-  { icon: <FiDog />,         label: '반려동물 동반 가능' },
-  { icon: <FiTimerOff />,    label: '시간제한 없음' },
-  { icon: <FiParking />,     label: '주차 가능' },
-  { icon: <FiCoffee />,      label: '디카페인 무료 변경' },
-  { icon: <FiWifi />,        label: '무선 인터넷' },
-  { icon: <FiTakeout />,     label: '포장 가능' },
-  { icon: <FiWheelchair />,  label: '휠체어 이용' },
-];
 
 const PRICE_MIN = 5000;
 const PRICE_MAX = 15000;
@@ -234,16 +225,18 @@ function Chip({
   selected,
   onClick,
   fontSize = 13,
+  disabled = false,
 }: {
   label: string;
   icon?: ReactNode;
   selected: boolean;
   onClick: () => void;
   fontSize?: number;
+  disabled?: boolean;
 }) {
   return (
     <button
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -252,12 +245,12 @@ function Chip({
         padding: icon ? '0 12px' : '0 14px',
         borderRadius: 8,
         border: 'none',
-        background: selected ? '#252525' : 'rgba(46,46,46,0.08)',
-        color: selected ? '#ffffff' : 'rgba(0,0,0,0.7)',
+        background: disabled ? 'rgba(46,46,46,0.05)' : selected ? '#252525' : 'rgba(46,46,46,0.08)',
+        color: disabled ? 'rgba(0,0,0,0.30)' : selected ? '#ffffff' : 'rgba(0,0,0,0.7)',
         fontSize,
         fontWeight: 590,
         flexShrink: 0,
-        cursor: 'pointer',
+        cursor: disabled ? 'default' : 'pointer',
       }}
     >
       {icon && <span style={{ display: 'flex', alignItems: 'center', color: 'inherit' }}>{icon}</span>}
@@ -299,19 +292,30 @@ function Divider() {
 }
 
 // ── FilterModal (메인) ────────────────────
-export default function FilterModal({ isOpen, initialFilters, onClose, onApply }: FilterModalProps) {
+export default function FilterModal({ isOpen, initialFilters, onClose, onApply, category }: FilterModalProps) {
   const [filters, setFilters] = useState<FilterState>(initialFilters);
 
   if (!isOpen) return null;
+
+  // 카테고리별 섹션 표시 여부
+  const isCafe  = category === '카페';
+  const isPlace = category === '도서관' || category === '공유공간';
+  // 노트북 사용: 카페 + 공유공간에선 비활성화 (도서관만 활성)
+  const disableLaptopSection = isCafe || category === '공유공간';
+  // 입장 조건: 카페에서만 섹션 전체 비활성화
+  const disableEntSection = isCafe;
+  // 카테고리별 비활성 칩 세트
+  const entDisabledSet =
+    category === '도서관'   ? ENT_DISABLED_LIBRARY :
+    category === '공유공간' ? ENT_DISABLED_SHARED  :
+    new Set<string>();
+
 
   const toggleArr = (key: string, arr: string[]) =>
     arr.includes(key) ? arr.filter(x => x !== key) : [...arr, key];
 
   const toggleMood = (m: string) =>
     setFilters(f => ({ ...f, moods: toggleArr(m, f.moods) }));
-
-  const toggleOption = (o: string) =>
-    setFilters(f => ({ ...f, options: toggleArr(o, f.options) }));
 
   const handleApply = () => {
     onApply(filters);
@@ -376,11 +380,11 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
               onToggle={() => setFilters(f => ({ ...f, openNow: !f.openNow }))}
             />
             <span style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: '#777777', userSelect: 'none' }}>
-              지금 영업중인 카페만 보기
+              지금 영업 중인 곳만 보기
             </span>
           </div>
 
-          {/* 노트북 사용 섹션 */}
+          {/* 노트북 사용 섹션 — 카페/공유공간에선 버튼만 비활성화 */}
           <div>
             <div style={{ height: 40, display: 'flex', alignItems: 'center' }}>
               <h3 style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)' }}>
@@ -394,6 +398,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
                   label={chip}
                   selected={filters.laptopStatus.includes(chip)}
                   onClick={() => setFilters(f => ({ ...f, laptopStatus: toggleArr(chip, f.laptopStatus) }))}
+                  disabled={disableLaptopSection}
                 />
               ))}
             </div>
@@ -401,7 +406,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
 
           <Divider />
 
-          {/* 입장 조건 섹션 */}
+          {/* 입장 조건 섹션 — 카페에서만 비활성화 */}
           <div>
             <div style={{ height: 40, display: 'flex', alignItems: 'center' }}>
               <h3 style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)' }}>
@@ -415,6 +420,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
                   label={chip}
                   selected={filters.entConditions.includes(chip)}
                   onClick={() => setFilters(f => ({ ...f, entConditions: toggleArr(chip, f.entConditions) }))}
+                  disabled={disableEntSection || entDisabledSet.has(chip)}
                 />
               ))}
             </div>
@@ -422,16 +428,13 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
 
           <Divider />
 
-          {/* 분위기 섹션
-              피그마: 섹션 타이틀 fs=14 fw=400 lh=18.9 fill=#000c1e a=0.80, Title h=40
-              칩 행 각 h=44 (칩 자체 h=32, 상하 여백 6px씩) */}
+          {/* 분위기 섹션 — 도서관/공유공간에선 버튼만 비활성화 */}
           <div>
             <div style={{ height: 40, display: 'flex', alignItems: 'center' }}>
               <h3 style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)' }}>
                 분위기
               </h3>
             </div>
-            {/* 칩 행 — 피그마: 가로 줄바꿈, 행 높이 44px */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 8 }}>
               {MOOD_CHIPS.map(m => (
                 <Chip
@@ -440,6 +443,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
                   selected={filters.moods.includes(m)}
                   onClick={() => toggleMood(m)}
                   fontSize={13}
+                  disabled={isPlace}
                 />
               ))}
             </div>
@@ -447,11 +451,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
 
           <Divider />
 
-          {/* 가격대 섹션
-              피그마: 타이틀 "가격대 (핫아메리카노 1잔 기준)" fs=14 fw=400 fill=#000c1e a=0.80
-              슬라이더 트랙: r=2.5 h=5 fill=#e5e8eb / 활성트랙: fill=#252525
-              Knob: 26×26 r=9999 fill=#ffffff stroke=#001d3a a=0.18
-              값 라벨 (5,000 / 15,000): fs=14 fw=400 fill=#000c1e a=0.80 */}
+          {/* 가격대 섹션 — 도서관/공유공간에선 슬라이더 비활성화 */}
           <div style={{ padding: '0 0 8px' }}>
             <div style={{ height: 40, display: 'flex', alignItems: 'center', gap: 6 }}>
               <h3 style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)', margin: 0 }}>
@@ -462,66 +462,26 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
               </span>
             </div>
 
-            {/* 현재 선택 가격 — 피그마 슬라이더 툴팁: fs=15 fw=700 fill=#000c1e a=0.80 */}
-            <p style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: 'rgba(0,12,30,0.80)',
-              margin: '4px 0 12px',
-            }}>
+            <p style={{ fontSize: 15, fontWeight: 700, color: isPlace ? 'rgba(0,12,30,0.30)' : 'rgba(0,12,30,0.80)', margin: '4px 0 12px' }}>
               {filters.priceMax.toLocaleString()}원
             </p>
 
-            {/* 슬라이더 래퍼 — 피그마: 트랙 h=5 r=2.5 fill=#e5e8eb, 활성 fill=#252525 */}
             <div style={{ position: 'relative', margin: '0 0 8px' }}>
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: 0,
-                right: 0,
-                height: 5,
-                borderRadius: 2.5,
-                background: '#e5e8eb',
-                transform: 'translateY(-50%)',
-              }} />
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: 0,
-                width: `${sliderPct}%`,
-                height: 5,
-                borderRadius: 2.5,
-                background: '#252525',
-                transform: 'translateY(-50%)',
-              }} />
+              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 5, borderRadius: 2.5, background: '#e5e8eb', transform: 'translateY(-50%)' }} />
+              <div style={{ position: 'absolute', top: '50%', left: 0, width: `${sliderPct}%`, height: 5, borderRadius: 2.5, background: isPlace ? 'rgba(37,37,37,0.18)' : '#252525', transform: 'translateY(-50%)' }} />
               <input
                 type="range"
                 min={PRICE_MIN}
                 max={PRICE_MAX}
                 step={PRICE_STEP}
                 value={filters.priceMax}
+                disabled={isPlace}
                 onChange={e => setFilters(f => ({ ...f, priceMax: Number(e.target.value) }))}
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: 28,
-                  appearance: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  zIndex: 1,
-                }}
+                style={{ position: 'relative', width: '100%', height: 28, appearance: 'none', background: 'transparent', cursor: isPlace ? 'default' : 'pointer', zIndex: 1, opacity: isPlace ? 0.35 : 1 }}
               />
             </div>
 
-            {/* 최솟값 ~ 최댓값 레이블 — 피그마: fs=14 fw=400 fill=#000c1e a=0.80 */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: 14,
-              fontWeight: 400,
-              color: 'rgba(0,12,30,0.80)',
-              lineHeight: '18.9px',
-            }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 400, color: isPlace ? 'rgba(0,12,30,0.30)' : 'rgba(0,12,30,0.80)', lineHeight: '18.9px' }}>
               <span>5,000</span>
               <span>15,000</span>
             </div>
@@ -529,26 +489,30 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply }
 
           <Divider />
 
-          {/* 옵션 섹션
-              피그마: 타이틀 fs=14 fw=400 fill=#000c1e a=0.80
-              옵션 칩 fs=12 fw=590 (분위기 칩보다 작음) */}
+          {/* 편의시설 섹션 (통합) */}
           <div style={{ paddingBottom: 12 }}>
             <div style={{ height: 40, display: 'flex', alignItems: 'center' }}>
               <h3 style={{ fontSize: 14, fontWeight: 400, lineHeight: '18.9px', color: 'rgba(0,12,30,0.80)' }}>
-                옵션
+                편의시설
               </h3>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {OPTION_CHIPS.map(({ icon, label }) => (
-                <Chip
-                  key={label}
-                  icon={icon}
-                  label={label}
-                  selected={filters.options.includes(label)}
-                  onClick={() => toggleOption(label)}
-                  fontSize={12}
-                />
-              ))}
+              {AMENITY_CHIPS.map(({ key, icon, label }) => {
+                const chipDisabled =
+                  (isCafe  && key === 'coffeeMachine') ||
+                  (isPlace && key === 'decafFree');
+                return (
+                  <Chip
+                    key={key}
+                    icon={icon}
+                    label={label}
+                    selected={filters.amenities.includes(key)}
+                    onClick={() => setFilters(f => ({ ...f, amenities: toggleArr(key, f.amenities) }))}
+                    fontSize={12}
+                    disabled={chipDisabled}
+                  />
+                );
+              })}
             </div>
           </div>
 

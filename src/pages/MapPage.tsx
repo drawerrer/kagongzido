@@ -255,7 +255,6 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
   const overlaysRef = useRef<Map<string, any>>(new Map());   // cafeId → CustomOverlay
   const markersRef = useRef<Map<string, any>>(new Map());    // cafeId → (투명) Marker
   const placeOverlaysRef = useRef<Map<string, any>>(new Map()); // placeId → CustomOverlay
-  const placeItemsRef = useRef<PlaceItem[]>([]);
   const userOverlayRef = useRef<any>(null);
   const cafesRef = useRef<Cafe[]>([]);
   const pendingCenterRef = useRef<[number, number] | null>(null);
@@ -324,6 +323,10 @@ const [filterOpen, setFilterOpen] = useState(false);
     () => { setSelectedMapCafe(null); setPanelState('half'); },
     !!selectedMapCafe && !detailHasSubPage && !hasOverlay,
   );
+
+  // panelState ref — updateBounds에서 클로저 문제 없이 최신값 참조
+  const panelStateRef = useRef<PanelState>(panelState);
+  useEffect(() => { panelStateRef.current = panelState; }, [panelState]);
 
   // 탐색 모드 트래킹: expanded → list, minimized → map
   const prevPanelStateRef = useRef<PanelState>(panelState);
@@ -528,20 +531,11 @@ const [filterOpen, setFilterOpen] = useState(false);
     });
     clustererRef.current = clusterer;
 
-    // 클러스터 클릭 시 포함된 마커가 모두 보이도록 bounds 맞춤
-    window.kakao.maps.event.addListener(clusterer, 'clusterclick', (cluster: any) => {
-      // dragstart 이벤트가 잘못 발화되어 panelState가 바뀌는 것을 방지
+    // 클러스터 클릭: Kakao 기본 줌(한 레벨 줌인)을 사용하고
+    // dragstart 오발화 방지를 위한 ref 관리만 수행
+    window.kakao.maps.event.addListener(clusterer, 'clusterclick', () => {
       clusterClickRef.current = true;
-      const markers = cluster.getMarkers();
-      const bounds = new window.kakao.maps.LatLngBounds();
-      markers.forEach((m: any) => bounds.extend(m.getPosition()));
-      map.setBounds(bounds, 80);
-      // CSS transition(300ms) 완료 후 relayout — 그 전에 호출하면 컨테이너 크기가
-      // 미확정 상태라 타일이 빈 영역으로 깨짐
-      setTimeout(() => {
-        map.relayout();
-        clusterClickRef.current = false;
-      }, 350);
+      setTimeout(() => { clusterClickRef.current = false; }, 700);
     });
 
     // 클러스터링 이벤트: 묶인 마커의 overlay 숨김 처리
@@ -565,8 +559,32 @@ const [filterOpen, setFilterOpen] = useState(false);
     // ── 현재 지도 뷰 bounds → 바텀시트 카페 필터링 ──
     const updateBounds = () => {
       const b = map.getBounds();
+      const mapEl = mapContainerRef.current;
+      let swLat = b.getSouthWest().getLat();
+
+      if (mapEl) {
+        // 바텀시트 상단 위치 (화면 최상단 기준 px)
+        const ps = panelStateRef.current;
+        let sheetHeightPx = 0;
+        if (ps === 'half') sheetHeightPx = window.innerHeight * 0.5;
+        else if (ps === 'minimized') sheetHeightPx = 132; // SHEET_MIN_TOP 기준
+        // expanded → 지도가 가려지지 않음 (sheetHeightPx = 0)
+
+        const mapRect = mapEl.getBoundingClientRect();
+        const mapHeightPx = mapRect.height;
+        const sheetTopFromTop = window.innerHeight - sheetHeightPx;
+        // 지도 컨테이너 중 바텀시트에 가려진 픽셀 수
+        const coveredPx = Math.max(0, mapRect.bottom - sheetTopFromTop);
+
+        if (coveredPx > 0 && mapHeightPx > 0) {
+          const latRange = b.getNorthEast().getLat() - b.getSouthWest().getLat();
+          // 남쪽(하단) 경계를 가려진 만큼 위로 올림
+          swLat = b.getSouthWest().getLat() + latRange * (coveredPx / mapHeightPx);
+        }
+      }
+
       setMapBounds({
-        swLat: b.getSouthWest().getLat(),
+        swLat,
         swLng: b.getSouthWest().getLng(),
         neLat: b.getNorthEast().getLat(),
         neLng: b.getNorthEast().getLng(),
@@ -644,23 +662,7 @@ const [filterOpen, setFilterOpen] = useState(false);
     return () => container.removeEventListener('click', handleClick);
   }, [mapLoaded]);
 
-  // ── 장소 마커 클릭 (이벤트 위임) ────────────
-  useEffect(() => {
-    if (!mapContainerRef.current) return;
-    const container = mapContainerRef.current;
-    const handlePlaceClick = (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).closest('[data-place-id]');
-      if (!target) return;
-      const placeId = target.getAttribute('data-place-id');
-      if (!placeId) return;
-      const place = placeItemsRef.current.find(p => p.id === placeId);
-      if (place) { setSelectedMapCafe(null); setSelectedPlace(place); setPanelState('half'); }
-    };
-    container.addEventListener('click', handlePlaceClick);
-    return () => container.removeEventListener('click', handlePlaceClick);
-  }, [mapLoaded]);
-
-  // ── 선택된 마커 스타일 업데이트 ───────────
+// ── 선택된 마커 스타일 업데이트 ───────────
   useEffect(() => {
     const selectedId = selectedMapCafe?.id ?? null;
     overlaysRef.current.forEach((overlay, cafeId) => {
@@ -670,6 +672,16 @@ const [filterOpen, setFilterOpen] = useState(false);
       content.innerHTML = makePillHtml(cafeId, cafe.name, cafeId === selectedId);
     });
   }, [selectedMapCafe]);
+
+  useEffect(() => {
+    const selectedId = selectedPlace?.id ?? null;
+    placeOverlaysRef.current.forEach((overlay, placeId) => {
+      const place = [...libraries, ...sharedSpaces].find(p => p.id === placeId);
+      if (!place) return;
+      const content = overlay.getContent() as HTMLElement;
+      content.innerHTML = makePlacePillHtml(placeId, place.name, place.placeType, placeId === selectedId);
+    });
+  }, [selectedPlace, libraries, sharedSpaces]);
 
   // ── 현재 위치 오버레이 업데이트 ──────────
   useEffect(() => {
@@ -713,14 +725,34 @@ const [filterOpen, setFilterOpen] = useState(false);
     };
   }, []);
 
-  // ── panelState 변경 시 지도 relayout ────
+  // ── panelState 변경 시 지도 relayout + bounds 재계산 ────
   useEffect(() => {
     if (!mapRef.current) return;
     const timer = setTimeout(() => {
       mapRef.current?.relayout();
+      // 패널 높이 변경 → 가려진 영역 달라지므로 bounds 재계산
+      const b = mapRef.current?.getBounds?.();
+      if (!b || !mapContainerRef.current) return;
+      const mapEl = mapContainerRef.current;
+      const ps = panelStateRef.current;
+      let sheetHeightPx = 0;
+      if (ps === 'half') sheetHeightPx = window.innerHeight * 0.5;
+      else if (ps === 'minimized') sheetHeightPx = 132;
+      const mapRect = mapEl.getBoundingClientRect();
+      const coveredPx = Math.max(0, mapRect.bottom - (window.innerHeight - sheetHeightPx));
+      const latRange = b.getNorthEast().getLat() - b.getSouthWest().getLat();
+      const swLat = coveredPx > 0 && mapRect.height > 0
+        ? b.getSouthWest().getLat() + latRange * (coveredPx / mapRect.height)
+        : b.getSouthWest().getLat();
+      setMapBounds({
+        swLat,
+        swLng: b.getSouthWest().getLng(),
+        neLat: b.getNorthEast().getLat(),
+        neLng: b.getNorthEast().getLng(),
+      });
     }, 320); // CSS transition 300ms 완료 후
     return () => clearTimeout(timer);
-  }, [panelState]);
+  }, [panelState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── 지도 이동 헬퍼 ────────────────────────
   const moveMapTo = (lat: number, lng: number) => {
@@ -823,13 +855,19 @@ const [filterOpen, setFilterOpen] = useState(false);
     toRender.forEach(place => {
       const div = document.createElement('div');
       div.innerHTML = makePlacePillHtml(place.id, place.name, place.placeType, false);
+      // 이벤트 위임 대신 직접 리스너 — CustomOverlay는 Kakao Marker와 달리
+      // 버블링이 불안정하므로 content div에 직접 click 핸들러 등록
+      div.addEventListener('click', () => {
+        setSelectedMapCafe(null);
+        setSelectedPlace(place);
+        setPanelState('half');
+      });
       const overlay = new window.kakao.maps.CustomOverlay({
         position: new window.kakao.maps.LatLng(place.lat, place.lng),
         content: div, map, yAnchor: 1.3, zIndex: 3,
       });
       placeOverlaysRef.current.set(place.id, overlay);
     });
-    placeItemsRef.current = toRender;
   }, [activeChip, libraries, sharedSpaces, mapLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── GPS 권한 초기 확인 ────────────────────

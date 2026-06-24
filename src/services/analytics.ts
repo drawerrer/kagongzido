@@ -24,13 +24,13 @@ export function trackFilterOpen() {
 }
 
 export function trackFilterApply(
-  filters: { moods: string[]; options: string[]; priceMax: number; openNow: boolean },
+  filters: { moods: string[]; amenities: string[]; priceMax: number; openNow: boolean },
   resultCount: number,
 ) {
   const params = {
     log_name: 'filter_apply',
     mood_count: filters.moods.length,
-    option_count: filters.options.length,
+    option_count: filters.amenities.length,
     price_max: filters.priceMax,
     result_count: resultCount,
   };

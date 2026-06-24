@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "kagongzido-dev",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["rsbuild", "dev", "--port", "4173"],
-      "port": 4173
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3010
     }
   ]
 }

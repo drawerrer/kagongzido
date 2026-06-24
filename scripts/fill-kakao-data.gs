@@ -443,8 +443,8 @@ function fillPlaceKakaoData() {
   const sheet     = ss.getActiveSheet();
   const sheetName = sheet.getName();
 
-  if (sheetName !== '도서관' && sheetName !== '공유공간') {
-    SpreadsheetApp.getUi().alert('도서관 또는 공유공간 시트에서 실행해주세요.\n현재 시트: ' + sheetName);
+  if (sheetName !== '06_도서관' && sheetName !== '06_공유공간') {
+    SpreadsheetApp.getUi().alert('06_도서관 또는 06_공유공간 시트에서 실행해주세요.\n현재 시트: ' + sheetName);
     return;
   }
 
@@ -519,10 +519,10 @@ function uploadPlacesToSupabase() {
   const sheetName = sheet.getName();
 
   let tableName;
-  if      (sheetName === '도서관')   tableName = 'libraries';
-  else if (sheetName === '공유공간') tableName = 'shared_spaces';
+  if      (sheetName === '06_도서관')   tableName = 'libraries';
+  else if (sheetName === '06_공유공간') tableName = 'shared_spaces';
   else {
-    SpreadsheetApp.getUi().alert('도서관 또는 공유공간 시트에서 실행해주세요.\n현재 시트: ' + sheetName);
+    SpreadsheetApp.getUi().alert('06_도서관 또는 06_공유공간 시트에서 실행해주세요.\n현재 시트: ' + sheetName);
     return;
   }
 
