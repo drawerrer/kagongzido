@@ -10,3 +10,5 @@ granite.config.ts
 .granite/
 images/
 .vercel
+portfolio/
+portfolio-preview.html
