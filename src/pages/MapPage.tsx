@@ -4,7 +4,7 @@ import { useBackEvent } from '../hooks/useBackEvent';
 import { Toast } from '@toss/tds-mobile';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 import { expandHours, getHoursStatus } from '../utils/hours';
-import { trackFilterOpen, trackFilterApply, trackChipTap, trackCafeDetailView, trackViewModeChange } from '../services/analytics';
+import { trackFilterOpen, trackFilterApply, trackChipTap, trackCafeDetailView, trackViewModeChange, trackNearbyLaptopSheetShow, trackNearbyLaptopSheetConfirm } from '../services/analytics';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
@@ -13,6 +13,8 @@ import PlaceDetailPage from './PlaceDetailPage';
 import { fetchAllStores, fetchLibraries, fetchSharedSpaces, type StoreRow } from '../services/db';
 import Chip from '../components/Chip';
 import StoreCardHome, { type HomeCafe } from '../components/StoreCard/Home';
+import NearbyLaptopCafesDialog from '../components/NearbyLaptopCafesDialog';
+import { pickTopLaptopFriendlyCafes } from '../utils/laptopFriendly';
 import StoreCountBar from '../components/StoreCountBar';
 import CafePlaceholder from '../components/CafePlaceholder';
 import IcCafe from '../assets/icons/ic_cafe_mono.svg';
@@ -60,6 +62,10 @@ interface Cafe {
   badges: string[];
   ltSeatStatus?: string;
   entCondition?: string;
+  /** 콘센트 상태 — '부족' | '적당' | '넉넉' ("노트북 펴기 좋은 카페" 추천 산정용) */
+  outletStatus?: string;
+  /** 좌석 규모 — '소형' | '중형' | '대형' ("노트북 펴기 좋은 카페" 추천 산정용) */
+  seatStatus?: string;
 }
 
 
@@ -285,6 +291,8 @@ const [filterOpen, setFilterOpen] = useState(false);
   const [gpsToast, setGpsToast] = useState(false);
   const [favoriteSnackbar, setFavoriteSnackbar] = useState<'added' | 'removed' | null>(null);
   const [removedCafe, setRemovedCafe] = useState<Cafe | null>(null);
+  const [nearbySheetOpen, setNearbySheetOpen] = useState(false);
+  const [nearbySheetCafes, setNearbySheetCafes] = useState<Cafe[]>([]);
 
   // cafesRef 항상 최신 유지
   useEffect(() => { cafesRef.current = cafes; }, [cafes]);
@@ -713,8 +721,12 @@ const [filterOpen, setFilterOpen] = useState(false);
       window.addEventListener('deviceorientationabsolute', handler as EventListener, true);
       window.addEventListener('deviceorientation', handler as EventListener, true);
     };
-    const DOE = DeviceOrientationEvent as typeof DeviceOrientationEvent & { requestPermission?: () => Promise<string> };
-    if (typeof DOE.requestPermission === 'function') {
+    // 일부 웹뷰(앱인토스 등)에는 DeviceOrientationEvent 전역 자체가 없어서
+    // 바로 참조하면 ReferenceError가 발생한다 → typeof로 존재 여부부터 확인
+    const DOE = (typeof DeviceOrientationEvent !== 'undefined' ? DeviceOrientationEvent : undefined) as
+      | (typeof DeviceOrientationEvent & { requestPermission?: () => Promise<string> })
+      | undefined;
+    if (DOE && typeof DOE.requestPermission === 'function') {
       DOE.requestPermission().then(s => { if (s === 'granted') listen(); }).catch(listen);
     } else {
       listen();
@@ -797,9 +809,23 @@ const [filterOpen, setFilterOpen] = useState(false);
         lng: store.longitude,
         thumbnailUrl: store.thumbnail_url || undefined,
         badges: (store.badges ?? []).filter(b => b !== '해당없음' && b !== '해당 없음'),
+        outletStatus: store.outlet_status || undefined,
+        seatStatus: store.seat_status || undefined,
       }));
       mapped.sort((a, b) => a.distance - b.distance);
       setCafes(mapped);
+
+      // ── "지금 내 주변 노트북 펴기 좋은 카페 3곳" — 위치 허용 유저 첫 진입 1회 노출 ──
+      // 세션당 1회만 (탭 이동으로 재마운트돼도 다시 뜨지 않도록 sessionStorage 사용)
+      if (userLat !== null && userLng !== null && !sessionStorage.getItem('nearbyLaptopSheetShown')) {
+        const top3 = pickTopLaptopFriendlyCafes(mapped, 3);
+        if (top3.length > 0) {
+          sessionStorage.setItem('nearbyLaptopSheetShown', '1');
+          setNearbySheetCafes(top3);
+          setNearbySheetOpen(true);
+          trackNearbyLaptopSheetShow(top3.length);
+        }
+      }
     };
     load();
   }, []);
@@ -1211,6 +1237,18 @@ const [filterOpen, setFilterOpen] = useState(false);
           onOpenSettings={handleOpenSettings}
         />
       )}
+
+      {/* ── 지금 내 주변 노트북 펴기 좋은 카페 3곳 (위치 허용 유저 첫 진입 1회) ── */}
+      <NearbyLaptopCafesDialog
+        isOpen={nearbySheetOpen}
+        cafes={nearbySheetCafes}
+        onClose={() => { trackNearbyLaptopSheetConfirm(); setNearbySheetOpen(false); }}
+        onSelectCafe={(cafe) => {
+          trackCafeDetailView(cafe.id, 'nearby_sheet');
+          setNearbySheetOpen(false);
+          onDetailOpen(cafe.id);
+        }}
+      />
 
       {/* ── GPS 실패 토스트 ── */}
       <Toast open={gpsToast} position="top" text="현재 위치를 가져오지 못했어요. 다시 시도해주세요" onClose={() => setGpsToast(false)} />

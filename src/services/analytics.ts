@@ -50,7 +50,7 @@ export function trackChipTap(chipName: string, activated: boolean) {
 }
 
 // ── 카페 발견 ─────────────────────────────────────────────────
-export function trackCafeDetailView(cafeId: string, source: 'map_marker' | 'list' | 'search') {
+export function trackCafeDetailView(cafeId: string, source: 'map_marker' | 'list' | 'search' | 'nearby_sheet') {
   const params = { log_name: 'cafe_detail_view', cafe_id: cafeId, source };
   ait(params);
   ga('cafe_detail_view', params);
@@ -108,6 +108,18 @@ export function trackUtmEntry(params: {
   };
   ait(eventParams);
   ga('utm_entry', eventParams);
+}
+
+// ── 지금 내 주변 노트북 펴기 좋은 카페 3곳 ──────────────────────
+export function trackNearbyLaptopSheetShow(cafeCount: number) {
+  const params = { log_name: 'nearby_laptop_sheet_show', cafe_count: cafeCount };
+  ait(params);
+  ga('nearby_laptop_sheet_show', params);
+}
+
+export function trackNearbyLaptopSheetConfirm() {
+  ait({ log_name: 'nearby_laptop_sheet_confirm' });
+  ga('nearby_laptop_sheet_confirm');
 }
 
 // ── 모음집 ────────────────────────────────────────────────────
