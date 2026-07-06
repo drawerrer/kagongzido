@@ -356,7 +356,7 @@ export default function FilterModal({ isOpen, initialFilters, onClose, onApply, 
         {/* 타이틀 "필터" — 피그마: fs=20 fw=700 fill=#000c1e a=0.80, Title instance h=48 */}
         <div style={{ height: 48, display: 'flex', alignItems: 'center', padding: '0 24px' }}>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: 'rgba(0,12,30,0.80)', lineHeight: '27px' }}>
-            카페 필터
+            필터
           </h2>
         </div>
 

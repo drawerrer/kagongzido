@@ -261,6 +261,7 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
   const overlaysRef = useRef<Map<string, any>>(new Map());   // cafeId → CustomOverlay
   const markersRef = useRef<Map<string, any>>(new Map());    // cafeId → (투명) Marker
   const placeOverlaysRef = useRef<Map<string, any>>(new Map()); // placeId → CustomOverlay
+  const placeMarkersRef = useRef<Map<string, any>>(new Map()); // placeId → invisible marker (for clusterer)
   const userOverlayRef = useRef<any>(null);
   const cafesRef = useRef<Cafe[]>([]);
   const pendingCenterRef = useRef<[number, number] | null>(null);
@@ -546,12 +547,16 @@ const [filterOpen, setFilterOpen] = useState(false);
       setTimeout(() => { clusterClickRef.current = false; }, 700);
     });
 
-    // 클러스터링 이벤트: 묶인 마커의 overlay 숨김 처리
+    // 클러스터링 이벤트: 묶인 마커의 overlay 숨김 처리 (카페 + 도서관 + 공유공간 통합)
     window.kakao.maps.event.addListener(clusterer, 'clustered', (clusters: any[]) => {
       const clusteredSet = new Set<any>();
       clusters.forEach(c => c.getMarkers().forEach((m: any) => clusteredSet.add(m)));
       overlaysRef.current.forEach((overlay, cafeId) => {
         const marker = markersRef.current.get(cafeId);
+        overlay.setMap(clusteredSet.has(marker) ? null : map);
+      });
+      placeOverlaysRef.current.forEach((overlay, placeId) => {
+        const marker = placeMarkersRef.current.get(placeId);
         overlay.setMap(clusteredSet.has(marker) ? null : map);
       });
     });
@@ -869,16 +874,45 @@ const [filterOpen, setFilterOpen] = useState(false);
   }, [activeChip, mapLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── 장소 마커 관리 (칩 / 데이터 변경 시 재구성) ──────────────
+  // 도서관/공유공간도 카페와 같은 clusterer에 투명 마커로 등록하여
+  // 줌 레벨에 따라 숫자 마커로 통합 클러스터링됨
   useEffect(() => {
-    if (!mapRef.current || !mapLoaded) return;
+    if (!mapRef.current || !clustererRef.current || !mapLoaded) return;
     const map = mapRef.current;
+
+    // 기존 장소 오버레이 제거
     placeOverlaysRef.current.forEach(ov => { try { ov.setMap(null); } catch {} });
     placeOverlaysRef.current.clear();
+
+    // 기존 장소 투명 마커를 클러스터러에서 제거
+    const oldMarkers = Array.from(placeMarkersRef.current.values());
+    if (oldMarkers.length > 0) {
+      try { clustererRef.current.removeMarkers(oldMarkers); } catch {}
+    }
+    placeMarkersRef.current.clear();
+
     const toRender = [
       ...(activeChip === '전체' || activeChip === '도서관' ? libraries : []),
       ...(activeChip === '전체' || activeChip === '공유공간' ? sharedSpaces : []),
     ];
+
+    const newPlaceMarkers: any[] = [];
+
     toRender.forEach(place => {
+      const pos = new window.kakao.maps.LatLng(place.lat, place.lng);
+
+      // 클러스터용 투명 마커 (카페와 동일 방식)
+      const marker = new window.kakao.maps.Marker({
+        position: pos,
+        image: new window.kakao.maps.MarkerImage(
+          'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+          new window.kakao.maps.Size(1, 1)
+        ),
+      });
+      placeMarkersRef.current.set(place.id, marker);
+      newPlaceMarkers.push(marker);
+
+      // 이름 표시 CustomOverlay
       const div = document.createElement('div');
       div.innerHTML = makePlacePillHtml(place.id, place.name, place.placeType, false);
       // 이벤트 위임 대신 직접 리스너 — CustomOverlay는 Kakao Marker와 달리
@@ -889,11 +923,16 @@ const [filterOpen, setFilterOpen] = useState(false);
         setPanelState('half');
       });
       const overlay = new window.kakao.maps.CustomOverlay({
-        position: new window.kakao.maps.LatLng(place.lat, place.lng),
+        position: pos,
         content: div, map, yAnchor: 1.3, zIndex: 3,
       });
       placeOverlaysRef.current.set(place.id, overlay);
     });
+
+    // 클러스터러에 장소 마커 일괄 등록
+    if (newPlaceMarkers.length > 0) {
+      clustererRef.current.addMarkers(newPlaceMarkers);
+    }
   }, [activeChip, libraries, sharedSpaces, mapLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── GPS 권한 초기 확인 ────────────────────
