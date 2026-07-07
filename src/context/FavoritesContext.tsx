@@ -6,7 +6,7 @@ import {
   fetchFavorites, insertFavorite, deleteFavorite, updateFavoritesOrder,
   fetchCollections, insertCollection, updateCollectionDB, deleteCollectionDB,
   updateCollectionsOrder, addStoresToCollectionDB, removeStoresFromCollectionDB,
-  updateStoreMemo, fetchAllStores, updateUserNickname, type StoreRow,
+  updateStoreMemo, fetchAllStores, updateUserNickname, fetchReviewCounts, type StoreRow, type PlaceKind,
 } from '../services/db';
 import { trackCafeFavoriteAdd, trackCollectionAddCafe } from '../services/analytics';
 
@@ -39,6 +39,8 @@ export interface FavoritedStore {
   distance?: number;
   /** 폐업/휴업 시점 — 채워져 있으면 UI에 "폐업" 표시 */
   closedAt?: string | null;
+  /** 카페 / 도서관 / 공유공간 — 미지정 시 카페로 취급 (기존 데이터 하위 호환) */
+  placeType?: PlaceKind;
 }
 
 // ─── 최근 본 카페 타입 ────────────────────────────────────────
@@ -102,6 +104,8 @@ interface FavoritesContextType {
   requireNickname: () => Promise<boolean>;
   isLoading: boolean;
   allStores: StoreRow[];
+  /** 장소(카페/도서관/공유공간)별 실제 리뷰 개수 — 키: 카페=api_place_id, 도서관/공유공간=UUID */
+  reviewCounts: Record<string, number>;
   userLocation: { lat: number; lng: number } | null;
   favorites: FavoritedStore[];
   isFavorited: (id: string) => boolean;
@@ -174,6 +178,9 @@ export function FavoritesProvider({
   // 전체 매장 데이터 (앱 시작 시 1회 로드, 컬렉션·검색 등에서 공유)
   const [allStores, setAllStores] = useState<StoreRow[]>([]);
 
+  // 장소별 실제 리뷰 개수 (앱 시작 시 1회 로드, 홈/모음집 리스트 카드에서 공유)
+  const [reviewCounts, setReviewCounts] = useState<Record<string, number>>({});
+
   // 사용자 현재 위치 (거리 계산용)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
@@ -214,19 +221,24 @@ export function FavoritesProvider({
     if (!userId) return;
     const sync = async () => {
       setIsLoading(true);
-      const [favs, cols, stores] = await Promise.all([
+      const [favs, cols, stores, counts] = await Promise.all([
         fetchFavorites(userId),
         fetchCollections(userId),
         fetchAllStores(),
+        fetchReviewCounts(),
       ]);
 
       setAllStores(stores);
+      setReviewCounts(counts);
 
       // favorites — Supabase에 데이터가 있을 때만 덮어씀.
       // 빈 배열 반환은 세션/RLS 오류일 수 있으므로 로컬 캐시를 유지함.
       if (favs.length > 0) {
-        setFavorites(favs);
-        lsSet(`favorites_${userId}`, favs);
+        // fetchFavorites()는 reviewCount를 항상 0으로 채워서 반환하므로
+        // (즐겨찾기 join 쿼리에는 리뷰 집계가 없음) 방금 조회한 실제 개수로 덮어씀
+        const favsWithCounts = favs.map(f => ({ ...f, reviewCount: counts[f.id] ?? f.reviewCount }));
+        setFavorites(favsWithCounts);
+        lsSet(`favorites_${userId}`, favsWithCounts);
       }
 
       // collections
@@ -277,7 +289,7 @@ export function FavoritesProvider({
     setFavorites(prev => {
       if (prev.some(f => f.id === store.id)) return prev;
       const next = [...prev, store];
-      insertFavorite(userId, store, next.length - 1);
+      insertFavorite(userId, store, next.length - 1, store.placeType ?? 'cafe');
       lsSet(`favorites_${userId}`, next);
       trackCafeFavoriteAdd(store.id);
       return next;
@@ -286,11 +298,12 @@ export function FavoritesProvider({
 
   const removeFavorite = useCallback((id: string) => {
     setFavorites(prev => {
+      const target = prev.find(f => f.id === id);
       const next = prev.filter(f => f.id !== id);
       lsSet(`favorites_${userId}`, next);
+      deleteFavorite(userId, id, target?.placeType ?? 'cafe');
       return next;
     });
-    deleteFavorite(userId, id);
   }, [userId]);
 
   const reorderFavorites = useCallback((newOrder: FavoritedStore[]) => {
@@ -409,7 +422,7 @@ export function FavoritesProvider({
   return (
     <FavoritesContext.Provider value={{
       userId, nickname, updateNickname, requireNickname, isLoading,
-      allStores, userLocation,
+      allStores, reviewCounts, userLocation,
       favorites, isFavorited, addFavorite, removeFavorite, reorderFavorites,
       recentlyViewed, addRecentlyViewed,
       collections, addCollection, updateCollection, removeCollection,

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
-import { insertReview } from '../services/db';
+import { insertReview, type PlaceKind } from '../services/db';
 import { trackReviewWriteComplete } from '../services/analytics';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import SheetMenuRow from '../components/SheetMenuRow';
@@ -24,6 +24,8 @@ interface WriteReviewPageProps {
   cafe: CafeInfo;
   cafeId: string;
   userId: string;
+  /** 카페/도서관/공유공간 구분 — 미지정 시 기존 동작(카페)과 동일 */
+  placeType?: PlaceKind;
   onBack: () => void;
   onClose: () => void;
   onReviewSubmitted?: () => void;
@@ -55,7 +57,7 @@ type EvalState = Partial<Record<CategoryId, string>>;
 type PageState = 'form' | 'loading' | 'success' | 'fail';
 
 // ────────── 메인 컴포넌트 ────────────────────────────────────
-export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose: _onClose, onReviewSubmitted }: WriteReviewPageProps) {
+export default function WriteReviewPage({ cafe, cafeId, userId, placeType = 'cafe', onBack, onClose: _onClose, onReviewSubmitted }: WriteReviewPageProps) {
   const [pageState, setPageState] = useState<PageState>('form');
   const [evalState, setEvalState] = useState<EvalState>({});
   const [photos, setPhotos] = useState<string[]>([]);
@@ -132,7 +134,7 @@ export default function WriteReviewPage({ cafe, cafeId, userId, onBack, onClose:
       seat_status: evalState.seat_status ?? '',
       noise_status: evalState.noise_status ?? '',
       photo_urls: photos,
-    });
+    }, placeType);
     if (success) {
       trackReviewWriteComplete(cafeId, photos.length > 0);
       onReviewSubmitted?.();

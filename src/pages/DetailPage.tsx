@@ -1560,7 +1560,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         name: cafe.name,
         address: cafe.address,
         rating: 5,        // 나중에 Supabase 연동 시 실제 값으로 교체
-        reviewCount: 0,   // 나중에 Supabase 연동 시 실제 값으로 교체
+        reviewCount: cafe.reviews.length,
         badge: cafe.amenities.noTimeLimit ? '시간 제한 없음' : undefined,
         photos: cafe.photos ?? [],
       });

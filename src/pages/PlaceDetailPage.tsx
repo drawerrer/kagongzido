@@ -296,6 +296,7 @@ export default function PlaceDetailPage({ place, onBack, showHero = true, onFocu
         <WriteReviewPage
           cafe={{ name: place.name, address: place.address, thumbnailUrl: place.thumbnailUrl ?? '' }}
           cafeId={place.id}
+          placeType={place.placeType}
           userId={userId}
           onBack={handleCloseWriteReview}
           onClose={onBack}

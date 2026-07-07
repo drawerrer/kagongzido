@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, Component } from 'react';
 import { getAnonymousKey, partner } from '@apps-in-toss/web-framework';
-import { getOrCreateUser, getOrCreateUserWithAuth, updateUserNickname } from './services/db';
+import { getOrCreateUser, getOrCreateUserWithAuth, updateUserNickname, fetchLibraries, fetchSharedSpaces } from './services/db';
 import { trackUtmEntry } from './services/analytics';
 import { supabase } from './services/supabase';
 import type { ReactNode, ErrorInfo } from 'react';
@@ -22,6 +22,8 @@ import CollectionDetailPage from './pages/CollectionDetailPage';
 import GuidebookPage from './pages/GuidebookPage';
 import MyPage from './pages/MyPage';
 import DetailPage from './pages/DetailPage';
+import PlaceDetailPage from './pages/PlaceDetailPage';
+import { placeRowToItem, type PlaceItem } from './pages/MapPage';
 import PhotoReviewPage from './pages/PhotoReviewPage';
 import PlaceholderPreviewPage from './pages/PlaceholderPreviewPage';
 import ClosedStorePreviewPage from './pages/ClosedStorePreviewPage';
@@ -335,12 +337,38 @@ function AppInner() {
   const lastTabTapRef = useRef<{ id: TabId; time: number } | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [detailCafeId, setDetailCafeId] = useState<string | null>(null);
+  // detailCafeId가 도서관/공유공간 즐겨찾기를 가리킬 때만 채워짐 — 카페는 DetailPage가 자체적으로 데이터를 불러오므로 불필요
+  const [detailPlace, setDetailPlace] = useState<PlaceItem | null>(null);
   const [collectionDetail, setCollectionDetail] = useState<{ id: string; name: string } | null>(null);
   const [photoReview, setPhotoReview] = useState<{ storeId: string; cafeName: string; photos: string[] } | null>(null);
   const [deletedCollectionData, setDeletedCollectionData] = useState<{ id: string; name: string; storeIds: string[] } | null>(null);
   const [isCollectionEditMode, setIsCollectionEditMode] = useState(false);
   const [isDetailFocusMode, setIsDetailFocusMode] = useState(false); // DetailPage 내부의 사진리뷰/리뷰작성 진입 시 탭바 숨김
   const { isFavorited, addFavorite, removeFavorite, favorites } = useFavorites();
+
+  // detailCafeId가 즐겨찾기된 도서관/공유공간을 가리키는 경우 — CollectionPage 등 전역 오버레이 경로로
+  // 진입 시 카페 전용 DetailPage가 아닌 PlaceDetailPage를 보여주기 위해 실제 장소 데이터를 조회
+  const detailFavorite = favorites.find(f => f.id === detailCafeId);
+  const detailPlaceType = detailFavorite?.placeType;
+  useEffect(() => {
+    if (!detailCafeId || (detailPlaceType !== 'library' && detailPlaceType !== 'shared_space')) {
+      setDetailPlace(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = detailPlaceType === 'library' ? await fetchLibraries() : await fetchSharedSpaces();
+        const row = rows.find(r => r.id === detailCafeId);
+        if (!cancelled) setDetailPlace(row ? placeRowToItem(row, detailPlaceType) : null);
+      } catch (e) {
+        console.error('[AppInner] 도서관/공유공간 상세 조회 실패:', e);
+        if (!cancelled) setDetailPlace(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailCafeId, detailPlaceType]);
 
   // CollectionDetailPage가 닫힐 때(collectionDetail → null) 편집모드 상태 리셋
   useEffect(() => {
@@ -653,25 +681,36 @@ function AppInner() {
           ref={topOverlay === 'detail' ? swipeRef : undefined}
           style={{ position: 'absolute', inset: 0, zIndex: 30, background: '#ffffff' }}
         >
-          <DetailPage
-            cafeId={detailCafeId}
-            onBack={() => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
-            onClose={() => { setDetailCafeId(null); setShowSearch(false); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
-            activeTab={activeTab}
-            onTabChange={(tab) => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); setActiveTab(tab as TabId); }}
-            scrollToReview={detailScrollToReview}
-            openDirections={detailOpenDirections}
-            onGoToCollection={(col) => {
-              setDetailCafeId(null);
-              setDetailScrollToReview(false);
-              if (col.id) {
-                setCollectionDetail({ id: col.id, name: col.name });
-              } else {
-                setActiveTab('collection');
-              }
-            }}
-            onFocusModeChange={setIsDetailFocusMode}
-          />
+          {detailPlaceType === 'library' || detailPlaceType === 'shared_space' ? (
+            // 도서관/공유공간 즐겨찾기 진입 — 데이터 로딩 중에는 카페용 DetailPage가 잘못 보이지 않도록 빈 화면 유지
+            detailPlace && detailPlace.id === detailCafeId ? (
+              <PlaceDetailPage
+                place={detailPlace}
+                onBack={() => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
+                onFocusModeChange={setIsDetailFocusMode}
+              />
+            ) : null
+          ) : (
+            <DetailPage
+              cafeId={detailCafeId}
+              onBack={() => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
+              onClose={() => { setDetailCafeId(null); setShowSearch(false); setDetailScrollToReview(false); setDetailOpenDirections(false); }}
+              activeTab={activeTab}
+              onTabChange={(tab) => { setDetailCafeId(null); setDetailScrollToReview(false); setDetailOpenDirections(false); setActiveTab(tab as TabId); }}
+              scrollToReview={detailScrollToReview}
+              openDirections={detailOpenDirections}
+              onGoToCollection={(col) => {
+                setDetailCafeId(null);
+                setDetailScrollToReview(false);
+                if (col.id) {
+                  setCollectionDetail({ id: col.id, name: col.name });
+                } else {
+                  setActiveTab('collection');
+                }
+              }}
+              onFocusModeChange={setIsDetailFocusMode}
+            />
+          )}
         </div>
       )}
       {photoReview && (() => {

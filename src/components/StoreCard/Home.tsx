@@ -1,6 +1,7 @@
 import { useFavorites, fmtDist } from '../../context/FavoritesContext';
 import CafePlaceholder from '../CafePlaceholder';
 import IcArrow from '../../assets/icons/icon_arrow.svg?react';
+import type { PlaceKind } from '../../services/db';
 
 export interface HomeCafe {
   id: string;
@@ -15,6 +16,8 @@ export interface HomeCafe {
   outletStatus?: string;
   /** 좌석 규모 — '소형' | '중형' | '대형' (variant='nearby' 전용 하단 열) */
   seatStatus?: string;
+  /** 카페 / 도서관 / 공유공간 — 미지정 시 카페로 취급 */
+  placeType?: PlaceKind;
 }
 
 interface StoreCardHomeProps {
@@ -75,6 +78,7 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange, variant =
         reviewCount: cafe.reviewCount,
         photos: cafe.thumbnailUrl ? [cafe.thumbnailUrl] : [],
         distance: cafe.distance,
+        placeType: cafe.placeType ?? 'cafe',
       });
       onFavoriteChange?.('added', cafe);
     }

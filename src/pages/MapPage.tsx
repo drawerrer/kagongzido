@@ -182,24 +182,23 @@ function makePlacePillHtml(placeId: string, name: string, placeType: 'library' |
   return `<div data-place-id="${placeId}" style="display:inline-flex;align-items:center;gap:4px;background:${bg};color:${color};border-radius:999px;padding:5px 10px 5px 8px;box-shadow:${shadow};white-space:nowrap;font-size:12px;font-weight:600;font-family:Pretendard,sans-serif;border:${border};cursor:pointer;"><img src="${iconSrc}" alt="" style="width:14px;height:14px;object-fit:contain;opacity:${iconOpacity};display:block;" draggable="false"/>${label}</div>`;
 }
 
-function PlaceRow({ place, onTap }: { place: PlaceItem; onTap?: () => void }) {
-  return (
-    <div onClick={onTap} style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid #F2F4F6', cursor: onTap ? 'pointer' : 'default' }}>
-      <div style={{
-        width: 80, height: 80, borderRadius: 4, flexShrink: 0, overflow: 'hidden',
-        background: '#F2F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {place.thumbnailUrl
-          ? <img src={place.thumbnailUrl} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-          : <CafePlaceholder size="45%" />
-        }
-      </div>
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
-        <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{place.name}</p>
-        <p style={{ fontSize: 12, color: '#6B7684', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 0 }}>{place.address}</p>
-      </div>
-    </div>
-  );
+/** libraries/db.ts PlaceRow → MapPage PlaceItem 변환 — MapPage/App.tsx 양쪽에서 공유 */
+export function placeRowToItem(r: import('../services/db').PlaceRow, type: PlaceItem['placeType']): PlaceItem {
+  return {
+    id: r.id, name: r.name, address: r.address_road,
+    lat: r.latitude, lng: r.longitude,
+    thumbnailUrl: r.thumbnail_url || undefined,
+    photos: r.photo_urls || undefined,
+    phone: r.phone_number || undefined,
+    businessHours: r.business_hours || undefined,
+    ltSeatStatus: r.lt_seat_status || undefined,
+    entCondition: r.ent_condition || undefined,
+    entPrice: r.ent_price || undefined,
+    facilities: r.facilities || undefined,
+    amenities: r.amenities || undefined,
+    websiteUrl: r.website_url || undefined,
+    placeType: type,
+  };
 }
 
 function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => void; onFavoriteChange?: (type: 'added' | 'removed', cafe: Cafe) => void }) {
@@ -208,6 +207,28 @@ function CafeRow({ cafe, onTap, onFavoriteChange }: { cafe: Cafe; onTap: () => v
       cafe={cafe}
       onTap={onTap}
       onFavoriteChange={onFavoriteChange as ((type: 'added' | 'removed', cafe: HomeCafe) => void) | undefined}
+    />
+  );
+}
+
+/** 도서관/공유공간 리스트 카드 — 카페 카드(StoreCardHome)와 동일한 하트(찜) UI를 그대로 재사용 */
+function PlaceCard({ place, distance, reviewCount, onTap, onFavoriteChange }: { place: PlaceItem; distance: number; reviewCount: number; onTap?: () => void; onFavoriteChange?: (type: 'added' | 'removed', cafe: HomeCafe) => void }) {
+  const homeCafe: HomeCafe = {
+    id: place.id,
+    name: place.name,
+    address: place.address,
+    distance,
+    rating: 0,
+    reviewCount,
+    thumbnailUrl: place.thumbnailUrl,
+    badges: [],
+    placeType: place.placeType,
+  };
+  return (
+    <StoreCardHome
+      cafe={homeCafe}
+      onTap={onTap ?? (() => {})}
+      onFavoriteChange={onFavoriteChange}
     />
   );
 }
@@ -271,11 +292,13 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onGoToFavorites, i
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const [mapBounds, setMapBounds] = useState<{ swLat: number; swLng: number; neLat: number; neLng: number } | null>(null);
   const [heading, setHeading] = useState<number | null>(null);
-  const { addFavorite } = useFavorites();
+  const { addFavorite, reviewCounts } = useFavorites();
 
   const [cafes, setCafes] = useState<Cafe[]>([]);
   const [libraries, setLibraries] = useState<PlaceItem[]>([]);
   const [sharedSpaces, setSharedSpaces] = useState<PlaceItem[]>([]);
+  /** 도서관/공유공간 카드의 거리 계산용 — 카페 로드 useEffect에서 함께 세팅됨 */
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<PlaceItem | null>(null);
   const [activeChip, setActiveChip] = useState<string | null>(initialState?.activeChip ?? '전체');
 const [filterOpen, setFilterOpen] = useState(false);
@@ -291,7 +314,7 @@ const [filterOpen, setFilterOpen] = useState(false);
   const [locSheet, setLocSheet] = useState<LocationSheetType | null>(null);
   const [gpsToast, setGpsToast] = useState(false);
   const [favoriteSnackbar, setFavoriteSnackbar] = useState<'added' | 'removed' | null>(null);
-  const [removedCafe, setRemovedCafe] = useState<Cafe | null>(null);
+  const [removedCafe, setRemovedCafe] = useState<HomeCafe | null>(null);
   const [nearbySheetOpen, setNearbySheetOpen] = useState(false);
   const [nearbySheetCafes, setNearbySheetCafes] = useState<Cafe[]>([]);
 
@@ -387,7 +410,7 @@ const [filterOpen, setFilterOpen] = useState(false);
     onStateChange?.({ activeChip, panelState, appliedFilters, filterApplied });
   }, [activeChip, panelState, appliedFilters, filterApplied]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const showFavoriteSnackbar = (type: 'added' | 'removed', cafe?: Cafe) => {
+  const showFavoriteSnackbar = (type: 'added' | 'removed', cafe?: HomeCafe) => {
     if (type === 'removed' && cafe) setRemovedCafe(cafe);
     setFavoriteSnackbar(type);
   };
@@ -793,6 +816,7 @@ const [filterOpen, setFilterOpen] = useState(false);
         const loc = await Promise.race([getCurrentLocation({ accuracy: Accuracy.Balanced }), timeout]);
         userLat = loc.coords.latitude;
         userLng = loc.coords.longitude;
+        setUserLoc({ lat: userLat, lng: userLng });
       } catch { /* 위치 미허용 시 거리 0 */ }
 
       const mapped: Cafe[] = stores.map(store => ({
@@ -839,23 +863,8 @@ const [filterOpen, setFilterOpen] = useState(false);
   useEffect(() => {
     const load = async () => {
       const [libRows, spRows] = await Promise.all([fetchLibraries(), fetchSharedSpaces()]);
-      const toItem = (type: PlaceItem['placeType']) => (r: import('../services/db').PlaceRow): PlaceItem => ({
-        id: r.id, name: r.name, address: r.address_road,
-        lat: r.latitude, lng: r.longitude,
-        thumbnailUrl: r.thumbnail_url || undefined,
-        photos: r.photo_urls || undefined,
-        phone: r.phone_number || undefined,
-        businessHours: r.business_hours || undefined,
-        ltSeatStatus: r.lt_seat_status || undefined,
-        entCondition: r.ent_condition || undefined,
-        entPrice: r.ent_price || undefined,
-        facilities: r.facilities || undefined,
-        amenities: r.amenities || undefined,
-        websiteUrl: r.website_url || undefined,
-        placeType: type,
-      });
-      setLibraries(libRows.map(toItem('library')));
-      setSharedSpaces(spRows.map(toItem('shared_space')));
+      setLibraries(libRows.map(r => placeRowToItem(r, 'library')));
+      setSharedSpaces(spRows.map(r => placeRowToItem(r, 'shared_space')));
     };
     load();
   }, []);
@@ -1206,13 +1215,31 @@ const [filterOpen, setFilterOpen] = useState(false);
                   {filteredCafes.map(cafe => (
                     <CafeRow
                       key={cafe.id}
-                      cafe={cafe}
+                      cafe={{ ...cafe, reviewCount: reviewCounts[cafe.id] ?? cafe.reviewCount }}
                       onTap={() => { trackCafeDetailView(cafe.id, 'list'); onDetailOpen(cafe.id); }}
                       onFavoriteChange={(type, cafe) => showFavoriteSnackbar(type, cafe)}
                     />
                   ))}
-                  {filteredLibraries.map(place => <PlaceRow key={place.id} place={place} onTap={() => setSelectedPlace(place)} />)}
-                  {filteredSharedSpaces.map(place => <PlaceRow key={place.id} place={place} onTap={() => setSelectedPlace(place)} />)}
+                  {filteredLibraries.map(place => (
+                    <PlaceCard
+                      key={place.id}
+                      place={place}
+                      distance={userLoc ? haversineDistance(userLoc.lat, userLoc.lng, place.lat, place.lng) : 0}
+                      reviewCount={reviewCounts[place.id] ?? 0}
+                      onTap={() => setSelectedPlace(place)}
+                      onFavoriteChange={(type, cafe) => showFavoriteSnackbar(type, cafe)}
+                    />
+                  ))}
+                  {filteredSharedSpaces.map(place => (
+                    <PlaceCard
+                      key={place.id}
+                      place={place}
+                      distance={userLoc ? haversineDistance(userLoc.lat, userLoc.lng, place.lat, place.lng) : 0}
+                      reviewCount={reviewCounts[place.id] ?? 0}
+                      onTap={() => setSelectedPlace(place)}
+                      onFavoriteChange={(type, cafe) => showFavoriteSnackbar(type, cafe)}
+                    />
+                  ))}
                 </>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginTop: 32, color: '#B0B8C1' }}>
@@ -1302,7 +1329,7 @@ const [filterOpen, setFilterOpen] = useState(false);
       {favoriteSnackbar === 'removed' && (
         <Snackbar type="negative" message="카페를 모음집에서 꺼냈어요" actionLabel="되돌리기"
           onAction={() => {
-            if (removedCafe) addFavorite({ id: removedCafe.id, name: removedCafe.name, address: removedCafe.address, rating: removedCafe.rating, reviewCount: removedCafe.reviewCount, photos: [], distance: removedCafe.distance });
+            if (removedCafe) addFavorite({ id: removedCafe.id, name: removedCafe.name, address: removedCafe.address, rating: removedCafe.rating, reviewCount: removedCafe.reviewCount, photos: removedCafe.thumbnailUrl ? [removedCafe.thumbnailUrl] : [], distance: removedCafe.distance, placeType: removedCafe.placeType });
             setFavoriteSnackbar(null);
           }}
           onDismiss={() => setFavoriteSnackbar(null)}

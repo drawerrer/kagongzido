@@ -57,7 +57,7 @@ export default function CollectionDetailPage({
   hasDetailOverlay?: boolean;
 }) {
   const {
-    recentlyViewed, allStores, userLocation, favorites, collections,
+    recentlyViewed, allStores, reviewCounts, userLocation, favorites, collections,
     removeCollection, removeFavorite, addFavorite, isFavorited,
     addStoresToCollection, removeStoresFromCollection, updateCollectionMemo, updateCollection,
     reorderCollections,
@@ -139,7 +139,7 @@ export default function CollectionDetailPage({
         name: r.name,
         address: r.address ?? '',
         rating: 0,
-        reviewCount: 0,
+        reviewCount: reviewCounts[r.id] ?? 0,
         photos: r.photos && r.photos.length > 0
           ? r.photos
           : r.photo ? [r.photo] : [],
@@ -156,7 +156,7 @@ export default function CollectionDetailPage({
             name: row.name,
             address: row.address_road,
             rating: 0,
-            reviewCount: 0,
+            reviewCount: reviewCounts[row.api_place_id] ?? 0,
             distance: userLocation
               ? haversineDistance(userLocation.lat, userLocation.lng, row.latitude, row.longitude)
               : undefined,

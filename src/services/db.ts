@@ -102,9 +102,15 @@ export async function updateUserNickname(userId: string, nickname: string): Prom
 // 찜한 매장
 // ─────────────────────────────────────────────────────────────
 
+// 카페 / 도서관 / 공유공간 — favorites/reviews 는 이 세 종류 중 하나를 가리킴.
+// (supabase_favorites_reviews_multi_place.sql: store_id/library_id/shared_space_id
+//  중 정확히 하나만 채워지도록 CHECK 제약)
+export type PlaceKind = 'cafe' | 'library' | 'shared_space';
+
 // UI 에서는 store 식별자로 api_place_id(text) 를 사용하지만
 // DB(favorites/collection_stores)는 stores.id(uuid) FK 를 요구함.
-// 두 ID 를 매핑하는 헬퍼.
+// 두 ID 를 매핑하는 헬퍼. (도서관/공유공간은 엑셀 큐레이션으로 이미
+// 실제 UUID PK 를 갖고 있어 이 변환이 필요 없음)
 function isUuid(s: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 }
@@ -122,19 +128,36 @@ async function resolveStoreUuid(maybeId: string): Promise<string | null> {
 
 export async function fetchFavorites(userId: string): Promise<FavoritedStore[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('favorites')
-    .select('store_id, sort_order, stores!inner(id, api_place_id, name, address_road, thumbnail_url, photo_urls, badges, closed_at)')
-    .eq('user_id', userId)
-    .order('sort_order', { ascending: true });
 
-  if (error) { console.error('fetchFavorites:', error); return []; }
+  const [cafeRes, libraryRes, sharedRes] = await Promise.all([
+    supabase
+      .from('favorites')
+      .select('sort_order, stores!inner(id, api_place_id, name, address_road, thumbnail_url, photo_urls, badges, closed_at)')
+      .eq('user_id', userId)
+      .order('sort_order', { ascending: true }),
+    supabase
+      .from('favorites')
+      .select('sort_order, libraries!inner(id, name, address_road, thumbnail_url, photo_urls, badges)')
+      .eq('user_id', userId)
+      .order('sort_order', { ascending: true }),
+    supabase
+      .from('favorites')
+      .select('sort_order, shared_spaces!inner(id, name, address_road, thumbnail_url, photo_urls, badges)')
+      .eq('user_id', userId)
+      .order('sort_order', { ascending: true }),
+  ]);
 
-  return (data ?? []).map((row: Record<string, unknown>) => {
+  if (cafeRes.error) console.error('fetchFavorites(cafe):', cafeRes.error);
+  if (libraryRes.error) console.error('fetchFavorites(library):', libraryRes.error);
+  if (sharedRes.error) console.error('fetchFavorites(shared_space):', sharedRes.error);
+
+  type Ordered = FavoritedStore & { placeType: PlaceKind; sortOrder: number };
+
+  const cafeFavs: Ordered[] = (cafeRes.data ?? []).map((row: Record<string, unknown>) => {
     const store = row.stores as Record<string, unknown> | null;
     return {
       // UI 에서는 api_place_id 를 식별자로 사용 (cafe.id, isFavorited 매칭)
-      id: (store?.api_place_id ?? row.store_id) as string,
+      id: (store?.api_place_id ?? '') as string,
       name: (store?.name ?? '') as string,
       address: (store?.address_road ?? '') as string,
       rating: 0,
@@ -142,59 +165,164 @@ export async function fetchFavorites(userId: string): Promise<FavoritedStore[]> 
       badge: ((store?.badges as string[] | null)?.[0]) ?? undefined,
       photos: (store?.photo_urls ?? []) as string[],
       closedAt: (store?.closed_at as string | null) ?? null,
+      placeType: 'cafe',
+      sortOrder: row.sort_order as number,
     };
   });
+
+  const libraryFavs: Ordered[] = (libraryRes.data ?? []).map((row: Record<string, unknown>) => {
+    const place = row.libraries as Record<string, unknown> | null;
+    return {
+      id: (place?.id ?? '') as string,
+      name: (place?.name ?? '') as string,
+      address: (place?.address_road ?? '') as string,
+      rating: 0,
+      reviewCount: 0,
+      badge: ((place?.badges as string[] | null)?.[0]) ?? undefined,
+      photos: (place?.photo_urls ?? []) as string[],
+      placeType: 'library',
+      sortOrder: row.sort_order as number,
+    };
+  });
+
+  const sharedFavs: Ordered[] = (sharedRes.data ?? []).map((row: Record<string, unknown>) => {
+    const place = row.shared_spaces as Record<string, unknown> | null;
+    return {
+      id: (place?.id ?? '') as string,
+      name: (place?.name ?? '') as string,
+      address: (place?.address_road ?? '') as string,
+      rating: 0,
+      reviewCount: 0,
+      badge: ((place?.badges as string[] | null)?.[0]) ?? undefined,
+      photos: (place?.photo_urls ?? []) as string[],
+      placeType: 'shared_space',
+      sortOrder: row.sort_order as number,
+    };
+  });
+
+  return [...cafeFavs, ...libraryFavs, ...sharedFavs]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map(({ sortOrder: _sortOrder, ...rest }) => rest);
 }
 
-export async function insertFavorite(userId: string, store: FavoritedStore, sortOrder: number): Promise<void> {
+/**
+ * 전체 장소(카페/도서관/공유공간)의 리뷰 개수 집계.
+ * 카페는 stores.api_place_id, 도서관/공유공간은 실제 UUID를 키로 반환한다
+ * (supabase_review_counts_rpc.sql 의 get_review_counts() RPC 참고 — 두 ID 공간은
+ * 형식이 달라 충돌 가능성이 없으므로 단일 문자열 키 Record로 병합해도 안전함).
+ * 리스트 화면에서 카드마다 개별 COUNT 쿼리를 날리는 대신 한 번에 집계해서 내려받기 위함.
+ */
+export async function fetchReviewCounts(): Promise<Record<string, number>> {
+  if (!supabase) return {};
+  const { data, error } = await supabase.rpc('get_review_counts');
+  if (error) { console.error('fetchReviewCounts:', error); return {}; }
+  const map: Record<string, number> = {};
+  for (const row of (data ?? []) as { place_id: string; review_count: number }[]) {
+    map[row.place_id] = Number(row.review_count);
+  }
+  return map;
+}
+
+export async function insertFavorite(
+  userId: string,
+  store: FavoritedStore,
+  sortOrder: number,
+  placeType: PlaceKind = 'cafe',
+): Promise<void> {
   if (!supabase) return;
-  const storeUuid = await resolveStoreUuid(store.id);
-  if (!storeUuid) {
-    console.error('insertFavorite: stores 에서 해당 매장을 찾을 수 없어요', store.id);
+
+  if (placeType === 'cafe') {
+    const storeUuid = await resolveStoreUuid(store.id);
+    if (!storeUuid) {
+      console.error('insertFavorite: stores 에서 해당 매장을 찾을 수 없어요', store.id);
+      return;
+    }
+    const { error } = await supabase.from('favorites').upsert({
+      user_id: userId,
+      store_id: storeUuid,
+      sort_order: sortOrder,
+    }, { onConflict: 'user_id,store_id' });
+    if (error) console.error('insertFavorite:', error);
     return;
   }
+
+  // 도서관 / 공유공간: id 가 이미 실제 UUID (엑셀 큐레이션으로 사전 생성됨)
+  const column = placeType === 'library' ? 'library_id' : 'shared_space_id';
+  const onConflict = placeType === 'library' ? 'user_id,library_id' : 'user_id,shared_space_id';
   const { error } = await supabase.from('favorites').upsert({
     user_id: userId,
-    store_id: storeUuid,
+    [column]: store.id,
     sort_order: sortOrder,
-  }, { onConflict: 'user_id,store_id' });
-
+  }, { onConflict });
   if (error) console.error('insertFavorite:', error);
 }
 
-export async function deleteFavorite(userId: string, storeId: string): Promise<void> {
+export async function deleteFavorite(userId: string, storeId: string, placeType: PlaceKind = 'cafe'): Promise<void> {
   if (!supabase) return;
-  const storeUuid = await resolveStoreUuid(storeId);
-  if (!storeUuid) return;
+
+  if (placeType === 'cafe') {
+    const storeUuid = await resolveStoreUuid(storeId);
+    if (!storeUuid) return;
+    const { error } = await supabase
+      .from('favorites')
+      .delete()
+      .eq('user_id', userId)
+      .eq('store_id', storeUuid);
+    if (error) console.error('deleteFavorite:', error);
+    return;
+  }
+
+  const column = placeType === 'library' ? 'library_id' : 'shared_space_id';
   const { error } = await supabase
     .from('favorites')
     .delete()
     .eq('user_id', userId)
-    .eq('store_id', storeUuid);
-
+    .eq(column, storeId);
   if (error) console.error('deleteFavorite:', error);
 }
 
 export async function updateFavoritesOrder(userId: string, stores: FavoritedStore[]): Promise<void> {
   if (!supabase) return;
 
-  // api_place_id 들을 한 번에 UUID 로 변환
-  const resolved = await Promise.all(stores.map(s => resolveStoreUuid(s.id)));
-  const updates = stores
-    .map((_s, i) => resolved[i] ? ({
+  const cafeStores = stores.filter(s => (s.placeType ?? 'cafe') === 'cafe');
+  const libraryStores = stores.filter(s => s.placeType === 'library');
+  const sharedStores = stores.filter(s => s.placeType === 'shared_space');
+
+  // 카페: api_place_id → stores.id(uuid) 변환 필요
+  if (cafeStores.length > 0) {
+    const resolved = await Promise.all(cafeStores.map(s => resolveStoreUuid(s.id)));
+    const updates = cafeStores
+      .map((s, i) => resolved[i] ? ({
+        user_id: userId,
+        store_id: resolved[i] as string,
+        sort_order: stores.indexOf(s),
+      }) : null)
+      .filter((u): u is { user_id: string; store_id: string; sort_order: number } => u !== null);
+    if (updates.length > 0) {
+      const { error } = await supabase.from('favorites').upsert(updates, { onConflict: 'user_id,store_id' });
+      if (error) console.error('updateFavoritesOrder(cafe):', error);
+    }
+  }
+
+  if (libraryStores.length > 0) {
+    const updates = libraryStores.map(s => ({
       user_id: userId,
-      store_id: resolved[i] as string,
-      sort_order: i,
-    }) : null)
-    .filter((u): u is { user_id: string; store_id: string; sort_order: number } => u !== null);
+      library_id: s.id,
+      sort_order: stores.indexOf(s),
+    }));
+    const { error } = await supabase.from('favorites').upsert(updates, { onConflict: 'user_id,library_id' });
+    if (error) console.error('updateFavoritesOrder(library):', error);
+  }
 
-  if (updates.length === 0) return;
-
-  const { error } = await supabase
-    .from('favorites')
-    .upsert(updates, { onConflict: 'user_id,store_id' });
-
-  if (error) console.error('updateFavoritesOrder:', error);
+  if (sharedStores.length > 0) {
+    const updates = sharedStores.map(s => ({
+      user_id: userId,
+      shared_space_id: s.id,
+      sort_order: stores.indexOf(s),
+    }));
+    const { error } = await supabase.from('favorites').upsert(updates, { onConflict: 'user_id,shared_space_id' });
+    if (error) console.error('updateFavoritesOrder(shared_space):', error);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -365,7 +493,9 @@ export async function updateStoreMemo(collectionId: string, storeId: string, mem
 export interface ReviewRow {
   id: string;
   user_id: string;
-  store_id: string;
+  store_id: string | null;
+  library_id?: string | null;
+  shared_space_id?: string | null;
   content: string;
   outlet_status: string;
   seat_status: string;
@@ -377,15 +507,23 @@ export interface ReviewRow {
   updated_at: string;
 }
 
-export async function fetchReviews(storeId: string): Promise<ReviewRow[]> {
+export async function fetchReviews(placeId: string, placeType: PlaceKind = 'cafe'): Promise<ReviewRow[]> {
   if (!supabase) return [];
-  // storeId 가 api_place_id 로 들어와도 stores.id(uuid) 로 변환
-  const storeUuid = await resolveStoreUuid(storeId);
-  if (!storeUuid) return [];
+
+  let targetId = placeId;
+  const column = placeType === 'cafe' ? 'store_id' : placeType === 'library' ? 'library_id' : 'shared_space_id';
+
+  if (placeType === 'cafe') {
+    // placeId 가 api_place_id 로 들어와도 stores.id(uuid) 로 변환
+    const storeUuid = await resolveStoreUuid(placeId);
+    if (!storeUuid) return [];
+    targetId = storeUuid;
+  }
+
   const { data, error } = await supabase
     .from('reviews')
     .select('*, reviews_likes(count), public_user_nicknames(nickname)')
-    .eq('store_id', storeUuid)
+    .eq(column, targetId)
     .order('created_at', { ascending: false });
 
   if (error) { console.error('fetchReviews:', error); return []; }
@@ -579,26 +717,38 @@ export async function updateReview(
   return true;
 }
 
-export async function insertReview(review: Omit<ReviewRow, 'id' | 'like_count' | 'author_nickname' | 'created_at' | 'updated_at'>): Promise<boolean> {
+export async function insertReview(
+  review: Omit<ReviewRow, 'id' | 'like_count' | 'author_nickname' | 'created_at' | 'updated_at'>,
+  placeType: PlaceKind = 'cafe',
+): Promise<boolean> {
   if (!supabase) return false;
-
-  // store_id 가 api_place_id 로 들어와도 stores.id(uuid) 로 변환
-  const storeUuid = await resolveStoreUuid(review.store_id);
-  if (!storeUuid) { console.error('insertReview: stores 에서 해당 매장을 찾을 수 없어요', review.store_id); return false; }
 
   // 사진 Storage 업로드 (base64 → URL 변환)
   const photoUrls = await uploadReviewPhotos(review.photo_urls ?? []);
 
-  const { error } = await supabase.from('reviews').insert({
+  const base = {
     user_id:        review.user_id,
-    store_id:       storeUuid,
     content:        review.content,
     outlet_status:  review.outlet_status,
     seat_status:    review.seat_status,
     noise_status:   review.noise_status,
     photo_urls:     photoUrls,
-  });
+  };
 
+  if (placeType === 'cafe') {
+    // store_id 가 api_place_id 로 들어와도 stores.id(uuid) 로 변환
+    const placeId = review.store_id;
+    if (!placeId) { console.error('insertReview: cafe 리뷰인데 store_id 가 없어요'); return false; }
+    const storeUuid = await resolveStoreUuid(placeId);
+    if (!storeUuid) { console.error('insertReview: stores 에서 해당 매장을 찾을 수 없어요', placeId); return false; }
+    const { error } = await supabase.from('reviews').insert({ ...base, store_id: storeUuid });
+    if (error) { console.error('insertReview:', error); return false; }
+    return true;
+  }
+
+  const column = placeType === 'library' ? 'library_id' : 'shared_space_id';
+  const placeId = review.store_id; // 호출부에서는 cafeId 자리에 library/shared_space id 를 그대로 전달
+  const { error } = await supabase.from('reviews').insert({ ...base, [column]: placeId });
   if (error) { console.error('insertReview:', error); return false; }
   return true;
 }
