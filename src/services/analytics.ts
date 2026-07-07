@@ -122,6 +122,12 @@ export function trackNearbyLaptopSheetConfirm() {
   ga('nearby_laptop_sheet_confirm');
 }
 
+export function trackPhoneCopy(cafeId: string) {
+  const params = { log_name: 'phone_copy', cafe_id: cafeId };
+  ait(params);
+  ga('phone_copy', params);
+}
+
 // ── 모음집 ────────────────────────────────────────────────────
 export function trackCollectionCreate() {
   ait({ log_name: 'collection_create' });

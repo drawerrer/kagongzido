@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { openURL, partner, tdsEvent, fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
-import { trackMapOpen, trackShareCafe } from '../services/analytics';
+import { trackMapOpen, trackShareCafe, trackPhoneCopy } from '../services/analytics';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { ConfirmDialog, Toast } from '@toss/tds-mobile';
 import BottomSheet from '../components/BottomSheet';
@@ -1594,6 +1594,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       }
       setCopyToastVisible(true);
       setTimeout(() => setCopyToastVisible(false), 2000);
+      trackPhoneCopy(cafe.id);
     } catch { /* ignore */ }
   };
 
