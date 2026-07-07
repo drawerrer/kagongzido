@@ -172,7 +172,7 @@ interface FilterModalProps {
 
 // ── 상수 ─────────────────────────────────
 export const DEFAULT_FILTERS: FilterState = {
-  openNow: true,
+  openNow: false,
   laptopStatus: [],
   entConditions: [],
   moods: [],
