@@ -12,6 +12,7 @@ import {
   fetchUserReports, type UserReportRow,
   fetchNotices, type NoticeRow,
 } from '../services/db';
+import { clearCachedUser } from '../utils/userCache';
 import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
 import CafePlaceholder from '../components/CafePlaceholder';
@@ -1719,6 +1720,9 @@ export default function MyPage({
               setShowWithdrawDialog(false);
               const ok = await deleteUserData(userId);
               if (ok) {
+                // 닉네임·userId 로컬 캐시 제거 — 미제거 시 재시작 후 삭제된 userId로 캐시 히트되어
+                // DB 조회를 건너뛰고 닉네임·찜 등이 영구적으로 깨지는 버그 방지
+                clearCachedUser();
                 // localStorage 의 토스 익명 ID 도 제거 (없으면 동일 ID 재발급되어 다시 매칭됨)
                 try { localStorage.removeItem('kagongzido_anon_id'); } catch { /* noop */ }
                 // 앱 전체 재시작 — 새 익명 세션 + 새 user row 생성

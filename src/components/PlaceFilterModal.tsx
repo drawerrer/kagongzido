@@ -243,7 +243,7 @@ export default function PlaceFilterModal({ isOpen, initialFilters, placeType, on
         {/* 타이틀 */}
         <div style={{ height: 48, display: 'flex', alignItems: 'center', padding: '0 24px' }}>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: 'rgba(0,12,30,0.80)', lineHeight: '27px' }}>
-            {placeType} 필터
+            필터
           </h2>
         </div>
 
