@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { expandHours, getHoursStatus, getTodayKey, DAY_ORDER } from '../utils/hours';
-import { openURL } from '@apps-in-toss/web-framework';
+import { openURL, partner, tdsEvent } from '@apps-in-toss/web-framework';
 import SectionHeader from '../components/SectionHeader';
 import SubButton from '../components/SubButton';
 import IcOpen from '../assets/icons/icon_open.svg?react';
@@ -243,7 +243,60 @@ export default function PlaceDetailPage({ place, onBack, showHero = true, onFocu
   const [scrolled, setScrolled] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showWriteReview, setShowWriteReview] = useState(false);
-  const { requireNickname, userId } = useFavorites();
+  const { requireNickname, userId, isFavorited, addFavorite, removeFavorite } = useFavorites();
+
+  // ── 네비바 하트 아이콘 (카페 상세페이지와 동일하게 검색 아이콘 대신 표시) ──
+  // 바텀시트(embedded) 상태에서 showHero(확장) 일 때만 활성화.
+  // App.tsx에서 풀스크린으로 직접 열릴 땐 showHero 기본값 true라 항상 활성화.
+  const isFavorite = isFavorited(place.id);
+  const heartActive = showHero;
+  const heartHandlerRef = useRef<() => void>(() => {});
+
+  heartHandlerRef.current = () => {
+    if (isFavorited(place.id)) {
+      removeFavorite(place.id);
+    } else {
+      addFavorite({
+        id: place.id,
+        name: place.name,
+        address: place.address,
+        rating: 0,
+        reviewCount: 0,
+        photos: place.thumbnailUrl ? [place.thumbnailUrl] : [],
+        placeType: place.placeType,
+      });
+    }
+  };
+
+  // 하트 클릭 리스너 등록 + 페이지 이탈 시 cleanup
+  useEffect(() => {
+    if (!heartActive) return undefined;
+    try {
+      const cleanup = tdsEvent.addEventListener('navigationAccessoryEvent', {
+        onEvent: ({ id }: { id: string }) => { if (id === 'heart') heartHandlerRef.current(); },
+        onError: () => {},
+      });
+      return () => {
+        try { partner.removeAccessoryButton(); } catch { /* noop */ }
+        cleanup?.();
+      };
+    } catch {
+      return undefined;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heartActive]);
+
+  // 찜 상태에 따라 네비바 하트 아이콘 토글 (같은 id로 재호출하면 아이콘만 교체됨)
+  useEffect(() => {
+    if (!heartActive) return;
+    try {
+      partner.addAccessoryButton({
+        id: 'heart',
+        title: '하트',
+        icon: { name: isFavorite ? 'icon-heart-mono' : 'icon-heart-whiteline-mono' },
+      });
+    } catch { /* noop */ }
+  }, [isFavorite, heartActive]);
 
   const handleScroll = () => {
     if (!scrollRef.current) return;

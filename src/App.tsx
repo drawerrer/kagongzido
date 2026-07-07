@@ -337,7 +337,8 @@ function AppInner() {
   const lastTabTapRef = useRef<{ id: TabId; time: number } | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [detailCafeId, setDetailCafeId] = useState<string | null>(null);
-  // detailCafeId가 도서관/공유공간 즐겨찾기를 가리킬 때만 채워짐 — 카페는 DetailPage가 자체적으로 데이터를 불러오므로 불필요
+  // detailCafeId가 도서관/공유공간을 가리킬 때만 채워짐 (MapPage 리스트에서 직접 전달되거나, 즐겨찾기 조회로 채워짐)
+  // — 카페는 DetailPage가 자체적으로 데이터를 불러오므로 불필요
   const [detailPlace, setDetailPlace] = useState<PlaceItem | null>(null);
   const [collectionDetail, setCollectionDetail] = useState<{ id: string; name: string } | null>(null);
   const [photoReview, setPhotoReview] = useState<{ storeId: string; cafeName: string; photos: string[] } | null>(null);
@@ -346,21 +347,24 @@ function AppInner() {
   const [isDetailFocusMode, setIsDetailFocusMode] = useState(false); // DetailPage 내부의 사진리뷰/리뷰작성 진입 시 탭바 숨김
   const { isFavorited, addFavorite, removeFavorite, favorites } = useFavorites();
 
-  // detailCafeId가 즐겨찾기된 도서관/공유공간을 가리키는 경우 — CollectionPage 등 전역 오버레이 경로로
-  // 진입 시 카페 전용 DetailPage가 아닌 PlaceDetailPage를 보여주기 위해 실제 장소 데이터를 조회
+  // detailCafeId가 도서관/공유공간을 가리키는 경우 — 카페 전용 DetailPage가 아닌 PlaceDetailPage를 보여줌.
+  // 타입 판별 우선순위:
+  //   1) detailPlace 가 이미 채워져 있고 id 가 일치 — MapPage 리스트에서 place 객체를 직접 전달받은 경우 (onPlaceDetailOpen)
+  //   2) favorites 목록에서 조회 — CollectionPage 등 "찜한 장소"를 id 로만 여는 경로 (기존 동작 유지)
+  // 즐겨찾기 여부와 무관하게 도서관/공유공간을 열 수 있어야 하므로, favorites 에만 의존하면 안 됨.
   const detailFavorite = favorites.find(f => f.id === detailCafeId);
-  const detailPlaceType = detailFavorite?.placeType;
+  const detailFavoritePlaceType = detailFavorite?.placeType;
+  const detailPlaceType = (detailPlace && detailPlace.id === detailCafeId ? detailPlace.placeType : undefined) ?? detailFavoritePlaceType;
   useEffect(() => {
-    if (!detailCafeId || (detailPlaceType !== 'library' && detailPlaceType !== 'shared_space')) {
-      setDetailPlace(null);
-      return;
-    }
+    if (!detailCafeId) { setDetailPlace(null); return; }
+    if (detailPlace && detailPlace.id === detailCafeId) return; // 이미 준비됨 (직접 전달 or 이전 조회 완료)
+    if (detailFavoritePlaceType !== 'library' && detailFavoritePlaceType !== 'shared_space') { setDetailPlace(null); return; }
     let cancelled = false;
     (async () => {
       try {
-        const rows = detailPlaceType === 'library' ? await fetchLibraries() : await fetchSharedSpaces();
+        const rows = detailFavoritePlaceType === 'library' ? await fetchLibraries() : await fetchSharedSpaces();
         const row = rows.find(r => r.id === detailCafeId);
-        if (!cancelled) setDetailPlace(row ? placeRowToItem(row, detailPlaceType) : null);
+        if (!cancelled) setDetailPlace(row ? placeRowToItem(row, detailFavoritePlaceType) : null);
       } catch (e) {
         console.error('[AppInner] 도서관/공유공간 상세 조회 실패:', e);
         if (!cancelled) setDetailPlace(null);
@@ -368,7 +372,7 @@ function AppInner() {
     })();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detailCafeId, detailPlaceType]);
+  }, [detailCafeId, detailFavoritePlaceType]);
 
   // CollectionDetailPage가 닫힐 때(collectionDetail → null) 편집모드 상태 리셋
   useEffect(() => {
@@ -496,6 +500,7 @@ function AppInner() {
             key={tabKeys.home}
             onSearchOpen={() => setShowSearch(true)}
             onDetailOpen={(id) => setDetailCafeId(id)}
+            onPlaceDetailOpen={(place) => { setDetailPlace(place); setDetailCafeId(place.id); }}
             onGoToFavorites={() => setActiveTab('collection')}
             onFocusModeChange={setIsDetailFocusMode}
             hasOverlay={!!detailCafeId || showSearch}
