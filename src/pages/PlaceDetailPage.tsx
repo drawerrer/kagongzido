@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { expandHours, getHoursStatus, getTodayKey, DAY_ORDER } from '../utils/hours';
 import { openURL, partner, tdsEvent } from '@apps-in-toss/web-framework';
+import { useBackEvent } from '../hooks/useBackEvent';
 import SectionHeader from '../components/SectionHeader';
 import SubButton from '../components/SubButton';
 import IcOpen from '../assets/icons/icon_open.svg?react';
@@ -245,6 +246,17 @@ export default function PlaceDetailPage({ place, onBack, showHero = true, onFocu
   const [showWriteReview, setShowWriteReview] = useState(false);
   const { requireNickname, userId, isFavorited, addFavorite, removeFavorite } = useFavorites();
 
+  // ── 백 이벤트(시스템 백버튼/토스 네비바 백버튼) 등록 ──────────────
+  // DetailPage(카페)와 달리 이 페이지엔 아무 등록이 없어서, 풀스크린으로 열렸을 때
+  // (App.tsx 오버레이 경로) 백버튼이 SDK 기본 동작(앱 종료 화면)으로 빠지던 버그.
+  // onBack은 호출 컨텍스트(App.tsx 풀스크린 / MapPage 바텀시트 임베드)에 맞는
+  // 동작을 이미 알고 있으므로 그대로 위임하면 됨. WriteReviewPage가 떠 있을 땐
+  // 그쪽이 자체 useBackEvent로 처리하므로 여기선 아무 것도 하지 않음.
+  useBackEvent(() => {
+    if (showWriteReview) return;
+    onBack();
+  });
+
   // ── 네비바 하트 아이콘 (카페 상세페이지와 동일하게 검색 아이콘 대신 표시) ──
   // 바텀시트(embedded) 상태에서 showHero(확장) 일 때만 활성화.
   // App.tsx에서 풀스크린으로 직접 열릴 땐 showHero 기본값 true라 항상 활성화.
@@ -297,6 +309,15 @@ export default function PlaceDetailPage({ place, onBack, showHero = true, onFocu
       });
     } catch { /* noop */ }
   }, [isFavorite, heartActive]);
+
+  // 바텀시트 확장 시 (showHero false→true) 스크롤 최상단 고정
+  // — 없으면 half 상태에서 드래그 제스처가 내부 리스트를 함께 스크롤시켜
+  //   확장 후에도 히어로 이미지가 스크롤 위쪽으로 밀려 있어 보이지 않는 문제 발생
+  useEffect(() => {
+    if (showHero && scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [showHero]);
 
   const handleScroll = () => {
     if (!scrollRef.current) return;
