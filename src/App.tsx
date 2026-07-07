@@ -70,9 +70,9 @@ const TABS: { id: TabId; label: string; icon: ReactNode }[] = [
   { id: 'mypage',     label: '마이',   icon: <TabMypageIcon /> },
 ];
 
-// 기기 로컬 UUID 생성/조회 — getAnonymousKey 실패 시 fallback (개발/웹 환경)
+// 기기 로컬 UUID 생성/조회 — 토스 해시를 한 번도 발급받지 못했을 때의 최종 폴백 (개발/웹 환경)
 function getOrCreateLocalId(): string {
-  const KEY = 'cafeindex_anon_id';
+  const KEY = 'kagongzido_anon_id';
   const existing = localStorage.getItem(KEY);
   if (existing) return existing;
   const id = 'local_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -80,19 +80,59 @@ function getOrCreateLocalId(): string {
   return id;
 }
 
-// 토스 공식 익명 키 조회 — SDK 2.4.5+ 에서 미니앱별 고유 해시 반환
-// 실패/비-토스 환경에서는 로컬 UUID로 폴백
-async function getTossUserId(): Promise<string> {
+// 직전에 성공적으로 발급받은 토스 익명 해시 — getAnonymousKey 가 일시적으로 실패했을 때
+// 같은 기기를 엉뚱한 local_* identity 로 분리시키지 않기 위한 재사용 캐시
+const LAST_TOSS_HASH_KEY = 'kagongzido_last_toss_hash';
+
+function getLastKnownTossHash(): string | null {
   try {
-    const res = await getAnonymousKey();
-    if (res && typeof res === 'object' && 'type' in res && res.type === 'HASH') {
-      console.log('[AUTH] using Toss anonymous hash');
-      return res.hash;
-    }
-    console.warn('[AUTH] getAnonymousKey returned non-hash:', res);
-  } catch (err) {
-    console.warn('[AUTH] getAnonymousKey failed, fallback to localId:', err);
+    return localStorage.getItem(LAST_TOSS_HASH_KEY);
+  } catch {
+    return null;
   }
+}
+
+function setLastKnownTossHash(hash: string): void {
+  try {
+    localStorage.setItem(LAST_TOSS_HASH_KEY, hash);
+  } catch {
+    // 무시 — 캐시 실패해도 인증 흐름 자체는 계속 진행
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// 토스 공식 익명 키 조회 — SDK 2.4.5+ 에서 미니앱별 고유 해시 반환
+// 실제 토스 앱 세션 안에서도 네이티브 브리지 초기화 타이밍 등으로 간헐적으로 실패할 수 있어
+// 짧은 backoff 로 재시도한다.
+//   1) 재시도 후에도 실패하면 → 과거에 성공했던 해시를 재사용 (동일 기기의 identity 분열 방지)
+//   2) 이 기기에서 한 번도 성공한 적 없으면 → 로컬 UUID로 최종 폴백 (개발/비-토스 환경)
+async function getTossUserId(retries = 3, delayMs = 300): Promise<string> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const res = await getAnonymousKey();
+      if (res && typeof res === 'object' && 'type' in res && res.type === 'HASH') {
+        if (attempt > 0) console.log(`[AUTH] getAnonymousKey succeeded on retry ${attempt + 1}`);
+        else console.log('[AUTH] using Toss anonymous hash');
+        setLastKnownTossHash(res.hash);
+        return res.hash;
+      }
+      console.warn('[AUTH] getAnonymousKey returned non-hash:', res);
+    } catch (err) {
+      console.warn(`[AUTH] getAnonymousKey failed (attempt ${attempt + 1}/${retries}):`, err);
+    }
+    if (attempt < retries - 1) await sleep(delayMs * (attempt + 1));
+  }
+
+  const lastKnown = getLastKnownTossHash();
+  if (lastKnown) {
+    console.warn('[AUTH] getAnonymousKey exhausted retries — reusing last known toss hash to avoid identity split');
+    return lastKnown;
+  }
+
+  console.warn('[AUTH] getAnonymousKey never succeeded on this device — falling back to local id');
   return getOrCreateLocalId();
 }
 

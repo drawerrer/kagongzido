@@ -10,7 +10,7 @@
  *  - tossId 가 바뀌면 (다른 사용자 진입) 새로 덮어쓰기
  */
 
-const USER_CACHE_KEY = 'cafeindex_user_v2';
+const USER_CACHE_KEY = 'kagongzido_user_v2';
 
 interface UserCacheData {
   tossId: string;

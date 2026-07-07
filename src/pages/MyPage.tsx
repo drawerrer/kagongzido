@@ -1720,7 +1720,7 @@ export default function MyPage({
               const ok = await deleteUserData(userId);
               if (ok) {
                 // localStorage 의 토스 익명 ID 도 제거 (없으면 동일 ID 재발급되어 다시 매칭됨)
-                try { localStorage.removeItem('cafeindex_anon_id'); } catch { /* noop */ }
+                try { localStorage.removeItem('kagongzido_anon_id'); } catch { /* noop */ }
                 // 앱 전체 재시작 — 새 익명 세션 + 새 user row 생성
                 window.location.reload();
               }
