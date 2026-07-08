@@ -4,7 +4,7 @@ import { useBackEvent } from '../hooks/useBackEvent';
 import { Toast } from '@toss/tds-mobile';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 import { expandHours, getHoursStatus } from '../utils/hours';
-import { trackFilterOpen, trackFilterApply, trackChipTap, trackCafeDetailView, trackViewModeChange, trackNearbyLaptopSheetShow, trackNearbyLaptopSheetConfirm } from '../services/analytics';
+import { trackFilterOpen, trackFilterApply, trackChipTap, trackCafeDetailView, trackViewModeChange, trackNearbyLaptopSheetShow, trackNearbyLaptopSheetConfirm, trackMapMove } from '../services/analytics';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
@@ -593,6 +593,11 @@ const [filterOpen, setFilterOpen] = useState(false);
     window.kakao.maps.event.addListener(map, 'dragstart', () => {
       if (clusterClickRef.current) return;
       setPanelState('minimized');
+    });
+
+    window.kakao.maps.event.addListener(map, 'dragend', () => {
+      const center = map.getCenter();
+      trackMapMove(center.getLat(), center.getLng(), map.getLevel());
     });
 
     // ── 현재 지도 뷰 bounds → 바텀시트 카페 필터링 ──
