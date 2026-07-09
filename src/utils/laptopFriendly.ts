@@ -45,14 +45,16 @@ export interface RankableCafe {
 }
 
 /**
- * 순위 기준 만족 카페 중 (순위 → 거리) 순으로 정렬해 상위 N개를 뽑는다.
+ * 순위 기준 만족 카페 중 (거리 → 순위) 순으로 정렬해 상위 N개를 뽑는다.
+ * "내 주변 노트북 펴기 좋은 카페"라는 타이틀에 맞춰 거리(가까운 순)를 1순위로,
+ * 거리가 같을 때만 콘센트/좌석 순위표를 타이브레이커로 사용한다.
  * 기준을 만족하지 않는 카페(콘센트/좌석 정보 미확인)는 후보에서 제외된다.
  */
 export function pickTopLaptopFriendlyCafes<T extends RankableCafe>(cafes: T[], count = 3): T[] {
   return cafes
     .map(cafe => ({ cafe, rank: laptopFriendlyRank(cafe.outletStatus, cafe.seatStatus) }))
     .filter((x): x is { cafe: T; rank: number } => x.rank !== null)
-    .sort((a, b) => (a.rank - b.rank) || (a.cafe.distance - b.cafe.distance))
+    .sort((a, b) => (a.cafe.distance - b.cafe.distance) || (a.rank - b.rank))
     .slice(0, count)
     .map(x => x.cafe);
 }
