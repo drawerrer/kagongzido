@@ -139,3 +139,10 @@ export function trackCollectionAddCafe(cafeId: string) {
   ait(params);
   ga('collection_add_cafe', params);
 }
+
+// ── 지도 이동 ──────────────────────────────────────────────────
+export function trackMapMove(lat: number, lng: number, zoomLevel: number) {
+  const params = { log_name: 'map_move', lat, lng, zoom_level: zoomLevel };
+  ait(params);
+  ga('map_move', params);
+}
