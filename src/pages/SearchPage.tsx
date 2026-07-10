@@ -28,19 +28,6 @@ interface SearchPageProps {
 
 // ── 아이콘 ────────────────────────────────────────────────────
 
-/** SearchField 내 뒤로가기 — 24×24 */
-function ChevronLeftIcon({ onClick }: { onClick: () => void }) {
-  return (
-    <button onClick={onClick} style={{ padding: 0, lineHeight: 0, background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-        stroke="rgba(3,24,50,0.7)" strokeWidth="2"
-        strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="15 18 9 12 15 6" />
-      </svg>
-    </button>
-  );
-}
-
 /** 리스트 행 왼쪽 돋보기 — 19×19, stroke rgba(3,18,40,0.70) */
 function SearchIconSm() {
   return (

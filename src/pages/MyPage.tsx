@@ -1,7 +1,7 @@
 import { useState, useEffect, type RefObject } from 'react';
 import { fetchAlbumPhotos, openCamera, openURL } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
-import { Toast, BottomSheet, Button, ConfirmDialog } from '@toss/tds-mobile';
+import { Toast, ConfirmDialog } from '@toss/tds-mobile';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import SheetMenuRow from '../components/SheetMenuRow';
 import SheetCTA from '../components/SheetCTA';
@@ -1392,8 +1392,6 @@ export default function MyPage({
   useEffect(() => {
     setDisplayName(nickname ?? NICKNAME_PLACEHOLDER);
   }, [nickname]);
-  const hasNickname = !!nickname;
-
   // 제보 작성 진입 — 닉네임 없으면 입력 시트 먼저 띄움
   const handleOpenReportCafe = async () => {
     const ok = await requireNickname();

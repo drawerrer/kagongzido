@@ -17,21 +17,4 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-declare global {
-  interface Window {
-    kakao: {
-      maps: {
-        load: (callback: () => void) => void;
-        Map: new (container: HTMLElement, options: { center: unknown; level: number }) => KakaoMap;
-        LatLng: new (lat: number, lng: number) => unknown;
-        Marker: new (options: { position: unknown; map?: KakaoMap }) => unknown;
-      };
-    };
-  }
-}
-
-interface KakaoMap {
-  setCenter: (latlng: unknown) => void;
-  getCenter: () => unknown;
-  setLevel: (level: number) => void;
-}
+// Kakao Maps SDK 전역 타입은 src/kakao.d.ts 에서 선언한다.

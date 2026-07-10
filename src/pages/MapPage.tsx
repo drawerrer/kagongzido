@@ -21,9 +21,7 @@ import IcCafe from '../assets/icons/ic_cafe_mono.svg';
 import IcLibrary from '../assets/icons/ic_library_mono.svg';
 import IcShared from '../assets/icons/ic_shared_mono.svg';
 
-declare global {
-  interface Window { kakao: any; }
-}
+// Kakao Maps SDK 전역 타입은 src/kakao.d.ts 에서 선언한다.
 
 // ── 타입 ─────────────────────────────────
 export interface PlaceItem {
@@ -144,15 +142,6 @@ function makePillHtml(cafeId: string, name: string, selected: boolean): string {
 }
 
 // ── 아이콘 ────────────────────────────────
-function SearchIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M10.3891 17.7822C14.4733 17.7822 17.7841 14.4713 17.7841 10.3872C17.7841 6.30304 14.4733 2.99219 10.3891 2.99219C6.305 2.99219 2.99414 6.30304 2.99414 10.3872C2.99414 14.4713 6.305 17.7822 10.3891 17.7822Z" stroke="rgba(3,24,50,0.46)" strokeWidth="2.032" strokeMiterlimit="10"/>
-      <path d="M15.6401 15.6367L21.1571 21.1537" stroke="rgba(3,24,50,0.46)" strokeWidth="2.001" strokeMiterlimit="10" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
 function FilterIcon({ active }: { active: boolean }) {
   const color = active ? '#fff' : '#333D4B';
   return (
@@ -574,9 +563,9 @@ const [filterOpen, setFilterOpen] = useState(false);
     });
 
     // 클러스터링 이벤트: 묶인 마커의 overlay 숨김 처리 (카페 + 도서관 + 공유공간 통합)
-    window.kakao.maps.event.addListener(clusterer, 'clustered', (clusters: any[]) => {
-      const clusteredSet = new Set<any>();
-      clusters.forEach(c => c.getMarkers().forEach((m: any) => clusteredSet.add(m)));
+    window.kakao.maps.event.addListener(clusterer, 'clustered', (clusters: KakaoCluster[]) => {
+      const clusteredSet = new Set<KakaoMarker>();
+      clusters.forEach(c => c.getMarkers().forEach(m => clusteredSet.add(m)));
       overlaysRef.current.forEach((overlay, cafeId) => {
         const marker = markersRef.current.get(cafeId);
         overlay.setMap(clusteredSet.has(marker) ? null : map);

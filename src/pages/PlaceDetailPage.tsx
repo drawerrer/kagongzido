@@ -323,8 +323,6 @@ export default function PlaceDetailPage({ place, onBack, showHero = true, onFocu
     if (!scrollRef.current) return;
     setScrolled(scrollRef.current.scrollTop > 60);
   };
-  const placeLabel = place.placeType === 'library' ? '도서관' : '공유공간';
-
   const { hours, regularHoliday } = expandHours(place.businessHours ?? null);
   const hasHoursData = Object.keys(hours).length > 0 || !!place.businessHours;
   const { label: statusLabel, color: statusColor } = getHoursStatus(hours, regularHoliday);
