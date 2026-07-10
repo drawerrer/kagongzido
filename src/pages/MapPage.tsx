@@ -297,7 +297,6 @@ const [filterOpen, setFilterOpen] = useState(false);
   const [panelState, setPanelState] = useState<PanelState>(initialState?.panelState ?? 'half');
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialState?.appliedFilters ?? DEFAULT_FILTERS);
   const [selectedMapCafe, setSelectedMapCafe] = useState<Cafe | null>(null);
-  const [detailScrolled, setDetailScrolled] = useState(false);
   const [detailHasSubPage, setDetailHasSubPage] = useState(false);
 
   type GpsStatus = 'granted' | 'denied' | 'unknown';
@@ -1080,12 +1079,11 @@ const [filterOpen, setFilterOpen] = useState(false);
             <DetailPage
               embedded
               cafeId={selectedMapCafe.id}
-              onBack={() => { setSelectedMapCafe(null); setPanelState('half'); setDetailScrolled(false); setDetailHasSubPage(false); }}
-              onClose={() => { setSelectedMapCafe(null); setPanelState('half'); setDetailScrolled(false); setDetailHasSubPage(false); }}
+              onBack={() => { setSelectedMapCafe(null); setPanelState('half'); setDetailHasSubPage(false); }}
+              onClose={() => { setSelectedMapCafe(null); setPanelState('half'); setDetailHasSubPage(false); }}
               onSwipeDown={() => { setPanelState('half'); }}
               showHero={panelState === 'expanded'}
               onFocusModeChange={(active) => { setDetailHasSubPage(active); onFocusModeChange?.(active); }}
-              onScrollChange={setDetailScrolled}
             />
           </div>
         ) : selectedPlace ? (

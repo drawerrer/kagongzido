@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, Component } from 'react';
 import { getAnonymousKey, partner } from '@apps-in-toss/web-framework';
-import { getOrCreateUser, getOrCreateUserWithAuth, updateUserNickname, fetchLibraries, fetchSharedSpaces } from './services/db';
+import { getOrCreateUser, getOrCreateUserWithAuth, fetchLibraries, fetchSharedSpaces } from './services/db';
 import { trackUtmEntry } from './services/analytics';
 import { supabase } from './services/supabase';
 import type { ReactNode, ErrorInfo } from 'react';
@@ -136,79 +136,6 @@ async function getTossUserId(retries = 3, delayMs = 300): Promise<string> {
 
   console.warn('[AUTH] getAnonymousKey never succeeded on this device — falling back to local id');
   return getOrCreateLocalId();
-}
-
-// ── 닉네임 설정 온보딩 페이지 ────────────────────────────────
-function NicknameSetupPage({ userId, onDone }: { userId: string; onDone: (nickname: string) => void }) {
-  const [draft, setDraft] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const handleConfirm = async () => {
-    const name = draft.trim();
-    if (!name) return;
-    setSaving(true);
-    const ok = await updateUserNickname(userId, name);
-    if (!ok) {
-      console.error('[NicknameSetupPage] DB 저장 실패 — userId:', userId);
-      setSaving(false);
-      return;
-    }
-    onDone(name);
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff', padding: '48px 24px 32px' }}>
-      <div style={{ flex: 1 }}>
-        <p style={{ fontSize: 24, fontWeight: 700, color: '#191F28', marginBottom: 8, lineHeight: 1.4 }}>
-          카공지도에서<br />사용할 닉네임을 알려주세요
-        </p>
-        <p style={{ fontSize: 14, color: '#6B7684', marginBottom: 32 }}>닉네임은 마이페이지에서 언제든지 바꿀 수 있어요.</p>
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          borderBottom: '2px solid #252525',
-          paddingBottom: 8, marginBottom: 8,
-        }}>
-          <input
-            autoFocus
-            maxLength={45}
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && draft.trim()) handleConfirm(); }}
-            placeholder="닉네임을 입력해주세요"
-            style={{
-              flex: 1, border: 'none', outline: 'none',
-              fontSize: 18, fontWeight: 500, color: '#191F28',
-              background: 'transparent',
-            }}
-          />
-          {draft && (
-            <button
-              onClick={() => setDraft('')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#B0B8C1' }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path fillRule="evenodd" clipRule="evenodd" d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm3.536-13.536a1 1 0 0 0-1.414 0L12 10.586 9.878 8.464a1 1 0 0 0-1.414 1.414L10.586 12l-2.122 2.122a1 1 0 1 0 1.414 1.414L12 13.414l2.122 2.122a1 1 0 1 0 1.414-1.414L13.414 12l2.122-2.122a1 1 0 0 0 0-1.414z"/>
-              </svg>
-            </button>
-          )}
-        </div>
-        <p style={{ fontSize: 12, color: '#B0B8C1', textAlign: 'right' }}>{draft.length}/45</p>
-      </div>
-      <button
-        onClick={handleConfirm}
-        disabled={!draft.trim() || saving}
-        style={{
-          width: '100%', height: 54, borderRadius: 12,
-          background: draft.trim() ? '#252525' : '#E5E8EB',
-          color: draft.trim() ? '#fff' : '#ADB5BD',
-          fontSize: 17, fontWeight: 600, border: 'none', cursor: draft.trim() ? 'pointer' : 'default',
-          transition: 'background 0.15s',
-        }}
-      >
-        시작하기
-      </button>
-    </div>
-  );
 }
 
 export default function App() {
