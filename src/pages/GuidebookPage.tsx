@@ -140,7 +140,7 @@ function GuideBookMainView({
                 {guidebook.title}
               </p>
               <span style={{ fontWeight: 400, fontSize: 18, color: '#fff' }}>
-                {guidebook.stores.length} places · {guidebook.viewCount.toLocaleString()} views
+                {guidebook.stores.length} places
               </span>
             </div>
           </div>
@@ -424,7 +424,7 @@ function GuideBookDetailView({
             {guidebook.title.replace('\n', ' ')}
           </p>
           <p style={{ fontWeight: 400, fontSize: 14, color: '#000000' }}>
-            {guidebook.stores.length} places · {guidebook.viewCount.toLocaleString()} views
+            {guidebook.stores.length} places
           </p>
         </div>
 
@@ -706,7 +706,7 @@ function GuideBookPastView({
                     fontSize: 9,
                     color: '#fff',
                   }}>
-                    {g.stores.length} places · {g.viewCount.toLocaleString()} views
+                    {g.stores.length} places
                   </p>
                 </div>
               </div>
