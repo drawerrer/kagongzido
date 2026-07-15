@@ -27,6 +27,12 @@ export function fmtDist(m: number): string {
   return m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`;
 }
 
+/** 직선거리 기반 도보 소요시간 근사치 — 도보 속도 67m/분, 실도로 굴곡 보정계수 1.3배 */
+export function fmtWalkMinutes(m: number): string {
+  const min = Math.max(1, Math.round((m * 1.3) / 67));
+  return `${min}분`;
+}
+
 // ─── 찜한 매장 타입 ───────────────────────────────────────────
 export interface FavoritedStore {
   id: string;

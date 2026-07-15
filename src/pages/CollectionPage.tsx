@@ -11,6 +11,7 @@ import StoreCountBar from '../components/StoreCountBar';
 import SectionHeader from '../components/SectionHeader';
 import { useFavorites, FavoritedStore, haversineDistance, isRecentCollection } from '../context/FavoritesContext';
 import { trackCollectionCreate } from '../services/analytics';
+import { splitVibeTags, sortVibeTagsByLightFirst } from '../utils/vibeTags';
 import { BottomSheet, BottomCTA, CTAButton, Toast } from '@toss/tds-mobile';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import { useBackEvent } from '../hooks/useBackEvent';
@@ -382,7 +383,14 @@ export default function CollectionPage({
                   ref={el => { itemRefsArr.current[index] = el; }}
                 >
                   <StoreCard
-                    store={{ ...store, photos: enrichedPhotos, distance }}
+                    store={{
+                      ...store,
+                      photos: enrichedPhotos,
+                      distance,
+                      seatStatus: storeRow?.seat_status || undefined,
+                      outletStatus: storeRow?.outlet_status || undefined,
+                      badges: sortVibeTagsByLightFirst(splitVibeTags(storeRow?.vibe_tags)),
+                    }}
                     isEditMode={isEditMode || isOrganizeMode}
                     isSelected={selectedStoreIds.has(store.id)}
                     isDragging={isEditMode && dragIndex === index}

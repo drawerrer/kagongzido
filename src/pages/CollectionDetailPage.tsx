@@ -1,5 +1,6 @@
 ﻿import { useState, useRef, useEffect, useCallback } from 'react';
 import { useFavorites, RecentCafe, haversineDistance, isRecentCollection } from '../context/FavoritesContext';
+import { splitVibeTags, sortVibeTagsByLightFirst } from '../utils/vibeTags';
 import Snackbar from '../components/Snackbar';
 import ShareSheet from '../components/ShareSheet';
 import StoreCard, { type StoreItem } from '../components/StoreCard/Collection';
@@ -134,17 +135,23 @@ export default function CollectionDetailPage({
   }, [activeCollection?.storeIds, dragIndex, isActiveRecent]);
 
   const stores: StoreItem[] = isActiveRecent
-    ? recentlyViewed.map((r: RecentCafe): StoreItem => ({
-        id: r.id,
-        name: r.name,
-        address: r.address ?? '',
-        rating: 0,
-        reviewCount: reviewCounts[r.id] ?? 0,
-        photos: r.photos && r.photos.length > 0
-          ? r.photos
-          : r.photo ? [r.photo] : [],
-        memo: '',
-      }))
+    ? recentlyViewed.map((r: RecentCafe): StoreItem => {
+        const row = storeRows.find(sr => sr.api_place_id === r.id || sr.id === r.id);
+        return {
+          id: r.id,
+          name: r.name,
+          address: r.address ?? '',
+          rating: 0,
+          reviewCount: reviewCounts[r.id] ?? 0,
+          photos: r.photos && r.photos.length > 0
+            ? r.photos
+            : r.photo ? [r.photo] : [],
+          memo: '',
+          seatStatus: row?.seat_status || undefined,
+          outletStatus: row?.outlet_status || undefined,
+          badges: sortVibeTagsByLightFirst(splitVibeTags(row?.vibe_tags)),
+        };
+      })
     : orderedStoreIds
         .map((id): StoreItem | null => {
           // collection_stores.store_id = stores.api_place_id → stores 테이블에서 조회
@@ -162,6 +169,9 @@ export default function CollectionDetailPage({
               : undefined,
             photos: [row.thumbnail_url, ...(row.photo_urls ?? [])].filter(Boolean) as string[],
             memo: activeCollection?.memos?.[id] ?? '',
+            seatStatus: row.seat_status || undefined,
+            outletStatus: row.outlet_status || undefined,
+            badges: sortVibeTagsByLightFirst(splitVibeTags(row.vibe_tags)),
           };
         })
         .filter((s): s is StoreItem => s !== null);
@@ -764,6 +774,9 @@ export default function CollectionDetailPage({
                 photos: row
                   ? [row.thumbnail_url, ...(row.photo_urls ?? [])].filter(Boolean) as string[]
                   : f.photos ?? [],
+                seatStatus: row?.seat_status || undefined,
+                outletStatus: row?.outlet_status || undefined,
+                badges: sortVibeTagsByLightFirst(splitVibeTags(row?.vibe_tags)),
               };
             })}
           onConfirm={handleAddStoreConfirm}

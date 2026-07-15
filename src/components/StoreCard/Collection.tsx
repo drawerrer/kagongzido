@@ -1,7 +1,7 @@
 import React from 'react';
 import IcPencil from '../../assets/icons/icon_pencil.svg?react';
 import IcArrowUpDown from '../../assets/icons/icon_arrowupdown.svg?react';
-import { fmtDist } from '../../context/FavoritesContext';
+import { IcOutletMini, IcSeatMini } from './icons';
 
 // ─── 공통 매장 타입 ───────────────────────────────────────────
 export interface StoreItem {
@@ -16,6 +16,12 @@ export interface StoreItem {
   distance?: number;
   /** 폐업/휴업 시점 — 채워져 있으면 카드에 "폐업" 표시 */
   closedAt?: string | null;
+  /** 좌석 규모 — '소형' | '중형' | '대형' */
+  seatStatus?: string;
+  /** 콘센트 상태 — '부족' | '적당' | '넉넉' */
+  outletStatus?: string;
+  /** vibe_tags 파싱 결과 (조명 태그 먼저, 그 다음 무드 태그 순) */
+  badges?: string[];
 }
 
 interface StoreCardProps {
@@ -30,6 +36,8 @@ interface StoreCardProps {
   showHeart?: boolean;
   /** 메모 영역 표시 여부 (기본값 false) */
   showMemo?: boolean;
+  /** 우측 상단에 하트 대신 체크서클만 표시 (드래그 없음) — 컬렉션에 매장 추가 바텀시트 전용 */
+  selectionMode?: boolean;
   onSelect?: (id: string) => void;
   onPress?: (id: string) => void;
   onHandleDrag?: (e: React.PointerEvent<HTMLDivElement>) => void;
@@ -47,6 +55,7 @@ export default function StoreCardCollection({
   heartFilled = true,
   showHeart = true,
   showMemo = false,
+  selectionMode = false,
   onSelect,
   onPress,
   onHandleDrag,
@@ -56,9 +65,9 @@ export default function StoreCardCollection({
 }: StoreCardProps) {
   return (
     <div
-      onClick={() => { if (isEditMode) onSelect?.(store.id); }}
+      onClick={() => { if (isEditMode || selectionMode) onSelect?.(store.id); }}
       style={{
-        cursor: isEditMode ? 'pointer' : 'default',
+        cursor: (isEditMode || selectionMode) ? 'pointer' : 'default',
         opacity: isDragging ? 0.4 : (isEditMode && !isSelected ? 0.7 : 1),
         borderTop: isDragOver ? '2px solid #252525' : '2px solid transparent',
         transition: 'opacity 0.15s',
@@ -96,8 +105,8 @@ export default function StoreCardCollection({
 
         {/* 메인 콘텐츠 */}
         <div
-          style={{ flex: 1, minWidth: 0, cursor: isEditMode ? 'default' : 'pointer' }}
-          onClick={(e) => { if (!isEditMode) { e.stopPropagation(); onPress?.(store.id); } }}
+          style={{ flex: 1, minWidth: 0, cursor: (isEditMode || selectionMode) ? 'default' : 'pointer' }}
+          onClick={(e) => { if (!isEditMode && !selectionMode) { e.stopPropagation(); onPress?.(store.id); } }}
         >
           {/* 이름 / 주소 / 거리·리뷰 + 우측 버튼 */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -134,23 +143,40 @@ export default function StoreCardCollection({
               }}>
                 {store.address}
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ fontWeight: 510, fontSize: 13, color: '#6B7684', lineHeight: '17.6px' }}>
-                  {store.distance != null
-                    ? `${fmtDist(store.distance)} · 리뷰 ${store.reviewCount.toLocaleString()}`
-                    : `리뷰 ${store.reviewCount.toLocaleString()}`}
-                </span>
-                {store.badge && (
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center',
-                    backgroundColor: 'rgba(0,27,55,0.1)', borderRadius: 9, padding: '3px 7px',
-                  }}>
-                    <span style={{ fontWeight: 590, fontSize: 10, color: 'rgba(3,18,40,0.7)' }}>
-                      {store.badge}
+              {(store.seatStatus || store.outletStatus) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#6B7684' }}>
+                  {store.seatStatus && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <IcSeatMini /> 좌석 {store.seatStatus}
                     </span>
-                  </div>
-                )}
-              </div>
+                  )}
+                  {store.seatStatus && store.outletStatus && <span>·</span>}
+                  {store.outletStatus && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <IcOutletMini /> 콘센트 {store.outletStatus}
+                    </span>
+                  )}
+                </div>
+              )}
+              {store.badges && store.badges.length > 0 && (
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
+                  {store.badges.map((badge, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        display: 'inline-block',
+                        padding: '0px 8px',
+                        background: '#D1D6DB',
+                        borderRadius: 20,
+                        fontSize: 12,
+                        color: '#4E5968',
+                      }}
+                    >
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* 편집모드: 드래그 핸들 / 기본모드: 하트 */}
@@ -165,6 +191,32 @@ export default function StoreCardCollection({
               >
                 <IcArrowUpDown width={22} height={22} style={{ color: 'rgba(0,29,58,0.18)' }} />
               </div>
+            ) : selectionMode ? (
+              <button
+                type="button"
+                aria-label={isSelected ? '선택 해제' : '선택'}
+                aria-pressed={isSelected}
+                onClick={(e) => { e.stopPropagation(); onSelect?.(store.id); }}
+                style={{
+                  width: 44, height: 44, flexShrink: 0, marginLeft: 4, marginTop: -11,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  {isSelected ? (
+                    <>
+                      <circle cx="12" cy="12" r="12" fill="#252525" />
+                      <path d="M7 12l3.5 3.5L17 8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </>
+                  ) : (
+                    <>
+                      <circle cx="12" cy="12" r="11" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
+                      <path d="M7 12l3.5 3.5L17 8" stroke="rgba(0,0,0,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </>
+                  )}
+                </svg>
+              </button>
             ) : showHeart ? (
               <button
                 type="button"
@@ -203,14 +255,14 @@ export default function StoreCardCollection({
                   return (
                     <div
                       key={idx}
-                      onClick={!isLast && !isEditMode
+                      onClick={!isLast && !isEditMode && !selectionMode
                         ? (e) => { e.stopPropagation(); onPress?.(store.id); }
                         : undefined}
                       style={{
                         position: 'relative', width: 80, height: 80, borderRadius: 4,
                         flexShrink: 0, overflow: 'hidden',
                         backgroundColor: store.photos[idx] ? undefined : '#E8EDF4',
-                        cursor: !isLast && !isEditMode ? 'pointer' : 'default',
+                        cursor: !isLast && !isEditMode && !selectionMode ? 'pointer' : 'default',
                       }}
                     >
                       {store.photos[idx] && (
@@ -242,8 +294,8 @@ export default function StoreCardCollection({
         </div>
       </div>
 
-      {/* 메모 영역 (showMemo=true이고 편집모드 아닐 때만) */}
-      {showMemo && !isEditMode && (
+      {/* 메모 영역 (showMemo=true이고 편집모드/선택모드 아닐 때만) */}
+      {showMemo && !isEditMode && !selectionMode && (
         <div
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
@@ -269,7 +321,7 @@ export default function StoreCardCollection({
           )}
         </div>
       )}
-      {(!showMemo || isEditMode) && <div style={{ paddingBottom: 20 }} />}
+      {(!showMemo || isEditMode || selectionMode) && <div style={{ paddingBottom: 20 }} />}
     </div>
   );
 }

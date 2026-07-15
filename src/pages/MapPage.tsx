@@ -15,6 +15,7 @@ import Chip from '../components/Chip';
 import StoreCardHome, { type HomeCafe } from '../components/StoreCard/Home';
 import NearbyLaptopCafesDialog from '../components/NearbyLaptopCafesDialog';
 import { pickTopLaptopFriendlyCafes } from '../utils/laptopFriendly';
+import { splitVibeTags, sortVibeTagsByLightFirst } from '../utils/vibeTags';
 import StoreCountBar from '../components/StoreCountBar';
 import CafePlaceholder from '../components/CafePlaceholder';
 import IcCafe from '../assets/icons/ic_cafe_mono.svg';
@@ -824,16 +825,13 @@ const [filterOpen, setFilterOpen] = useState(false);
         rating: 0,
         reviewCount: 0,
         tags: store.badges ?? [],
-        moods: (store.vibe_tags ?? [])
-          .flatMap(t => t.split('\n').flatMap(s => s.split('&')))
-          .map(t => t.trim())
-          .filter(Boolean),
+        moods: splitVibeTags(store.vibe_tags),
         priceRange: store.base_price,
         options: storeToOptions(store),
         lat: store.latitude,
         lng: store.longitude,
         thumbnailUrl: store.thumbnail_url || undefined,
-        badges: (store.badges ?? []).filter(b => b !== '해당없음' && b !== '해당 없음'),
+        badges: sortVibeTagsByLightFirst(splitVibeTags(store.vibe_tags)),
         outletStatus: store.outlet_status || undefined,
         seatStatus: store.seat_status || undefined,
       }));

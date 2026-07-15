@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react';
-import { type FavoritedStore, fmtDist } from '../context/FavoritesContext';
+import StoreCard, { type StoreItem } from './StoreCard/Collection';
 import SheetCTA from './SheetCTA';
 
 interface AddStoreSheetProps {
-  availableStores: FavoritedStore[];
+  availableStores: StoreItem[];
   onConfirm: (ids: string[]) => void;
   onClose: () => void;
   onGoHome?: () => void;
@@ -117,93 +117,15 @@ export default function AddStoreSheet({
               </p>
             </div>
           ) : (
-            availableStores.map(store => {
-              const isSelected = selectedIds.has(store.id);
-              return (
-                <div
-                  key={store.id}
-                  onClick={() => toggle(store.id)}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  style={{ padding: '20px 16px 0', cursor: 'pointer' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
-                      <p style={{
-                        fontWeight: 600, fontSize: 16, color: '#191F28', lineHeight: '23px',
-                        marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {store.name}
-                      </p>
-                      <p style={{
-                        fontWeight: 510, fontSize: 13, color: '#6B7684', lineHeight: '17.6px',
-                        marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {store.address}
-                      </p>
-                      <span style={{ fontWeight: 510, fontSize: 13, color: '#6B7684', lineHeight: '17.6px' }}>
-                        {store.distance != null
-                          ? `${fmtDist(store.distance)} · 리뷰 ${store.reviewCount.toLocaleString()}`
-                          : `리뷰 ${store.reviewCount.toLocaleString()}`}
-                      </span>
-                    </div>
-                    {/* 체크 서클 */}
-                    <div style={{ flexShrink: 0 }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        {isSelected ? (
-                          <>
-                            <circle cx="12" cy="12" r="12" fill="#252525" />
-                            <path d="M7 12l3.5 3.5L17 8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </>
-                        ) : (
-                          <>
-                            <circle cx="12" cy="12" r="11" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5" fill="none" />
-                            <path d="M7 12l3.5 3.5L17 8" stroke="rgba(0,0,0,0.15)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </>
-                        )}
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* 사진 가로 스크롤 */}
-                  <div
-                    style={{ overflowX: 'auto', scrollbarWidth: 'none' } as React.CSSProperties}
-                    onWheel={(e) => { e.preventDefault(); (e.currentTarget as HTMLDivElement).scrollLeft += e.deltaY; }}
-                  >
-                    <div style={{ display: 'flex', gap: 8, width: 'max-content' }}>
-                      {(() => {
-                        const total = store.photos.length;
-                        const count = Math.min(total, 10);
-                        return Array.from({ length: count }, (_, idx) => {
-                          const isLast = idx === 9 && total >= 10;
-                          return (
-                            <div key={idx} style={{
-                              position: 'relative', width: 80, height: 80, borderRadius: 4,
-                              flexShrink: 0, overflow: 'hidden',
-                              backgroundColor: store.photos[idx] ? undefined : '#E8EDF4',
-                            }}>
-                              {store.photos[idx] && (
-                                <img src={store.photos[idx]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              )}
-                              {isLast && (
-                                <div style={{
-                                  position: 'absolute', inset: 0,
-                                  backgroundColor: 'rgba(0,0,0,0.6)',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  borderRadius: 4,
-                                }}>
-                                  <span style={{ fontWeight: 510, fontSize: 14, color: '#ffffff' }}>더보기</span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </div>
-                  <div style={{ paddingBottom: 16 }} />
-                </div>
-              );
-            })
+            availableStores.map(store => (
+              <StoreCard
+                key={store.id}
+                store={store}
+                selectionMode
+                isSelected={selectedIds.has(store.id)}
+                onSelect={() => toggle(store.id)}
+              />
+            ))
           )}
 
           {/* 새로운 매장 찾아보기 */}
