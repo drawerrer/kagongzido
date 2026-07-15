@@ -106,69 +106,46 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange, variant =
           <p style={{
             fontSize: 15, fontWeight: 600, color: '#191F28',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            marginBottom: 2,
+            marginBottom: 1,
           }}>
             {cafe.name}
           </p>
-          {variant === 'nearby' ? (
-            (cafe.outletStatus || cafe.seatStatus) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                {cafe.outletStatus && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 12, color: '#4E5968' }}>
-                    <IcOutletMini /> 콘센트 {cafe.outletStatus}
-                  </span>
-                )}
-                {cafe.outletStatus && cafe.seatStatus && (
-                  <span style={{ fontSize: 12, color: '#4E5968' }}>·</span>
-                )}
-                {cafe.seatStatus && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 12, color: '#4E5968' }}>
-                    <IcSeatMini /> 좌석 {cafe.seatStatus}
-                  </span>
-                )}
-              </div>
-            )
-          ) : (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 0, fontSize: 12, color: '#4E5968' }}>
-                <span>도보 {fmtWalkMinutes(cafe.distance)}</span>
-                {cafe.seatStatus && (
-                  <>
-                    <span>·</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <IcSeatMini /> 좌석 {cafe.seatStatus}
-                    </span>
-                  </>
-                )}
-                {cafe.outletStatus && (
-                  <>
-                    <span>·</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <IcOutletMini /> 콘센트 {cafe.outletStatus}
-                    </span>
-                  </>
-                )}
-              </div>
-              {cafe.badges.length > 0 && (
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 12 }}>
-                  {cafe.badges.map((badge, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        display: 'inline-block',
-                        padding: '0px 8px',
-                        background: '#D1D6DB',
-                        borderRadius: 20,
-                        fontSize: 11,
-                        color: '#4E5968',
-                      }}
-                    >
-                      {badge}
-                    </span>
-                  ))}
-                </div>
+          <div style={{ fontSize: 12, color: '#4E5968', marginTop: 0 }}>
+            도보 {fmtWalkMinutes(cafe.distance)}
+          </div>
+          {(cafe.seatStatus || cafe.outletStatus) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 1, fontSize: 12, color: '#4E5968' }}>
+              {cafe.seatStatus && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <IcSeatMini /> 좌석 {cafe.seatStatus}
+                </span>
               )}
-            </>
+              {cafe.seatStatus && cafe.outletStatus && <span>·</span>}
+              {cafe.outletStatus && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <IcOutletMini /> 콘센트 {cafe.outletStatus}
+                </span>
+              )}
+            </div>
+          )}
+          {cafe.badges.length > 0 && (
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: variant === 'nearby' ? 3 : 12 }}>
+              {cafe.badges.map((badge, i) => (
+                <span
+                  key={i}
+                  style={{
+                    display: 'inline-block',
+                    padding: '0px 8px',
+                    background: '#D1D6DB',
+                    borderRadius: 20,
+                    fontSize: 11,
+                    color: '#4E5968',
+                  }}
+                >
+                  {badge}
+                </span>
+              ))}
+            </div>
           )}
         </div>
 
