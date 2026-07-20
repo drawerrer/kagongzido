@@ -167,7 +167,7 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange, variant =
             </div>
           )}
           {cafe.badges.length > 0 && (
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 2 }}>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
               {cafe.badges.map((badge, i) => (
                 <span
                   key={i}
