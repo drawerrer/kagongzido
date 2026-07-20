@@ -1,7 +1,7 @@
 import { useFavorites, fmtWalkMinutes } from '../../context/FavoritesContext';
 import CafePlaceholder from '../CafePlaceholder';
 import IcArrow from '../../assets/icons/icon_arrow.svg?react';
-import { IcOutletMini, IcSeatMini } from './icons';
+import { IcOutletMini, IcSeatMini, IcLaptopMini, IcTicketMini } from './icons';
 import type { PlaceKind } from '../../services/db';
 
 export interface HomeCafe {
@@ -13,10 +13,14 @@ export interface HomeCafe {
   reviewCount: number;
   thumbnailUrl?: string;
   badges: string[];
-  /** 콘센트 상태 — '부족' | '적당' | '넉넉' (variant='nearby' 전용 하단 열) */
+  /** 콘센트 상태 — '부족' | '적당' | '넉넉' (카페 전용) */
   outletStatus?: string;
-  /** 좌석 규모 — '소형' | '중형' | '대형' (variant='nearby' 전용 하단 열) */
+  /** 좌석 규모 — '소형' | '중형' | '대형' (카페 전용) */
   seatStatus?: string;
+  /** 노트북 지참 가능 여부 (도서관/공유공간 전용) */
+  ltSeatStatus?: string;
+  /** 입장 조건 (도서관/공유공간 전용) */
+  entCondition?: string;
   /** 카페 / 도서관 / 공유공간 — 미지정 시 카페로 취급 */
   placeType?: PlaceKind;
 }
@@ -32,9 +36,43 @@ interface StoreCardHomeProps {
   variant?: 'home' | 'nearby';
 }
 
+// 뱃지 칩 — 15자(공백 포함) 초과 시 말줄임
+function truncateBadge(text: string): string {
+  return text.length > 15 ? `${text.slice(0, 15)}...` : text;
+}
+
+// 카드에서는 원문 대신 축약 라벨로 표시 (상세페이지 등에는 원문 그대로 노출, 기존 필터 분류 정규식과 동일 기준 사용)
+function fmtLtSeatStatus(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  if (/지정|일부/.test(raw)) return '일부가능';
+  if (/가능/.test(raw)) return '가능';
+  if (/불가/.test(raw)) return '불가';
+  return raw;
+}
+
+function fmtEntCondition(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  if (/조건\s*없|무료/.test(raw)) return '없음';
+  if (/예약/.test(raw)) return '예약';
+  if (/입장료|유료/.test(raw)) return '입장료';
+  if (/회원/.test(raw)) return '회원가입';
+  if (/열람증/.test(raw)) return '열람증';
+  if (/연령|나이|제한/.test(raw)) return '연령제한';
+  return raw;
+}
+
 export default function StoreCardHome({ cafe, onTap, onFavoriteChange, variant = 'home' }: StoreCardHomeProps) {
   const { isFavorited, addFavorite, removeFavorite } = useFavorites();
   const favorited = isFavorited(cafe.id);
+
+  // 도서관/공유공간은 좌석·콘센트 대신 노트북·입장조건을 2행에 노출
+  const isPlace = cafe.placeType === 'library' || cafe.placeType === 'shared_space';
+  const stat1 = isPlace
+    ? { icon: <IcLaptopMini />, label: '노트북', value: fmtLtSeatStatus(cafe.ltSeatStatus) }
+    : { icon: <IcSeatMini />, label: '좌석', value: cafe.seatStatus };
+  const stat2 = isPlace
+    ? { icon: <IcTicketMini />, label: '입장조건', value: fmtEntCondition(cafe.entCondition) }
+    : { icon: <IcOutletMini />, label: '콘센트', value: cafe.outletStatus };
 
   const handleHeartClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -113,23 +151,23 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange, variant =
           <div style={{ fontSize: 12, color: '#4E5968', marginTop: 0 }}>
             도보 {fmtWalkMinutes(cafe.distance)}
           </div>
-          {(cafe.seatStatus || cafe.outletStatus) && (
+          {(stat1.value || stat2.value) && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 1, fontSize: 12, color: '#4E5968' }}>
-              {cafe.seatStatus && (
+              {stat1.value && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <IcSeatMini /> 좌석 {cafe.seatStatus}
+                  {stat1.icon} {stat1.label} {stat1.value}
                 </span>
               )}
-              {cafe.seatStatus && cafe.outletStatus && <span>·</span>}
-              {cafe.outletStatus && (
+              {stat1.value && stat2.value && <span>·</span>}
+              {stat2.value && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <IcOutletMini /> 콘센트 {cafe.outletStatus}
+                  {stat2.icon} {stat2.label} {stat2.value}
                 </span>
               )}
             </div>
           )}
           {cafe.badges.length > 0 && (
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: variant === 'nearby' ? 3 : 12 }}>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 2 }}>
               {cafe.badges.map((badge, i) => (
                 <span
                   key={i}
@@ -142,7 +180,7 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange, variant =
                     color: '#4E5968',
                   }}
                 >
-                  {badge}
+                  {truncateBadge(badge)}
                 </span>
               ))}
             </div>

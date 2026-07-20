@@ -211,8 +211,10 @@ function PlaceCard({ place, distance, reviewCount, onTap, onFavoriteChange }: { 
     rating: 0,
     reviewCount,
     thumbnailUrl: place.thumbnailUrl,
-    badges: [],
+    badges: [...(place.facilities ?? []), place.entPrice].filter(Boolean) as string[],
     placeType: place.placeType,
+    ltSeatStatus: place.ltSeatStatus,
+    entCondition: place.entCondition,
   };
   return (
     <StoreCardHome
