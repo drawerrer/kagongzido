@@ -97,7 +97,7 @@ function lsSet(key: string, value: unknown) {
 interface FavoritesContextType {
   userId: string;
   nickname: string | null;
-  updateNickname: (name: string) => void;
+  updateNickname: (name: string) => Promise<boolean>;
   /**
    * 닉네임이 이미 있으면 즉시 true 반환.
    * 없으면 닉네임 입력 시트 노출 → 저장 시 true / 취소 시 false 로 resolve.
@@ -145,10 +145,16 @@ export function FavoritesProvider({
   // localStorage에서 즉시 초기값 로드 → 새로고침 후에도 데이터 즉시 표시
   const [isLoading, setIsLoading] = useState(true);
   const [nickname, setNickname] = useState<string | null>(initialNickname);
-  const updateNickname = useCallback((name: string) => {
-    setNickname(name);
-    updateCachedNickname(name);   // 로컬 캐시 즉시 갱신 — 다음 콜드 런치 시 새 이름 노출
-    updateUserNickname(userId, name);
+  // 저장 성공 여부(true/false)를 반환 — 실패했는데도 로컬 state/캐시를 먼저
+  // 갱신해버리면, 이후 그 화면상 "성공한 것처럼 보이는" nickname/userId 로
+  // 리뷰 작성 등을 시도하다가 뒤늦게 실패하는 문제가 있어 DB 반영 확인 후 갱신함
+  const updateNickname = useCallback(async (name: string): Promise<boolean> => {
+    const ok = await updateUserNickname(userId, name);
+    if (ok) {
+      setNickname(name);
+      updateCachedNickname(name);   // 로컬 캐시 갱신 — 다음 콜드 런치 시 새 이름 노출
+    }
+    return ok;
   }, [userId]);
 
   // ── 닉네임 입력 시트 (전역 1개) ───────────────────────────────
@@ -166,13 +172,18 @@ export function FavoritesProvider({
     });
   }, [nickname]);
 
-  const handleNicknameSubmit = useCallback((name: string) => {
-    setNickname(name);
-    updateCachedNickname(name);   // 캐시도 즉시 갱신
-    updateUserNickname(userId, name);
-    setNicknameSheetOpen(false);
-    nicknameResolverRef.current?.(true);
-    nicknameResolverRef.current = null;
+  const handleNicknameSubmit = useCallback(async (name: string): Promise<boolean> => {
+    const ok = await updateUserNickname(userId, name);
+    if (ok) {
+      setNickname(name);
+      updateCachedNickname(name);
+      setNicknameSheetOpen(false);
+      nicknameResolverRef.current?.(true);
+      nicknameResolverRef.current = null;
+    }
+    // 실패 시 시트를 열어둔 채로 둠 — NicknameRequiredSheet 가 에러 메시지를 보여주고
+    // 재시도할 수 있게 함 (여기서 resolve(false) 해버리면 시트가 곧장 닫혀버림)
+    return ok;
   }, [userId]);
 
   const handleNicknameClose = useCallback(() => {

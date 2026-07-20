@@ -97,9 +97,10 @@ export default function NicknameSheetPreviewPage({ onClose }: { onClose: () => v
       {sheetMode !== 'closed' && (
         <NicknameRequiredSheet
           initialName={sheetMode === 'edit' ? '카페인덱서' : null}
-          onSubmit={(name) => {
+          onSubmit={async (name) => {
             setLastAction(`✅ 저장됨 — "${name}"  (실제 앱에서는 DB 저장 + requireNickname() Promise resolve(true))`);
             setSheetMode('closed');
+            return true;
           }}
           onClose={() => {
             setLastAction('❎ 취소됨 — 시트 닫음 (실제 앱에서는 Promise resolve(false), 호출자는 액션 중단)');

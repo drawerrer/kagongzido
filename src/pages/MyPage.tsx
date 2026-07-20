@@ -1689,10 +1689,13 @@ export default function MyPage({
       {showNameSheet && (
         <NicknameRequiredSheet
           initialName={nickname}
-          onSubmit={(name) => {
-            setDisplayName(name);
-            updateNickname(name);
-            setShowNameSheet(false);
+          onSubmit={async (name) => {
+            const ok = await updateNickname(name);
+            if (ok) {
+              setDisplayName(name);
+              setShowNameSheet(false);
+            }
+            return ok;
           }}
           onClose={() => setShowNameSheet(false)}
         />

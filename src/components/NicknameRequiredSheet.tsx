@@ -6,8 +6,8 @@ const MAX = 10;
 interface NicknameRequiredSheetProps {
   /** 기존 닉네임 (변경 모드일 때) — 없으면 null/undefined → 신규 입력 모드 */
   initialName?: string | null;
-  /** 저장 — 부모가 DB 저장 + state 갱신 책임 */
-  onSubmit: (name: string) => void;
+  /** 저장 — 부모가 DB 저장 + state 갱신 책임. 실제로 저장됐는지(true/false)를 반환해야 함 */
+  onSubmit: (name: string) => Promise<boolean>;
   /** 닫기 — 외부 탭/시스템 백 등 */
   onClose: () => void;
 }
@@ -39,11 +39,26 @@ export default function NicknameRequiredSheet({
 
   // 변경 모드여도 인풋은 빈 상태로 시작 (사용자가 새 닉네임을 자유롭게 입력)
   const [value, setValue] = useState('');
-  const isActive = value.trim().length > 0;
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const isActive = value.trim().length > 0 && !submitting;
 
   // 모드별 텍스트
   const headerText = isEditMode ? initialName! : '사용할 닉네임을 알려주세요';
   const placeholderText = isEditMode ? '변경할 닉네임' : '마이페이지에서 얼마든지 바꿀 수 있어요';
+
+  // 저장 성공 시엔 부모가 nicknameSheetOpen(등)을 false로 바꿔서 시트를 닫아줌 —
+  // 실패하면 여기서 에러만 보여주고 시트는 열어둔 채 재시도할 수 있게 함
+  const handleSubmit = async () => {
+    if (!isActive) return;
+    setSubmitting(true);
+    setError(null);
+    const ok = await onSubmit(value.trim());
+    if (!ok) {
+      setSubmitting(false);
+      setError('저장하지 못했어요. 다시 시도해주세요');
+    }
+  };
 
   return (
     <BottomSheet
@@ -59,7 +74,7 @@ export default function NicknameRequiredSheet({
             className="nickname-sheet-input"
             value={value}
             onChange={e => setValue(e.target.value.slice(0, MAX))}
-            onKeyDown={e => { if (e.key === 'Enter' && isActive) onSubmit(value.trim()); }}
+            onKeyDown={e => { if (e.key === 'Enter' && isActive) handleSubmit(); }}
             placeholder={placeholderText}
             autoFocus
             maxLength={MAX}
@@ -74,7 +89,8 @@ export default function NicknameRequiredSheet({
             } as React.CSSProperties}
           />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+          <span style={{ fontWeight: 500, fontSize: 12, color: '#FF4B4B' }}>{error ?? ''}</span>
           <span style={{ fontWeight: 400, fontSize: 12, color: 'rgba(0,19,43,0.38)' }}>
             {value.length}/{MAX}
           </span>
@@ -84,10 +100,10 @@ export default function NicknameRequiredSheet({
         color="primary"
         size="xlarge"
         style={{ width: '100%' }}
-        onClick={() => isActive && onSubmit(value.trim())}
+        onClick={handleSubmit}
         disabled={!isActive}
       >
-        저장하기
+        {submitting ? '저장 중...' : '저장하기'}
       </Button>
     </BottomSheet>
   );
