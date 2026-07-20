@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, Component } from 'react';
 import { getAnonymousKey, partner } from '@apps-in-toss/web-framework';
-import { getOrCreateUser, getOrCreateUserWithAuth, fetchLibraries, fetchSharedSpaces } from './services/db';
+import { getOrCreateUser, getOrCreateUserWithAuth, userExists, fetchLibraries, fetchSharedSpaces } from './services/db';
 import { trackUtmEntry } from './services/analytics';
 import { supabase } from './services/supabase';
 import type { ReactNode, ErrorInfo } from 'react';
@@ -28,7 +28,7 @@ import PhotoReviewPage from './pages/PhotoReviewPage';
 import PlaceholderPreviewPage from './pages/PlaceholderPreviewPage';
 import ClosedStorePreviewPage from './pages/ClosedStorePreviewPage';
 import NicknameSheetPreviewPage from './pages/NicknameSheetPreviewPage';
-import { getCachedUser, setCachedUser } from './utils/userCache';
+import { getCachedUser, setCachedUser, clearCachedUser } from './utils/userCache';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { useFavorites } from './context/FavoritesContext';
 
@@ -174,12 +174,19 @@ export default function App() {
       console.log('[AUTH] tossUserId:', tossId);
 
       // ── 로컬 캐시 확인 ─────────────────────────────────────
+      // 캐시는 서버 상태를 검증하지 않으므로, 신뢰하기 전에 실제 row 존재를 한 번 확인
+      // (DB 초기화 등으로 캐시된 userId 가 사라지면 리뷰/찜 등 쓰기가 전부 FK violation 으로 실패했음)
       const cached = getCachedUser(tossId);
       if (cached) {
-        console.log('[AUTH] using cached user');
-        setUserId(cached.userId);
-        setNickname(cached.nickname);
-        return;
+        const stillValid = supabase ? await userExists(cached.userId) : true;
+        if (stillValid) {
+          console.log('[AUTH] using cached user');
+          setUserId(cached.userId);
+          setNickname(cached.nickname);
+          return;
+        }
+        console.warn('[AUTH] cached user no longer exists — re-provisioning');
+        clearCachedUser();
       }
 
       // ── Supabase Anonymous Auth ────────────────────────────

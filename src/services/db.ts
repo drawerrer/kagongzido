@@ -11,6 +11,19 @@ export interface UserInfo {
   isNew: boolean;
 }
 
+/**
+ * 캐시된 userId 가 여전히 users 테이블에 살아있는지 확인.
+ * 로컬 캐시(userCache)는 서버 상태를 검증하지 않고 그대로 신뢰하는 구조라,
+ * DB 초기화(supabase_reset_users.sql 등)로 캐시된 userId 의 실제 row 가
+ * 사라진 뒤에도 캐시 히트로 그 값을 계속 써버리면 리뷰/찜 등 쓰기 작업이
+ * FK violation(23503)으로 전부 실패함 — 캐시를 신뢰하기 전에 한 번 검증.
+ */
+export async function userExists(userId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { data } = await supabase.from('users').select('id').eq('id', userId).maybeSingle();
+  return !!data?.id;
+}
+
 export async function getOrCreateUser(tossUserId: string): Promise<UserInfo | null> {
   if (!supabase) return null;
 
