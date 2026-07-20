@@ -175,6 +175,66 @@ function InfoBox({ label, value, icon }: { label: string; value: string; icon?: 
   );
 }
 
+// 흐르는 속도(px/초) — 텍스트 길이와 무관하게 항상 같은 체감 속도를 유지
+const MARQUEE_SPEED = 30;
+// 끝까지 이동한 뒤 처음으로 돌아가기 전 멈춰있는 시간(ms)
+const MARQUEE_HOLD_MS = 2000;
+
+/** 넘치는 텍스트를 한쪽 방향으로 흐르듯이 보여주는 말줄임 대체 — 시설/입장료처럼 값이 길어질 수 있는 InfoRow 전용 */
+function MarqueeValue({ text, color }: { text: string; color: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [shift, setShift] = useState(0);
+  const [traveling, setTraveling] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const textEl = textRef.current;
+    if (!container || !textEl) return;
+    const overflow = textEl.getBoundingClientRect().width - container.getBoundingClientRect().width;
+    setShift(overflow > 0 ? overflow : 0);
+  }, [text]);
+
+  useEffect(() => {
+    if (shift <= 0) return;
+    const travelMs = (shift / MARQUEE_SPEED) * 1000;
+    let timer: ReturnType<typeof setTimeout>;
+    const loop = () => {
+      // 시작 위치에서 2초 대기 후 이동 시작
+      timer = setTimeout(() => {
+        setTraveling(true);
+        timer = setTimeout(() => {
+          // 끝까지 이동 후 2초 대기했다가 처음으로 순간 복귀
+          timer = setTimeout(() => {
+            setTraveling(false);
+            timer = setTimeout(loop, 50);
+          }, MARQUEE_HOLD_MS);
+        }, travelMs);
+      }, MARQUEE_HOLD_MS);
+    };
+    timer = setTimeout(loop, 50);
+    return () => clearTimeout(timer);
+  }, [shift]);
+
+  return (
+    <div ref={containerRef} style={{ overflow: 'hidden', maxWidth: 220 }}>
+      <span
+        ref={textRef}
+        style={{
+          display: 'inline-block',
+          whiteSpace: 'nowrap',
+          fontSize: 14,
+          color,
+          transform: traveling ? `translateX(-${shift}px)` : 'translateX(0)',
+          transition: traveling ? `transform ${shift / MARQUEE_SPEED}s linear` : 'none',
+        }}
+      >
+        {text}
+      </span>
+    </div>
+  );
+}
+
 function InfoRow({ label, value, isLink }: { label: string; value?: string; isLink?: boolean }) {
   const displayValue = value ?? '-';
   return (
@@ -183,7 +243,7 @@ function InfoRow({ label, value, isLink }: { label: string; value?: string; isLi
       padding: '10px 0', borderBottom: '1px solid #F3F3F3',
     }}>
       <span style={{ fontSize: 14, color: '#8B95A1', width: 60, flexShrink: 0 }}>{label}</span>
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, minWidth: 0 }}>
         {isLink && value ? (
           <button
             onClick={() => openURL(value)}
@@ -193,10 +253,7 @@ function InfoRow({ label, value, isLink }: { label: string; value?: string; isLi
             {value}
           </button>
         ) : (
-          <span style={{ fontSize: 14, color: value ? '#191F28' : '#B0B8C1',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
-            {displayValue}
-          </span>
+          <MarqueeValue text={displayValue} color={value ? '#191F28' : '#B0B8C1'} />
         )}
         {isLink && value && (
           <button onClick={() => openURL(value)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0 }}>
