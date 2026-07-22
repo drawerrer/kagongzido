@@ -5,7 +5,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useFavorites } from '../context/FavoritesContext';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { trackSearchUse, trackCafeDetailView } from '../services/analytics';
-import { fetchAllStores, type StoreRow } from '../services/db';
+import { fetchAllStores, fetchLibraries, fetchSharedSpaces, type StoreRow, type PlaceRow } from '../services/db';
+import { placeRowToItem, type PlaceItem } from './MapPage';
 import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
 import IcSearch from '../assets/icons/icon_search.svg?react';
@@ -22,6 +23,8 @@ const SearchEmptyPlusIcon = (
 interface SearchPageProps {
   onClose: () => void;
   onDetailOpen?: (cafeId: string) => void;
+  /** 도서관/공유공간 검색 결과 탭 — 카페와 구분해 PlaceItem으로 전달 */
+  onPlaceDetailOpen?: (place: PlaceItem) => void;
   onReportCafe?: () => void;
   hasDetailOverlay?: boolean;
 }
@@ -178,27 +181,38 @@ function FavoriteRow({
   );
 }
 
-/** 검색 결과 카페 행 */
-function SearchCafeRow({ store, onTap }: { store: StoreRow; onTap?: () => void }) {
-  const badge = (store.badges ?? []).filter(b => b !== '해당없음' && b !== '해당 없음')[0];
+/** 검색 결과 행에 필요한 최소 공통 필드 — 카페(StoreRow) / 도서관·공유공간(PlaceItem) 통합 */
+interface SearchResultItem {
+  id: string;             // 카페: api_place_id / 도서관·공유공간: uuid
+  name: string;
+  address: string;
+  thumbnailUrl?: string;
+  badge?: string;
+  kind: 'store' | 'place';
+  store?: StoreRow;
+  place?: PlaceItem;
+}
+
+/** 검색 결과 카페/장소 행 */
+function SearchCafeRow({ item, onTap }: { item: SearchResultItem; onTap?: () => void }) {
   return (
     <div onClick={onTap} style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid #F2F4F6', cursor: 'pointer' }}>
       <div style={{
         width: 80, height: 80, borderRadius: 10, flexShrink: 0,
-        background: store.thumbnail_url
-          ? `url(${store.thumbnail_url}) center/cover no-repeat`
+        background: item.thumbnailUrl
+          ? `url(${item.thumbnailUrl}) center/cover no-repeat`
           : '#F2F4F6',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        {!store.thumbnail_url && <CafePlaceholder size="45%" />}
+        {!item.thumbnailUrl && <CafePlaceholder size="45%" />}
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2, minWidth: 0 }}>
-        <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{store.name}</p>
-        <p style={{ fontSize: 12, color: '#6B7684', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{store.address_road}</p>
+        <p style={{ fontSize: 15, fontWeight: 600, color: '#191F28', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
+        <p style={{ fontSize: 12, color: '#6B7684', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.address}</p>
         <span style={{ fontSize: 12, color: '#6B7684' }}>리뷰 0</span>
-        {badge && (
+        {item.badge && (
           <span style={{ display: 'inline-block', padding: '2px 8px', background: '#F2F4F6', borderRadius: 4, fontSize: 11, color: '#4E5968', alignSelf: 'flex-start' }}>
-            {badge}
+            {item.badge}
           </span>
         )}
       </div>
@@ -268,16 +282,38 @@ function Chip({
 }
 
 // ── SearchPage ────────────────────────────────────────────────
-export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCafe, hasDetailOverlay = false }: SearchPageProps) {
+export default function SearchPage({ onClose: _onClose, onDetailOpen, onPlaceDetailOpen, onReportCafe, hasDetailOverlay = false }: SearchPageProps) {
   const [query, setQuery]           = useState('');
   const [activeChip, setActiveChip] = useState<string | null>(null);
   const [recentSearches, setRecentSearches] = useState<{ keyword: string; date: string }[]>([]);
   const [allStores, setAllStores]   = useState<StoreRow[]>([]);
+  const [libraries, setLibraries]     = useState<PlaceRow[]>([]);
+  const [sharedSpaces, setSharedSpaces] = useState<PlaceRow[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchAllStores().then(setAllStores);
+    fetchLibraries().then(setLibraries);
+    fetchSharedSpaces().then(setSharedSpaces);
   }, []);
+
+  // 카페(stores) + 도서관/공유공간 검색 대상 통합
+  const searchItems: SearchResultItem[] = [
+    ...allStores.map((s): SearchResultItem => ({
+      id: s.api_place_id, name: s.name, address: s.address_road ?? '',
+      thumbnailUrl: s.thumbnail_url,
+      badge: (s.badges ?? []).filter(b => b !== '해당없음' && b !== '해당 없음')[0],
+      kind: 'store', store: s,
+    })),
+    ...libraries.map((r): SearchResultItem => {
+      const place = placeRowToItem(r, 'library');
+      return { id: place.id, name: place.name, address: place.address, thumbnailUrl: place.thumbnailUrl, badge: '도서관', kind: 'place', place };
+    }),
+    ...sharedSpaces.map((r): SearchResultItem => {
+      const place = placeRowToItem(r, 'shared_space');
+      return { id: place.id, name: place.name, address: place.address, thumbnailUrl: place.thumbnailUrl, badge: '공유공간', kind: 'place', place };
+    }),
+  ];
   const { favorites, collections }  = useFavorites();
 
   // 'recent' 기본 컬렉션 제외, 사용자 생성 컬렉션만
@@ -307,13 +343,14 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
     if (!query.trim()) return;
     const timer = setTimeout(() => {
       const q = query.trim();
-      const count = allStores.filter(s =>
-        s.name.includes(q) || (s.address_road ?? '').includes(q)
+      const count = searchItems.filter(i =>
+        i.name.includes(q) || i.address.includes(q)
       ).length;
       trackSearchUse(q, count);
     }, 1000);
     return () => clearTimeout(timer);
-  }, [query, allStores]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, allStores, libraries, sharedSpaces]);
 
   const removeRecent  = (kw: string) => setRecentSearches(p => p.filter(r => r.keyword !== kw));
   const clearAllRecent = () => setRecentSearches([]);
@@ -392,8 +429,8 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
 
         {/* ① 타이핑 중 — Figma: search_typing */}
         {isTyping && (() => {
-          const filteredResults = allStores.filter(s =>
-            s.name.includes(query.trim()) || (s.address_road ?? '').includes(query.trim())
+          const filteredResults = searchItems.filter(i =>
+            i.name.includes(query.trim()) || i.address.includes(query.trim())
           );
           const suggestions: string[] = [];
 
@@ -440,8 +477,19 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onReportCa
               {filteredResults.length > 0 && (
                 <div>
                   <StoreCountBar count={filteredResults.length} />
-                  {filteredResults.map(s => (
-                    <SearchCafeRow key={s.api_place_id} store={s} onTap={() => { trackCafeDetailView(s.api_place_id, 'search'); onDetailOpen?.(s.api_place_id); }} />
+                  {filteredResults.map(item => (
+                    <SearchCafeRow
+                      key={item.id}
+                      item={item}
+                      onTap={() => {
+                        if (item.kind === 'store') {
+                          trackCafeDetailView(item.id, 'search');
+                          onDetailOpen?.(item.id);
+                        } else if (item.place) {
+                          onPlaceDetailOpen?.(item.place);
+                        }
+                      }}
+                    />
                   ))}
                 </div>
               )}

@@ -606,6 +606,7 @@ function AppInner() {
           <SearchPage
             onClose={() => setShowSearch(false)}
             onDetailOpen={(id) => { setDetailCafeId(id); }}
+            onPlaceDetailOpen={(place) => { setDetailPlace(place); setDetailCafeId(place.id); }}
             onReportCafe={() => {
               setShowSearch(false);
               setActiveTab('mypage');
