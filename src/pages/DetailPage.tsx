@@ -668,8 +668,15 @@ function ReviewCard({ review, initialLiked, onToggleLike, onEditReview, onDelete
   const [reportDone, setReportDone] = useState(false);
   const [blockDone, setBlockDone] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
-  const CONTENT_THRESHOLD = 50; // 띄어쓰기 포함 50자
-  const isLong = review.content.length > CONTENT_THRESHOLD;
+  const [isLong, setIsLong] = useState(false);
+  const contentRef = useRef<HTMLParagraphElement | null>(null);
+
+  // 실제 2줄 클램프 시 텍스트가 잘리는지 DOM에서 직접 측정 (글자 수 추정 대신)
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    setIsLong(el.scrollHeight > el.clientHeight + 1);
+  }, [review.content]);
 
   const handleReport = () => {
     setShowReport(false);
@@ -837,9 +844,9 @@ function ReviewCard({ review, initialLiked, onToggleLike, onEditReview, onDelete
         </div>
       )}
 
-      {/* 리뷰 텍스트 (50자 말줄임 → 더보기 탭 시 전체 펼침) */}
+      {/* 리뷰 텍스트 (2줄 초과 시에만 더보기 탭 노출 → 탭 시 전체 펼침) */}
       <div>
-        <p style={{
+        <p ref={contentRef} style={{
           fontSize: 14, color: '#000000', lineHeight: 1.65, marginBottom: isLong ? 4 : 0,
           ...(textExpanded ? {} : {
             display: '-webkit-box' as any,
