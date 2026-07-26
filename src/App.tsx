@@ -428,7 +428,9 @@ function AppInner() {
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
       {/* ── 베이스 탭 콘텐츠 (항상 렌더링 — 슬라이드아웃 시 배경으로 노출) ── */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      {/* isolation: isolate — 내부(예: MapPage 바텀시트 expanded 시 zIndex:25)가
+          아래 오버레이(zIndex 10~40)를 침범하지 못하도록 별도 stacking context 생성 */}
+      <div style={{ flex: 1, overflow: 'hidden', position: 'relative', isolation: 'isolate' }}>
         {activeTab === 'home' && (
           <MapPage
             key={tabKeys.home}
