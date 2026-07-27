@@ -237,6 +237,8 @@ const SHEET_MIN_TOP = 'calc(env(safe-area-inset-bottom, 0px) + 132px)';
 const GPS_MIN_BOTTOM = `calc(${SHEET_MIN_TOP} + 12px)`;
 // 시트보다 20px 아래에서 끝나는 위치 (지도 컨테이너)
 const MAP_MIN_BOTTOM = `calc(${SHEET_MIN_TOP} - 20px)`;
+// 클러스터러 minLevel과 동일하게 유지 — 이 레벨 미만에서는 클러스터링이 비활성화됨
+const CLUSTER_MIN_LEVEL = 5;
 
 export interface MapPageState {
   activeChip: string | null;
@@ -539,7 +541,7 @@ const [filterOpen, setFilterOpen] = useState(false);
     const clusterer = new window.kakao.maps.MarkerClusterer({
       map,
       averageCenter: true,
-      minLevel: 5,
+      minLevel: CLUSTER_MIN_LEVEL,
       gridSize: 60,
       styles: [{
         width: '40px', height: '40px',
@@ -576,6 +578,16 @@ const [filterOpen, setFilterOpen] = useState(false);
         const marker = placeMarkersRef.current.get(placeId);
         overlay.setMap(clusteredSet.has(marker) ? null : map);
       });
+    });
+
+    // 클러스터 탭 시 기본 줌으로 CLUSTER_MIN_LEVEL 미만으로 넘어가면 클러스터러가
+    // 비활성화되어 'clustered' 이벤트가 다시 발화되지 않음 — 이때 숨겨진 채로 남은
+    // overlay(카페/장소 핀)를 직접 복구해줌
+    window.kakao.maps.event.addListener(map, 'zoom_changed', () => {
+      if (map.getLevel() < CLUSTER_MIN_LEVEL) {
+        overlaysRef.current.forEach(overlay => overlay.setMap(map));
+        placeOverlaysRef.current.forEach(overlay => overlay.setMap(map));
+      }
     });
 
     // 사용자가 지도를 직접 드래그할 때 시트를 minimized 로 자동 축소 (지도 시야 확보)

@@ -71,7 +71,7 @@ interface KakaoMapsStatic {
     styles?: Record<string, string>[];
   }) => KakaoMarkerClusterer;
   event: {
-    addListener(target: KakaoMap, type: 'dragstart' | 'dragend' | 'bounds_changed', handler: () => void): void;
+    addListener(target: KakaoMap, type: 'dragstart' | 'dragend' | 'bounds_changed' | 'zoom_changed', handler: () => void): void;
     addListener(target: KakaoMarkerClusterer, type: 'clusterclick', handler: () => void): void;
     addListener(target: KakaoMarkerClusterer, type: 'clustered', handler: (clusters: KakaoCluster[]) => void): void;
     removeListener(target: object, type: string, handler: () => void): void;
