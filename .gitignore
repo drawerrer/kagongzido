@@ -12,3 +12,5 @@ images/
 .vercel
 portfolio/
 portfolio-preview.html
+client_secret_*.json
+.ga4-token.json

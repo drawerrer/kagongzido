@@ -17,6 +17,17 @@ function ait(params: { log_name: string } & EventParams) {
   try { Analytics.click(params as Parameters<typeof Analytics.click>[0]); } catch { /* 토스 앱 외 환경에서 무시 */ }
 }
 
+function aitScreen(params: { log_name: string } & EventParams) {
+  try { Analytics.screen(params as Parameters<typeof Analytics.screen>[0]); } catch { /* 토스 앱 외 환경에서 무시 */ }
+}
+
+// ── 화면 진입(page_view) ──────────────────────────────────────
+export function trackPageView(screenName: string) {
+  const params = { log_name: 'screen_view', screen_name: screenName };
+  aitScreen(params);
+  ga('screen_view', params);
+}
+
 // ── 필터 ──────────────────────────────────────────────────────
 export function trackFilterOpen() {
   ait({ log_name: 'filter_open' });

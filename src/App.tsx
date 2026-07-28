@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, Component } from 'react';
 import { getAnonymousKey, partner } from '@apps-in-toss/web-framework';
 import { getOrCreateUser, getOrCreateUserWithAuth, userExists, fetchLibraries, fetchSharedSpaces } from './services/db';
-import { trackUtmEntry } from './services/analytics';
+import { trackUtmEntry, trackPageView } from './services/analytics';
 import { supabase } from './services/supabase';
 import type { ReactNode, ErrorInfo } from 'react';
 
@@ -423,6 +423,17 @@ function AppInner() {
     : showSearch ? 'search'
     : collectionDetail ? 'collection'
     : null;
+
+  // ── screenName: GA/AiT 화면 진입(page_view) 로깅용 ───────────
+  const screenName = topOverlay === 'photo' ? 'photo_review'
+    : topOverlay === 'detail' ? (detailPlaceType ? 'place_detail' : 'cafe_detail')
+    : topOverlay === 'search' ? 'search'
+    : topOverlay === 'collection' ? 'collection_detail'
+    : activeTab;
+
+  useEffect(() => {
+    trackPageView(screenName);
+  }, [screenName]);
 
   return (
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>

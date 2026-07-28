@@ -1,8 +1,10 @@
+import { useState, useRef } from 'react';
 import { useFavorites, fmtWalkMinutes } from '../../context/FavoritesContext';
 import CafePlaceholder from '../CafePlaceholder';
 import IcArrow from '../../assets/icons/icon_arrow.svg?react';
 import { IcOutletMini, IcSeatMini, IcLaptopMini, IcTicketMini } from './icons';
 import type { PlaceKind } from '../../services/db';
+import { playHeartTick, playHeartOn, playHeartOff, playHeartPopAnimation } from '../../utils/keycapSound';
 
 export interface HomeCafe {
   id: string;
@@ -64,6 +66,8 @@ function fmtEntCondition(raw?: string): string | undefined {
 export default function StoreCardHome({ cafe, onTap, onFavoriteChange, variant = 'home' }: StoreCardHomeProps) {
   const { isFavorited, addFavorite, removeFavorite } = useFavorites();
   const favorited = isFavorited(cafe.id);
+  const [pressed, setPressed] = useState(false);
+  const heartSvgRef = useRef<SVGSVGElement>(null);
 
   // 도서관/공유공간은 좌석·콘센트 대신 노트북·입장조건을 2행에 노출
   const isPlace = cafe.placeType === 'library' || cafe.placeType === 'shared_space';
@@ -79,6 +83,7 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange, variant =
     if (favorited) {
       removeFavorite(cafe.id);
       onFavoriteChange?.('removed', cafe);
+      playHeartOff();
     } else {
       addFavorite({
         id: cafe.id,
@@ -91,6 +96,8 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange, variant =
         placeType: cafe.placeType ?? 'cafe',
       });
       onFavoriteChange?.('added', cafe);
+      playHeartOn();
+      playHeartPopAnimation(heartSvgRef.current);
     }
   };
 
@@ -203,6 +210,10 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange, variant =
           /* 하트 */
           <button
             onClick={handleHeartClick}
+            onPointerDown={() => { setPressed(true); playHeartTick(); }}
+            onPointerUp={() => setPressed(false)}
+            onPointerLeave={() => setPressed(false)}
+            onPointerCancel={() => setPressed(false)}
             style={{
               width: 44, height: 44,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -210,7 +221,14 @@ export default function StoreCardHome({ cafe, onTap, onFavoriteChange, variant =
               flexShrink: 0, marginLeft: 4, marginTop: -11,
             }}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <svg
+              ref={heartSvgRef}
+              width="22" height="22" viewBox="0 0 24 24" fill="none"
+              style={{
+                transform: pressed ? 'scale(0.82)' : 'scale(1)',
+                transition: pressed ? 'transform 90ms ease-out' : 'transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+              }}
+            >
               <path
                 fillRule="evenodd" clipRule="evenodd"
                 d="M10.9038 21.2884C11.5698 21.7284 12.4288 21.7284 13.0938 21.2884C15.2088 19.8924 19.8138 16.5554 21.7978 12.8214C24.4128 7.89542 21.3418 2.98242 17.2818 2.98242C14.9678 2.98242 13.5758 4.19142 12.8058 5.23042C12.4818 5.67542 11.8588 5.77442 11.4128 5.45042C11.3278 5.38942 11.2538 5.31442 11.1928 5.23042C10.4228 4.19142 9.03076 2.98242 6.71676 2.98242C2.65676 2.98242 -0.414244 7.89542 2.20176 12.8214C4.18376 16.5554 8.79076 19.8924 10.9038 21.2884Z"
