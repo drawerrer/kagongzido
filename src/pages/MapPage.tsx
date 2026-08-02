@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { getCurrentLocation, Accuracy, partner, tdsEvent } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { Toast } from '@toss/tds-mobile';
@@ -983,6 +984,16 @@ const [filterOpen, setFilterOpen] = useState(false);
       moveMapTo(pos[0], pos[1]);
       setUserPosition(pos);
     } catch {
+      // gpsStatus가 이미 'granted'인 상태에서도, 세션 도중 OS 설정에서 토스 앱
+      // 자체의 위치 권한이 꺼졌다면 재시도해도 계속 실패함 — 실제 권한 상태를
+      // 다시 확인해 진짜 거부된 경우에만 설정 안내로 전환하고, 그 외(일시적
+      // GPS 오류 등)에는 기존처럼 재시도 토스트를 보여줌
+      const permission = await getCurrentLocation.getPermission().catch(() => null);
+      if (permission === 'denied') {
+        setGpsStatus('denied');
+        setLocSheet('denied');
+        return;
+      }
       setGpsToast(true);
       setTimeout(() => setGpsToast(false), 2500);
     }
@@ -1302,26 +1313,32 @@ const [filterOpen, setFilterOpen] = useState(false);
       />
 
       {/* ── 위치 권한 바텀시트 ── */}
-      {locSheet && (
+      {/* App.tsx 베이스 탭 wrapper의 isolation:isolate 안에 있으면 zIndex를 아무리
+          올려도 App 레벨 탭바(zIndex:100)를 못 이겨서 body에 포탈로 렌더링 */}
+      {locSheet && createPortal(
         <LocationPermissionSheet
           type={locSheet}
           onClose={() => { if (locSheet === 'ask') handleDenyLocation(); else setLocSheet(null); }}
           onAllow={handleAllowLocation}
           onOpenSettings={handleOpenSettings}
-        />
+        />,
+        document.body
       )}
 
       {/* ── 지금 내 주변 노트북 펴기 좋은 카페 3곳 (위치 허용 유저 첫 진입 1회) ── */}
-      <NearbyLaptopCafesDialog
-        isOpen={nearbySheetOpen}
-        cafes={nearbySheetCafes}
-        onClose={() => { trackNearbyLaptopSheetConfirm(); setNearbySheetOpen(false); }}
-        onSelectCafe={(cafe) => {
-          trackCafeDetailView(cafe.id, 'nearby_sheet');
-          setNearbySheetOpen(false);
-          onDetailOpen(cafe.id);
-        }}
-      />
+      {createPortal(
+        <NearbyLaptopCafesDialog
+          isOpen={nearbySheetOpen}
+          cafes={nearbySheetCafes}
+          onClose={() => { trackNearbyLaptopSheetConfirm(); setNearbySheetOpen(false); }}
+          onSelectCafe={(cafe) => {
+            trackCafeDetailView(cafe.id, 'nearby_sheet');
+            setNearbySheetOpen(false);
+            onDetailOpen(cafe.id);
+          }}
+        />,
+        document.body
+      )}
 
       {/* ── GPS 실패 토스트 ── */}
       <Toast open={gpsToast} position="top" text="현재 위치를 가져오지 못했어요. 다시 시도해주세요" onClose={() => setGpsToast(false)} />
