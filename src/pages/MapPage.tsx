@@ -985,11 +985,12 @@ const [filterOpen, setFilterOpen] = useState(false);
       setUserPosition(pos);
     } catch {
       // gpsStatus가 이미 'granted'인 상태에서도, 세션 도중 OS 설정에서 토스 앱
-      // 자체의 위치 권한이 꺼졌다면 재시도해도 계속 실패함 — 실제 권한 상태를
-      // 다시 확인해 진짜 거부된 경우에만 설정 안내로 전환하고, 그 외(일시적
-      // GPS 오류 등)에는 기존처럼 재시도 토스트를 보여줌
+      // 자체의 위치 권한이 바뀌었다면(완전 거부는 물론, iOS "다음에 묻기 또는
+      // 내가 공유할 때"처럼 notDetermined로 되돌아간 경우도 포함) 재시도해도
+      // 계속 실패함 — 실제 권한이 'allowed'로 확인될 때만(순수 GPS 오류 등
+      // 일시적 실패) 재시도 토스트를 보여주고, 그 외에는 전부 설정 안내로 전환
       const permission = await getCurrentLocation.getPermission().catch(() => null);
-      if (permission === 'denied') {
+      if (permission !== 'allowed') {
         setGpsStatus('denied');
         setLocSheet('reask');
         return;
