@@ -3,7 +3,8 @@
 //   'ask'     - 최초 권한 요청 (아니요 / 허용하기)
 //   'granted' - 권한 허용 확인 (확인)
 //   'denied'  - 권한 거부 확인 (설정에서 변경하기 / 확인)
-//   'reask'   - 권한 재요청 (나중에 / 허용하기 → 설정으로)
+//   'reask'   - 권한 재요청 (확인) — OS 설정에서 완전히 꺼진 상태라 앱 내
+//               재요청 다이얼로그로는 실제로 허용되지 않으므로 안내만 하고 닫음
 //
 // 피그마 수치 기준:
 //   시트 r=28, Handle 48×4 r=40 fill=#e5e8eb
@@ -82,7 +83,18 @@ function BlockIcon() {
 }
 
 // ── 컨텐츠 설정 — 피그마 텍스트 원문 그대로 ─────────────────
-function getContent(type: LocationSheetType) {
+interface SheetContent {
+  icon: JSX.Element;
+  title: string;
+  desc: string;
+  descColor: string;
+  /** 강조 박스로 별도 렌더링할 경로/단계 안내 (reask 전용) */
+  highlight?: string;
+  /** highlight 박스 아래에 이어지는 설명 (reask 전용) */
+  descAfter?: string;
+}
+
+function getContent(type: LocationSheetType): SheetContent {
   switch (type) {
     case 'ask':
       return {
@@ -112,7 +124,10 @@ function getContent(type: LocationSheetType) {
       return {
         icon: <LocationIcon />,
         title: '위치 권한을 허용해주세요',
-        desc: '현재 위치 권한이 거부된 상태입니다. 길찾기를 이용하시려면, [설정] > [위치권한] 에서 \'허용\'으로 변경해주세요.',
+        desc: '내 위치로 주변 매장을 보려면 위치 권한이 필요해요.',
+        // 경로 안내는 별도 강조 박스로 렌더링 (아래 highlight)
+        highlight: '설정 > 앱 목록 > 토스 > 위치 > 허용',
+        descAfter: '허용한 뒤 토스앱을 다시 실행해 주세요.',
         // reask: desc fill=#6b7684
         descColor: '#6b7684',
       };
@@ -126,10 +141,10 @@ export default function LocationPermissionSheet({
   onAllow,
   onOpenSettings,
 }: LocationPermissionSheetProps) {
-  const { icon, title, desc, descColor } = getContent(type);
+  const { icon, title, desc, descColor, highlight, descAfter } = getContent(type);
 
-  // ask/denied/reask: 2-버튼 레이아웃
-  // granted: 1-버튼 레이아웃 (확인)
+  // ask/denied: 2-버튼 레이아웃
+  // granted/reask: 1-버튼 레이아웃 (확인)
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 400 }}>
@@ -148,7 +163,7 @@ export default function LocationPermissionSheet({
         bottom: 0,
         left: 10,
         right: 10,
-        background: '#f3f3f3',
+        background: '#FFFFFF',
         borderRadius: 28,
         animation: 'locSlideUp 0.25s ease',
       }}>
@@ -201,6 +216,40 @@ export default function LocationPermissionSheet({
           </p>
         </div>
 
+        {/* 강조 박스 — 설정 경로처럼 시선을 끌어야 하는 내용 (reask 전용) */}
+        {highlight && (
+          <div style={{ padding: '4px 24px 8px' }}>
+            <div style={{
+              background: '#F3F3F3',
+              borderRadius: 14,
+              padding: '13px 16px',
+            }}>
+              <p style={{
+                fontSize: 14.5,
+                fontWeight: 700,
+                lineHeight: '20px',
+                color: 'rgba(0,12,30,0.80)',
+              }}>
+                {highlight}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* highlight 박스 아래 이어지는 설명 (reask 전용) */}
+        {descAfter && (
+          <div style={{ padding: '0 24px 8px' }}>
+            <p style={{
+              fontSize: 15,
+              fontWeight: 400,
+              lineHeight: '22.5px',
+              color: descColor,
+            }}>
+              {descAfter}
+            </p>
+          </div>
+        )}
+
         {/* 아이콘 (중앙 정렬) */}
         <div style={{
           display: 'flex',
@@ -229,11 +278,7 @@ export default function LocationPermissionSheet({
             />
           )}
           {type === 'reask' && (
-            <SheetCTA.Double
-              leftLabel="나중에" leftOnClick={onClose}
-              rightLabel="허용하기" rightOnClick={onOpenSettings}
-              background="#FFFFFF"
-            />
+            <SheetCTA.Single label="확인" onClick={onClose} background="#FFFFFF" />
           )}
           {type === 'granted' && (
             <SheetCTA.Single label="확인" onClick={onClose} background="#FFFFFF" />

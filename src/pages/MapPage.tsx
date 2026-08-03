@@ -991,7 +991,7 @@ const [filterOpen, setFilterOpen] = useState(false);
       const permission = await getCurrentLocation.getPermission().catch(() => null);
       if (permission === 'denied') {
         setGpsStatus('denied');
-        setLocSheet('denied');
+        setLocSheet('reask');
         return;
       }
       setGpsToast(true);
