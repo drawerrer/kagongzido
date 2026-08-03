@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { getCurrentLocation, Accuracy, partner, tdsEvent } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
-import { Toast } from '@toss/tds-mobile';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
 import { expandHours, getHoursStatus } from '../utils/hours';
 import { trackFilterOpen, trackFilterApply, trackChipTap, trackCafeDetailView, trackViewModeChange, trackNearbyLaptopSheetShow, trackNearbyLaptopSheetConfirm, trackMapMove } from '../services/analytics';
@@ -308,7 +307,6 @@ const [filterOpen, setFilterOpen] = useState(false);
   type GpsStatus = 'granted' | 'denied' | 'unknown';
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('unknown');
   const [locSheet, setLocSheet] = useState<LocationSheetType | null>(null);
-  const [gpsToast, setGpsToast] = useState(false);
   const [favoriteSnackbar, setFavoriteSnackbar] = useState<'added' | 'removed' | null>(null);
   const [removedCafe, setRemovedCafe] = useState<HomeCafe | null>(null);
   const [nearbySheetOpen, setNearbySheetOpen] = useState(false);
@@ -985,18 +983,14 @@ const [filterOpen, setFilterOpen] = useState(false);
       setUserPosition(pos);
     } catch {
       // gpsStatus가 이미 'granted'인 상태에서도, 세션 도중 OS 설정에서 토스 앱
-      // 자체의 위치 권한이 바뀌었다면(완전 거부는 물론, iOS "다음에 묻기 또는
-      // 내가 공유할 때"처럼 notDetermined로 되돌아간 경우도 포함) 재시도해도
-      // 계속 실패함 — 실제 권한이 'allowed'로 확인될 때만(순수 GPS 오류 등
-      // 일시적 실패) 재시도 토스트를 보여주고, 그 외에는 전부 설정 안내로 전환
-      const permission = await getCurrentLocation.getPermission().catch(() => null);
-      if (permission !== 'allowed') {
-        setGpsStatus('denied');
-        setLocSheet('reask');
-        return;
-      }
-      setGpsToast(true);
-      setTimeout(() => setGpsToast(false), 2500);
+      // 자체의 위치 권한이 바뀌었을 수 있음(완전 거부, iOS "다음에 묻기 또는
+      // 내가 공유할 때" 등) — getCurrentLocation.getPermission()으로 실제
+      // 권한 상태를 구분해보려 했으나 실기기에서 값이 실제 상태를 제때
+      // 반영하지 못해(허용이 철회됐는데도 'allowed'로 나오는 등) 신뢰할 수
+      // 없었음. 그래서 위치를 못 가져오면 이유를 따지지 않고 무조건 설정
+      // 안내 시트로 보냄 — 재시도 토스트로 막다른 길을 만들지 않기 위함
+      setGpsStatus('denied');
+      setLocSheet('reask');
     }
   };
 
@@ -1340,9 +1334,6 @@ const [filterOpen, setFilterOpen] = useState(false);
         />,
         document.body
       )}
-
-      {/* ── GPS 실패 토스트 ── */}
-      <Toast open={gpsToast} position="top" text="현재 위치를 가져오지 못했어요. 다시 시도해주세요" onClose={() => setGpsToast(false)} />
 
       {/* ── 찜 스낵바 ── */}
       {favoriteSnackbar === 'added' && (
