@@ -34,7 +34,7 @@ const EmptyPlusIcon = (
 // 타입
 // ─────────────────────────────────────────────────────────────
 type MyTab = '내 활동' | '설정';
-type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices';
+type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup';
 
 interface CafeItem {
   id: string;
@@ -215,6 +215,26 @@ function NoticesPage({ onBack, enabled = true }: { onBack: () => void; enabled?:
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 서브 페이지: 카페 취향 월드컵 (준비 중 — CTA 연결용 임시 화면)
+// ─────────────────────────────────────────────────────────────
+function TasteWorldcupPage({ onBack, enabled = true }: { onBack: () => void; enabled?: boolean }) {
+  useBackEvent(onBack, enabled);
+
+  return (
+    <div style={{
+      height: '100%', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: '#f3f3f3', padding: '0 32px', textAlign: 'center', gap: 8,
+    }}>
+      <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28' }}>카페 취향 월드컵</p>
+      <p style={{ fontSize: 13, color: '#8B95A1', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+        {`둘 중 더 끌리는 카페 조건을 골라가며\n나만의 1순위 취향을 찾는 기능을 준비하고 있어요`}
+      </p>
     </div>
   );
 }
@@ -1398,6 +1418,8 @@ export default function MyPage({
     if (!ok) return;
     changeSubPage('report-cafe');
   };
+  // 카페 취향 월드컵 진입
+  const handleOpenTasteWorldcup = () => changeSubPage('taste-worldcup');
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [showContactPopup, setShowContactPopup] = useState(false);
   const [copiedToast, setCopiedToast] = useState(false);
@@ -1431,7 +1453,7 @@ export default function MyPage({
           }}>
             <span style={{ fontSize: 28, fontWeight: 700, color: '#101010', lineHeight: 1 }}>{displayName[0]}</span>
           </div>
-          {/* 이름 + 정보 + 제보하기 배지 */}
+          {/* 이름 + 정보 + 카페 취향 월드컵 CTA */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 18, fontWeight: 510, color: '#101010', lineHeight: '23px' }}>{displayName}</span>
@@ -1454,15 +1476,16 @@ export default function MyPage({
               </div>
               <div style={{ flex: 1 }} />
               <button
-                onClick={handleOpenReportCafe}
+                onClick={handleOpenTasteWorldcup}
                 style={{
                   background: '#252525', borderRadius: 13,
                   height: 29, padding: '0 10px',
                   fontSize: 12, fontWeight: 510, color: '#ffffff',
                   border: 'none', cursor: 'pointer', lineHeight: '21px',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                제보하기
+                카페 취향 월드컵
               </button>
             </div>
           </div>
@@ -1799,6 +1822,11 @@ export default function MyPage({
     {subPage === 'notices' && (
       <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
         <NoticesPage onBack={() => changeSubPage(null)} enabled={!hasDetailOverlay} />
+      </div>
+    )}
+    {subPage === 'taste-worldcup' && (
+      <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <TasteWorldcupPage onBack={() => changeSubPage(null)} enabled={!hasDetailOverlay} />
       </div>
     )}
     {editingReview && (
