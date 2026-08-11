@@ -220,21 +220,59 @@ function NoticesPage({ onBack, enabled = true }: { onBack: () => void; enabled?:
 }
 
 // ─────────────────────────────────────────────────────────────
-// 서브 페이지: 카페 취향 월드컵 (준비 중 — CTA 연결용 임시 화면)
+// 서브 페이지: 카페 취향 월드컵 온보딩 (3장 중 1장 — Figma 스펙 반영)
 // ─────────────────────────────────────────────────────────────
+const TASTE_WORLDCUP_ONBOARDING_TOTAL = 3;
+
+// 헤드라인 영역과 인디케이터 영역의 높이를 동일하게 맞추기 위한 기준값
+//  - 메인 22px(줄높이 27.5px, 1줄) + 사이 패딩 14px + 서브 14px(줄높이 17.5px × 최대 2줄 = 36px)
+const HEADLINE_MAIN_HEIGHT = 27.5;
+const HEADLINE_GAP = 14;
+const HEADLINE_SUB_MAX_HEIGHT = 36;
+const HEADLINE_AREA_HEIGHT = HEADLINE_MAIN_HEIGHT + HEADLINE_GAP + HEADLINE_SUB_MAX_HEIGHT;
+
 function TasteWorldcupPage({ onBack, enabled = true }: { onBack: () => void; enabled?: boolean }) {
   useBackEvent(onBack, enabled);
 
   return (
     <div style={{
-      height: '100%', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      background: '#f3f3f3', padding: '0 32px', textAlign: 'center', gap: 8,
+      position: 'relative', height: '100%', overflow: 'hidden', background: '#f3f3f3',
+      display: 'flex', flexDirection: 'column',
     }}>
-      <p style={{ fontSize: 17, fontWeight: 700, color: '#191F28' }}>카페 취향 월드컵</p>
-      <p style={{ fontSize: 13, color: '#8B95A1', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
-        {`둘 중 더 끌리는 카페 조건을 골라가며\n나만의 1순위 취향을 찾는 기능을 준비하고 있어요`}
-      </p>
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: 30,
+      }}>
+        {/* 헤드라인 — 메인 22px + 서브 14px(최대 2줄), 사이 패딩 14px. 인디케이터와 높이를 맞추기 위해 고정 높이 */}
+        <div style={{ height: HEADLINE_AREA_HEIGHT, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: HEADLINE_GAP, textAlign: 'center' }}>
+          <p style={{ margin: 0, fontSize: 22, fontWeight: 590, color: '#252525', lineHeight: '27.5px' }}>
+            나는 어떤 카공 스타일일까?
+          </p>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 400, color: '#9b9b9b', lineHeight: '17.5px' }}>
+            콘센트, 조명, 분위기.... 카공 취향을 알아봐요
+          </p>
+        </div>
+
+        {/* 이미지 영역 — 텍스트와 50px, 인디케이터와 40px 간격, 300:280 비율로 화면 폭에 맞춰 반응형 리사이즈 */}
+        {/* TODO: Figma "Character" 노드가 아직 빈 이미지라 실제 일러스트 에셋 없음 — 받는 대로 교체 필요 */}
+        <div style={{ marginTop: 50, width: '100%', aspectRatio: '300 / 280', background: '#e5e8eb' }} />
+
+        {/* 인디케이터 — 헤드라인과 동일한 높이로 좌우 대칭. 닷은 크기만큼만 차지하고 가운데 정렬 */}
+        <div style={{ marginTop: 40, height: HEADLINE_AREA_HEIGHT, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          {Array.from({ length: TASTE_WORLDCUP_ONBOARDING_TOTAL }).map((_, i) => (
+            <div key={i} style={{
+              width: 6, height: 6, borderRadius: 4,
+              background: i === 0 ? '#252525' : '#bbbbbb',
+            }} />
+          ))}
+        </div>
+      </div>
+
+      {/* 하단 CTA와의 여백 확보용 스페이서 — 바디 바깥, 바디 아래 */}
+      <div style={{ flexShrink: 0, height: 120 }} />
+
+      <FocusBottomCTA.Single label="시작하기" onClick={onBack} />
     </div>
   );
 }
@@ -1467,12 +1505,21 @@ export default function MyPage({
               </button>
             </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div
-                onClick={() => changeSubPage('reported')}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
-              >
-                <span style={{ fontSize: 14, fontWeight: 510, color: '#9b9b9b', lineHeight: '18px' }}>제보한 카페</span>
-                <span style={{ fontSize: 14, fontWeight: 510, color: '#101010', lineHeight: '18px' }}>{reportCount}개</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div
+                  onClick={() => changeSubPage('reported')}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+                >
+                  <span style={{ fontSize: 14, fontWeight: 510, color: '#9b9b9b', lineHeight: '18px' }}>제보한 카페</span>
+                  <span style={{ fontSize: 14, fontWeight: 510, color: '#101010', lineHeight: '18px' }}>{reportCount}개</span>
+                </div>
+                <div
+                  onClick={handleOpenTasteWorldcup}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+                >
+                  <span style={{ fontSize: 14, fontWeight: 510, color: '#9b9b9b', lineHeight: '18px' }}>카페 취향</span>
+                  <span style={{ fontSize: 14, fontWeight: 510, color: '#101010', lineHeight: '18px' }}>미설정</span>
+                </div>
               </div>
               <div style={{ flex: 1 }} />
               <button
@@ -1483,6 +1530,7 @@ export default function MyPage({
                   fontSize: 12, fontWeight: 510, color: '#ffffff',
                   border: 'none', cursor: 'pointer', lineHeight: '21px',
                   whiteSpace: 'nowrap',
+                  animation: 'worldcup-cta-pulse 0.55s ease-in-out 2',
                 }}
               >
                 카페 취향 월드컵

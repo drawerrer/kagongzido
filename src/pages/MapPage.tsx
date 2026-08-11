@@ -258,9 +258,11 @@ interface MapPageProps {
   onStateChange?: (state: MapPageState) => void;
   /** 상위 App 에서 DetailPage/Search 등 오버레이가 떠 있는지 — 닫혔을 때 search accessory button 복구 트리거 */
   hasOverlay?: boolean;
+  /** "지금 내 주변 노트북 펴기 좋은 카페 3곳" 시트가 떠 있는지 — 상위 App의 화면 탭 감지(예: 탭바 툴팁 닫힘)가 이 시트를 닫는 탭과 겹치지 않도록 전달 */
+  onNearbySheetOpenChange?: (open: boolean) => void;
 }
 
-export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, initialState, onStateChange, onFocusModeChange, hasOverlay = false }: MapPageProps) {
+export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, initialState, onStateChange, onFocusModeChange, hasOverlay = false, onNearbySheetOpenChange }: MapPageProps) {
   const touchStartYRef = useRef<number>(0);
   // 드래그 도중 scrollTop===0 에 도달한 적이 있는지 — expanded 시 사용자가 위에서 아래로
   // 끝까지 끌어내려 collapse 의도를 보일 때 잡기 위함
@@ -311,6 +313,8 @@ const [filterOpen, setFilterOpen] = useState(false);
   const [removedCafe, setRemovedCafe] = useState<HomeCafe | null>(null);
   const [nearbySheetOpen, setNearbySheetOpen] = useState(false);
   const [nearbySheetCafes, setNearbySheetCafes] = useState<Cafe[]>([]);
+
+  useEffect(() => { onNearbySheetOpenChange?.(nearbySheetOpen); }, [nearbySheetOpen, onNearbySheetOpenChange]);
 
   // cafesRef 항상 최신 유지
   useEffect(() => { cafesRef.current = cafes; }, [cafes]);

@@ -108,3 +108,15 @@ button:focus-visible {
   animation-delay: calc(var(--wiggle-delay, 0) * 1ms);
   transform-origin: center bottom;
 }
+
+/* 탭바 신규 기능 안내 툴팁 등장 (한 번만 재생, 반복 없음) */
+@keyframes tab-tooltip-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 마이페이지 "카페 취향 월드컵" CTA 시선 유도 — 마이페이지 진입마다 2회만 재생, 반복 없음 */
+@keyframes worldcup-cta-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
