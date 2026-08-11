@@ -587,6 +587,36 @@ export interface CafeReportRow {
   photos?: string[];
 }
 
+// 업로드 전 압축 (canvas 리사이즈, 최대 가로 1600px, JPEG quality 0.78)
+// 브라우저/웹뷰 환경이라 sharp(Node 전용) 대신 canvas API 사용
+async function compressImage(blob: Blob, maxWidth = 1600, quality = 0.78): Promise<Blob> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(blob); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (compressed) => resolve(compressed && compressed.size < blob.size ? compressed : blob),
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(blob); };
+    img.src = url;
+  });
+}
+
 async function uploadReportPhotos(photos: string[]): Promise<string[]> {
   if (!supabase || photos.length === 0) return [];
   const urls: string[] = [];
@@ -594,7 +624,8 @@ async function uploadReportPhotos(photos: string[]): Promise<string[]> {
   for (let i = 0; i < photos.length; i++) {
     try {
       const res = await fetch(photos[i]);
-      const blob = await res.blob();
+      const rawBlob = await res.blob();
+      const blob = await compressImage(rawBlob);
       const path = `${reportId}/photo_${i + 1}.jpg`;
       const { data, error } = await supabase.storage
         .from('report-photos')
@@ -641,9 +672,10 @@ async function uploadReviewPhotos(photos: string[]): Promise<string[]> {
     // 이미 URL이면 그대로 사용 (재업로드 방지)
     if (!photo.startsWith('data:')) { urls.push(photo); continue; }
     try {
-      const res  = await fetch(photo);
-      const blob = await res.blob();
-      const ext  = blob.type === 'image/png' ? 'png' : 'jpg';
+      const res     = await fetch(photo);
+      const rawBlob = await res.blob();
+      const blob    = await compressImage(rawBlob);
+      const ext     = blob.type === 'image/png' ? 'png' : 'jpg';
       const path = `${folderId}/photo_${i + 1}.${ext}`;
       const { data, error } = await supabase.storage
         .from('review-photos')

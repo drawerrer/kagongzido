@@ -9,6 +9,11 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join, extname } from 'path';
 import { createClient } from '@supabase/supabase-js';
+import sharp from 'sharp';
+
+// --only: images/places/ 기준 장소 폴더 하나만 처리
+const onlyIdx = process.argv.indexOf('--only');
+const ONLY    = onlyIdx !== -1 ? process.argv[onlyIdx + 1] : null;
 
 function loadEnv() {
   const raw = readFileSync('.env', 'utf-8');
@@ -36,11 +41,29 @@ function getMime(ext) {
   return { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' }[ext.toLowerCase()] ?? 'image/jpeg';
 }
 
+// ── 업로드 전 압축 (최대 가로 1600px, 원본 포맷 유지) ──────────────
+async function compressBuffer(buffer, ext) {
+  const img = sharp(buffer).resize({ width: 1600, withoutEnlargement: true });
+  const e = ext.toLowerCase();
+  if (e === '.png')  return img.png({ compressionLevel: 9 }).toBuffer();
+  if (e === '.webp') return img.webp({ quality: 78 }).toBuffer();
+  return img.jpeg({ quality: 78, mozjpeg: true }).toBuffer();
+}
+
 async function uploadFile(localPath, storagePath) {
-  const buffer = readFileSync(localPath);
+  const rawBuffer = readFileSync(localPath);
+  const ext = extname(localPath);
+
+  let buffer = rawBuffer;
+  try {
+    buffer = await compressBuffer(rawBuffer, ext);
+  } catch (e) {
+    console.error(`  ⚠️  압축 실패, 원본 업로드: ${e.message}`);
+  }
+
   const { error } = await supabase.storage
     .from(BUCKET)
-    .upload(storagePath, buffer, { contentType: getMime(extname(localPath)), upsert: true });
+    .upload(storagePath, buffer, { contentType: getMime(ext), upsert: true });
   if (error) throw new Error(error.message);
   return supabase.storage.from(BUCKET).getPublicUrl(storagePath).data.publicUrl;
 }
@@ -58,9 +81,19 @@ async function main() {
   (libs ?? []).forEach(r => nameMap.set(r.name, { id: r.id, table: 'libraries' }));
   (sps  ?? []).forEach(r => nameMap.set(r.name, { id: r.id, table: 'shared_spaces' }));
 
-  const folders = readdirSync(PLACES_DIR).filter(name =>
-    statSync(join(PLACES_DIR, name)).isDirectory()
-  );
+  let folders;
+  if (ONLY) {
+    if (!existsSync(join(PLACES_DIR, ONLY))) {
+      console.error(`❌ 폴더를 찾을 수 없어요: images/places/${ONLY}/`);
+      process.exit(1);
+    }
+    folders = [ONLY];
+    console.log(`🎯 단일 폴더: images/places/${ONLY}/`);
+  } else {
+    folders = readdirSync(PLACES_DIR).filter(name =>
+      statSync(join(PLACES_DIR, name)).isDirectory()
+    );
+  }
 
   console.log(`🚀 이미지 업로드 시작 — ${folders.length}개 장소\n`);
   let success = 0, fail = 0;
