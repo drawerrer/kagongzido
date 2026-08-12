@@ -17,6 +17,8 @@
  *      → 메인 버튼 위에 "이전으로" 같은 보조 텍스트 링크가 한 줄 더 있는 형태.
  *        카페 취향 월드컵 진행 화면(Figma "Worldcup_checking") 전용 스펙이라
  *        버튼 높이(56)·radius(16)·폰트(17/590)·그라데이션 높이(36)가 Single/Double과 다름 — 의도된 차이.
+ *        undoLabel/onUndo를 생략하면 텍스트 링크 줄 없이 버튼만 렌더링 — 같은 스펙을 쓰는
+ *        카페 취향 월드컵 결과 화면(Figma "Worldcup_result")에서 사용.
  *
  * Safe area는 컴포넌트 내부에서 통일 처리:
  *   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px)
@@ -133,8 +135,9 @@ interface SingleWithUndoProps {
   label: string;
   onClick: () => void;
   disabled?: boolean;
-  undoLabel: string;
-  onUndo: () => void;
+  /** 생략하면 보조 텍스트 링크 줄 없이 버튼만 렌더링 (예: 월드컵 결과 화면) */
+  undoLabel?: string;
+  onUndo?: () => void;
   undoDisabled?: boolean;
 }
 
@@ -149,21 +152,23 @@ function SingleWithUndo({
       background: `linear-gradient(180deg, rgba(243, 243, 243, 0) 0%, ${PAGE_BG} 36px, ${PAGE_BG} 100%)`,
       paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 8px)`,
     }}>
-      {/* 보조 액션: 이전으로 등 텍스트 링크 */}
-      <div style={{ height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <button
-          onClick={onUndo}
-          disabled={undoDisabled}
-          style={{
-            background: 'none', border: 'none',
-            fontSize: 14, color: 'rgba(0,19,43,0.58)',
-            opacity: undoDisabled ? 0.4 : 1,
-            cursor: undoDisabled ? 'default' : 'pointer',
-          }}
-        >
-          {undoLabel}
-        </button>
-      </div>
+      {/* 보조 액션: 이전으로 등 텍스트 링크 — undoLabel/onUndo 없으면 렌더링 생략 */}
+      {undoLabel && onUndo && (
+        <div style={{ height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button
+            onClick={onUndo}
+            disabled={undoDisabled}
+            style={{
+              background: 'none', border: 'none',
+              fontSize: 14, color: 'rgba(0,19,43,0.58)',
+              opacity: undoDisabled ? 0.4 : 1,
+              cursor: undoDisabled ? 'default' : 'pointer',
+            }}
+          >
+            {undoLabel}
+          </button>
+        </div>
+      )}
       {/* 주 액션 */}
       <div style={{ padding: '0 20px' }}>
         <button

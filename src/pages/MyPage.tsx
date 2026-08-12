@@ -47,7 +47,7 @@ const EmptyPlusIcon = (
 // 타입
 // ─────────────────────────────────────────────────────────────
 type MyTab = '내 활동' | '설정';
-type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup' | 'taste-worldcup-game';
+type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup' | 'taste-worldcup-game' | 'taste-worldcup-result';
 
 interface CafeItem {
   id: string;
@@ -338,6 +338,18 @@ const TASTE_WORLDCUP_CONDITIONS = [
   { id: 'outlet', image: OutletImg, label: '넉넉한 콘센트' },
 ];
 
+// 결과 화면 상단 설명 문구 — 조건별 분위기를 짧게 풀어 쓴 카피
+const TASTE_WORLDCUP_RESULT_DESC: Record<string, string> = {
+  lamp_warm: '눈이 편안해지는 따뜻한 곳',
+  lamp_low: '조도가 은은하게 낮은 아늑한 곳',
+  lamp_white: '화사하고 집중이 잘되는 곳',
+  cafe_large: '여유롭게 넓은 공간이 좋은 곳',
+  cafe_small: '아늑하고 프라이빗한 공간',
+  noise_normal: '적당한 소음 속에서 집중이 잘되는 곳',
+  noise_small: '조용하게 몰입할 수 있는 곳',
+  outlet: '콘센트 걱정 없이 편안한 곳',
+};
+
 // TODO: 8조건으로 16슬롯을 어떻게 채울지 확인 후 실제 랜덤 대진 로직 연결 — 지금은 데모용 고정 매치업
 const TASTE_WORLDCUP_DEMO_MATCH = {
   left: TASTE_WORLDCUP_CONDITIONS[0],
@@ -352,20 +364,30 @@ function getWorldcupRoundLabel(step: number): string {
   return '결승';
 }
 
-function TasteWorldcupGamePage({ onBack, enabled = true }: { onBack: () => void; enabled?: boolean }) {
+function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: () => void; onFinish: (winner: { id: string; label: string }) => void; enabled?: boolean }) {
   useBackEvent(onBack, enabled);
   const [step, setStep] = useState(1); // 1~15
-  const [selectedSide, setSelectedSide] = useState<'left' | 'right' | null>(null);
+  // 라운드(step)별 선택 기록 — 이전으로 돌아갔을 때 그 라운드에서 골랐던 카드를 그대로 보여주기 위함
+  const [selectionHistory, setSelectionHistory] = useState<Record<number, 'left' | 'right'>>({});
+  const selectedSide = selectionHistory[step] ?? null;
 
-  // 다음으로 CTA — 선택 고정된 카드로 라운드 확정하고 다음 라운드로 이동, 선택 상태 초기화
+  // 다음으로 CTA — 선택 고정된 카드로 라운드 확정하고 다음 라운드로 이동, 마지막 라운드(결승)면 결과 화면으로 이동
   const handleNext = () => {
+    if (step === TASTE_WORLDCUP_TOTAL_PICKS) {
+      if (!selectedSide) return;
+      const winner = selectedSide === 'left' ? TASTE_WORLDCUP_DEMO_MATCH.left : TASTE_WORLDCUP_DEMO_MATCH.right;
+      onFinish(winner);
+      return;
+    }
     setStep(s => Math.min(TASTE_WORLDCUP_TOTAL_PICKS, s + 1));
-    setSelectedSide(null);
   };
+  // 이전으로 — 라운드만 되돌리면 selectedSide는 그 라운드의 기록에서 자동으로 복원됨
   const handleUndo = () => setStep(s => Math.max(1, s - 1));
 
-  // 카드 선택 — 선택한 카드를 고정 표시만 함 (라운드 이동은 다음으로 CTA에서)
-  const handlePick = (side: 'left' | 'right') => setSelectedSide(side);
+  // 카드 선택 — 현재 라운드의 선택을 기록에 저장 (라운드 이동은 다음으로 CTA에서)
+  const handlePick = (side: 'left' | 'right') => {
+    setSelectionHistory(h => ({ ...h, [step]: side }));
+  };
 
   return (
     <div style={{
@@ -406,13 +428,63 @@ function TasteWorldcupGamePage({ onBack, enabled = true }: { onBack: () => void;
       </div>
 
       <FocusBottomCTA.SingleWithUndo
-        label="다음으로"
+        label={step === TASTE_WORLDCUP_TOTAL_PICKS ? '결과보기' : '다음으로'}
         onClick={handleNext}
         disabled={!selectedSide}
         undoLabel="← 이전으로"
         onUndo={handleUndo}
         undoDisabled={step <= 1}
       />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 서브 페이지: 카페 취향 월드컵 결과 화면 (Figma "Worldcup_result" 스펙 반영)
+// 상단 IMG 영역은 추후 실제 이미지 자산 + 탭/스와이프 인터랙션이 붙을 예정 — 지금은 자리만 동일하게 확보
+// ─────────────────────────────────────────────────────────────
+function TasteWorldcupResultPage({
+  winner, onBack, onConfirm, enabled = true,
+}: {
+  winner: { id: string; label: string };
+  onBack: () => void;
+  onConfirm: () => void;
+  enabled?: boolean;
+}) {
+  useBackEvent(onBack, enabled);
+  const { nickname } = useFavorites();
+  const displayName = nickname ?? '나';
+  const resultDesc = TASTE_WORLDCUP_RESULT_DESC[winner.id] ?? '나에게 딱 맞는 곳';
+
+  return (
+    <div style={{
+      position: 'relative', height: '100%', overflow: 'hidden', background: '#f3f3f3',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 30px' }}>
+        {/* 상단 IMG 영역 — 추후 실제 이미지 + 인터랙션 연결 예정, 지금은 자리만 확보 */}
+        <div style={{ width: '100%', aspectRatio: '315 / 350', borderRadius: 12, background: '#E5E8EB' }} />
+
+        <div style={{ marginTop: 24, textAlign: 'center' }}>
+          <p style={{ margin: 0, fontSize: 22, fontWeight: 590, color: '#191F28', lineHeight: '27.5px' }}>
+            취향을 발견했어요!
+          </p>
+          <div style={{ marginTop: 24 }}>
+            <p style={{ margin: 0, fontSize: 17, fontWeight: 400, color: '#6B7684', lineHeight: '21.28px' }}>
+              {resultDesc}
+            </p>
+            <p style={{ margin: '8px 0 0', fontSize: 17, fontWeight: 400, color: '#6B7684', lineHeight: '21.28px' }}>
+              {displayName}님의 1순위 취향은
+            </p>
+            <p style={{ margin: 0, fontSize: 17, fontWeight: 400, lineHeight: '21.28px' }}>
+              <span style={{ color: '#4E5968' }}>{winner.label}</span>
+              <span style={{ color: '#6B7684' }}> 카페예요</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <FocusBottomCTA.SingleWithUndo label="확인" onClick={onConfirm} />
     </div>
   );
 }
@@ -1598,6 +1670,8 @@ export default function MyPage({
   };
   // 카페 취향 월드컵 진입
   const handleOpenTasteWorldcup = () => changeSubPage('taste-worldcup');
+  // 월드컵 결승에서 확정된 1순위 조건 — 결과 화면에 표시
+  const [worldcupWinner, setWorldcupWinner] = useState<{ id: string; label: string } | null>(null);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [showContactPopup, setShowContactPopup] = useState(false);
   const [copiedToast, setCopiedToast] = useState(false);
@@ -2016,7 +2090,21 @@ export default function MyPage({
     )}
     {subPage === 'taste-worldcup-game' && (
       <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
-        <TasteWorldcupGamePage onBack={() => changeSubPage('taste-worldcup')} enabled={!hasDetailOverlay} />
+        <TasteWorldcupGamePage
+          onBack={() => changeSubPage('taste-worldcup')}
+          onFinish={(winner) => { setWorldcupWinner(winner); changeSubPage('taste-worldcup-result'); }}
+          enabled={!hasDetailOverlay}
+        />
+      </div>
+    )}
+    {subPage === 'taste-worldcup-result' && worldcupWinner && (
+      <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <TasteWorldcupResultPage
+          winner={worldcupWinner}
+          onBack={() => changeSubPage('taste-worldcup-game')}
+          onConfirm={() => changeSubPage(null)}
+          enabled={!hasDetailOverlay}
+        />
       </div>
     )}
     {editingReview && (

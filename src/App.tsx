@@ -340,7 +340,7 @@ function AppInner() {
   //  - DetailPage 안의 사진리뷰/리뷰작성 (isDetailFocusMode)
   //  - 마이 탭의 카페 제보하기/리뷰 편집 (FOCUS_MY_SUBPAGES)
   //  - 향후 추가 예정: 'inquiry' (문의하기), 'withdraw' (회원탈퇴) — 구현 시 아래 배열에 슬러그 추가
-  const FOCUS_MY_SUBPAGES = ['report-cafe', 'review-edit', 'taste-worldcup', 'taste-worldcup-game'];
+  const FOCUS_MY_SUBPAGES = ['report-cafe', 'review-edit', 'taste-worldcup', 'taste-worldcup-game', 'taste-worldcup-result'];
   const isFocusMode =
     isCollectionEditMode ||
     !!photoReview ||
