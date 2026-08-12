@@ -10,9 +10,13 @@
  *  - position: relative
  *  - overflow: hidden (스크롤 영역과 분리)
  *
- * 두 변형:
+ * 세 변형:
  *  - <FocusBottomCTA.Single label="..." onClick={...} disabled={...} />
  *  - <FocusBottomCTA.Double leftLabel="..." rightLabel="..." ... />
+ *  - <FocusBottomCTA.SingleWithUndo label="..." onClick={...} undoLabel="..." onUndo={...} undoDisabled={...} />
+ *      → 메인 버튼 위에 "이전으로" 같은 보조 텍스트 링크가 한 줄 더 있는 형태.
+ *        카페 취향 월드컵 진행 화면(Figma "Worldcup_checking") 전용 스펙이라
+ *        버튼 높이(56)·radius(16)·폰트(17/590)·그라데이션 높이(36)가 Single/Double과 다름 — 의도된 차이.
  *
  * Safe area는 컴포넌트 내부에서 통일 처리:
  *   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px)
@@ -125,6 +129,62 @@ function Double({
   );
 }
 
+interface SingleWithUndoProps {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  undoLabel: string;
+  onUndo: () => void;
+  undoDisabled?: boolean;
+}
+
+function SingleWithUndo({
+  label, onClick, disabled = false,
+  undoLabel, onUndo, undoDisabled = false,
+}: SingleWithUndoProps) {
+  return (
+    <div style={{
+      position: 'absolute', bottom: 0, left: 0, right: 0,
+      // 그라데이션 높이 36px — Single/Double(24px)과 다른 이 화면 전용 값
+      background: `linear-gradient(180deg, rgba(243, 243, 243, 0) 0%, ${PAGE_BG} 36px, ${PAGE_BG} 100%)`,
+      paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 8px)`,
+    }}>
+      {/* 보조 액션: 이전으로 등 텍스트 링크 */}
+      <div style={{ height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <button
+          onClick={onUndo}
+          disabled={undoDisabled}
+          style={{
+            background: 'none', border: 'none',
+            fontSize: 14, color: 'rgba(0,19,43,0.58)',
+            opacity: undoDisabled ? 0.4 : 1,
+            cursor: undoDisabled ? 'default' : 'pointer',
+          }}
+        >
+          {undoLabel}
+        </button>
+      </div>
+      {/* 주 액션 */}
+      <div style={{ padding: '0 20px' }}>
+        <button
+          onClick={onClick}
+          disabled={disabled}
+          style={{
+            width: '100%', height: 56, borderRadius: 16,
+            fontSize: 17, fontWeight: 590, border: 'none',
+            transition: 'background 0.15s, color 0.15s',
+            background: disabled ? COLOR_PRIMARY_DISABLED_BG : COLOR_PRIMARY,
+            color: disabled ? COLOR_PRIMARY_DISABLED_TEXT : COLOR_TEXT_ON_PRIMARY,
+            cursor: disabled ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {label}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // 네임스페이스 패턴 — TDS의 BottomCTA.Single / BottomCTA.Double 과 동일한 API
-const FocusBottomCTA = { Single, Double };
+const FocusBottomCTA = { Single, Double, SingleWithUndo };
 export default FocusBottomCTA;

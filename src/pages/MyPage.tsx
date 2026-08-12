@@ -14,6 +14,7 @@ import {
 } from '../services/db';
 import { clearCachedUser } from '../utils/userCache';
 import StoreCountBar from '../components/StoreCountBar';
+import SubButton from '../components/SubButton';
 import EmptyState from '../components/EmptyState';
 import CafePlaceholder from '../components/CafePlaceholder';
 import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
@@ -22,6 +23,18 @@ import IcPhoto from '../assets/icons/icon_photo.svg?react';
 import IcCamera from '../assets/icons/icon_camera.svg?react';
 import IcMail from '../assets/icons/icon_mail.svg?react';
 import LogoImg from '../assets/LOGO/logo_mockup.png';
+import RoundBadge from '../components/RoundBadge';
+import WorldcupProgressIndicator from '../components/WorldcupProgressIndicator';
+import WorldcupChoiceCard from '../components/WorldcupChoiceCard';
+import VsBadge from '../components/VsBadge';
+import LampWarmImg from '../assets/condition/lamp_warm.svg';
+import LampLowImg from '../assets/condition/lamp_low.svg';
+import LampWhiteImg from '../assets/condition/lamp_white.svg';
+import CafeLargeImg from '../assets/condition/cafe_large.svg';
+import CafeSmallImg from '../assets/condition/cafe_small.svg';
+import NoiseNormalImg from '../assets/condition/noise_normal.svg';
+import NoiseSmallImg from '../assets/condition/noise_small.svg';
+import OutletImg from '../assets/condition/outlet.svg';
 
 // EmptyState 액션 버튼 공용 + 아이콘
 const EmptyPlusIcon = (
@@ -34,7 +47,7 @@ const EmptyPlusIcon = (
 // 타입
 // ─────────────────────────────────────────────────────────────
 type MyTab = '내 활동' | '설정';
-type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup';
+type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup' | 'taste-worldcup-game';
 
 interface CafeItem {
   id: string;
@@ -235,7 +248,7 @@ const HEADLINE_GAP = 14;
 const HEADLINE_SUB_MAX_HEIGHT = 36;
 const HEADLINE_AREA_HEIGHT = HEADLINE_MAIN_HEIGHT + HEADLINE_GAP + HEADLINE_SUB_MAX_HEIGHT;
 
-function TasteWorldcupPage({ onBack, enabled = true }: { onBack: () => void; enabled?: boolean }) {
+function TasteWorldcupPage({ onBack, onStart, enabled = true }: { onBack: () => void; onStart: () => void; enabled?: boolean }) {
   useBackEvent(onBack, enabled);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
@@ -302,7 +315,104 @@ function TasteWorldcupPage({ onBack, enabled = true }: { onBack: () => void; ena
       {/* 하단 CTA와의 여백 확보용 스페이서 — 바디 바깥, 바디 아래 */}
       <div style={{ flexShrink: 0, height: 120 }} />
 
-      <FocusBottomCTA.Single label="시작하기" onClick={onBack} />
+      <FocusBottomCTA.Single label="시작하기" onClick={onStart} />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 서브 페이지: 카페 취향 월드컵 진행 화면 (Figma "Worldcup_checking" 스펙 반영)
+// 지금은 화면 틀 + 진행률 인디케이터만 구현 — 16조건 랜덤 대진/실제 결과 로직은 후속 작업
+// ─────────────────────────────────────────────────────────────
+const TASTE_WORLDCUP_TOTAL_PICKS = 15;
+
+// 카페 취향 조건 8종 (4카테고리 × 2) — 실제 대진 로직은 16 vs 8 슬롯 확인 후 연결 예정
+const TASTE_WORLDCUP_CONDITIONS = [
+  { id: 'lamp_warm', image: LampWarmImg, label: '웜톤 조명' },
+  { id: 'lamp_low', image: LampLowImg, label: '로우톤 조명' },
+  { id: 'lamp_white', image: LampWhiteImg, label: '화이트톤 조명' },
+  { id: 'cafe_large', image: CafeLargeImg, label: '대형 공간' },
+  { id: 'cafe_small', image: CafeSmallImg, label: '소형 공간' },
+  { id: 'noise_normal', image: NoiseNormalImg, label: '적당한 소음' },
+  { id: 'noise_small', image: NoiseSmallImg, label: '조용한 소음' },
+  { id: 'outlet', image: OutletImg, label: '넉넉한 콘센트' },
+];
+
+// TODO: 8조건으로 16슬롯을 어떻게 채울지 확인 후 실제 랜덤 대진 로직 연결 — 지금은 데모용 고정 매치업
+const TASTE_WORLDCUP_DEMO_MATCH = {
+  left: TASTE_WORLDCUP_CONDITIONS[0],
+  right: TASTE_WORLDCUP_CONDITIONS[1],
+};
+
+// 진행 단계(1~15)를 라운드 뱃지 텍스트로 변환 — 16강 8번(1~8) → 8강 4번(9~12) → 4강 2번(13~14) → 결승 1번(15)
+function getWorldcupRoundLabel(step: number): string {
+  if (step <= 8) return '16강';
+  if (step <= 12) return '8강';
+  if (step <= 14) return '4강';
+  return '결승';
+}
+
+function TasteWorldcupGamePage({ onBack, enabled = true }: { onBack: () => void; enabled?: boolean }) {
+  useBackEvent(onBack, enabled);
+  const [step, setStep] = useState(1); // 1~15
+  const [selectedSide, setSelectedSide] = useState<'left' | 'right' | null>(null);
+
+  // 다음으로 CTA — 선택 고정된 카드로 라운드 확정하고 다음 라운드로 이동, 선택 상태 초기화
+  const handleNext = () => {
+    setStep(s => Math.min(TASTE_WORLDCUP_TOTAL_PICKS, s + 1));
+    setSelectedSide(null);
+  };
+  const handleUndo = () => setStep(s => Math.max(1, s - 1));
+
+  // 카드 선택 — 선택한 카드를 고정 표시만 함 (라운드 이동은 다음으로 CTA에서)
+  const handlePick = (side: 'left' | 'right') => setSelectedSide(side);
+
+  return (
+    <div style={{
+      position: 'relative', height: '100%', overflow: 'hidden', background: '#f3f3f3',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ flex: 1, padding: '30px 20px 0', overflow: 'hidden' }}>
+        {/* 헤딩 — 라운드 뱃지 + 진행률 인디케이터 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <RoundBadge label={getWorldcupRoundLabel(step)} />
+          <WorldcupProgressIndicator step={step} total={TASTE_WORLDCUP_TOTAL_PICKS} />
+        </div>
+
+        <p style={{ marginTop: 50, fontSize: 18, fontWeight: 510, color: '#252525', textAlign: 'center' }}>
+          나의 최애 카공 조건은?
+        </p>
+
+        {/* container_boxes — box_L / box_R + 중앙 VS */}
+        <div style={{ marginTop: 60, position: 'relative', display: 'flex', gap: 7 }}>
+          <WorldcupChoiceCard
+            image={TASTE_WORLDCUP_DEMO_MATCH.left.image}
+            label={TASTE_WORLDCUP_DEMO_MATCH.left.label}
+            onClick={() => handlePick('left')}
+            selected={selectedSide === 'left'}
+          />
+          <WorldcupChoiceCard
+            image={TASTE_WORLDCUP_DEMO_MATCH.right.image}
+            label={TASTE_WORLDCUP_DEMO_MATCH.right.label}
+            onClick={() => handlePick('right')}
+            selected={selectedSide === 'right'}
+          />
+
+          {/* VS 뱃지 — 두 박스 경계, 이미지 영역 세로 중앙에 겹쳐 위치 */}
+          <div style={{ position: 'absolute', left: '50%', top: '41%', transform: 'translate(-50%, -50%)' }}>
+            <VsBadge />
+          </div>
+        </div>
+      </div>
+
+      <FocusBottomCTA.SingleWithUndo
+        label="다음으로"
+        onClick={handleNext}
+        disabled={!selectedSide}
+        undoLabel="← 이전으로"
+        onUndo={handleUndo}
+        undoDisabled={step <= 1}
+      />
     </div>
   );
 }
@@ -1552,19 +1662,12 @@ export default function MyPage({
                 </div>
               </div>
               <div style={{ flex: 1 }} />
-              <button
+              <SubButton
+                label="카페 취향 월드컵"
+                variant="dark"
                 onClick={handleOpenTasteWorldcup}
-                style={{
-                  background: '#252525', borderRadius: 13,
-                  height: 29, padding: '0 10px',
-                  fontSize: 12, fontWeight: 510, color: '#ffffff',
-                  border: 'none', cursor: 'pointer', lineHeight: '21px',
-                  whiteSpace: 'nowrap',
-                  animation: 'worldcup-cta-pulse 0.55s ease-in-out 2',
-                }}
-              >
-                카페 취향 월드컵
-              </button>
+                style={{ animation: 'worldcup-cta-pulse 0.55s ease-in-out 2' }}
+              />
             </div>
           </div>
         </div>
@@ -1904,7 +2007,16 @@ export default function MyPage({
     )}
     {subPage === 'taste-worldcup' && (
       <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
-        <TasteWorldcupPage onBack={() => changeSubPage(null)} enabled={!hasDetailOverlay} />
+        <TasteWorldcupPage
+          onBack={() => changeSubPage(null)}
+          onStart={() => changeSubPage('taste-worldcup-game')}
+          enabled={!hasDetailOverlay}
+        />
+      </div>
+    )}
+    {subPage === 'taste-worldcup-game' && (
+      <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <TasteWorldcupGamePage onBack={() => changeSubPage('taste-worldcup')} enabled={!hasDetailOverlay} />
       </div>
     )}
     {editingReview && (
