@@ -1,4 +1,4 @@
-import { useState, useEffect, type RefObject } from 'react';
+import { useState, useEffect, useRef, type RefObject } from 'react';
 import { fetchAlbumPhotos, openCamera, openURL } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { Toast, ConfirmDialog } from '@toss/tds-mobile';
@@ -220,9 +220,13 @@ function NoticesPage({ onBack, enabled = true }: { onBack: () => void; enabled?:
 }
 
 // ─────────────────────────────────────────────────────────────
-// 서브 페이지: 카페 취향 월드컵 온보딩 (3장 중 1장 — Figma 스펙 반영)
+// 서브 페이지: 카페 취향 월드컵 온보딩 (3장, 좌우 스와이프 — Figma 스펙 반영)
 // ─────────────────────────────────────────────────────────────
-const TASTE_WORLDCUP_ONBOARDING_TOTAL = 3;
+const TASTE_WORLDCUP_ONBOARDING_SLIDES = [
+  { main: '나는 어떤 카공 스타일일까?', sub: '콘센트, 조명, 분위기... 카공 취향을 알아봐요' },
+  { main: '둘 중 더 끌리는 조건을 선택해요', sub: '2개의 보기 중 내 마음에 쏙 드는 걸 가볍게 툭툭 선택해요' },
+  { main: '카공 스팟을 한눈에 찾아드려요', sub: '내 1순위 조건과 일치하는 카페를 발견했을 때 특별한 효과로 확실하게 알려드릴게요' },
+];
 
 // 헤드라인 영역과 인디케이터 영역의 높이를 동일하게 맞추기 위한 기준값
 //  - 메인 22px(줄높이 27.5px, 1줄) + 사이 패딩 14px + 서브 14px(줄높이 17.5px × 최대 2줄 = 36px)
@@ -233,37 +237,63 @@ const HEADLINE_AREA_HEIGHT = HEADLINE_MAIN_HEIGHT + HEADLINE_GAP + HEADLINE_SUB_
 
 function TasteWorldcupPage({ onBack, enabled = true }: { onBack: () => void; enabled?: boolean }) {
   useBackEvent(onBack, enabled);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeStep, setActiveStep] = useState(0);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el || el.clientWidth === 0) return;
+    setActiveStep(Math.round(el.scrollLeft / el.clientWidth));
+  };
 
   return (
     <div style={{
       position: 'relative', height: '100%', overflow: 'hidden', background: '#f3f3f3',
       display: 'flex', flexDirection: 'column',
     }}>
+      <style>{`.taste-worldcup-carousel::-webkit-scrollbar { display: none; }`}</style>
+
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        padding: 30,
       }}>
-        {/* 헤드라인 — 메인 22px + 서브 14px(최대 2줄), 사이 패딩 14px. 인디케이터와 높이를 맞추기 위해 고정 높이 */}
-        <div style={{ height: HEADLINE_AREA_HEIGHT, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: HEADLINE_GAP, textAlign: 'center' }}>
-          <p style={{ margin: 0, fontSize: 22, fontWeight: 590, color: '#252525', lineHeight: '27.5px' }}>
-            나는 어떤 카공 스타일일까?
-          </p>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 400, color: '#9b9b9b', lineHeight: '17.5px' }}>
-            콘센트, 조명, 분위기.... 카공 취향을 알아봐요
-          </p>
+        {/* 캐러셀 — 헤드라인 + 이미지, 장마다 좌우 스와이프로 전환 */}
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="taste-worldcup-carousel"
+          style={{
+            width: '100%', display: 'flex', overflowX: 'auto',
+            scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
+          }}
+        >
+          {TASTE_WORLDCUP_ONBOARDING_SLIDES.map((slide, i) => (
+            <div key={i} style={{ flex: '0 0 100%', scrollSnapAlign: 'start', padding: '0 30px' }}>
+              {/* 헤드라인 — 메인 22px + 서브 14px(최대 2줄), 사이 패딩 14px. 인디케이터와 높이를 맞추기 위해 고정 높이 */}
+              <div style={{ height: HEADLINE_AREA_HEIGHT, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: HEADLINE_GAP, textAlign: 'center' }}>
+                <p style={{ margin: 0, fontSize: 22, fontWeight: 590, color: '#252525', lineHeight: '27.5px' }}>
+                  {slide.main}
+                </p>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 400, color: '#9b9b9b', lineHeight: '17.5px' }}>
+                  {slide.sub}
+                </p>
+              </div>
+
+              {/* 이미지 영역 — 텍스트와 50px 간격, 300:280 비율로 화면 폭에 맞춰 반응형 리사이즈 */}
+              {/* TODO: Figma "Character" 노드가 아직 빈 이미지라 실제 일러스트 에셋 없음 — 받는 대로 교체 필요 */}
+              <div style={{ marginTop: 50, width: '100%', aspectRatio: '300 / 280', background: '#e5e8eb' }} />
+            </div>
+          ))}
         </div>
 
-        {/* 이미지 영역 — 텍스트와 50px, 인디케이터와 40px 간격, 300:280 비율로 화면 폭에 맞춰 반응형 리사이즈 */}
-        {/* TODO: Figma "Character" 노드가 아직 빈 이미지라 실제 일러스트 에셋 없음 — 받는 대로 교체 필요 */}
-        <div style={{ marginTop: 50, width: '100%', aspectRatio: '300 / 280', background: '#e5e8eb' }} />
-
-        {/* 인디케이터 — 헤드라인과 동일한 높이로 좌우 대칭. 닷은 크기만큼만 차지하고 가운데 정렬 */}
+        {/* 인디케이터 — 캐러셀 밖에 하나만 두고 activeStep에 따라 갱신. 헤드라인과 동일한 높이로 좌우 대칭 */}
         <div style={{ marginTop: 40, height: HEADLINE_AREA_HEIGHT, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-          {Array.from({ length: TASTE_WORLDCUP_ONBOARDING_TOTAL }).map((_, i) => (
+          {TASTE_WORLDCUP_ONBOARDING_SLIDES.map((_, i) => (
             <div key={i} style={{
               width: 6, height: 6, borderRadius: 4,
-              background: i === 0 ? '#252525' : '#bbbbbb',
+              background: i === activeStep ? '#252525' : '#bbbbbb',
+              transition: 'background 0.15s',
             }} />
           ))}
         </div>
