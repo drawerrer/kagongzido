@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { useFavorites } from '../context/FavoritesContext';
 import FocusBottomCTA from '../components/FocusBottomCTA';
@@ -22,6 +22,22 @@ import MoodPlantImg from '../assets/condition/mood_plant.svg';
 import MoodStoneImg from '../assets/condition/mood_stone.svg';
 import MoodBrickImg from '../assets/condition/mood_brick.svg';
 import MoodModernImg from '../assets/condition/mood_modern.svg';
+import LampIdleImg from '../assets/interaction/lamp_idle.svg';
+import LampPullImg from '../assets/interaction/lamp_pull.svg';
+import LampLitWarmImg from '../assets/interaction/lamp_lit_warm.svg';
+import LampLitLowImg from '../assets/interaction/lamp_lit_low.svg';
+import LampLitWhiteImg from '../assets/interaction/lamp_lit_white.svg';
+import OutletLowImg from '../assets/interaction/outlet_low.svg';
+import OutletEmptyImg from '../assets/interaction/outlet_empty.svg';
+import OutletPluggedImg from '../assets/interaction/outlet_plugged.svg';
+import OutletFullImg from '../assets/interaction/outlet_full.svg';
+import ChairLargeImg from '../assets/interaction/chair_large.svg';
+import ChairSmallImg from '../assets/interaction/chair_small.svg';
+import NoiseBarsImg from '../assets/interaction/noise_bars.svg';
+import NoiseDialNormalImg from '../assets/interaction/noise_dial_normal.svg';
+import NoiseDialSmallImg from '../assets/interaction/noise_dial_small.svg';
+import NoiseHeadphonesNormalImg from '../assets/interaction/noise_headphones_normal.svg';
+import NoiseHeadphonesSmallImg from '../assets/interaction/noise_headphones_small.svg';
 
 // ─────────────────────────────────────────────────────────────
 // 카페 취향 월드컵 — 온보딩 → 진행(대진) → 결과 3단계 플로우
@@ -313,8 +329,154 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// 결과 화면 이미지 인터랙션 — 1순위 조건 카테고리별로 다른 모션 재생
+//  - 전구(조명 3종)/콘센트/소음: 여러 장면을 순서대로 크로스페이드
+//  - 공간(대형/소형 카페): 완성된 한 장면을 확대 상태로 시작해 CSS transform으로 줌아웃
+//  - 분위기(우드/메탈 등) 8종: 스티커 인터랙션 애셋 준비 전이라 기존 플레이스홀더 유지
+// 마운트 시 한 번만 재생하고 멈춤(반복 없음) — 앱인토스 심사의 "과도한 반복 애니메이션" 반려 규칙 준수
+// ─────────────────────────────────────────────────────────────
+interface InteractionFrame {
+  src: string;
+  /** 다음 프레임으로 넘어가기까지 유지 시간(ms). 마지막 프레임은 더 이상 전환이 없어 무시됨 */
+  holdMs: number;
+  /** 이 프레임이 보이는 동안만 적용할 1회성 강조 애니메이션 클래스 */
+  animateClassName?: string;
+}
+
+function ImageSequence({ frames }: { frames: InteractionFrame[] }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (index >= frames.length - 1) return;
+    const timer = setTimeout(() => setIndex(i => i + 1), frames[index].holdMs);
+    return () => clearTimeout(timer);
+  }, [index, frames]);
+
+  return (
+    <>
+      {frames.map((frame, i) => (
+        <img
+          key={frame.src}
+          src={frame.src}
+          alt=""
+          className={i === index ? frame.animateClassName : undefined}
+          style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            objectFit: 'cover', opacity: i === index ? 1 : 0,
+            transition: 'opacity 0.25s ease',
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
+function ZoomReveal({ src }: { src: string }) {
+  // 확대 상태로 시작 → 마운트 직후 원래 크기로 줌아웃(트랜지션)되며 전체 배치가 드러남
+  const [zoomedIn, setZoomedIn] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setZoomedIn(false), 150);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <img
+      src={src}
+      alt=""
+      style={{
+        position: 'absolute', inset: 0, width: '100%', height: '100%',
+        objectFit: 'cover', transformOrigin: 'center',
+        transform: zoomedIn ? 'scale(3.2)' : 'scale(1)',
+        transition: 'transform 1.1s ease-out',
+      }}
+    />
+  );
+}
+
+type ResultInteractionSpec =
+  | { kind: 'sequence'; frames: InteractionFrame[] }
+  | { kind: 'zoom'; src: string };
+
+// 1순위 조건 id → 결과 화면 인터랙션. 분위기 8종은 아직 스티커 애셋이 없어 매핑에서 제외(플레이스홀더 유지)
+const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
+  lamp_warm: {
+    kind: 'sequence',
+    frames: [
+      { src: LampIdleImg, holdMs: 700, animateClassName: 'twc-wobble' },
+      { src: LampPullImg, holdMs: 500 },
+      { src: LampLitWarmImg, holdMs: 0 },
+    ],
+  },
+  lamp_low: {
+    kind: 'sequence',
+    frames: [
+      { src: LampIdleImg, holdMs: 700, animateClassName: 'twc-wobble' },
+      { src: LampPullImg, holdMs: 500 },
+      { src: LampLitLowImg, holdMs: 0 },
+    ],
+  },
+  lamp_white: {
+    kind: 'sequence',
+    frames: [
+      { src: LampIdleImg, holdMs: 700, animateClassName: 'twc-wobble' },
+      { src: LampPullImg, holdMs: 500 },
+      { src: LampLitWhiteImg, holdMs: 0 },
+    ],
+  },
+  outlet: {
+    kind: 'sequence',
+    frames: [
+      { src: OutletLowImg, holdMs: 700, animateClassName: 'twc-blink' },
+      { src: OutletEmptyImg, holdMs: 500 },
+      { src: OutletPluggedImg, holdMs: 500 },
+      { src: OutletFullImg, holdMs: 0 },
+    ],
+  },
+  cafe_large: { kind: 'zoom', src: ChairLargeImg },
+  cafe_small: { kind: 'zoom', src: ChairSmallImg },
+  noise_normal: {
+    kind: 'sequence',
+    frames: [
+      { src: NoiseBarsImg, holdMs: 600 },
+      { src: NoiseDialNormalImg, holdMs: 600 },
+      { src: NoiseHeadphonesNormalImg, holdMs: 0 },
+    ],
+  },
+  noise_small: {
+    kind: 'sequence',
+    frames: [
+      { src: NoiseBarsImg, holdMs: 600 },
+      { src: NoiseDialSmallImg, holdMs: 600 },
+      { src: NoiseHeadphonesSmallImg, holdMs: 0 },
+    ],
+  },
+};
+
+function ResultInteraction({ conditionId }: { conditionId: string }) {
+  const spec = WORLDCUP_RESULT_INTERACTIONS[conditionId];
+
+  if (!spec) {
+    // 분위기 조건 8종 — 스티커 인터랙션 애셋 준비되면 연결 예정
+    return <div style={{ position: 'absolute', inset: 0, background: '#E5E8EB' }} />;
+  }
+
+  return (
+    <>
+      <style>{`
+        @keyframes twc-wobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
+        .twc-wobble { animation: twc-wobble 0.35s ease-in-out 2; transform-origin: top center; }
+        @keyframes twc-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+        .twc-blink { animation: twc-blink 0.35s ease-in-out 2; }
+      `}</style>
+      {spec.kind === 'zoom'
+        ? <ZoomReveal src={spec.src} />
+        : <ImageSequence frames={spec.frames} />}
+    </>
+  );
+}
+
 // 서브 페이지: 카페 취향 월드컵 결과 화면 (Figma "Worldcup_result" 스펙 반영)
-// 상단 IMG 영역은 추후 실제 이미지 자산 + 탭/스와이프 인터랙션이 붙을 예정 — 지금은 자리만 동일하게 확보
 function TasteWorldcupResultPage({
   winner, onBack, onConfirm, enabled = true,
 }: {
@@ -334,8 +496,10 @@ function TasteWorldcupResultPage({
       display: 'flex', flexDirection: 'column',
     }}>
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 30px' }}>
-        {/* 상단 IMG 영역 — 추후 실제 이미지 + 인터랙션 연결 예정, 지금은 자리만 확보 */}
-        <div style={{ width: '100%', aspectRatio: '315 / 350', borderRadius: 12, background: '#E5E8EB' }} />
+        {/* 상단 IMG 영역 — 1순위 조건에 맞는 인터랙션 재생 */}
+        <div style={{ position: 'relative', width: '100%', aspectRatio: '315 / 350', borderRadius: 12, overflow: 'hidden', background: '#E5E8EB' }}>
+          <ResultInteraction conditionId={winner.id} />
+        </div>
 
         <div style={{ marginTop: 24, textAlign: 'center' }}>
           <p style={{ margin: 0, fontSize: 22, fontWeight: 590, color: '#191F28', lineHeight: '27.5px' }}>
