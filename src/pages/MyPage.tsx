@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type RefObject } from 'react';
+import { useState, useEffect, lazy, Suspense, type RefObject } from 'react';
 import { fetchAlbumPhotos, openCamera, openURL } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { Toast, ConfirmDialog } from '@toss/tds-mobile';
@@ -23,18 +23,9 @@ import IcPhoto from '../assets/icons/icon_photo.svg?react';
 import IcCamera from '../assets/icons/icon_camera.svg?react';
 import IcMail from '../assets/icons/icon_mail.svg?react';
 import LogoImg from '../assets/LOGO/logo_mockup.png';
-import RoundBadge from '../components/RoundBadge';
-import WorldcupProgressIndicator from '../components/WorldcupProgressIndicator';
-import WorldcupChoiceCard from '../components/WorldcupChoiceCard';
-import VsBadge from '../components/VsBadge';
-import LampWarmImg from '../assets/condition/lamp_warm.svg';
-import LampLowImg from '../assets/condition/lamp_low.svg';
-import LampWhiteImg from '../assets/condition/lamp_white.svg';
-import CafeLargeImg from '../assets/condition/cafe_large.svg';
-import CafeSmallImg from '../assets/condition/cafe_small.svg';
-import NoiseNormalImg from '../assets/condition/noise_normal.svg';
-import NoiseSmallImg from '../assets/condition/noise_small.svg';
-import OutletImg from '../assets/condition/outlet.svg';
+
+// 카페 취향 월드컵 — 조건 이미지 16종(~700KB)을 포함해 별도 청크로 분리, 진입 시에만 지연 로드
+const TasteWorldcup = lazy(() => import('./TasteWorldcup'));
 
 // EmptyState 액션 버튼 공용 + 아이콘
 const EmptyPlusIcon = (
@@ -47,7 +38,7 @@ const EmptyPlusIcon = (
 // 타입
 // ─────────────────────────────────────────────────────────────
 type MyTab = '내 활동' | '설정';
-type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup' | 'taste-worldcup-game' | 'taste-worldcup-result';
+type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup';
 
 interface CafeItem {
   id: string;
@@ -228,273 +219,6 @@ function NoticesPage({ onBack, enabled = true }: { onBack: () => void; enabled?:
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// 서브 페이지: 카페 취향 월드컵 온보딩 (3장, 좌우 스와이프 — Figma 스펙 반영)
-// ─────────────────────────────────────────────────────────────
-const TASTE_WORLDCUP_ONBOARDING_SLIDES = [
-  { main: '나는 어떤 카공 스타일일까?', sub: '콘센트, 조명, 분위기... 카공 취향을 알아봐요' },
-  { main: '둘 중 더 끌리는 조건을 선택해요', sub: '2개의 보기 중 내 마음에 쏙 드는 걸 가볍게 툭툭 선택해요' },
-  { main: '카공 스팟을 한눈에 찾아드려요', sub: '내 1순위 조건과 일치하는 카페를 발견했을 때 특별한 효과로 확실하게 알려드릴게요' },
-];
-
-// 헤드라인 영역과 인디케이터 영역의 높이를 동일하게 맞추기 위한 기준값
-//  - 메인 22px(줄높이 27.5px, 1줄) + 사이 패딩 14px + 서브 14px(줄높이 17.5px × 최대 2줄 = 36px)
-const HEADLINE_MAIN_HEIGHT = 27.5;
-const HEADLINE_GAP = 14;
-const HEADLINE_SUB_MAX_HEIGHT = 36;
-const HEADLINE_AREA_HEIGHT = HEADLINE_MAIN_HEIGHT + HEADLINE_GAP + HEADLINE_SUB_MAX_HEIGHT;
-
-function TasteWorldcupPage({ onBack, onStart, enabled = true }: { onBack: () => void; onStart: () => void; enabled?: boolean }) {
-  useBackEvent(onBack, enabled);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeStep, setActiveStep] = useState(0);
-
-  const handleScroll = () => {
-    const el = scrollRef.current;
-    if (!el || el.clientWidth === 0) return;
-    setActiveStep(Math.round(el.scrollLeft / el.clientWidth));
-  };
-
-  return (
-    <div style={{
-      position: 'relative', height: '100%', overflow: 'hidden', background: '#f3f3f3',
-      display: 'flex', flexDirection: 'column',
-    }}>
-      <style>{`.taste-worldcup-carousel::-webkit-scrollbar { display: none; }`}</style>
-
-      <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        {/* 캐러셀 — 헤드라인 + 이미지, 장마다 좌우 스와이프로 전환 */}
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="taste-worldcup-carousel"
-          style={{
-            width: '100%', display: 'flex', overflowX: 'auto',
-            scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
-            scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
-          }}
-        >
-          {TASTE_WORLDCUP_ONBOARDING_SLIDES.map((slide, i) => (
-            <div key={i} style={{ flex: '0 0 100%', scrollSnapAlign: 'start', padding: '0 30px' }}>
-              {/* 헤드라인 — 메인 22px + 서브 14px(최대 2줄), 사이 패딩 14px. 인디케이터와 높이를 맞추기 위해 고정 높이 */}
-              <div style={{ height: HEADLINE_AREA_HEIGHT, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: HEADLINE_GAP, textAlign: 'center' }}>
-                <p style={{ margin: 0, fontSize: 22, fontWeight: 590, color: '#252525', lineHeight: '27.5px' }}>
-                  {slide.main}
-                </p>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 400, color: '#9b9b9b', lineHeight: '17.5px' }}>
-                  {slide.sub}
-                </p>
-              </div>
-
-              {/* 이미지 영역 — 텍스트와 50px 간격, 300:280 비율로 화면 폭에 맞춰 반응형 리사이즈 */}
-              {/* TODO: Figma "Character" 노드가 아직 빈 이미지라 실제 일러스트 에셋 없음 — 받는 대로 교체 필요 */}
-              <div style={{ marginTop: 50, width: '100%', aspectRatio: '300 / 280', background: '#e5e8eb' }} />
-            </div>
-          ))}
-        </div>
-
-        {/* 인디케이터 — 캐러셀 밖에 하나만 두고 activeStep에 따라 갱신. 헤드라인과 동일한 높이로 좌우 대칭 */}
-        <div style={{ marginTop: 40, height: HEADLINE_AREA_HEIGHT, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-          {TASTE_WORLDCUP_ONBOARDING_SLIDES.map((_, i) => (
-            <div key={i} style={{
-              width: 6, height: 6, borderRadius: 4,
-              background: i === activeStep ? '#252525' : '#bbbbbb',
-              transition: 'background 0.15s',
-            }} />
-          ))}
-        </div>
-      </div>
-
-      {/* 하단 CTA와의 여백 확보용 스페이서 — 바디 바깥, 바디 아래 */}
-      <div style={{ flexShrink: 0, height: 120 }} />
-
-      <FocusBottomCTA.Single label="시작하기" onClick={onStart} />
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// 서브 페이지: 카페 취향 월드컵 진행 화면 (Figma "Worldcup_checking" 스펙 반영)
-// 지금은 화면 틀 + 진행률 인디케이터만 구현 — 16조건 랜덤 대진/실제 결과 로직은 후속 작업
-// ─────────────────────────────────────────────────────────────
-const TASTE_WORLDCUP_TOTAL_PICKS = 15;
-
-// 카페 취향 조건 8종 (4카테고리 × 2) — 실제 대진 로직은 16 vs 8 슬롯 확인 후 연결 예정
-const TASTE_WORLDCUP_CONDITIONS = [
-  { id: 'lamp_warm', image: LampWarmImg, label: '웜톤 조명' },
-  { id: 'lamp_low', image: LampLowImg, label: '로우톤 조명' },
-  { id: 'lamp_white', image: LampWhiteImg, label: '화이트톤 조명' },
-  { id: 'cafe_large', image: CafeLargeImg, label: '대형 공간' },
-  { id: 'cafe_small', image: CafeSmallImg, label: '소형 공간' },
-  { id: 'noise_normal', image: NoiseNormalImg, label: '적당한 소음' },
-  { id: 'noise_small', image: NoiseSmallImg, label: '조용한 소음' },
-  { id: 'outlet', image: OutletImg, label: '넉넉한 콘센트' },
-];
-
-// 결과 화면 상단 설명 문구 — 조건별 분위기를 짧게 풀어 쓴 카피 (기획 확정본)
-const TASTE_WORLDCUP_RESULT_DESC: Record<string, string> = {
-  lamp_warm: '눈이 편안해지는 따뜻한 곳',
-  lamp_white: '집중력이 확 올라가는 곳',
-  lamp_low: '차분하게 몰입하기 좋은 곳',
-  outlet: '배터리 걱정 없이 든든한 곳',
-  cafe_large: '자유롭고 탁 트인 넓은 공간',
-  cafe_small: '나만의 아지트처럼 아늑한 곳',
-  noise_small: '온전히 나에게만 집중하는 곳',
-  noise_normal: '카공 능률이 쑥쑥 오르는 곳',
-  // TODO: 분위기 조건 8종 — 이미지 자산·TASTE_WORLDCUP_CONDITIONS 항목이 아직 없어 비활성 상태.
-  // 조건 추가 시 아래 문구를 그대로 옮기고, id는 실제 이미지 asset id에 맞춰 지정할 것.
-  //   우드   : '따스한 온기가 느껴지는 곳'
-  //   메탈   : '세련된 감각이 돋보이는 곳'
-  //   화이트 : '머리가 맑아지는 깔끔한 곳'
-  //   블랙   : '묵직하고 차분한 어두운 곳'
-  //   플랜트 : '눈이 맑아지는 싱그러운 곳'
-  //   스톤   : '차분하고 묵직한 질감의 곳'
-  //   브릭   : '따뜻한 감성의 빈티지한 곳'
-  //   모던   : '군더더기 없이 세련된 공간'
-};
-
-// TODO: 8조건으로 16슬롯을 어떻게 채울지 확인 후 실제 랜덤 대진 로직 연결 — 지금은 데모용 고정 매치업
-const TASTE_WORLDCUP_DEMO_MATCH = {
-  left: TASTE_WORLDCUP_CONDITIONS[0],
-  right: TASTE_WORLDCUP_CONDITIONS[1],
-};
-
-// 진행 단계(1~15)를 라운드 뱃지 텍스트로 변환 — 16강 8번(1~8) → 8강 4번(9~12) → 4강 2번(13~14) → 결승 1번(15)
-function getWorldcupRoundLabel(step: number): string {
-  if (step <= 8) return '16강';
-  if (step <= 12) return '8강';
-  if (step <= 14) return '4강';
-  return '결승';
-}
-
-function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: () => void; onFinish: (winner: { id: string; label: string }) => void; enabled?: boolean }) {
-  useBackEvent(onBack, enabled);
-  const [step, setStep] = useState(1); // 1~15
-  // 라운드(step)별 선택 기록 — 이전으로 돌아갔을 때 그 라운드에서 골랐던 카드를 그대로 보여주기 위함
-  const [selectionHistory, setSelectionHistory] = useState<Record<number, 'left' | 'right'>>({});
-  const selectedSide = selectionHistory[step] ?? null;
-
-  // 다음으로 CTA — 선택 고정된 카드로 라운드 확정하고 다음 라운드로 이동, 마지막 라운드(결승)면 결과 화면으로 이동
-  const handleNext = () => {
-    if (step === TASTE_WORLDCUP_TOTAL_PICKS) {
-      if (!selectedSide) return;
-      const winner = selectedSide === 'left' ? TASTE_WORLDCUP_DEMO_MATCH.left : TASTE_WORLDCUP_DEMO_MATCH.right;
-      onFinish(winner);
-      return;
-    }
-    setStep(s => Math.min(TASTE_WORLDCUP_TOTAL_PICKS, s + 1));
-  };
-  // 이전으로 — 라운드만 되돌리면 selectedSide는 그 라운드의 기록에서 자동으로 복원됨
-  const handleUndo = () => setStep(s => Math.max(1, s - 1));
-
-  // 카드 선택 — 현재 라운드의 선택을 기록에 저장 (라운드 이동은 다음으로 CTA에서)
-  const handlePick = (side: 'left' | 'right') => {
-    setSelectionHistory(h => ({ ...h, [step]: side }));
-  };
-
-  return (
-    <div style={{
-      position: 'relative', height: '100%', overflow: 'hidden', background: '#f3f3f3',
-      display: 'flex', flexDirection: 'column',
-    }}>
-      <div style={{ flex: 1, padding: '30px 20px 0', overflow: 'hidden' }}>
-        {/* 헤딩 — 라운드 뱃지 + 진행률 인디케이터 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <RoundBadge label={getWorldcupRoundLabel(step)} />
-          <WorldcupProgressIndicator step={step} total={TASTE_WORLDCUP_TOTAL_PICKS} />
-        </div>
-
-        <p style={{ marginTop: 50, fontSize: 18, fontWeight: 510, color: '#252525', textAlign: 'center' }}>
-          나의 최애 카공 조건은?
-        </p>
-
-        {/* container_boxes — box_L / box_R + 중앙 VS */}
-        <div style={{ marginTop: 60, position: 'relative', display: 'flex', gap: 7 }}>
-          <WorldcupChoiceCard
-            image={TASTE_WORLDCUP_DEMO_MATCH.left.image}
-            label={TASTE_WORLDCUP_DEMO_MATCH.left.label}
-            onClick={() => handlePick('left')}
-            selected={selectedSide === 'left'}
-          />
-          <WorldcupChoiceCard
-            image={TASTE_WORLDCUP_DEMO_MATCH.right.image}
-            label={TASTE_WORLDCUP_DEMO_MATCH.right.label}
-            onClick={() => handlePick('right')}
-            selected={selectedSide === 'right'}
-          />
-
-          {/* VS 뱃지 — 두 박스 경계, 이미지 영역 세로 중앙에 겹쳐 위치 */}
-          <div style={{ position: 'absolute', left: '50%', top: '41%', transform: 'translate(-50%, -50%)' }}>
-            <VsBadge />
-          </div>
-        </div>
-      </div>
-
-      <FocusBottomCTA.SingleWithUndo
-        label={step === TASTE_WORLDCUP_TOTAL_PICKS ? '결과보기' : '다음으로'}
-        onClick={handleNext}
-        disabled={!selectedSide}
-        undoLabel="← 이전으로"
-        onUndo={handleUndo}
-        undoDisabled={step <= 1}
-      />
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// 서브 페이지: 카페 취향 월드컵 결과 화면 (Figma "Worldcup_result" 스펙 반영)
-// 상단 IMG 영역은 추후 실제 이미지 자산 + 탭/스와이프 인터랙션이 붙을 예정 — 지금은 자리만 동일하게 확보
-// ─────────────────────────────────────────────────────────────
-function TasteWorldcupResultPage({
-  winner, onBack, onConfirm, enabled = true,
-}: {
-  winner: { id: string; label: string };
-  onBack: () => void;
-  onConfirm: () => void;
-  enabled?: boolean;
-}) {
-  useBackEvent(onBack, enabled);
-  const { nickname } = useFavorites();
-  const displayName = nickname ?? '나';
-  const resultDesc = TASTE_WORLDCUP_RESULT_DESC[winner.id] ?? '나에게 딱 맞는 곳';
-
-  return (
-    <div style={{
-      position: 'relative', height: '100%', overflow: 'hidden', background: '#f3f3f3',
-      display: 'flex', flexDirection: 'column',
-    }}>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 30px' }}>
-        {/* 상단 IMG 영역 — 추후 실제 이미지 + 인터랙션 연결 예정, 지금은 자리만 확보 */}
-        <div style={{ width: '100%', aspectRatio: '315 / 350', borderRadius: 12, background: '#E5E8EB' }} />
-
-        <div style={{ marginTop: 24, textAlign: 'center' }}>
-          <p style={{ margin: 0, fontSize: 22, fontWeight: 590, color: '#191F28', lineHeight: '27.5px' }}>
-            취향을 발견했어요!
-          </p>
-          <div style={{ marginTop: 24 }}>
-            <p style={{ margin: 0, fontSize: 17, fontWeight: 400, color: '#6B7684', lineHeight: '21.28px' }}>
-              {resultDesc}
-            </p>
-            <p style={{ margin: '8px 0 0', fontSize: 17, fontWeight: 400, color: '#6B7684', lineHeight: '21.28px' }}>
-              {displayName}님의 1순위 취향은
-            </p>
-            <p style={{ margin: 0, fontSize: 17, fontWeight: 400, lineHeight: '21.28px' }}>
-              <span style={{ color: '#4E5968' }}>{winner.label}</span>
-              <span style={{ color: '#6B7684' }}> 카페예요</span>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <FocusBottomCTA.SingleWithUndo label="확인" onClick={onConfirm} />
     </div>
   );
 }
@@ -1678,10 +1402,8 @@ export default function MyPage({
     if (!ok) return;
     changeSubPage('report-cafe');
   };
-  // 카페 취향 월드컵 진입
+  // 카페 취향 월드컵 진입 — 온보딩/진행/결과 플로우 전체는 TasteWorldcup.tsx에서 지연 로드
   const handleOpenTasteWorldcup = () => changeSubPage('taste-worldcup');
-  // 월드컵 결승에서 확정된 1순위 조건 — 결과 화면에 표시
-  const [worldcupWinner, setWorldcupWinner] = useState<{ id: string; label: string } | null>(null);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [showContactPopup, setShowContactPopup] = useState(false);
   const [copiedToast, setCopiedToast] = useState(false);
@@ -2091,30 +1813,9 @@ export default function MyPage({
     )}
     {subPage === 'taste-worldcup' && (
       <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
-        <TasteWorldcupPage
-          onBack={() => changeSubPage(null)}
-          onStart={() => changeSubPage('taste-worldcup-game')}
-          enabled={!hasDetailOverlay}
-        />
-      </div>
-    )}
-    {subPage === 'taste-worldcup-game' && (
-      <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
-        <TasteWorldcupGamePage
-          onBack={() => changeSubPage('taste-worldcup')}
-          onFinish={(winner) => { setWorldcupWinner(winner); changeSubPage('taste-worldcup-result'); }}
-          enabled={!hasDetailOverlay}
-        />
-      </div>
-    )}
-    {subPage === 'taste-worldcup-result' && worldcupWinner && (
-      <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
-        <TasteWorldcupResultPage
-          winner={worldcupWinner}
-          onBack={() => changeSubPage('taste-worldcup-game')}
-          onConfirm={() => changeSubPage(null)}
-          enabled={!hasDetailOverlay}
-        />
+        <Suspense fallback={null}>
+          <TasteWorldcup onExit={() => changeSubPage(null)} enabled={!hasDetailOverlay} />
+        </Suspense>
       </div>
     )}
     {editingReview && (
