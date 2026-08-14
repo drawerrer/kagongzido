@@ -23,7 +23,7 @@ import MoodStoneImg from '../assets/condition/mood_stone.svg';
 import MoodBrickImg from '../assets/condition/mood_brick.svg';
 import MoodModernImg from '../assets/condition/mood_modern.svg';
 import LampIdleImg from '../assets/interaction/lamp_idle.svg';
-import LampPullImg from '../assets/interaction/lamp_pull.svg';
+import LampHandImg from '../assets/interaction/lamp_hand.svg';
 import LampLitWarmImg from '../assets/interaction/lamp_lit_warm.svg';
 import LampLitLowImg from '../assets/interaction/lamp_lit_low.svg';
 import LampLitWhiteImg from '../assets/interaction/lamp_lit_white.svg';
@@ -59,7 +59,7 @@ const HEADLINE_GAP = 14;
 const HEADLINE_SUB_MAX_HEIGHT = 36;
 const HEADLINE_AREA_HEIGHT = HEADLINE_MAIN_HEIGHT + HEADLINE_GAP + HEADLINE_SUB_MAX_HEIGHT;
 
-function TasteWorldcupPage({ onBack, onStart, enabled = true }: { onBack: () => void; onStart: () => void; enabled?: boolean }) {
+function TasteWorldcupPage({ onBack, onStart, onDebugPager, enabled = true }: { onBack: () => void; onStart: () => void; onDebugPager?: () => void; enabled?: boolean }) {
   useBackEvent(onBack, enabled);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
@@ -125,6 +125,20 @@ function TasteWorldcupPage({ onBack, onStart, enabled = true }: { onBack: () => 
 
       {/* 하단 CTA와의 여백 확보용 스페이서 — 바디 바깥, 바디 아래 */}
       <div style={{ flexShrink: 0, height: 120 }} />
+
+      {/* TODO(임시 개발용): 결과 인터랙션 점검용 페이저 진입 버튼 — 다듬기 끝나면 제거 */}
+      {onDebugPager && (
+        <button
+          onClick={onDebugPager}
+          style={{
+            position: 'absolute', top: 12, right: 16,
+            background: 'none', border: 'none', padding: 4,
+            fontSize: 12, color: '#B0B8C1', cursor: 'pointer', zIndex: 1,
+          }}
+        >
+          결과 인터랙션 미리보기(개발용)
+        </button>
+      )}
 
       <FocusBottomCTA.Single label="시작하기" onClick={onStart} />
     </div>
@@ -342,6 +356,10 @@ interface InteractionFrame {
   holdMs: number;
   /** 이 프레임이 보이는 동안만 적용할 1회성 강조 애니메이션 클래스 */
   animateClassName?: string;
+  /** 지정하면 이 위치에서 슬라이드해오며 페이드인 (예: 손이 다가오는 느낌). 기본은 제자리 크로스페이드 */
+  enterFromTransform?: string;
+  /** enterFromTransform 사용 시 전환 시간(ms) — 기본 크로스페이드(350ms)보다 느리게 "다가오는" 느낌을 주고 싶을 때 */
+  enterMs?: number;
 }
 
 function ImageSequence({ frames }: { frames: InteractionFrame[] }) {
@@ -355,19 +373,28 @@ function ImageSequence({ frames }: { frames: InteractionFrame[] }) {
 
   return (
     <>
-      {frames.map((frame, i) => (
-        <img
-          key={frame.src}
-          src={frame.src}
-          alt=""
-          className={i === index ? frame.animateClassName : undefined}
-          style={{
-            position: 'absolute', inset: 0, width: '100%', height: '100%',
-            objectFit: 'cover', opacity: i === index ? 1 : 0,
-            transition: 'opacity 0.25s ease',
-          }}
-        />
-      ))}
+      {frames.map((frame, i) => {
+        const active = i === index;
+        const duration = frame.enterMs ?? 350;
+        return (
+          <img
+            key={frame.src}
+            src={frame.src}
+            alt=""
+            className={active ? frame.animateClassName : undefined}
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              objectFit: 'cover', opacity: active ? 1 : 0,
+              transform: frame.enterFromTransform
+                ? (active ? 'none' : frame.enterFromTransform)
+                : undefined,
+              transition: frame.enterFromTransform
+                ? `opacity ${duration}ms ease-out, transform ${duration}ms ease-out`
+                : 'opacity 0.35s ease',
+            }}
+          />
+        );
+      })}
     </>
   );
 }
@@ -388,48 +415,103 @@ function ZoomReveal({ src }: { src: string }) {
         position: 'absolute', inset: 0, width: '100%', height: '100%',
         objectFit: 'cover', transformOrigin: 'center',
         transform: zoomedIn ? 'scale(3.2)' : 'scale(1)',
-        transition: 'transform 1.1s ease-out',
+        transition: 'transform 1.6s ease-out',
       }}
     />
   );
 }
 
+// 전구 전용 인터랙션 — 램프(lamp_idle)는 고정해두고, 손(lamp_hand, 투명 배경)만 별도 레이어로
+// (1) 아래에서 올라와 줄을 잡고 (2) 살짝 아래로 당긴 뒤 (3) 불이 켜지는 3단계로 구성
+const LAMP_PHASES = ['idle', 'approach', 'tug', 'lit'] as const;
+type LampPhase = typeof LAMP_PHASES[number];
+const LAMP_PHASE_DURATION_MS: Record<Exclude<LampPhase, 'lit'>, number> = {
+  idle: 1000,     // 대기(흔들림)
+  approach: 700,  // 손이 올라와 줄을 잡음
+  tug: 250,       // 줄을 살짝 아래로 당김 — 당기는 동작이라 approach보다 빠르고 스냅감 있게
+};
+
+function LampInteraction({ litSrc }: { litSrc: string }) {
+  const [phase, setPhase] = useState<LampPhase>('idle');
+
+  useEffect(() => {
+    if (phase === 'lit') return;
+    const next = LAMP_PHASES[LAMP_PHASES.indexOf(phase) + 1];
+    const t = setTimeout(() => setPhase(next), LAMP_PHASE_DURATION_MS[phase]);
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  const baseStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } as const;
+
+  // 손: idle(아래 숨김) → approach(올라와 줄을 잡음, lamp_idle 줄 끝과 정렬되는 -20px 지점에 고정) →
+  //     tug(위치는 그대로 유지한 채 살짝 쥐는 스퀴즈 모션만 재생) → lit(같이 페이드아웃)
+  // -20px는 lamp_hand.svg와 lamp_pull.svg(당기기 전 손 위치)를 좌표 단위로 대조해 확인한 실제 차이값.
+  // tug 단계에서 손을 실제로 더 내리면 배경 램프의 줄(고정 길이)과 어긋나 손이 줄을 놓친 것처럼 보이므로,
+  // 위치는 그대로 두고 스퀴즈(twc-tug) 애니메이션으로만 "당기는 힘"을 표현함
+  const handTransform = phase === 'idle' ? 'translateY(40px)' : 'translateY(-5px)';
+  const handTransition =
+    phase === 'approach' ? 'opacity 700ms ease-out, transform 700ms ease-out' :
+    phase === 'lit' ? 'opacity 0.35s ease' :
+    'none';
+
+  return (
+    <>
+      {/* 배경 램프 — idle/approach/tug 동안 고정, lit로 넘어갈 때 페이드아웃 */}
+      <img
+        src={LampIdleImg}
+        alt=""
+        className={phase === 'idle' ? 'twc-wobble' : undefined}
+        style={{ ...baseStyle, opacity: phase === 'lit' ? 0 : 1, transition: 'opacity 0.35s ease' }}
+      />
+      {/* 손 — 올라와 줄을 잡고(approach) 제자리에서 살짝 쥐는 스퀴즈(tug) 뒤 lit로 넘어갈 때 같이 사라짐
+          lamp_hand.svg는 translateY로 움직여도 잘리지 않도록 세로로 여유(315×420, 프레임보다 70px 큼)를
+          두고 받은 애셋 — height를 100%로 강제하지 않고 원본 비율 그대로(auto) 키워서 상단은 프레임에
+          맞추고 늘어난 70px는 아래로 자연스럽게 넘치게 한 뒤, 프레임 자체의 overflow:hidden이 잘라줌 */}
+      <img
+        src={LampHandImg}
+        alt=""
+        className={phase === 'tug' ? 'twc-tug' : undefined}
+        style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: 'auto',
+          opacity: phase === 'approach' || phase === 'tug' ? 1 : 0,
+          transform: handTransform,
+          transition: handTransition,
+        }}
+      />
+      {/* 켜진 램프 — lit 단계에서 페이드인 후 유지 */}
+      <img
+        src={litSrc}
+        alt=""
+        style={{ ...baseStyle, opacity: phase === 'lit' ? 1 : 0, transition: 'opacity 0.35s ease' }}
+      />
+    </>
+  );
+}
+
 type ResultInteractionSpec =
   | { kind: 'sequence'; frames: InteractionFrame[] }
-  | { kind: 'zoom'; src: string };
+  | { kind: 'zoom'; src: string }
+  | { kind: 'lamp'; litSrc: string };
+
+// 결과 화면 이미지 프레임 배경색 — 기본은 페이지 배경(#f3f3f3)과 동일하게.
+// 전구 조건만 예외: lamp_idle.svg에 어두운 오버레이(#00132B, 58%)가 추가돼 있어 장면 자체가 어두우므로,
+// 같은 색(오버레이를 #f3f3f3 위에 얹었을 때의 실제 합성 결과, rgb(102,113,127))으로 프레임을 맞춤
+function getResultFrameBg(conditionId: string): string {
+  if (conditionId.startsWith('lamp_')) return '#66717F';
+  return '#f3f3f3';
+}
 
 // 1순위 조건 id → 결과 화면 인터랙션. 분위기 8종은 아직 스티커 애셋이 없어 매핑에서 제외(플레이스홀더 유지)
 const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
-  lamp_warm: {
-    kind: 'sequence',
-    frames: [
-      { src: LampIdleImg, holdMs: 700, animateClassName: 'twc-wobble' },
-      { src: LampPullImg, holdMs: 500 },
-      { src: LampLitWarmImg, holdMs: 0 },
-    ],
-  },
-  lamp_low: {
-    kind: 'sequence',
-    frames: [
-      { src: LampIdleImg, holdMs: 700, animateClassName: 'twc-wobble' },
-      { src: LampPullImg, holdMs: 500 },
-      { src: LampLitLowImg, holdMs: 0 },
-    ],
-  },
-  lamp_white: {
-    kind: 'sequence',
-    frames: [
-      { src: LampIdleImg, holdMs: 700, animateClassName: 'twc-wobble' },
-      { src: LampPullImg, holdMs: 500 },
-      { src: LampLitWhiteImg, holdMs: 0 },
-    ],
-  },
+  lamp_warm: { kind: 'lamp', litSrc: LampLitWarmImg },
+  lamp_low: { kind: 'lamp', litSrc: LampLitLowImg },
+  lamp_white: { kind: 'lamp', litSrc: LampLitWhiteImg },
   outlet: {
     kind: 'sequence',
     frames: [
-      { src: OutletLowImg, holdMs: 700, animateClassName: 'twc-blink' },
-      { src: OutletEmptyImg, holdMs: 500 },
-      { src: OutletPluggedImg, holdMs: 500 },
+      { src: OutletLowImg, holdMs: 1000, animateClassName: 'twc-blink' },
+      { src: OutletEmptyImg, holdMs: 750 },
+      { src: OutletPluggedImg, holdMs: 750 },
       { src: OutletFullImg, holdMs: 0 },
     ],
   },
@@ -438,16 +520,16 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
   noise_normal: {
     kind: 'sequence',
     frames: [
-      { src: NoiseBarsImg, holdMs: 600 },
-      { src: NoiseDialNormalImg, holdMs: 600 },
+      { src: NoiseBarsImg, holdMs: 900 },
+      { src: NoiseDialNormalImg, holdMs: 900 },
       { src: NoiseHeadphonesNormalImg, holdMs: 0 },
     ],
   },
   noise_small: {
     kind: 'sequence',
     frames: [
-      { src: NoiseBarsImg, holdMs: 600 },
-      { src: NoiseDialSmallImg, holdMs: 600 },
+      { src: NoiseBarsImg, holdMs: 900 },
+      { src: NoiseDialSmallImg, holdMs: 900 },
       { src: NoiseHeadphonesSmallImg, holdMs: 0 },
     ],
   },
@@ -455,6 +537,8 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
 
 function ResultInteraction({ conditionId }: { conditionId: string }) {
   const spec = WORLDCUP_RESULT_INTERACTIONS[conditionId];
+  // 탭하면 처음부터 다시 재생 — replayKey를 바꿔서 내부 컴포넌트를 강제로 리마운트시킴
+  const [replayKey, setReplayKey] = useState(0);
 
   if (!spec) {
     // 분위기 조건 8종 — 스티커 인터랙션 애셋 준비되면 연결 예정
@@ -462,27 +546,37 @@ function ResultInteraction({ conditionId }: { conditionId: string }) {
   }
 
   return (
-    <>
+    <div
+      onClick={() => setReplayKey(k => k + 1)}
+      style={{ position: 'absolute', inset: 0, cursor: 'pointer' }}
+    >
       <style>{`
         @keyframes twc-wobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
-        .twc-wobble { animation: twc-wobble 0.35s ease-in-out 2; transform-origin: top center; }
+        .twc-wobble { animation: twc-wobble 0.5s ease-in-out 2; transform-origin: top center; }
         @keyframes twc-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-        .twc-blink { animation: twc-blink 0.35s ease-in-out 2; }
+        .twc-blink { animation: twc-blink 0.5s ease-in-out 2; }
+        @keyframes twc-tug { 0%, 100% { transform: translateY(-5px) scale(1); } 50% { transform: translateY(-5px) scale(0.94); } }
+        .twc-tug { animation: twc-tug 260ms ease-in-out 1; transform-origin: center; }
       `}</style>
-      {spec.kind === 'zoom'
-        ? <ZoomReveal src={spec.src} />
-        : <ImageSequence frames={spec.frames} />}
-    </>
+      {spec.kind === 'zoom' && <ZoomReveal key={replayKey} src={spec.src} />}
+      {spec.kind === 'lamp' && <LampInteraction key={replayKey} litSrc={spec.litSrc} />}
+      {spec.kind === 'sequence' && <ImageSequence key={replayKey} frames={spec.frames} />}
+    </div>
   );
 }
 
 // 서브 페이지: 카페 취향 월드컵 결과 화면 (Figma "Worldcup_result" 스펙 반영)
 function TasteWorldcupResultPage({
-  winner, onBack, onConfirm, enabled = true,
+  winner, onBack, onConfirm, confirmLabel = '확인', onPrev, prevLabel, enabled = true,
 }: {
   winner: { id: string; label: string };
   onBack: () => void;
   onConfirm: () => void;
+  /** 기본 "확인" — 디버그 페이저에서 "다음으로"로 재사용하기 위해 오버라이드 가능 */
+  confirmLabel?: string;
+  /** 지정하면 버튼 위에 "이전으로" 텍스트 링크가 추가됨 — 디버그 페이저 전용, 실제 결과 화면에선 생략 */
+  onPrev?: () => void;
+  prevLabel?: string;
   enabled?: boolean;
 }) {
   useBackEvent(onBack, enabled);
@@ -496,8 +590,10 @@ function TasteWorldcupResultPage({
       display: 'flex', flexDirection: 'column',
     }}>
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 30px' }}>
-        {/* 상단 IMG 영역 — 1순위 조건에 맞는 인터랙션 재생 */}
-        <div style={{ position: 'relative', width: '100%', aspectRatio: '315 / 350', borderRadius: 12, overflow: 'hidden', background: '#E5E8EB' }}>
+        {/* 상단 IMG 영역 — 1순위 조건에 맞는 인터랙션 재생
+            프레임 배경은 인터랙션 장면의 실제 배경색과 맞춤(getResultFrameBg) — 회전/스퀴즈 애니메이션이
+            프레임 경계 밖으로 살짝 벗어날 때 드러나는 모서리 색이 장면과 어긋나 튀지 않도록 함 */}
+        <div style={{ position: 'relative', width: '100%', aspectRatio: '315 / 350', borderRadius: 12, overflow: 'hidden', background: getResultFrameBg(winner.id) }}>
           <ResultInteraction conditionId={winner.id} />
         </div>
 
@@ -520,12 +616,49 @@ function TasteWorldcupResultPage({
         </div>
       </div>
 
-      <FocusBottomCTA.SingleWithUndo label="확인" onClick={onConfirm} />
+      <FocusBottomCTA.SingleWithUndo
+        label={confirmLabel}
+        onClick={onConfirm}
+        undoLabel={onPrev ? (prevLabel ?? '← 이전으로') : undefined}
+        onUndo={onPrev}
+      />
     </div>
   );
 }
 
-type TasteWorldcupPhase = 'onboarding' | 'game' | 'result';
+// TODO(임시 개발용): 결과 인터랙션을 라운드를 다 돌지 않고 실제 결과 화면 그대로, 한 조건씩 넘겨보며
+// 점검하기 위한 페이저. "다음으로"를 누를 때마다 다음 조건의 인터랙션이 처음부터 재생됨(끝까지 가면 처음으로 순환).
+// 인터랙션 디테일 다듬기 끝나면 이 컴포넌트와 TasteWorldcupPage의 진입 버튼을 함께 제거할 것.
+function TasteWorldcupResultDebugPager({ onExit }: { onExit: () => void }) {
+  const total = TASTE_WORLDCUP_CONDITIONS.length;
+  const [index, setIndex] = useState(0);
+  const condition = TASTE_WORLDCUP_CONDITIONS[index];
+
+  return (
+    <div style={{ position: 'relative', height: '100%' }}>
+      {/* 현재 몇 번째 조건인지 표시 — 디버그 전용 오버레이 */}
+      <div style={{
+        position: 'absolute', top: 12, left: 20, zIndex: 2,
+        fontSize: 12, color: '#B0B8C1', background: 'rgba(255,255,255,0.85)',
+        padding: '2px 8px', borderRadius: 8,
+      }}>
+        {index + 1} / {total} · {condition.id}
+      </div>
+      <TasteWorldcupResultPage
+        // 조건이 바뀔 때마다 컴포넌트를 새로 마운트해서 인터랙션 애니메이션이 처음부터 재생되게 함
+        key={condition.id}
+        winner={condition}
+        onBack={onExit}
+        onConfirm={() => setIndex(i => (i + 1) % total)}
+        confirmLabel="다음으로"
+        onPrev={() => setIndex(i => (i - 1 + total) % total)}
+        prevLabel="← 이전으로"
+      />
+    </div>
+  );
+}
+
+type TasteWorldcupPhase = 'onboarding' | 'game' | 'result' | 'debug-pager';
 
 /**
  * 카페 취향 월드컵 플로우 전체를 감싸는 진입점.
@@ -557,10 +690,15 @@ export default function TasteWorldcupFlow({ onExit, enabled = true }: { onExit: 
     );
   }
 
+  if (phase === 'debug-pager') {
+    return <TasteWorldcupResultDebugPager onExit={() => setPhase('onboarding')} />;
+  }
+
   return (
     <TasteWorldcupPage
       onBack={onExit}
       onStart={() => setPhase('game')}
+      onDebugPager={() => setPhase('debug-pager')}
       enabled={enabled}
     />
   );
