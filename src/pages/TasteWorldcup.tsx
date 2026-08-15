@@ -37,6 +37,7 @@ import ChairSmallImg from '../assets/interaction/chair_small.svg';
 import NoiseDialNormalGridImg from '../assets/interaction/noise_dial_normal_grid.svg';
 import NoiseDialKnobImg from '../assets/interaction/noise_dial_normal_knob.svg';
 import NoiseDialSmallImg from '../assets/interaction/noise_dial_small.svg';
+import NoiseDialHandImg from '../assets/interaction/noise_dial_hand.svg';
 import NoiseHeadphonesNormalImg from '../assets/interaction/noise_headphones_normal.svg';
 import NoiseHeadphonesSmallImg from '../assets/interaction/noise_headphones_small.svg';
 
@@ -552,6 +553,33 @@ function NoiseBars() {
   );
 }
 
+// noise_headphones_normal 전용 — 헤드폰 아래 파동 선도 noise_bars와 같은 방식으로 하나의 path에서
+// 좌표만 뽑아 개별 <line>으로 분리(원본 svg에서는 이 path를 제거함). 배경 없는 투명 오버레이라
+// 헤드폰 이미지 위에 겹쳐서 파동만 움직이게 함
+const HEADPHONE_WAVE_BARS = [
+  { x: 116.672, y1: 260.559, y2: 274.002 },
+  { x: 138.336, y1: 256.059, y2: 278.502 },
+  { x: 160, y1: 262.559, y2: 272.002 },
+  { x: 181.664, y1: 252.559, y2: 282.002 },
+  { x: 203.328, y1: 262.559, y2: 272.002 },
+];
+
+function HeadphoneWave() {
+  return (
+    <svg viewBox="0 0 315 350" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
+      {HEADPHONE_WAVE_BARS.map((bar, i) => (
+        <line
+          key={i}
+          x1={bar.x} y1={bar.y1} x2={bar.x} y2={bar.y2}
+          stroke="#000" strokeWidth={5} strokeLinecap="round"
+          className={`twc-noise-bar-${i}`}
+          style={{ transformBox: 'fill-box', transformOrigin: 'center' } as React.CSSProperties}
+        />
+      ))}
+    </svg>
+  );
+}
+
 // 다이얼 등장 — 두 형태 지원:
 //  - 분리형(grid+knob): 눈금/위치선(grid)은 고정, 가운데 원형 조작부(knob)만 회전
 //  - 통짜형(flatSrc): 아직 grid/knob으로 분리된 애셋이 없는 조건 — 회전 없이 그대로 페이드인
@@ -563,7 +591,7 @@ function DialReveal({ dial, active }: { dial: NoiseDialSpec; active: boolean }) 
   const [rotated, setRotated] = useState(true);
   useEffect(() => {
     if (!active) return;
-    const t = setTimeout(() => setRotated(false), 50);
+    const t = setTimeout(() => setRotated(false), 800); // 등장 직후 잠깐 정착했다가 회전 시작
     return () => clearTimeout(t);
   }, [active]);
 
@@ -588,24 +616,38 @@ function DialReveal({ dial, active }: { dial: NoiseDialSpec; active: boolean }) 
         alt=""
         style={{
           ...baseStyle, transformOrigin: 'center',
-          transform: rotated ? 'rotate(25deg)' : 'rotate(0deg)',
+          // 시작(rotated=true): 그리드의 볼륨 위치 표시선 방향(5시경, 시계 기준 약 150°)
+          // 끝(rotated=false): 상단 중앙(12시)으로 정착
+          transform: rotated ? 'rotate(20deg)' : 'rotate(-130deg)',
           transition: 'transform 0.7s ease-out',
+        }}
+      />
+      {/* 손 — knob이 회전을 시작하는 순간(rotated=false) 오른쪽에서 슬라이드+페이드로 등장,
+          우측에서 좌측으로 다이얼을 돌리는 느낌(lamp_hand와 같은 방식) */}
+      <img
+        src={NoiseDialHandImg}
+        alt=""
+        style={{
+          ...baseStyle,
+          opacity: rotated ? 0 : 1,
+          transform: rotated ? 'translateX(40px)' : 'translateX(0)',
+          transition: rotated ? 'none' : 'opacity 0.5s ease-out, transform 0.5s ease-out',
         }}
       />
     </div>
   );
 }
 
-function NoiseInteraction({ dial, headphonesSrc }: { dial: NoiseDialSpec; headphonesSrc: string }) {
+function NoiseInteraction({ dial, headphonesSrc, headphonesWave = false }: { dial: NoiseDialSpec; headphonesSrc: string; headphonesWave?: boolean }) {
   const [phase, setPhase] = useState<'bars' | 'dial' | 'headphones'>('bars');
 
   useEffect(() => {
     if (phase === 'bars') {
-      const t = setTimeout(() => setPhase('dial'), 2500); // 막대 애니메이션(0.8s × 3회 + 딜레이) 다 끝날 때까지 유지
+      const t = setTimeout(() => setPhase('dial'), 1700); // 막대 애니메이션(0.8s × 2회 + 딜레이) 다 끝날 때까지 유지
       return () => clearTimeout(t);
     }
     if (phase === 'dial') {
-      const t = setTimeout(() => setPhase('headphones'), 900);
+      const t = setTimeout(() => setPhase('headphones'), 2300); // 정착(0.8s) + 회전(0.7s) + 정착(0.8s) 다 끝날 때까지 유지
       return () => clearTimeout(t);
     }
   }, [phase]);
@@ -618,7 +660,12 @@ function NoiseInteraction({ dial, headphonesSrc }: { dial: NoiseDialSpec; headph
         <NoiseBars />
       </div>
       <DialReveal dial={dial} active={phase === 'dial'} />
-      <img src={headphonesSrc} alt="" style={{ ...baseStyle, opacity: phase === 'headphones' ? 1 : 0, transition: 'opacity 0.35s ease' }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: phase === 'headphones' ? 1 : 0, transition: 'opacity 0.35s ease' }}>
+        <img src={headphonesSrc} alt="" style={baseStyle} />
+        {/* phase가 'headphones'로 바뀌는 순간 새로 마운트돼야 애니메이션이 그때 시작함 —
+            그냥 opacity로만 숨겨두면 안 보이는 동안 이미 재생이 끝나버림(DialReveal과 같은 문제) */}
+        {headphonesWave && phase === 'headphones' && <HeadphoneWave />}
+      </div>
     </>
   );
 }
@@ -627,7 +674,7 @@ type ResultInteractionSpec =
   | { kind: 'sequence'; frames: InteractionFrame[] }
   | { kind: 'space'; groupSrc: string }
   | { kind: 'lamp'; litSrc: string }
-  | { kind: 'noise'; dial: NoiseDialSpec; headphonesSrc: string };
+  | { kind: 'noise'; dial: NoiseDialSpec; headphonesSrc: string; headphonesWave?: boolean };
 
 // 결과 화면 이미지 프레임 배경색 — 기본은 페이지 배경(#f3f3f3)과 동일하게.
 // 전구 조건만 예외: lamp_idle.svg에 어두운 오버레이(#00132B, 58%)가 추가돼 있어 장면 자체가 어두우므로,
@@ -657,6 +704,7 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
     kind: 'noise',
     dial: { gridSrc: NoiseDialNormalGridImg, knobSrc: NoiseDialKnobImg },
     headphonesSrc: NoiseHeadphonesNormalImg,
+    headphonesWave: true, // 약간의 파동이 남아있는 조건이라 헤드폰 아래 파동 선이 움직임
   },
   // TODO: noise_small도 grid/knob 분리 애셋 받으면 위와 동일하게 교체 — 지금은 통짜 이미지로 회전 없이 표시
   noise_small: { kind: 'noise', dial: { flatSrc: NoiseDialSmallImg }, headphonesSrc: NoiseHeadphonesSmallImg },
@@ -687,17 +735,19 @@ function ResultInteraction({ conditionId }: { conditionId: string }) {
         @keyframes twc-bar-2 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.4); } }
         @keyframes twc-bar-3 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.2); } }
         @keyframes twc-bar-4 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.35); } }
-        .twc-noise-bar-0 { animation: twc-bar-0 0.8s ease-in-out 3; }
-        .twc-noise-bar-1 { animation: twc-bar-1 0.8s ease-in-out 3 40ms; }
-        .twc-noise-bar-2 { animation: twc-bar-2 0.8s ease-in-out 3 80ms; }
-        .twc-noise-bar-3 { animation: twc-bar-3 0.8s ease-in-out 3 120ms; }
-        .twc-noise-bar-4 { animation: twc-bar-4 0.8s ease-in-out 3 20ms; }
+        .twc-noise-bar-0 { animation: twc-bar-0 0.8s ease-in-out 2; }
+        .twc-noise-bar-1 { animation: twc-bar-1 0.8s ease-in-out 2 40ms; }
+        .twc-noise-bar-2 { animation: twc-bar-2 0.8s ease-in-out 2 80ms; }
+        .twc-noise-bar-3 { animation: twc-bar-3 0.8s ease-in-out 2 120ms; }
+        .twc-noise-bar-4 { animation: twc-bar-4 0.8s ease-in-out 2 20ms; }
         @keyframes twc-tug { 0%, 100% { transform: translateY(-5px) scale(1); } 50% { transform: translateY(-5px) scale(0.94); } }
         .twc-tug { animation: twc-tug 260ms ease-in-out 1; transform-origin: center; }
       `}</style>
       {spec.kind === 'space' && <SpaceInteraction key={replayKey} groupSrc={spec.groupSrc} />}
       {spec.kind === 'lamp' && <LampInteraction key={replayKey} litSrc={spec.litSrc} />}
-      {spec.kind === 'noise' && <NoiseInteraction key={replayKey} dial={spec.dial} headphonesSrc={spec.headphonesSrc} />}
+      {spec.kind === 'noise' && (
+        <NoiseInteraction key={replayKey} dial={spec.dial} headphonesSrc={spec.headphonesSrc} headphonesWave={spec.headphonesWave} />
+      )}
       {spec.kind === 'sequence' && <ImageSequence key={replayKey} frames={spec.frames} />}
     </div>
   );
