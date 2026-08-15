@@ -31,10 +31,11 @@ import OutletLowImg from '../assets/interaction/outlet_low.svg';
 import OutletEmptyImg from '../assets/interaction/outlet_empty.svg';
 import OutletPluggedImg from '../assets/interaction/outlet_plugged.svg';
 import OutletFullImg from '../assets/interaction/outlet_full.svg';
+import ChairSingleImg from '../assets/interaction/chair_single.svg';
 import ChairLargeImg from '../assets/interaction/chair_large.svg';
 import ChairSmallImg from '../assets/interaction/chair_small.svg';
-import NoiseBarsImg from '../assets/interaction/noise_bars.svg';
-import NoiseDialNormalImg from '../assets/interaction/noise_dial_normal.svg';
+import NoiseDialNormalGridImg from '../assets/interaction/noise_dial_normal_grid.svg';
+import NoiseDialKnobImg from '../assets/interaction/noise_dial_normal_knob.svg';
 import NoiseDialSmallImg from '../assets/interaction/noise_dial_small.svg';
 import NoiseHeadphonesNormalImg from '../assets/interaction/noise_headphones_normal.svg';
 import NoiseHeadphonesSmallImg from '../assets/interaction/noise_headphones_small.svg';
@@ -399,25 +400,60 @@ function ImageSequence({ frames }: { frames: InteractionFrame[] }) {
   );
 }
 
-function ZoomReveal({ src }: { src: string }) {
-  // 확대 상태로 시작 → 마운트 직후 원래 크기로 줌아웃(트랜지션)되며 전체 배치가 드러남
-  const [zoomedIn, setZoomedIn] = useState(true);
+// 공간(대형/소형 카페) 전용 인터랙션 — chair_large/small은 의자 간 간격이 좁아서 그냥 확대하면
+// 포커스한 의자 하나만이 아니라 주변 의자까지 같이 보여버림. 그래서:
+//  (1) 의자 하나만 그려진 chair_single을 원본 그대로(scale 1)의 크기로 잠깐 고정
+//  (2) chair_single을 "실제 배치 안에서 의자 한 개가 보이는 크기"까지 축소(scale 1보다 작아짐)
+//  (3) 그 크기가 같아지는 시점에 chair_large/small로 교체 — 이때 chair_large/small도 그 크기에 맞춰
+//      확대된 상태(GROUP_ZOOM_IN_SCALE)로 나타나서 크기가 자연스럽게 이어짐
+//  (4) chair_large/small이 이어서 원본 크기(scale 1)까지 줄어들며 전체 배치가 드러남
+// TODO: 실제 애셋에서 의자 하나의 상대 크기 비율에 맞춰 튜닝 필요 — 지금은 추정치.
+// 교체 시점에 크기가 어긋나 보이면 이 두 값을 조정할 것
+const SPACE_MATCH_SCALE = 0.4;     // chair_single이 축소되다가 교체되는 시점의 배율
+const GROUP_ZOOM_IN_SCALE = 3.5;   // chair_large/small이 교체된 직후 시작하는 확대 배율(이후 1까지 축소)
+
+function SpaceInteraction({ groupSrc }: { groupSrc: string }) {
+  const [phase, setPhase] = useState<'focus' | 'toMatch' | 'group'>('focus');
+
   useEffect(() => {
-    const timer = setTimeout(() => setZoomedIn(false), 150);
-    return () => clearTimeout(timer);
-  }, []);
+    if (phase === 'focus') {
+      const t = setTimeout(() => setPhase('toMatch'), 1000); // 원본 크기로 고정 유지하는 시간
+      return () => clearTimeout(t);
+    }
+    if (phase === 'toMatch') {
+      const t = setTimeout(() => setPhase('group'), 600); // 매칭 배율까지 축소되는 시간
+      return () => clearTimeout(t);
+    }
+  }, [phase]);
+
+  const baseStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transformOrigin: 'center' } as const;
 
   return (
-    <img
-      src={src}
-      alt=""
-      style={{
-        position: 'absolute', inset: 0, width: '100%', height: '100%',
-        objectFit: 'cover', transformOrigin: 'center',
-        transform: zoomedIn ? 'scale(3.2)' : 'scale(1)',
-        transition: 'transform 1.6s ease-out',
-      }}
-    />
+    <>
+      {/* 의자 1개 — 원본 크기로 고정(focus) → 매칭 배율까지 축소(toMatch) → group 단계에서 교체되며 사라짐 */}
+      <img
+        src={ChairSingleImg}
+        alt=""
+        style={{
+          ...baseStyle,
+          opacity: phase === 'group' ? 0 : 1,
+          transform: `scale(${phase === 'focus' ? 1 : SPACE_MATCH_SCALE})`,
+          transition: phase === 'focus' ? 'none' : 'transform 600ms ease-out, opacity 300ms ease',
+        }}
+      />
+      {/* 실제 배치(대형/소형) — 교체 시점엔 확대 상태(GROUP_ZOOM_IN_SCALE)로 나타나 chair_single과
+          크기를 맞추고, 그대로 원본 크기(scale 1)까지 줄어들며 전체 배치가 드러남 */}
+      <img
+        src={groupSrc}
+        alt=""
+        style={{
+          ...baseStyle,
+          opacity: phase === 'group' ? 1 : 0,
+          transform: `scale(${phase === 'group' ? 1 : GROUP_ZOOM_IN_SCALE})`,
+          transition: phase === 'group' ? 'transform 900ms ease-out, opacity 300ms ease' : 'none',
+        }}
+      />
+    </>
   );
 }
 
@@ -488,10 +524,110 @@ function LampInteraction({ litSrc }: { litSrc: string }) {
   );
 }
 
+// 소음 전용 인터랙션 — noise_bars.svg의 막대 5개가 원래 하나의 path로 합쳐져 있어 개별 애니메이션이
+// 불가능했으므로, 그 좌표를 그대로 가져와 막대마다 별도 <line>으로 분리한 인라인 SVG로 재구현.
+// 막대별로 진폭/속도/딜레이를 다르게 줘서 소리에 맞춰 각자 다르게 파동치는 느낌을 살림
+const NOISE_BARS = [
+  { x: 96, y1: 135.5, y2: 214.5 },
+  { x: 128, y1: 140.5, y2: 209.5 },
+  { x: 160, y1: 129.5, y2: 220.5 },
+  { x: 192, y1: 140.5, y2: 209.5 },
+  { x: 224, y1: 124.5, y2: 225.5 },
+];
+
+function NoiseBars() {
+  return (
+    <svg viewBox="0 0 315 350" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
+      <rect width="315" height="350" fill="#F3F3F3" />
+      {NOISE_BARS.map((bar, i) => (
+        <line
+          key={i}
+          x1={bar.x} y1={bar.y1} x2={bar.x} y2={bar.y2}
+          stroke="#000" strokeWidth={5} strokeLinecap="round"
+          className={`twc-noise-bar-${i}`}
+          style={{ transformBox: 'fill-box', transformOrigin: 'center' } as React.CSSProperties}
+        />
+      ))}
+    </svg>
+  );
+}
+
+// 다이얼 등장 — 두 형태 지원:
+//  - 분리형(grid+knob): 눈금/위치선(grid)은 고정, 가운데 원형 조작부(knob)만 회전
+//  - 통짜형(flatSrc): 아직 grid/knob으로 분리된 애셋이 없는 조건 — 회전 없이 그대로 페이드인
+// active(다이얼 단계 진입)가 true로 바뀌는 시점에 회전이 시작되도록 별도 상태로 관리 —
+// 그냥 마운트 시점에 걸면 아직 안 보이는 bars 단계에서 미리 끝나버림
+type NoiseDialSpec = { gridSrc: string; knobSrc: string } | { flatSrc: string };
+
+function DialReveal({ dial, active }: { dial: NoiseDialSpec; active: boolean }) {
+  const [rotated, setRotated] = useState(true);
+  useEffect(() => {
+    if (!active) return;
+    const t = setTimeout(() => setRotated(false), 50);
+    return () => clearTimeout(t);
+  }, [active]);
+
+  const baseStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } as const;
+
+  if ('flatSrc' in dial) {
+    return (
+      <img
+        src={dial.flatSrc}
+        alt=""
+        style={{ ...baseStyle, opacity: active ? 1 : 0, transition: active ? 'opacity 0.35s ease' : 'none' }}
+      />
+    );
+  }
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, opacity: active ? 1 : 0, transition: active ? 'opacity 0.35s ease' : 'none' }}>
+      <img src={dial.gridSrc} alt="" style={baseStyle} />
+      {/* 조작부만 회전 — 오른쪽으로 살짝 치우친 상태(25deg)에서 반시계 방향(오른쪽→왼쪽)으로 제자리(0deg)까지 */}
+      <img
+        src={dial.knobSrc}
+        alt=""
+        style={{
+          ...baseStyle, transformOrigin: 'center',
+          transform: rotated ? 'rotate(25deg)' : 'rotate(0deg)',
+          transition: 'transform 0.7s ease-out',
+        }}
+      />
+    </div>
+  );
+}
+
+function NoiseInteraction({ dial, headphonesSrc }: { dial: NoiseDialSpec; headphonesSrc: string }) {
+  const [phase, setPhase] = useState<'bars' | 'dial' | 'headphones'>('bars');
+
+  useEffect(() => {
+    if (phase === 'bars') {
+      const t = setTimeout(() => setPhase('dial'), 2500); // 막대 애니메이션(0.8s × 3회 + 딜레이) 다 끝날 때까지 유지
+      return () => clearTimeout(t);
+    }
+    if (phase === 'dial') {
+      const t = setTimeout(() => setPhase('headphones'), 900);
+      return () => clearTimeout(t);
+    }
+  }, [phase]);
+
+  const baseStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } as const;
+
+  return (
+    <>
+      <div style={{ position: 'absolute', inset: 0, opacity: phase === 'bars' ? 1 : 0, transition: 'opacity 0.35s ease' }}>
+        <NoiseBars />
+      </div>
+      <DialReveal dial={dial} active={phase === 'dial'} />
+      <img src={headphonesSrc} alt="" style={{ ...baseStyle, opacity: phase === 'headphones' ? 1 : 0, transition: 'opacity 0.35s ease' }} />
+    </>
+  );
+}
+
 type ResultInteractionSpec =
   | { kind: 'sequence'; frames: InteractionFrame[] }
-  | { kind: 'zoom'; src: string }
-  | { kind: 'lamp'; litSrc: string };
+  | { kind: 'space'; groupSrc: string }
+  | { kind: 'lamp'; litSrc: string }
+  | { kind: 'noise'; dial: NoiseDialSpec; headphonesSrc: string };
 
 // 결과 화면 이미지 프레임 배경색 — 기본은 페이지 배경(#f3f3f3)과 동일하게.
 // 전구 조건만 예외: lamp_idle.svg에 어두운 오버레이(#00132B, 58%)가 추가돼 있어 장면 자체가 어두우므로,
@@ -515,24 +651,15 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
       { src: OutletFullImg, holdMs: 0 },
     ],
   },
-  cafe_large: { kind: 'zoom', src: ChairLargeImg },
-  cafe_small: { kind: 'zoom', src: ChairSmallImg },
+  cafe_large: { kind: 'space', groupSrc: ChairLargeImg },
+  cafe_small: { kind: 'space', groupSrc: ChairSmallImg },
   noise_normal: {
-    kind: 'sequence',
-    frames: [
-      { src: NoiseBarsImg, holdMs: 900 },
-      { src: NoiseDialNormalImg, holdMs: 900 },
-      { src: NoiseHeadphonesNormalImg, holdMs: 0 },
-    ],
+    kind: 'noise',
+    dial: { gridSrc: NoiseDialNormalGridImg, knobSrc: NoiseDialKnobImg },
+    headphonesSrc: NoiseHeadphonesNormalImg,
   },
-  noise_small: {
-    kind: 'sequence',
-    frames: [
-      { src: NoiseBarsImg, holdMs: 900 },
-      { src: NoiseDialSmallImg, holdMs: 900 },
-      { src: NoiseHeadphonesSmallImg, holdMs: 0 },
-    ],
-  },
+  // TODO: noise_small도 grid/knob 분리 애셋 받으면 위와 동일하게 교체 — 지금은 통짜 이미지로 회전 없이 표시
+  noise_small: { kind: 'noise', dial: { flatSrc: NoiseDialSmallImg }, headphonesSrc: NoiseHeadphonesSmallImg },
 };
 
 function ResultInteraction({ conditionId }: { conditionId: string }) {
@@ -555,11 +682,22 @@ function ResultInteraction({ conditionId }: { conditionId: string }) {
         .twc-wobble { animation: twc-wobble 0.5s ease-in-out 2; transform-origin: top center; }
         @keyframes twc-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
         .twc-blink { animation: twc-blink 0.5s ease-in-out 2; }
+        @keyframes twc-bar-0 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.3); } }
+        @keyframes twc-bar-1 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.15); } }
+        @keyframes twc-bar-2 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.4); } }
+        @keyframes twc-bar-3 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.2); } }
+        @keyframes twc-bar-4 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.35); } }
+        .twc-noise-bar-0 { animation: twc-bar-0 0.8s ease-in-out 3; }
+        .twc-noise-bar-1 { animation: twc-bar-1 0.8s ease-in-out 3 40ms; }
+        .twc-noise-bar-2 { animation: twc-bar-2 0.8s ease-in-out 3 80ms; }
+        .twc-noise-bar-3 { animation: twc-bar-3 0.8s ease-in-out 3 120ms; }
+        .twc-noise-bar-4 { animation: twc-bar-4 0.8s ease-in-out 3 20ms; }
         @keyframes twc-tug { 0%, 100% { transform: translateY(-5px) scale(1); } 50% { transform: translateY(-5px) scale(0.94); } }
         .twc-tug { animation: twc-tug 260ms ease-in-out 1; transform-origin: center; }
       `}</style>
-      {spec.kind === 'zoom' && <ZoomReveal key={replayKey} src={spec.src} />}
+      {spec.kind === 'space' && <SpaceInteraction key={replayKey} groupSrc={spec.groupSrc} />}
       {spec.kind === 'lamp' && <LampInteraction key={replayKey} litSrc={spec.litSrc} />}
+      {spec.kind === 'noise' && <NoiseInteraction key={replayKey} dial={spec.dial} headphonesSrc={spec.headphonesSrc} />}
       {spec.kind === 'sequence' && <ImageSequence key={replayKey} frames={spec.frames} />}
     </div>
   );
