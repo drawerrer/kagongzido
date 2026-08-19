@@ -31,6 +31,7 @@ import OutletLowImg from '../assets/interaction/outlet_low.svg';
 import OutletEmptyImg from '../assets/interaction/outlet_empty.svg';
 import OutletPluggedImg from '../assets/interaction/outlet_plugged.svg';
 import OutletFullImg from '../assets/interaction/outlet_full.svg';
+import OutletFullBackgroundImg from '../assets/interaction/outlet_full_background.svg';
 import ChairSingleImg from '../assets/interaction/chair_single.svg';
 import ChairLargeImg from '../assets/interaction/chair_large.svg';
 import ChairSmallImg from '../assets/interaction/chair_small.svg';
@@ -362,6 +363,13 @@ interface InteractionFrame {
   enterFromTransform?: string;
   /** enterFromTransform 사용 시 전환 시간(ms) — 기본 크로스페이드(350ms)보다 느리게 "다가오는" 느낌을 주고 싶을 때 */
   enterMs?: number;
+  /** 이 프레임 위에 겹쳐서 함께 등장하는 오버레이 — 아래서 위로 슬라이드해 올라오며 채워지는 연출(예: 콘센트 충전 완료) */
+  overlaySrc?: string;
+  /** overlaySrc 슬라이드업 전환 시간(ms) — 기본 900ms */
+  overlayEnterMs?: number;
+  /** overlaySrc가 슬라이드업을 시작하기까지 지연 시간(ms) — animateClassName과 동시에 움직이면
+      깜빡임 횟수가 흐트러져 보여서(예: 2회인데 2.5회처럼), 강조 애니메이션이 끝난 뒤에 시작하도록 지연 */
+  overlayDelayMs?: number;
 }
 
 function ImageSequence({ frames }: { frames: InteractionFrame[] }) {
@@ -379,22 +387,42 @@ function ImageSequence({ frames }: { frames: InteractionFrame[] }) {
         const active = i === index;
         const duration = frame.enterMs ?? 350;
         return (
-          <img
-            key={frame.src}
-            src={frame.src}
-            alt=""
-            className={active ? frame.animateClassName : undefined}
-            style={{
-              position: 'absolute', inset: 0, width: '100%', height: '100%',
-              objectFit: 'cover', opacity: active ? 1 : 0,
-              transform: frame.enterFromTransform
-                ? (active ? 'none' : frame.enterFromTransform)
-                : undefined,
-              transition: frame.enterFromTransform
-                ? `opacity ${duration}ms ease-out, transform ${duration}ms ease-out`
-                : 'opacity 0.35s ease',
-            }}
-          />
+          <div key={frame.src} style={{ position: 'absolute', inset: 0 }}>
+            {/* 배경 오버레이 — outlet_full 아트(불투명 소켓/플러그)는 그대로 위에 두고, 배경만 아래에서
+                슬라이드업해 초록색이 차오르는 느낌을 줌. 프레임 아트보다 먼저 그려서 뒤에 깔림 */}
+            {frame.overlaySrc && (
+              <img
+                src={frame.overlaySrc}
+                alt=""
+                style={{
+                  position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
+                  transform: active ? 'translateY(0)' : 'translateY(100%)',
+                  transition: `transform ${frame.overlayEnterMs ?? 900}ms ease-out ${frame.overlayDelayMs ?? 0}ms`,
+                }}
+              />
+            )}
+            <img
+              src={frame.src}
+              alt=""
+              className={active ? frame.animateClassName : undefined}
+              style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                objectFit: 'cover', opacity: active ? 1 : 0,
+                transform: frame.enterFromTransform
+                  ? (active ? 'none' : frame.enterFromTransform)
+                  : undefined,
+                // 활성화되는 순간 강조 애니메이션(animateClassName)이 같이 시작되는 프레임은
+                // opacity 크로스페이드 트랜지션을 아예 꺼서 애니메이션과 경합하지 않게 함 —
+                // 모바일 WebView 일부 환경에서 트랜지션이 살짝 먼저 새어나와 깜빡임이 한 번 더
+                // 보이는 것처럼 렌더링되는 문제가 있었음(데스크톱 Chrome에서는 재현 안 됨)
+                transition: active && frame.animateClassName
+                  ? 'none'
+                  : frame.enterFromTransform
+                    ? `opacity ${duration}ms ease-out, transform ${duration}ms ease-out`
+                    : `opacity ${duration}ms ease`,
+              }}
+            />
+          </div>
         );
       })}
     </>
@@ -572,7 +600,7 @@ function HeadphoneWave() {
           key={i}
           x1={bar.x} y1={bar.y1} x2={bar.x} y2={bar.y2}
           stroke="#000" strokeWidth={5} strokeLinecap="round"
-          className={`twc-noise-bar-${i}`}
+          className={`twc-wave-bar-${i}`}
           style={{ transformBox: 'fill-box', transformOrigin: 'center' } as React.CSSProperties}
         />
       ))}
@@ -580,61 +608,80 @@ function HeadphoneWave() {
   );
 }
 
-// 다이얼 등장 — 두 형태 지원:
-//  - 분리형(grid+knob): 눈금/위치선(grid)은 고정, 가운데 원형 조작부(knob)만 회전
-//  - 통짜형(flatSrc): 아직 grid/knob으로 분리된 애셋이 없는 조건 — 회전 없이 그대로 페이드인
+// 다이얼 등장 — 눈금/위치선(grid)은 고정, 가운데 원형 조작부(knob)만 회전.
+// fromDeg/toDeg로 조건별 시작·정착 각도를 지정 — noise_small은 noise_normal이 멈추는
+// 위치(12시, -130deg)에서 이어받아 반시계 방향으로 7시 위치(-280deg)까지 더 돌아감
+// swapSrc가 있으면 회전이 다 끝난 뒤 grid+knob 조합에서 전용 통짜 애셋으로 크로스페이드 전환
+// (knob이 noise_normal 것을 재사용한 임시 조합이라, 최종 정지 모양은 실제 애셋으로 마무리)
 // active(다이얼 단계 진입)가 true로 바뀌는 시점에 회전이 시작되도록 별도 상태로 관리 —
 // 그냥 마운트 시점에 걸면 아직 안 보이는 bars 단계에서 미리 끝나버림
-type NoiseDialSpec = { gridSrc: string; knobSrc: string } | { flatSrc: string };
+type NoiseDialSpec = { gridSrc: string; knobSrc: string; fromDeg?: number; toDeg?: number; swapSrc?: string };
 
 function DialReveal({ dial, active }: { dial: NoiseDialSpec; active: boolean }) {
   const [rotated, setRotated] = useState(true);
+  const [swapped, setSwapped] = useState(false);
   useEffect(() => {
     if (!active) return;
     const t = setTimeout(() => setRotated(false), 800); // 등장 직후 잠깐 정착했다가 회전 시작
     return () => clearTimeout(t);
   }, [active]);
 
-  const baseStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } as const;
+  useEffect(() => {
+    if (!active || rotated || !dial.swapSrc) return;
+    const t = setTimeout(() => setSwapped(true), 700); // 회전 트랜지션(0.7s) 다 끝난 뒤 전용 애셋으로 교체
+    return () => clearTimeout(t);
+  }, [active, rotated, dial.swapSrc]);
 
-  if ('flatSrc' in dial) {
-    return (
-      <img
-        src={dial.flatSrc}
-        alt=""
-        style={{ ...baseStyle, opacity: active ? 1 : 0, transition: active ? 'opacity 0.35s ease' : 'none' }}
-      />
-    );
-  }
+  const baseStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } as const;
+  // 기본값(20deg → -130deg): 그리드의 볼륨 위치 표시선 방향(5시경, 시계 기준 약 150°)에서 상단 중앙(12시)으로 정착
+  const fromDeg = dial.fromDeg ?? 20;
+  const toDeg = dial.toDeg ?? -130;
 
   return (
-    <div style={{ position: 'absolute', inset: 0, opacity: active ? 1 : 0, transition: active ? 'opacity 0.35s ease' : 'none' }}>
-      <img src={dial.gridSrc} alt="" style={baseStyle} />
-      {/* 조작부만 회전 — 오른쪽으로 살짝 치우친 상태(25deg)에서 반시계 방향(오른쪽→왼쪽)으로 제자리(0deg)까지 */}
-      <img
-        src={dial.knobSrc}
-        alt=""
-        style={{
-          ...baseStyle, transformOrigin: 'center',
-          // 시작(rotated=true): 그리드의 볼륨 위치 표시선 방향(5시경, 시계 기준 약 150°)
-          // 끝(rotated=false): 상단 중앙(12시)으로 정착
-          transform: rotated ? 'rotate(20deg)' : 'rotate(-130deg)',
-          transition: 'transform 0.7s ease-out',
-        }}
-      />
-      {/* 손 — knob이 회전을 시작하는 순간(rotated=false) 오른쪽에서 슬라이드+페이드로 등장,
-          우측에서 좌측으로 다이얼을 돌리는 느낌(lamp_hand와 같은 방식) */}
-      <img
-        src={NoiseDialHandImg}
-        alt=""
-        style={{
-          ...baseStyle,
-          opacity: rotated ? 0 : 1,
-          transform: rotated ? 'translateX(40px)' : 'translateX(0)',
-          transition: rotated ? 'none' : 'opacity 0.5s ease-out, transform 0.5s ease-out',
-        }}
-      />
-    </div>
+    <>
+      <div style={{ position: 'absolute', inset: 0, opacity: active ? (swapped ? 0 : 1) : 0, transition: active ? 'opacity 0.35s ease' : 'none' }}>
+        <img src={dial.gridSrc} alt="" style={baseStyle} />
+        {/* 조작부만 회전 — 반시계 방향(오른쪽→왼쪽)으로 fromDeg에서 toDeg까지.
+            그림자는 knob 원본 SVG에 구워져 있던 걸 빼내 이 회전 안 하는 wrapper에 CSS로 옮겼음 —
+            그래야 knob이 돌아도 그림자 방향은 고정된 채로 유지됨(원본 feOffset/feGaussianBlur 값 그대로 사용) */}
+        <div style={{ ...baseStyle, filter: 'drop-shadow(3.28px 3.28px 2.29px rgba(0, 0, 0, 0.25))' }}>
+          <img
+            src={dial.knobSrc}
+            alt=""
+            style={{
+              ...baseStyle, transformOrigin: 'center',
+              transform: `rotate(${rotated ? fromDeg : toDeg}deg)`,
+              transition: 'transform 0.7s ease-out',
+            }}
+          />
+        </div>
+        {/* 손 — knob이 회전을 시작하는 순간(rotated=false) 오른쪽에서 슬라이드+페이드로 등장,
+            우측에서 좌측으로 다이얼을 돌리는 느낌(lamp_hand와 같은 방식) */}
+        <img
+          src={NoiseDialHandImg}
+          alt=""
+          style={{
+            ...baseStyle,
+            opacity: rotated ? 0 : 1,
+            transform: rotated ? 'translateX(40px)' : 'translateX(0)',
+            transition: rotated ? 'none' : 'opacity 0.5s ease-out, transform 0.5s ease-out',
+          }}
+        />
+      </div>
+      {dial.swapSrc && (
+        // knob과 마찬가지로 그림자를 SVG 내부 filter에서 빼내 CSS drop-shadow로 옮김 —
+        // 원본 배경 rect(#F3F3F3)도 함께 제거해서 알파 채널 기준으로 원 모양 그림자만 정확히 잡히게 함
+        <img
+          src={dial.swapSrc}
+          alt=""
+          style={{
+            ...baseStyle, opacity: active && swapped ? 1 : 0,
+            filter: 'drop-shadow(3.28px 3.28px 2.29px rgba(0, 0, 0, 0.25))',
+            transition: active ? 'opacity 0.35s ease' : 'none',
+          }}
+        />
+      )}
+    </>
   );
 }
 
@@ -694,8 +741,11 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
     frames: [
       { src: OutletLowImg, holdMs: 1000, animateClassName: 'twc-blink' },
       { src: OutletEmptyImg, holdMs: 750 },
-      { src: OutletPluggedImg, holdMs: 750 },
-      { src: OutletFullImg, holdMs: 0 },
+      // 콘센트 꽂는 동작 자체(empty→plugged 크로스페이드)를 기본(350ms)보다 0.5초 느리게
+      { src: OutletPluggedImg, holdMs: 750, enterMs: 850 },
+      // 배경은 첫 번째 깜빡임 한 사이클(0.5s) 동안만 차올라서 딱 맞춰 완성되고, 두 번째 깜빡임은
+      // 이미 다 찬 초록 배경 위에서 재생됨 — 깜빡임은 여전히 2회 그대로
+      { src: OutletFullImg, holdMs: 0, animateClassName: 'twc-blink', overlaySrc: OutletFullBackgroundImg, overlayEnterMs: 500 },
     ],
   },
   cafe_large: { kind: 'space', groupSrc: ChairLargeImg },
@@ -706,8 +756,14 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
     headphonesSrc: NoiseHeadphonesNormalImg,
     headphonesWave: true, // 약간의 파동이 남아있는 조건이라 헤드폰 아래 파동 선이 움직임
   },
-  // TODO: noise_small도 grid/knob 분리 애셋 받으면 위와 동일하게 교체 — 지금은 통짜 이미지로 회전 없이 표시
-  noise_small: { kind: 'noise', dial: { flatSrc: NoiseDialSmallImg }, headphonesSrc: NoiseHeadphonesSmallImg },
+  // 전용 회전 애셋이 없어 noise_normal의 grid/knob을 그대로 재사용 — knob만 12시(-130deg)에서
+  // 반시계 방향으로 돌아 -270deg(표시상 90deg와 동일)에 정착한 뒤,
+  // 전용 통짜 애셋(noise_dial_small)으로 교체하고 나서 헤드폰 단계로 넘어감
+  noise_small: {
+    kind: 'noise',
+    dial: { gridSrc: NoiseDialNormalGridImg, knobSrc: NoiseDialKnobImg, fromDeg: -130, toDeg: -270, swapSrc: NoiseDialSmallImg },
+    headphonesSrc: NoiseHeadphonesSmallImg,
+  },
 };
 
 function ResultInteraction({ conditionId }: { conditionId: string }) {
@@ -740,6 +796,11 @@ function ResultInteraction({ conditionId }: { conditionId: string }) {
         .twc-noise-bar-2 { animation: twc-bar-2 0.8s ease-in-out 2 80ms; }
         .twc-noise-bar-3 { animation: twc-bar-3 0.8s ease-in-out 2 120ms; }
         .twc-noise-bar-4 { animation: twc-bar-4 0.8s ease-in-out 2 20ms; }
+        .twc-wave-bar-0 { animation: twc-bar-0 0.8s ease-in-out 3; }
+        .twc-wave-bar-1 { animation: twc-bar-1 0.8s ease-in-out 3 40ms; }
+        .twc-wave-bar-2 { animation: twc-bar-2 0.8s ease-in-out 3 80ms; }
+        .twc-wave-bar-3 { animation: twc-bar-3 0.8s ease-in-out 3 120ms; }
+        .twc-wave-bar-4 { animation: twc-bar-4 0.8s ease-in-out 3 20ms; }
         @keyframes twc-tug { 0%, 100% { transform: translateY(-5px) scale(1); } 50% { transform: translateY(-5px) scale(0.94); } }
         .twc-tug { animation: twc-tug 260ms ease-in-out 1; transform-origin: center; }
       `}</style>
