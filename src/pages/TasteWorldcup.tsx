@@ -669,16 +669,10 @@ function DialReveal({ dial, active }: { dial: NoiseDialSpec; active: boolean }) 
         />
       </div>
       {dial.swapSrc && (
-        // knob과 마찬가지로 그림자를 SVG 내부 filter에서 빼내 CSS drop-shadow로 옮김 —
-        // 원본 배경 rect(#F3F3F3)도 함께 제거해서 알파 채널 기준으로 원 모양 그림자만 정확히 잡히게 함
         <img
           src={dial.swapSrc}
           alt=""
-          style={{
-            ...baseStyle, opacity: active && swapped ? 1 : 0,
-            filter: 'drop-shadow(3.28px 3.28px 2.29px rgba(0, 0, 0, 0.25))',
-            transition: active ? 'opacity 0.35s ease' : 'none',
-          }}
+          style={{ ...baseStyle, opacity: active && swapped ? 1 : 0, transition: active ? 'opacity 0.35s ease' : 'none' }}
         />
       )}
     </>
