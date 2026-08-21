@@ -41,6 +41,14 @@ import NoiseDialSmallImg from '../assets/interaction/noise_dial_small.svg';
 import NoiseDialHandImg from '../assets/interaction/noise_dial_hand.svg';
 import NoiseHeadphonesNormalImg from '../assets/interaction/noise_headphones_normal.svg';
 import NoiseHeadphonesSmallImg from '../assets/interaction/noise_headphones_small.svg';
+import MoodWoodResultImg from '../assets/interaction/mood_wood.svg';
+import MoodMetalResultImg from '../assets/interaction/mood_metal.svg';
+import MoodWhiteResultImg from '../assets/interaction/mood_white.svg';
+import MoodBlackResultImg from '../assets/interaction/mood_black.svg';
+import MoodPlantResultImg from '../assets/interaction/mood_plant.svg';
+import MoodStoneResultImg from '../assets/interaction/mood_stone.svg';
+import MoodBrickResultImg from '../assets/interaction/mood_brick.svg';
+import MoodModernResultImg from '../assets/interaction/mood_modern.svg';
 
 // ─────────────────────────────────────────────────────────────
 // 카페 취향 월드컵 — 온보딩 → 진행(대진) → 결과 3단계 플로우
@@ -434,14 +442,14 @@ function ImageSequence({ frames }: { frames: InteractionFrame[] }) {
 //  (1) 의자 하나만 그려진 chair_single을 원본 그대로(scale 1)의 크기로 잠깐 고정
 //  (2) chair_single을 "실제 배치 안에서 의자 한 개가 보이는 크기"까지 축소(scale 1보다 작아짐)
 //  (3) 그 크기가 같아지는 시점에 chair_large/small로 교체 — 이때 chair_large/small도 그 크기에 맞춰
-//      확대된 상태(GROUP_ZOOM_IN_SCALE)로 나타나서 크기가 자연스럽게 이어짐
+//      확대된 상태(조건별 groupZoomInScale)로 나타나서 크기가 자연스럽게 이어짐
 //  (4) chair_large/small이 이어서 원본 크기(scale 1)까지 줄어들며 전체 배치가 드러남
-// TODO: 실제 애셋에서 의자 하나의 상대 크기 비율에 맞춰 튜닝 필요 — 지금은 추정치.
-// 교체 시점에 크기가 어긋나 보이면 이 두 값을 조정할 것
+// large/small은 그룹 안 의자 하나의 상대 크기가 서로 달라서(그림자 타원 rx 기준 large는 single의
+// 24.3%, small은 36.5%) 줌인 배율을 하나로 공유하면 한쪽만 맞고 다른 쪽은 어긋남 — 그래서
+// groupZoomInScale을 조건별로 따로 받음(WORLDCUP_RESULT_INTERACTIONS에서 지정)
 const SPACE_MATCH_SCALE = 0.4;     // chair_single이 축소되다가 교체되는 시점의 배율
-const GROUP_ZOOM_IN_SCALE = 3.5;   // chair_large/small이 교체된 직후 시작하는 확대 배율(이후 1까지 축소)
 
-function SpaceInteraction({ groupSrc }: { groupSrc: string }) {
+function SpaceInteraction({ groupSrc, groupZoomInScale }: { groupSrc: string; groupZoomInScale: number }) {
   const [phase, setPhase] = useState<'focus' | 'toMatch' | 'group'>('focus');
 
   useEffect(() => {
@@ -450,7 +458,7 @@ function SpaceInteraction({ groupSrc }: { groupSrc: string }) {
       return () => clearTimeout(t);
     }
     if (phase === 'toMatch') {
-      const t = setTimeout(() => setPhase('group'), 600); // 매칭 배율까지 축소되는 시간
+      const t = setTimeout(() => setPhase('group'), 950); // 매칭 배율까지 축소되는 시간
       return () => clearTimeout(t);
     }
   }, [phase]);
@@ -467,10 +475,10 @@ function SpaceInteraction({ groupSrc }: { groupSrc: string }) {
           ...baseStyle,
           opacity: phase === 'group' ? 0 : 1,
           transform: `scale(${phase === 'focus' ? 1 : SPACE_MATCH_SCALE})`,
-          transition: phase === 'focus' ? 'none' : 'transform 600ms ease-out, opacity 300ms ease',
+          transition: phase === 'focus' ? 'none' : 'transform 950ms ease-out, opacity 300ms ease',
         }}
       />
-      {/* 실제 배치(대형/소형) — 교체 시점엔 확대 상태(GROUP_ZOOM_IN_SCALE)로 나타나 chair_single과
+      {/* 실제 배치(대형/소형) — 교체 시점엔 확대 상태(groupZoomInScale)로 나타나 chair_single과
           크기를 맞추고, 그대로 원본 크기(scale 1)까지 줄어들며 전체 배치가 드러남 */}
       <img
         src={groupSrc}
@@ -478,11 +486,131 @@ function SpaceInteraction({ groupSrc }: { groupSrc: string }) {
         style={{
           ...baseStyle,
           opacity: phase === 'group' ? 1 : 0,
-          transform: `scale(${phase === 'group' ? 1 : GROUP_ZOOM_IN_SCALE})`,
+          transform: `scale(${phase === 'group' ? 1 : groupZoomInScale})`,
           transition: phase === 'group' ? 'transform 900ms ease-out, opacity 300ms ease' : 'none',
         }}
       />
     </>
+  );
+}
+
+// 분위기(무드 인테리어) 전용 인터랙션 — 카카오톡 사진 상세보기에서 사진을 확대해 볼 때의
+// 느낌(살짝 확대 → 화면을 흰 빛이 한 번 쓸고 지나감 → 테두리가 6시 방향에서 출발해 한 바퀴 돌며
+// 사라짐)을 참고해 만듦. 셋 다 같은 요소를 계속 렌더링해두고 phase에 따라 transform/transition만
+// 바꾸는 방식 — 요소를 조건부로 마운트하면 트랜지션이 처음 한 번은 못 걸리는 문제가 있어서(다른
+// 인터랙션에서도 같은 이유로 이 패턴을 씀) 이렇게 함
+const MOOD_ZOOM_SCALE = 1.06;
+const MOOD_BORDER_ARC_RATIO = 0.2; // 코멧 조각 길이(테두리 전체 둘레 대비 비율)
+
+// [x, y] 좌표 목록 — 오브젝트의 실제 벡터 포인트를 감싸는 컨벡스 헐(convex hull)을 파이썬
+// svgelements로 미리 계산해서 하드코딩해둠(사각형 바운딩 박스가 아니라 실루엣에 가까운 다각형).
+// 각도 배열은 이미 바닥에서 가장 아래쪽 점(6시 방향)에서 시작하도록 회전시켜 놓음
+type MoodHull = [number, number][];
+
+// 헐 다각형을 감싸는 경로 — hull[0]이 이미 6시(가장 아래쪽) 점이 되도록 미리 정렬해뒀으므로
+// 그대로 이어 그리기만 하면 됨. stroke-dashoffset 애니메이션 시작점을 6시로 고정하려고
+// rect/원이 아닌 이 다각형 path를 직접 그림
+function moodBorderPath(hull: MoodHull) {
+  if (hull.length === 0) return '';
+  const [first, ...rest] = hull;
+  const lines = rest.map(([x, y]) => `L ${x} ${y}`).join(' ');
+  return `M ${first[0]} ${first[1]} ${lines} L ${first[0]} ${first[1]}`;
+}
+
+function MoodInteraction({ src, hull }: { src: string; hull: MoodHull }) {
+  const [phase, setPhase] = useState<'idle' | 'zoom' | 'sweep' | 'border'>('idle');
+  const [borderFaded, setBorderFaded] = useState(false);
+  const pathRef = useRef<SVGPathElement>(null);
+  const [pathLength, setPathLength] = useState(0);
+
+  useEffect(() => {
+    if (pathRef.current) setPathLength(pathRef.current.getTotalLength());
+  }, [hull]);
+
+  useEffect(() => {
+    if (phase === 'idle') {
+      const t = setTimeout(() => setPhase('zoom'), 300);
+      return () => clearTimeout(t);
+    }
+    if (phase === 'zoom') {
+      const t = setTimeout(() => setPhase('sweep'), 600); // 확대 트랜지션(600ms)이 끝날 때까지 대기
+      return () => clearTimeout(t);
+    }
+    if (phase === 'sweep') {
+      const t = setTimeout(() => setPhase('border'), 700); // 쓸림 트랜지션(700ms)이 끝날 때까지 대기
+      return () => clearTimeout(t);
+    }
+    if (phase === 'border') {
+      const t = setTimeout(() => setBorderFaded(true), 700); // 코멧이 한 바퀴 도는 시간(700ms) 뒤 사라지기 시작
+      return () => clearTimeout(t);
+    }
+  }, [phase]);
+
+  const baseStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } as const;
+  const swept = phase === 'sweep' || phase === 'border';
+  const bordered = phase === 'border';
+  const arcLen = pathLength * MOOD_BORDER_ARC_RATIO;
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: 12 }}>
+      <img
+        src={src}
+        alt=""
+        style={{
+          ...baseStyle,
+          transform: `scale(${phase === 'idle' ? 1 : MOOD_ZOOM_SCALE})`,
+          transition: phase === 'idle' ? 'none' : 'transform 600ms ease-out',
+        }}
+      />
+      {/* 흰색 쓸림 — 대각선 빛줄기가 화면 밖 왼쪽에서 오른쪽으로 한 번만 지나감.
+          오브젝트 자체의 알파 채널을 마스크로 씌워서 캔버스 전체(투명한 여백까지)가 아니라
+          실제 실루엣 안에서만 빛이 보이게 함 — img와 같은 scale을 줘서 확대와 같이 움직임 */}
+      <div
+        style={{
+          position: 'absolute', inset: 0, overflow: 'hidden',
+          transform: `scale(${phase === 'idle' ? 1 : MOOD_ZOOM_SCALE})`,
+          transition: phase === 'idle' ? 'none' : 'transform 600ms ease-out',
+          WebkitMaskImage: `url(${src})`,
+          WebkitMaskSize: 'cover',
+          WebkitMaskRepeat: 'no-repeat',
+          maskImage: `url(${src})`,
+          maskSize: 'cover',
+          maskRepeat: 'no-repeat',
+          pointerEvents: 'none',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute', inset: '-20% -60%',
+            background: 'linear-gradient(105deg, transparent 42%, rgba(255,255,255,0.85) 50%, transparent 58%)',
+            transform: `translateX(${swept ? '140%' : '-140%'})`,
+            transition: phase === 'sweep' ? 'transform 700ms ease-in-out' : 'none',
+          }}
+        />
+      </div>
+      {/* 테두리 — 오브젝트 바운딩 박스를 감싸는 짧은 코멧 조각이 6시에서 출발해 한 바퀴 돌며
+          사라짐. dasharray로 둘레 대부분을 숨겨서 "짧은 빛 조각이 지나간다"는 느낌을 주고, 다
+          돈 뒤엔 opacity가 0으로 빠지기 때문에 최종 화면엔 테두리가 안 남음.
+          stroke-dashoffset은 (CSS 커스텀 프로퍼티 calc()로 애니메이션하면 등록 안 된 프로퍼티라
+          보간 없이 중간에 툭 끊겨 순간이동해버려서) JS로 계산한 숫자값 + 일반 트랜지션으로 처리 */}
+      <svg width="100%" height="100%" viewBox="0 0 315 350" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <path
+          ref={pathRef}
+          d={moodBorderPath(hull)}
+          fill="none" stroke="#ffffff" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round"
+          strokeDasharray={pathLength ? `${arcLen} ${pathLength - arcLen}` : undefined}
+          strokeDashoffset={bordered ? -pathLength : 0}
+          style={{
+            opacity: bordered ? (borderFaded ? 0 : 1) : 0,
+            transition: bordered
+              ? (borderFaded
+                ? 'opacity 250ms ease-in'
+                : 'stroke-dashoffset 700ms ease-in-out, opacity 150ms ease-out')
+              : 'none',
+          }}
+        />
+      </svg>
+    </div>
   );
 }
 
@@ -713,9 +841,10 @@ function NoiseInteraction({ dial, headphonesSrc, headphonesWave = false }: { dia
 
 type ResultInteractionSpec =
   | { kind: 'sequence'; frames: InteractionFrame[] }
-  | { kind: 'space'; groupSrc: string }
+  | { kind: 'space'; groupSrc: string; groupZoomInScale: number }
   | { kind: 'lamp'; litSrc: string }
-  | { kind: 'noise'; dial: NoiseDialSpec; headphonesSrc: string; headphonesWave?: boolean };
+  | { kind: 'noise'; dial: NoiseDialSpec; headphonesSrc: string; headphonesWave?: boolean }
+  | { kind: 'mood'; src: string; hull: MoodHull };
 
 // 결과 화면 이미지 프레임 배경색 — 기본은 페이지 배경(#f3f3f3)과 동일하게.
 // 전구 조건만 예외: lamp_idle.svg에 어두운 오버레이(#00132B, 58%)가 추가돼 있어 장면 자체가 어두우므로,
@@ -742,8 +871,10 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
       { src: OutletFullImg, holdMs: 0, animateClassName: 'twc-blink', overlaySrc: OutletFullBackgroundImg, overlayEnterMs: 500 },
     ],
   },
-  cafe_large: { kind: 'space', groupSrc: ChairLargeImg },
-  cafe_small: { kind: 'space', groupSrc: ChairSmallImg },
+  // groupZoomInScale은 chair_single 대비 그룹 애셋 안 의자 하나의 크기 비율로 역산한 값
+  // (그림자 타원 rx 기준: single 73.5, large 17.875, small 26.813)
+  cafe_large: { kind: 'space', groupSrc: ChairLargeImg, groupZoomInScale: 1.64 },
+  cafe_small: { kind: 'space', groupSrc: ChairSmallImg, groupZoomInScale: 1.10 },
   noise_normal: {
     kind: 'noise',
     dial: { gridSrc: NoiseDialNormalGridImg, knobSrc: NoiseDialKnobImg },
@@ -758,6 +889,17 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
     dial: { gridSrc: NoiseDialNormalGridImg, knobSrc: NoiseDialKnobImg, fromDeg: -130, toDeg: -270, swapSrc: NoiseDialSmallImg },
     headphonesSrc: NoiseHeadphonesSmallImg,
   },
+  // hull은 각 SVG의 실제 벡터 포인트들을 감싸는 컨벡스 헐(svgelements로 좌표 추출 → 파이썬으로
+  // 컨벡스 헐 계산 → RDP로 단순화 → 6시(가장 아래) 점에서 시작하도록 회전) — 사각형 바운딩 박스가
+  // 아니라 오브젝트 실루엣에 가깝게 테두리가 그려지도록 씀
+  mood_wood: { kind: 'mood', src: MoodWoodResultImg, hull: [[178.4, 257.4], [119.2, 252.1], [78.5, 232.4], [70.9, 219.1], [69.4, 144.7], [72.7, 134.0], [110.2, 96.9], [151.3, 89.3], [208.6, 99.4], [226.5, 108.4], [244.3, 134.9], [244.7, 219.2], [213.1, 251.6]] },
+  mood_metal: { kind: 'mood', src: MoodMetalResultImg, hull: [[87.2, 270.6], [79.8, 262.7], [69.9, 252.0], [72.2, 103.1], [73.5, 92.9], [89.5, 79.0], [230.8, 78.2], [243.3, 95.4], [244.1, 254.6], [230.0, 268.9], [211.1, 270.6]] },
+  mood_white: { kind: 'mood', src: MoodWhiteResultImg, hull: [[154.6, 271.5], [74.1, 231.9], [71.8, 223.0], [72.8, 131.8], [74.1, 127.3], [74.9, 125.5], [144.2, 79.6], [156.2, 80.3], [168.3, 81.2], [241.7, 118.2], [244.1, 220.9], [241.7, 225.3], [239.4, 229.8], [187.0, 256.9]] },
+  mood_black: { kind: 'mood', src: MoodBlackResultImg, hull: [[161.1, 270.9], [152.5, 269.2], [82.7, 236.8], [72.4, 228.4], [71.0, 214.4], [73.8, 126.0], [120.8, 93.3], [159.9, 79.2], [215.8, 103.5], [243.9, 122.2], [244.1, 224.9], [196.4, 253.9]] },
+  mood_plant: { kind: 'mood', src: MoodPlantResultImg, hull: [[183.5, 279.7], [126.4, 279.0], [68.8, 174.7], [96.0, 87.5], [194.6, 73.8], [222.1, 75.1], [245.6, 151.5], [200.9, 248.2], [192.0, 264.1]] },
+  mood_stone: { kind: 'mood', src: MoodStoneResultImg, hull: [[161.3, 255.9], [107.9, 247.0], [75.1, 231.1], [70.4, 224.3], [57.6, 200.2], [73.8, 150.0], [106.4, 113.5], [111.6, 110.3], [122.3, 103.7], [157.8, 92.4], [186.7, 93.7], [239.8, 143.1], [254.6, 203.5], [247.4, 241.1], [209.1, 252.4], [201.9, 253.2], [199.0, 253.5]] },
+  mood_brick: { kind: 'mood', src: MoodBrickResultImg, hull: [[203.4, 252.7], [163.0, 249.2], [126.7, 245.1], [99.0, 240.4], [76.1, 234.4], [75.0, 230.8], [73.5, 216.2], [72.0, 197.3], [71.5, 184.0], [71.8, 169.2], [72.7, 156.5], [74.3, 139.3], [75.6, 125.9], [76.2, 124.3], [77.2, 122.5], [113.2, 94.0], [139.6, 95.8], [240.9, 112.4], [244.4, 226.9], [234.5, 237.3]] },
+  mood_modern: { kind: 'mood', src: MoodModernResultImg, hull: [[153.2, 277.4], [68.6, 269.4], [70.6, 172.5], [157.7, 81.8], [203.9, 66.9], [239.0, 80.6], [248.7, 106.6], [227.8, 276.1]] },
 };
 
 function ResultInteraction({ conditionId }: { conditionId: string }) {
@@ -766,7 +908,6 @@ function ResultInteraction({ conditionId }: { conditionId: string }) {
   const [replayKey, setReplayKey] = useState(0);
 
   if (!spec) {
-    // 분위기 조건 8종 — 스티커 인터랙션 애셋 준비되면 연결 예정
     return <div style={{ position: 'absolute', inset: 0, background: '#E5E8EB' }} />;
   }
 
@@ -798,12 +939,13 @@ function ResultInteraction({ conditionId }: { conditionId: string }) {
         @keyframes twc-tug { 0%, 100% { transform: translateY(-5px) scale(1); } 50% { transform: translateY(-5px) scale(0.94); } }
         .twc-tug { animation: twc-tug 260ms ease-in-out 1; transform-origin: center; }
       `}</style>
-      {spec.kind === 'space' && <SpaceInteraction key={replayKey} groupSrc={spec.groupSrc} />}
+      {spec.kind === 'space' && <SpaceInteraction key={replayKey} groupSrc={spec.groupSrc} groupZoomInScale={spec.groupZoomInScale} />}
       {spec.kind === 'lamp' && <LampInteraction key={replayKey} litSrc={spec.litSrc} />}
       {spec.kind === 'noise' && (
         <NoiseInteraction key={replayKey} dial={spec.dial} headphonesSrc={spec.headphonesSrc} headphonesWave={spec.headphonesWave} />
       )}
       {spec.kind === 'sequence' && <ImageSequence key={replayKey} frames={spec.frames} />}
+      {spec.kind === 'mood' && <MoodInteraction key={replayKey} src={spec.src} hull={spec.hull} />}
     </div>
   );
 }
