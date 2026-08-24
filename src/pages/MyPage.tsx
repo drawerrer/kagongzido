@@ -16,7 +16,6 @@ import {
 import { clearCachedUser } from '../utils/userCache';
 import { getTasteWorldcupWinner } from '../utils/tasteWorldcup';
 import StoreCountBar from '../components/StoreCountBar';
-import SubButton from '../components/SubButton';
 import EmptyState from '../components/EmptyState';
 import CafePlaceholder from '../components/CafePlaceholder';
 import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
@@ -343,6 +342,46 @@ function MenuRow({
           </svg>
         )
       )}
+    </button>
+  );
+}
+
+// 마이페이지 상단 CTA 알약형 버튼 — '카페 취향 월드컵' / '카페 제보하기'
+function PillCTAButton({
+  label,
+  onClick,
+  variant,
+  style,
+}: {
+  label: string;
+  onClick?: () => void;
+  variant: 'outline' | 'dark';
+  style?: React.CSSProperties;
+}) {
+  const isDark = variant === 'dark';
+  const iconColor = isDark ? '#F3F3F3' : '#252525';
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+        height: 25,
+        borderRadius: 9999,
+        background: isDark ? '#252525' : 'transparent',
+        border: isDark ? 'none' : '1px solid #252525',
+        cursor: 'pointer',
+        fontSize: 12, fontWeight: 590,
+        color: isDark ? '#F3F3F3' : '#252525',
+        whiteSpace: 'nowrap',
+        ...style,
+      }}
+    >
+      {label}
+      <svg width="12" height="12" viewBox="0 0 10 10" fill="none">
+        <path d="M2.5 7.5L7.5 2.5" stroke={iconColor} strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M3 2.5H7.5V7" stroke={iconColor} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
     </button>
   );
 }
@@ -1435,54 +1474,55 @@ export default function MyPage({
       {/* 스크롤 영역 */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {/* 프로필 */}
-        <div style={{ padding: '24px', background: '#f3f3f3', display: 'flex', gap: 16, alignItems: 'center' }}>
-          {/* 프로필 원형 60×60 */}
-          <div style={{
-            width: 60, height: 60, borderRadius: 1000,
-            background: '#d2d2d2',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <span style={{ fontSize: 28, fontWeight: 700, color: '#101010', lineHeight: 1 }}>{displayName[0]}</span>
-          </div>
-          {/* 이름 + 정보 + 카페 취향 월드컵 CTA */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 18, fontWeight: 510, color: '#101010', lineHeight: '23px' }}>{displayName}</span>
-              <button
-                onClick={() => setShowNameSheet(true)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path fill="#9b9b9b" fillRule="evenodd" d="m12.335 5.454-9.062 9.062-1.236 4.61-.813 3.037a.501.501 0 0 0 .613.613l3.035-.814 4.61-1.236h.002l9.062-9.062zm9.958 1.05-4.796-4.797a1 1 0 0 0-1.414 0l-2.475 2.474 6.21 6.211 2.475-2.475a1 1 0 0 0 0-1.414" clipRule="evenodd"/>
-                </svg>
-              </button>
+        <div style={{ padding: '24px', background: '#f3f3f3', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            {/* 프로필 원형 40×40 */}
+            <div style={{
+              width: 40, height: 40, borderRadius: 1000,
+              background: '#d2d2d2',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#101010', lineHeight: 1 }}>{displayName[0]}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <div
-                  onClick={() => changeSubPage('reported')}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+            {/* 이름 + 정보 */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 18, fontWeight: 510, color: '#101010', lineHeight: '23px' }}>{displayName}</span>
+                <button
+                  onClick={() => setShowNameSheet(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
                 >
-                  <span style={{ fontSize: 14, fontWeight: 510, color: '#9b9b9b', lineHeight: '18px' }}>제보한 카페</span>
-                  <span style={{ fontSize: 14, fontWeight: 510, color: '#101010', lineHeight: '18px' }}>{reportCount}개</span>
-                </div>
-                <div
-                  onClick={handleOpenTasteWorldcup}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
-                >
-                  <span style={{ fontSize: 14, fontWeight: 510, color: '#9b9b9b', lineHeight: '18px' }}>카페 취향</span>
-                  <span style={{ fontSize: 14, fontWeight: 510, color: '#101010', lineHeight: '18px' }}>{tasteWinner?.label ?? '미설정'}</span>
-                </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path fill="#9b9b9b" fillRule="evenodd" d="m12.335 5.454-9.062 9.062-1.236 4.61-.813 3.037a.501.501 0 0 0 .613.613l3.035-.814 4.61-1.236h.002l9.062-9.062zm9.958 1.05-4.796-4.797a1 1 0 0 0-1.414 0l-2.475 2.474 6.21 6.211 2.475-2.475a1 1 0 0 0 0-1.414" clipRule="evenodd"/>
+                  </svg>
+                </button>
               </div>
-              <div style={{ flex: 1 }} />
-              <SubButton
-                label="카페 취향 월드컵"
-                variant="dark"
-                onClick={handleOpenTasteWorldcup}
-                style={{ animation: 'worldcup-cta-pulse 0.55s ease-in-out 2' }}
-              />
+              {/* 취향 · 카페 제보 정보 */}
+              <div
+                onClick={() => changeSubPage('reported')}
+                style={{ fontSize: 14, fontWeight: 510, lineHeight: '18px', cursor: 'pointer' }}
+              >
+                <span style={{ color: '#9b9b9b' }}>취향 </span>
+                <span style={{ color: '#101010' }}>{tasteWinner?.label ?? '미설정'}</span>
+                <span style={{ color: '#9b9b9b' }}> · 카페 제보 </span>
+                <span style={{ color: '#101010' }}>{reportCount}개</span>
+              </div>
             </div>
+          </div>
+          {/* CTA 버튼 2개 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginTop: 20 }}>
+            <PillCTAButton
+              label="카페 취향 월드컵"
+              variant="outline"
+              onClick={handleOpenTasteWorldcup}
+              style={{ animation: 'worldcup-cta-pulse 0.55s ease-in-out 2' }}
+            />
+            <PillCTAButton
+              label="카페 제보하기"
+              variant="dark"
+              onClick={handleOpenReportCafe}
+            />
           </div>
           {/* TODO(임시 개발용): 상세페이지 취향 매칭 인터랙션 점검용 페이저 진입 버튼 — 다듬기 끝나면 제거 */}
           <button
