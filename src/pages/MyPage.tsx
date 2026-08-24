@@ -6,6 +6,7 @@ import FocusBottomCTA from '../components/FocusBottomCTA';
 import SheetMenuRow from '../components/SheetMenuRow';
 import SheetCTA from '../components/SheetCTA';
 import { useFavorites } from '../context/FavoritesContext';
+import { DetailPageTasteMatchDebugPager } from './DetailPage';
 import {
   insertCafeReport, deleteUserData,
   fetchUserReviews, deleteReview, updateReview, type UserReviewRow,
@@ -13,6 +14,7 @@ import {
   fetchNotices, type NoticeRow,
 } from '../services/db';
 import { clearCachedUser } from '../utils/userCache';
+import { getTasteWorldcupWinner } from '../utils/tasteWorldcup';
 import StoreCountBar from '../components/StoreCountBar';
 import SubButton from '../components/SubButton';
 import EmptyState from '../components/EmptyState';
@@ -38,7 +40,7 @@ const EmptyPlusIcon = (
 // 타입
 // ─────────────────────────────────────────────────────────────
 type MyTab = '내 활동' | '설정';
-type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup';
+type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup' | 'taste-match-debug';
 
 interface CafeItem {
   id: string;
@@ -1360,6 +1362,12 @@ export default function MyPage({
     onSubPageChange?.(page);
   };
 
+  // 카페 취향 월드컵 결과 — 서브페이지에서 돌아올 때마다 새로 읽어서 최신 상태 반영
+  const [tasteWinner, setTasteWinner] = useState(() => getTasteWorldcupWinner());
+  useEffect(() => {
+    if (subPage === null) setTasteWinner(getTasteWorldcupWinner());
+  }, [subPage]);
+
   const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
   const [reviewRefreshTrigger, setReviewRefreshTrigger] = useState(0);
   const [reviewEditToast, setReviewEditToast] = useState(false);
@@ -1464,7 +1472,7 @@ export default function MyPage({
                   style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
                 >
                   <span style={{ fontSize: 14, fontWeight: 510, color: '#9b9b9b', lineHeight: '18px' }}>카페 취향</span>
-                  <span style={{ fontSize: 14, fontWeight: 510, color: '#101010', lineHeight: '18px' }}>미설정</span>
+                  <span style={{ fontSize: 14, fontWeight: 510, color: '#101010', lineHeight: '18px' }}>{tasteWinner?.label ?? '미설정'}</span>
                 </div>
               </div>
               <div style={{ flex: 1 }} />
@@ -1476,6 +1484,16 @@ export default function MyPage({
               />
             </div>
           </div>
+          {/* TODO(임시 개발용): 상세페이지 취향 매칭 인터랙션 점검용 페이저 진입 버튼 — 다듬기 끝나면 제거 */}
+          <button
+            onClick={() => changeSubPage('taste-match-debug')}
+            style={{
+              background: 'none', border: 'none', padding: '4px 0 0',
+              fontSize: 12, color: '#B0B8C1', cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            취향 매칭 인터랙션 미리보기(개발용)
+          </button>
         </div>
 
         {/* 탭 바 */}
@@ -1816,6 +1834,11 @@ export default function MyPage({
         <Suspense fallback={null}>
           <TasteWorldcup onExit={() => changeSubPage(null)} enabled={!hasDetailOverlay} />
         </Suspense>
+      </div>
+    )}
+    {subPage === 'taste-match-debug' && (
+      <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <DetailPageTasteMatchDebugPager onExit={() => changeSubPage(null)} />
       </div>
     )}
     {editingReview && (

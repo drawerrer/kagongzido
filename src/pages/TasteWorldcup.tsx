@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { useFavorites } from '../context/FavoritesContext';
+import { saveTasteWorldcupWinner, getResultFrameBg } from '../utils/tasteWorldcup';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import RoundBadge from '../components/RoundBadge';
 import WorldcupProgressIndicator from '../components/WorldcupProgressIndicator';
@@ -834,14 +835,6 @@ type ResultInteractionSpec =
   | { kind: 'noise'; dial: NoiseDialSpec; headphonesSrc: string; headphonesWave?: boolean }
   | { kind: 'mood'; src: string };
 
-// 결과 화면 이미지 프레임 배경색 — 기본은 페이지 배경(#f3f3f3)과 동일하게.
-// 전구 조건만 예외: lamp_idle.svg에 어두운 오버레이(#00132B, 58%)가 추가돼 있어 장면 자체가 어두우므로,
-// 같은 색(오버레이를 #f3f3f3 위에 얹었을 때의 실제 합성 결과, rgb(102,113,127))으로 프레임을 맞춤
-function getResultFrameBg(conditionId: string): string {
-  if (conditionId.startsWith('lamp_')) return '#66717F';
-  return '#f3f3f3';
-}
-
 // 1순위 조건 id → 결과 화면 인터랙션. 분위기 8종은 아직 스티커 애셋이 없어 매핑에서 제외(플레이스홀더 유지)
 const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
   lamp_warm: { kind: 'lamp', litSrc: LampLitWarmImg },
@@ -887,7 +880,7 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
   mood_modern: { kind: 'mood', src: MoodModernResultImg },
 };
 
-function ResultInteraction({ conditionId }: { conditionId: string }) {
+export function ResultInteraction({ conditionId }: { conditionId: string }) {
   const spec = WORLDCUP_RESULT_INTERACTIONS[conditionId];
   // 탭하면 처음부터 다시 재생 — replayKey를 바꿔서 내부 컴포넌트를 강제로 리마운트시킴
   const [replayKey, setReplayKey] = useState(0);
@@ -1044,7 +1037,7 @@ export default function TasteWorldcupFlow({ onExit, enabled = true }: { onExit: 
     return (
       <TasteWorldcupGamePage
         onBack={() => setPhase('onboarding')}
-        onFinish={(w) => { setWinner(w); setPhase('result'); }}
+        onFinish={(w) => { setWinner(w); saveTasteWorldcupWinner(w); setPhase('result'); }}
         enabled={enabled}
       />
     );

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { openURL, partner, tdsEvent, fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
 import { trackMapOpen, trackShareCafe, trackPhoneCopy } from '../services/analytics';
@@ -21,8 +21,70 @@ import IcX from '../assets/icons/icon_x.svg?react';
 import IcOpen from '../assets/icons/icon_open.svg?react';
 import IcCopy from '../assets/icons/icon_copy.svg?react';
 import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
+import {
+  getTasteWorldcupWinner, matchesTasteWorldcupWinner,
+  getResultFrameBg, getResultInteractionDurationMs,
+  TASTE_WORLDCUP_CONDITION_LABELS,
+} from '../utils/tasteWorldcup';
+
+// 취향 월드컵 결과 인터랙션(ResultInteraction) — TasteWorldcup.tsx는 조건 이미지 16종(~700KB)을
+// 포함한 별도 청크라, 매칭됐을 때만 동적 import로 불러옴(정적 import 시 상세페이지 기본 번들에
+// 딸려 들어가 모든 카페 상세페이지 진입마다 로드돼버림)
+const LazyResultInteraction = lazy(() =>
+  import('./TasteWorldcup').then(m => ({ default: m.ResultInteraction }))
+);
+
+// 상세페이지 진입 시 1순위 취향 조건과 이 카페가 일치하면, 결과 화면과 같은 인터랙션을 한 번
+// 재생한 뒤 "내 취향과 일치" 배지로 정착하는 컴포넌트
+function TasteMatchInteraction({ conditionId }: { conditionId: string }) {
+  const [settled, setSettled] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(true), getResultInteractionDurationMs(conditionId));
+    return () => clearTimeout(t);
+  }, [conditionId]);
+
+  return (
+    <div style={{
+      position: 'relative', width: '100%', height: '100%',
+      borderRadius: 16, overflow: 'hidden',
+      // 정착 후엔 배지(파란 텍스트)와 대비가 안 맞을 수 있는 조건별 프레임색(예: 전구의 어두운 배경)
+      // 대신 중립 배경으로 바꿈
+      background: settled ? '#F3F3F3' : getResultFrameBg(conditionId),
+      transition: 'background 250ms ease',
+      // 텍스트/버튼 위에 얹히는 오버레이라 배경과 분리돼 보이도록 그림자를 줌
+      boxShadow: '0 4px 16px rgba(0,0,0,0.16)',
+    }}>
+      {!settled && (
+        <Suspense fallback={null}>
+          <LazyResultInteraction conditionId={conditionId} />
+        </Suspense>
+      )}
+      {settled && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+          animation: 'taste-match-badge-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both',
+        }}>
+          <IcSparkle size={20} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#3182F6', textAlign: 'center', lineHeight: 1.3 }}>
+            내 취향과<br />일치
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── 편의시설 SVG 아이콘 ──────────────────────────────────────
+// 카페 취향 월드컵 1순위 매칭 배지용 반짝임 아이콘
+function IcSparkle({ size = 13 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 2.5c.42 3.6 1.13 5.98 2.15 7.35 1.02 1.37 3.02 2.24 6 2.65-2.98.41-4.98 1.28-6 2.65-1.02 1.37-1.73 3.75-2.15 7.35-.42-3.6-1.13-5.98-2.15-7.35-1.02-1.37-3.02-2.24-6-2.65 2.98-.41 4.98-1.28 6-2.65C10.87 8.48 11.58 6.1 12 2.5Z" fill="currentColor"/>
+    </svg>
+  );
+}
 function IcParking() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -203,7 +265,10 @@ interface CafeDetailData {
   regularHoliday: DayKey[];
   seats?: string;
   outlets?: string;
+  noise?: string;
   vibe?: string;
+  /** vibe_tags 원본 배열(정규화 전) — 취향 월드컵 매칭용 */
+  vibeTagsRaw?: string[];
   priceRange?: string;
   phone?: string;
   snsUrl?: string;
@@ -1036,6 +1101,9 @@ interface DetailPageProps {
   showHero?: boolean; // false면 포토 히어로 영역 숨김 (MapPage 기본 바텀시트 상태)
   onFocusModeChange?: (active: boolean) => void; // 사진리뷰/리뷰작성 등 풀스크린 액션 진입 시 true (탭바 숨김 신호)
   onScrollChange?: (scrolled: boolean) => void; // embedded: sticky header 등장 여부 전달
+  // TODO(임시 개발용): 취향 매칭 인터랙션 점검용 — 지정하면 실제 태그 매칭과 무관하게 이 조건으로
+  // "매칭됨" 취급함. 인터랙션 디테일 다듬기 끝나면 이 prop과 DetailPageTasteMatchDebugPager를 함께 제거할 것.
+  debugForceTasteConditionId?: string;
 }
 
 // 아바타 색상 (user_id 기반 고정 색)
@@ -1258,7 +1326,7 @@ function EditMyReviewPage({
   );
 }
 
-export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false, onSwipeDown, showHero = true, onFocusModeChange, onScrollChange }: DetailPageProps) {
+export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false, onSwipeDown, showHero = true, onFocusModeChange, onScrollChange, debugForceTasteConditionId }: DetailPageProps) {
   const [storeData, setStoreData] = useState<CafeDetailData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -1284,6 +1352,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           hoursText: typeof store.business_hours === 'string' ? store.business_hours : undefined,
           seats: store.seat_status || undefined,
           outlets: store.outlet_status || undefined,
+          noise: store.noise_status || undefined,
+          vibeTagsRaw: vibeTags,
           vibe: (() => {
             const tags = vibeTags
               .flatMap(t => t.split(/[\n,]+/))
@@ -1519,6 +1589,21 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   }, [isFavorite, heartActive]);
 
   const { label: statusLabel, color: statusColor } = getStatusInfo(cafe);
+  // 카페 취향 월드컵 1순위 조건과 이 카페가 일치하는지 — 결과는 기기 로컬(localStorage)에 저장돼 있음
+  const tasteWinner = debugForceTasteConditionId
+    ? { id: debugForceTasteConditionId, label: '' }
+    : getTasteWorldcupWinner();
+  const isTasteMatch = !!tasteWinner && (
+    !!debugForceTasteConditionId || matchesTasteWorldcupWinner(tasteWinner.id, {
+      seats: cafe.seats,
+      outlets: cafe.outlets,
+      noise: cafe.noise,
+      vibeTagsRaw: cafe.vibeTagsRaw,
+    })
+  );
+  const infoLeftRef = useRef<HTMLDivElement>(null);
+  const [matchBoxHeight, setMatchBoxHeight] = useState<number | null>(null);
+
   const todayKey = getTodayKey();
 
   const handleScroll = () => {
@@ -1641,6 +1726,19 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const todayHours = cafe.hours[todayKey];
   const hasHoursData = Object.keys(cafe.hours).length > 0 || !!cafe.hoursText;
 
+  // 취향 매칭 인터랙션 오버레이 크기 — 스크롤 컨테이너 밖(화면에 고정)에 띄워야 해서 카페명/주소/
+  // 영업시간 블록(infoLeftRef)의 실제 높이를 측정해 그대로 맞춰줌. 그래야 그 블록의 "오른쪽 절반"을
+  // 정확히 덮으면서도, 스크롤해도 화면 위에 계속 떠 있는 오버레이로 동작함
+  useEffect(() => {
+    if (!isTasteMatch || !infoLeftRef.current) return;
+    const el = infoLeftRef.current;
+    const measure = () => setMatchBoxHeight(el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isTasteMatch, cafe.name, cafe.address, hasHoursData]);
+
   // 매장 없음
   if (!loading && !storeData) {
     return (
@@ -1730,6 +1828,20 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
             <path fillRule="evenodd" clipRule="evenodd" d="M13.8151 11.9991L19.4661 6.34814C19.5775 6.23672 19.666 6.10442 19.7264 5.95881C19.7867 5.8132 19.8178 5.65712 19.8179 5.4995C19.8179 5.34187 19.7869 5.18577 19.7266 5.04013C19.6664 4.89448 19.578 4.76213 19.4666 4.65064C19.3551 4.53915 19.2228 4.4507 19.0772 4.39033C18.9316 4.32997 18.7755 4.29887 18.6179 4.29883C18.4603 4.29878 18.3042 4.32978 18.1585 4.39006C18.0129 4.45034 17.8805 4.53872 17.7691 4.65014L12.1181 10.3021L6.46605 4.65014C6.23841 4.43752 5.93706 4.32166 5.62561 4.32701C5.31416 4.33237 5.01698 4.45853 4.79678 4.67885C4.57658 4.89918 4.4506 5.19644 4.44543 5.50789C4.44026 5.81934 4.5563 6.12062 4.76905 6.34814L10.4211 11.9991L4.76905 17.6501C4.60201 17.8183 4.48843 18.0322 4.4426 18.2647C4.39677 18.4973 4.42073 18.7383 4.51147 18.9573C4.60221 19.1763 4.75568 19.3635 4.95258 19.4955C5.14947 19.6275 5.381 19.6984 5.61805 19.6991C5.92505 19.6991 6.23205 19.5821 6.46605 19.3481L12.1181 13.6961L17.7691 19.3481C17.8803 19.4598 18.0126 19.5484 18.1582 19.6088C18.3038 19.6693 18.4599 19.7004 18.6176 19.7004C18.7752 19.7004 18.9313 19.6693 19.0769 19.6088C19.2225 19.5484 19.3548 19.4598 19.4661 19.3481C19.5776 19.2367 19.6661 19.1043 19.7265 18.9587C19.7869 18.813 19.818 18.6568 19.818 18.4991C19.818 18.3414 19.7869 18.1853 19.7265 18.0396C19.6661 17.8939 19.5776 17.7616 19.4661 17.6501L13.8151 11.9991Z" fill="#B0B8C1"/>
           </svg>
         </button>
+      )}
+
+      {/* ── 1순위 취향 조건 매칭 인터랙션 — 카페명/주소/영업시간 블록의 "오른쪽 절반"을 정확히
+          덮는 위치·크기(infoLeftRef 실측 높이)로 그리되, 스크롤되는 콘텐츠 밖(화면 기준 고정)에
+          띄워서 스크롤해도 같은 자리에 계속 떠 있게 함. 결과 화면과 같은 인터랙션 재생 후 "내
+          취향과 일치" 배지로 정착 */}
+      {tasteWinner && isTasteMatch && matchBoxHeight !== null && (
+        <div style={{
+          position: 'absolute', top: showHero ? 260 : 0, right: 20,
+          width: 'calc(50% - 20px)', height: matchBoxHeight,
+          zIndex: 90,
+        }}>
+          <TasteMatchInteraction key={cafe.id} conditionId={tasteWinner.id} />
+        </div>
       )}
 
       {/* ── 스크롤 시 노출되는 상단 info 고정 패널 ── */}
@@ -1875,6 +1987,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
         {/* ── 기본 정보 섹션 ── */}
         <div ref={cafeInfoRef} style={{ padding: '20px 20px 0' }}>
+        <div ref={infoLeftRef}>
           {/* 카페명 + 닫기 버튼 (embedded 모드) */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', width: '100%', marginBottom: 10 }}>
             <h1 style={{ fontSize: 24, fontWeight: 700, color: '#191F28', flex: 1 }}>
@@ -1932,6 +2045,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               </span>
             </button>
           )}
+        </div>
 
           {/* 영업시간 전체 펼침 */}
           {hoursExpanded && (
@@ -2330,6 +2444,62 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         onClose={() => setShowShareSheet(false)}
         shareTitle={cafe.name}
         onShare={(method) => trackShareCafe(cafe.id, method)}
+      />
+    </div>
+  );
+}
+
+// TODO(임시 개발용): 취향 매칭 인터랙션(사진 위 오버레이 배지)을 실제 월드컵을 매번 플레이하지
+// 않고 조건 16종을 하나씩 넘겨보며 점검하기 위한 페이저. "다음으로"를 누를 때마다 다음 조건으로
+// 강제 매칭시켜(debugForceTasteConditionId) 같은 카페 상세페이지를 다시 마운트함(끝까지 가면
+// 처음으로 순환). 인터랙션 디테일 다듬기 끝나면 이 컴포넌트와 진입 버튼을 함께 제거할 것.
+const DEBUG_CAFE_ID = '1466542951'; // 셀렉티드닉스 — 개발 DB에 항상 존재하는 카페로 고정
+export function DetailPageTasteMatchDebugPager({ onExit }: { onExit: () => void }) {
+  const total = TASTE_WORLDCUP_CONDITION_LABELS.length;
+  const [index, setIndex] = useState(0);
+  const condition = TASTE_WORLDCUP_CONDITION_LABELS[index];
+
+  return (
+    <div style={{ position: 'relative', height: '100%' }}>
+      {/* 현재 몇 번째 조건인지 표시 — 디버그 전용 오버레이 */}
+      <div style={{
+        position: 'absolute', top: 12, left: 20, zIndex: 999,
+        fontSize: 12, color: '#B0B8C1', background: 'rgba(255,255,255,0.85)',
+        padding: '2px 8px', borderRadius: 8,
+      }}>
+        {index + 1} / {total} · {condition.id}
+      </div>
+      <div style={{
+        // 하단 탭바(홈/가이드북/모음집/마이)와 겹치지 않도록 충분히 띄움
+        position: 'absolute', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 90px)', left: 20, right: 20, zIndex: 999,
+        display: 'flex', gap: 8,
+      }}>
+        <button
+          onClick={() => setIndex(i => (i - 1 + total) % total)}
+          style={{
+            flex: 1, padding: '10px 0', borderRadius: 8, border: 'none', cursor: 'pointer',
+            background: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 700, color: '#252525',
+          }}
+        >
+          ← 이전 조건
+        </button>
+        <button
+          onClick={() => setIndex(i => (i + 1) % total)}
+          style={{
+            flex: 1, padding: '10px 0', borderRadius: 8, border: 'none', cursor: 'pointer',
+            background: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 700, color: '#252525',
+          }}
+        >
+          다음 조건 →
+        </button>
+      </div>
+      <DetailPage
+        // 조건이 바뀔 때마다 컴포넌트를 새로 마운트해서 인터랙션 애니메이션이 처음부터 재생되게 함
+        key={condition.id}
+        cafeId={DEBUG_CAFE_ID}
+        onBack={onExit}
+        onClose={onExit}
+        debugForceTasteConditionId={condition.id}
       />
     </div>
   );
