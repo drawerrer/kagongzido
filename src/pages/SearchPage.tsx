@@ -181,6 +181,11 @@ export default function SearchPage({ onClose, onReportCafe }: SearchPageProps) {
         {query.trim() === '' ? (
           /* 입력 전: 최근 검색어 */
           <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* 카페 제보 유도 배너 */}
+            <div style={{ padding: '0 16px' }}>
+              <ReportCafeBanner onTap={onReportCafe} />
+            </div>
+
             {recentSearches.length > 0 ? (
               <>
                 <div
@@ -244,11 +249,6 @@ export default function SearchPage({ onClose, onReportCafe }: SearchPageProps) {
                 <p style={{ fontSize: 14 }}>최근 검색어가 없어요</p>
               </div>
             )}
-
-            {/* 카페 제보 유도 배너 */}
-            <div style={{ padding: '0 16px' }}>
-              <ReportCafeBanner onTap={onReportCafe} />
-            </div>
           </div>
         ) : (
           /* 검색 중: 결과 영역 (Kakao API 연동 전 플레이스홀더) */
