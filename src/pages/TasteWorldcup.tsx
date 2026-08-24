@@ -500,32 +500,15 @@ function SpaceInteraction({ groupSrc, groupZoomInScale }: { groupSrc: string; gr
 // 바꾸는 방식 — 요소를 조건부로 마운트하면 트랜지션이 처음 한 번은 못 걸리는 문제가 있어서(다른
 // 인터랙션에서도 같은 이유로 이 패턴을 씀) 이렇게 함
 const MOOD_ZOOM_SCALE = 1.06;
-const MOOD_BORDER_ARC_RATIO = 0.2; // 코멧 조각 길이(테두리 전체 둘레 대비 비율)
+// 확대된 오브젝트(MOOD_ZOOM_SCALE)보다 한 겹 더 키워서 흰 실루엣(halo)이 오브젝트 뒤로
+// 삐져나오게 함 — 이 삐져나온 테두리 두께가 됨
+const MOOD_HALO_SCALE = MOOD_ZOOM_SCALE * 1.08;
+const MOOD_BORDER_ARC_DEG = 70; // 코멧 조각 길이(360도 기준)
+const MOOD_BORDER_SPIN_MS = 1600; // 코멧이 6시에서 출발해 한 바퀴 도는 데 걸리는 시간
 
-// [x, y] 좌표 목록 — 오브젝트의 실제 벡터 포인트를 감싸는 컨벡스 헐(convex hull)을 파이썬
-// svgelements로 미리 계산해서 하드코딩해둠(사각형 바운딩 박스가 아니라 실루엣에 가까운 다각형).
-// 각도 배열은 이미 바닥에서 가장 아래쪽 점(6시 방향)에서 시작하도록 회전시켜 놓음
-type MoodHull = [number, number][];
-
-// 헐 다각형을 감싸는 경로 — hull[0]이 이미 6시(가장 아래쪽) 점이 되도록 미리 정렬해뒀으므로
-// 그대로 이어 그리기만 하면 됨. stroke-dashoffset 애니메이션 시작점을 6시로 고정하려고
-// rect/원이 아닌 이 다각형 path를 직접 그림
-function moodBorderPath(hull: MoodHull) {
-  if (hull.length === 0) return '';
-  const [first, ...rest] = hull;
-  const lines = rest.map(([x, y]) => `L ${x} ${y}`).join(' ');
-  return `M ${first[0]} ${first[1]} ${lines} L ${first[0]} ${first[1]}`;
-}
-
-function MoodInteraction({ src, hull }: { src: string; hull: MoodHull }) {
+function MoodInteraction({ src }: { src: string }) {
   const [phase, setPhase] = useState<'idle' | 'zoom' | 'sweep' | 'border'>('idle');
   const [borderFaded, setBorderFaded] = useState(false);
-  const pathRef = useRef<SVGPathElement>(null);
-  const [pathLength, setPathLength] = useState(0);
-
-  useEffect(() => {
-    if (pathRef.current) setPathLength(pathRef.current.getTotalLength());
-  }, [hull]);
 
   useEffect(() => {
     if (phase === 'idle') {
@@ -541,7 +524,7 @@ function MoodInteraction({ src, hull }: { src: string; hull: MoodHull }) {
       return () => clearTimeout(t);
     }
     if (phase === 'border') {
-      const t = setTimeout(() => setBorderFaded(true), 700); // 코멧이 한 바퀴 도는 시간(700ms) 뒤 사라지기 시작
+      const t = setTimeout(() => setBorderFaded(true), MOOD_BORDER_SPIN_MS); // 코멧이 한 바퀴 도는 시간 뒤 사라지기 시작
       return () => clearTimeout(t);
     }
   }, [phase]);
@@ -549,10 +532,37 @@ function MoodInteraction({ src, hull }: { src: string; hull: MoodHull }) {
   const baseStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } as const;
   const swept = phase === 'sweep' || phase === 'border';
   const bordered = phase === 'border';
-  const arcLen = pathLength * MOOD_BORDER_ARC_RATIO;
+
+  // 6시(180deg)에서 시계방향으로 한 바퀴(+360deg) 돈 뒤 그 각도에 멈춤 — 이후엔 opacity로만 사라짐.
+  // border phase에 들어가는 즉시(borderFaded 여부와 무관하게) 540deg를 목표로 잡아야 실제로 돎 —
+  // borderFaded를 조건에 넣으면 각도가 180deg에 머물러 있다가 사라지는 순간 순간이동해버려서 안 돎
+  const haloAngle = bordered ? '540deg' : '180deg';
+  const haloTransition = bordered
+    ? (borderFaded
+      ? 'opacity 250ms ease-in'
+      : `transform 600ms ease-out, --mood-halo-angle ${MOOD_BORDER_SPIN_MS}ms ease-in-out, opacity 150ms ease-out`)
+    : (phase === 'idle' ? 'none' : 'transform 600ms ease-out');
 
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: 12 }}>
+      {/* 흰 테두리(halo) — 원본과 같은 배경 제거 SVG를 filter로 순백 실루엣화한 뒤 한 겹 더 키워
+          오브젝트 뒤에 깔아둠. 헐 폴리곤 근사와 달리 알파 채널 자체를 키운 거라 오목한 부분까지
+          실제 윤곽을 그대로 따라감. conic-gradient 마스크로 6시에서 시계방향 한 바퀴 도는 부채꼴만
+          드러나게 해 "짧은 빛 조각이 테두리를 훑고 지나간다"는 느낌을 줌 */}
+      <img
+        src={src}
+        alt=""
+        style={{
+          ...baseStyle,
+          transform: `scale(${phase === 'idle' ? 1 : MOOD_HALO_SCALE})`,
+          filter: 'brightness(0) invert(1)',
+          WebkitMaskImage: `conic-gradient(from var(--mood-halo-angle) at 50% 50%, #fff 0deg ${MOOD_BORDER_ARC_DEG}deg, transparent ${MOOD_BORDER_ARC_DEG}deg 360deg)`,
+          maskImage: `conic-gradient(from var(--mood-halo-angle) at 50% 50%, #fff 0deg ${MOOD_BORDER_ARC_DEG}deg, transparent ${MOOD_BORDER_ARC_DEG}deg 360deg)`,
+          opacity: bordered ? (borderFaded ? 0 : 1) : 0,
+          '--mood-halo-angle': haloAngle,
+          transition: haloTransition,
+        } as React.CSSProperties}
+      />
       <img
         src={src}
         alt=""
@@ -588,28 +598,6 @@ function MoodInteraction({ src, hull }: { src: string; hull: MoodHull }) {
           }}
         />
       </div>
-      {/* 테두리 — 오브젝트 바운딩 박스를 감싸는 짧은 코멧 조각이 6시에서 출발해 한 바퀴 돌며
-          사라짐. dasharray로 둘레 대부분을 숨겨서 "짧은 빛 조각이 지나간다"는 느낌을 주고, 다
-          돈 뒤엔 opacity가 0으로 빠지기 때문에 최종 화면엔 테두리가 안 남음.
-          stroke-dashoffset은 (CSS 커스텀 프로퍼티 calc()로 애니메이션하면 등록 안 된 프로퍼티라
-          보간 없이 중간에 툭 끊겨 순간이동해버려서) JS로 계산한 숫자값 + 일반 트랜지션으로 처리 */}
-      <svg width="100%" height="100%" viewBox="0 0 315 350" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        <path
-          ref={pathRef}
-          d={moodBorderPath(hull)}
-          fill="none" stroke="#ffffff" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round"
-          strokeDasharray={pathLength ? `${arcLen} ${pathLength - arcLen}` : undefined}
-          strokeDashoffset={bordered ? -pathLength : 0}
-          style={{
-            opacity: bordered ? (borderFaded ? 0 : 1) : 0,
-            transition: bordered
-              ? (borderFaded
-                ? 'opacity 250ms ease-in'
-                : 'stroke-dashoffset 700ms ease-in-out, opacity 150ms ease-out')
-              : 'none',
-          }}
-        />
-      </svg>
     </div>
   );
 }
@@ -844,7 +832,7 @@ type ResultInteractionSpec =
   | { kind: 'space'; groupSrc: string; groupZoomInScale: number }
   | { kind: 'lamp'; litSrc: string }
   | { kind: 'noise'; dial: NoiseDialSpec; headphonesSrc: string; headphonesWave?: boolean }
-  | { kind: 'mood'; src: string; hull: MoodHull };
+  | { kind: 'mood'; src: string };
 
 // 결과 화면 이미지 프레임 배경색 — 기본은 페이지 배경(#f3f3f3)과 동일하게.
 // 전구 조건만 예외: lamp_idle.svg에 어두운 오버레이(#00132B, 58%)가 추가돼 있어 장면 자체가 어두우므로,
@@ -889,17 +877,14 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
     dial: { gridSrc: NoiseDialNormalGridImg, knobSrc: NoiseDialKnobImg, fromDeg: -130, toDeg: -270, swapSrc: NoiseDialSmallImg },
     headphonesSrc: NoiseHeadphonesSmallImg,
   },
-  // hull은 각 SVG의 실제 벡터 포인트들을 감싸는 컨벡스 헐(svgelements로 좌표 추출 → 파이썬으로
-  // 컨벡스 헐 계산 → RDP로 단순화 → 6시(가장 아래) 점에서 시작하도록 회전) — 사각형 바운딩 박스가
-  // 아니라 오브젝트 실루엣에 가깝게 테두리가 그려지도록 씀
-  mood_wood: { kind: 'mood', src: MoodWoodResultImg, hull: [[178.4, 257.4], [119.2, 252.1], [78.5, 232.4], [70.9, 219.1], [69.4, 144.7], [72.7, 134.0], [110.2, 96.9], [151.3, 89.3], [208.6, 99.4], [226.5, 108.4], [244.3, 134.9], [244.7, 219.2], [213.1, 251.6]] },
-  mood_metal: { kind: 'mood', src: MoodMetalResultImg, hull: [[87.2, 270.6], [79.8, 262.7], [69.9, 252.0], [72.2, 103.1], [73.5, 92.9], [89.5, 79.0], [230.8, 78.2], [243.3, 95.4], [244.1, 254.6], [230.0, 268.9], [211.1, 270.6]] },
-  mood_white: { kind: 'mood', src: MoodWhiteResultImg, hull: [[154.6, 271.5], [74.1, 231.9], [71.8, 223.0], [72.8, 131.8], [74.1, 127.3], [74.9, 125.5], [144.2, 79.6], [156.2, 80.3], [168.3, 81.2], [241.7, 118.2], [244.1, 220.9], [241.7, 225.3], [239.4, 229.8], [187.0, 256.9]] },
-  mood_black: { kind: 'mood', src: MoodBlackResultImg, hull: [[161.1, 270.9], [152.5, 269.2], [82.7, 236.8], [72.4, 228.4], [71.0, 214.4], [73.8, 126.0], [120.8, 93.3], [159.9, 79.2], [215.8, 103.5], [243.9, 122.2], [244.1, 224.9], [196.4, 253.9]] },
-  mood_plant: { kind: 'mood', src: MoodPlantResultImg, hull: [[183.5, 279.7], [126.4, 279.0], [68.8, 174.7], [96.0, 87.5], [194.6, 73.8], [222.1, 75.1], [245.6, 151.5], [200.9, 248.2], [192.0, 264.1]] },
-  mood_stone: { kind: 'mood', src: MoodStoneResultImg, hull: [[161.3, 255.9], [107.9, 247.0], [75.1, 231.1], [70.4, 224.3], [57.6, 200.2], [73.8, 150.0], [106.4, 113.5], [111.6, 110.3], [122.3, 103.7], [157.8, 92.4], [186.7, 93.7], [239.8, 143.1], [254.6, 203.5], [247.4, 241.1], [209.1, 252.4], [201.9, 253.2], [199.0, 253.5]] },
-  mood_brick: { kind: 'mood', src: MoodBrickResultImg, hull: [[203.4, 252.7], [163.0, 249.2], [126.7, 245.1], [99.0, 240.4], [76.1, 234.4], [75.0, 230.8], [73.5, 216.2], [72.0, 197.3], [71.5, 184.0], [71.8, 169.2], [72.7, 156.5], [74.3, 139.3], [75.6, 125.9], [76.2, 124.3], [77.2, 122.5], [113.2, 94.0], [139.6, 95.8], [240.9, 112.4], [244.4, 226.9], [234.5, 237.3]] },
-  mood_modern: { kind: 'mood', src: MoodModernResultImg, hull: [[153.2, 277.4], [68.6, 269.4], [70.6, 172.5], [157.7, 81.8], [203.9, 66.9], [239.0, 80.6], [248.7, 106.6], [227.8, 276.1]] },
+  mood_wood: { kind: 'mood', src: MoodWoodResultImg },
+  mood_metal: { kind: 'mood', src: MoodMetalResultImg },
+  mood_white: { kind: 'mood', src: MoodWhiteResultImg },
+  mood_black: { kind: 'mood', src: MoodBlackResultImg },
+  mood_plant: { kind: 'mood', src: MoodPlantResultImg },
+  mood_stone: { kind: 'mood', src: MoodStoneResultImg },
+  mood_brick: { kind: 'mood', src: MoodBrickResultImg },
+  mood_modern: { kind: 'mood', src: MoodModernResultImg },
 };
 
 function ResultInteraction({ conditionId }: { conditionId: string }) {
@@ -917,6 +902,7 @@ function ResultInteraction({ conditionId }: { conditionId: string }) {
       style={{ position: 'absolute', inset: 0, cursor: 'pointer' }}
     >
       <style>{`
+        @property --mood-halo-angle { syntax: '<angle>'; inherits: false; initial-value: 180deg; }
         @keyframes twc-wobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
         .twc-wobble { animation: twc-wobble 0.5s ease-in-out 2; transform-origin: top center; }
         @keyframes twc-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
@@ -945,7 +931,7 @@ function ResultInteraction({ conditionId }: { conditionId: string }) {
         <NoiseInteraction key={replayKey} dial={spec.dial} headphonesSrc={spec.headphonesSrc} headphonesWave={spec.headphonesWave} />
       )}
       {spec.kind === 'sequence' && <ImageSequence key={replayKey} frames={spec.frames} />}
-      {spec.kind === 'mood' && <MoodInteraction key={replayKey} src={spec.src} hull={spec.hull} />}
+      {spec.kind === 'mood' && <MoodInteraction key={replayKey} src={spec.src} />}
     </div>
   );
 }
