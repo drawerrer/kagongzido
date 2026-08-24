@@ -35,43 +35,32 @@ const LazyResultInteraction = lazy(() =>
 );
 
 // 상세페이지 진입 시 1순위 취향 조건과 이 카페가 일치하면, 결과 화면과 같은 인터랙션을 한 번
-// 재생한 뒤 "내 취향과 일치" 배지로 정착하는 컴포넌트
-function TasteMatchInteraction({ conditionId }: { conditionId: string }) {
-  const [settled, setSettled] = useState(false);
+// 재생한 뒤 사라지는 플로팅 오버레이. 다 사라진 뒤엔 "카페 정보" 타이틀 옆 배지(아래 참고)로 넘어감
+function TasteMatchInteraction({ conditionId, onDone }: { conditionId: string; onDone: () => void }) {
+  const [fadingOut, setFadingOut] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setSettled(true), getResultInteractionDurationMs(conditionId));
+    const t = setTimeout(() => setFadingOut(true), getResultInteractionDurationMs(conditionId));
     return () => clearTimeout(t);
   }, [conditionId]);
+
+  useEffect(() => {
+    if (!fadingOut) return;
+    const t = setTimeout(onDone, 250); // 페이드아웃 트랜지션(250ms)이 끝난 뒤 완전히 제거
+    return () => clearTimeout(t);
+  }, [fadingOut, onDone]);
 
   return (
     <div style={{
       position: 'relative', width: '100%', height: '100%',
       borderRadius: 16, overflow: 'hidden',
-      // 정착 후엔 배지(파란 텍스트)와 대비가 안 맞을 수 있는 조건별 프레임색(예: 전구의 어두운 배경)
-      // 대신 중립 배경으로 바꿈
-      background: settled ? '#F3F3F3' : getResultFrameBg(conditionId),
-      transition: 'background 250ms ease',
-      // 텍스트/버튼 위에 얹히는 오버레이라 배경과 분리돼 보이도록 그림자를 줌
-      boxShadow: '0 4px 16px rgba(0,0,0,0.16)',
+      background: getResultFrameBg(conditionId),
+      opacity: fadingOut ? 0 : 1,
+      transition: 'opacity 250ms ease',
     }}>
-      {!settled && (
-        <Suspense fallback={null}>
-          <LazyResultInteraction conditionId={conditionId} />
-        </Suspense>
-      )}
-      {settled && (
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-          animation: 'taste-match-badge-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both',
-        }}>
-          <IcSparkle size={20} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#3182F6', textAlign: 'center', lineHeight: 1.3 }}>
-            내 취향과<br />일치
-          </span>
-        </div>
-      )}
+      <Suspense fallback={null}>
+        <LazyResultInteraction conditionId={conditionId} />
+      </Suspense>
     </div>
   );
 }
@@ -1601,8 +1590,11 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
       vibeTagsRaw: cafe.vibeTagsRaw,
     })
   );
-  const infoLeftRef = useRef<HTMLDivElement>(null);
-  const [matchBoxHeight, setMatchBoxHeight] = useState<number | null>(null);
+  // 매칭 인터랙션(플로팅)이 다 재생되고 사라졌는지 — true가 되면 오버레이는 걷히고, 대신
+  // "카페 정보" 타이틀 옆 배지가 나타남. 카페가 바뀌면 다시 처음부터 재생되도록 초기화
+  const [tasteInteractionDone, setTasteInteractionDone] = useState(false);
+  useEffect(() => { setTasteInteractionDone(false); }, [cafe.id]);
+  const handleTasteInteractionDone = useCallback(() => setTasteInteractionDone(true), []);
 
   const todayKey = getTodayKey();
 
@@ -1726,19 +1718,6 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   const todayHours = cafe.hours[todayKey];
   const hasHoursData = Object.keys(cafe.hours).length > 0 || !!cafe.hoursText;
 
-  // 취향 매칭 인터랙션 오버레이 크기 — 스크롤 컨테이너 밖(화면에 고정)에 띄워야 해서 카페명/주소/
-  // 영업시간 블록(infoLeftRef)의 실제 높이를 측정해 그대로 맞춰줌. 그래야 그 블록의 "오른쪽 절반"을
-  // 정확히 덮으면서도, 스크롤해도 화면 위에 계속 떠 있는 오버레이로 동작함
-  useEffect(() => {
-    if (!isTasteMatch || !infoLeftRef.current) return;
-    const el = infoLeftRef.current;
-    const measure = () => setMatchBoxHeight(el.offsetHeight);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [isTasteMatch, cafe.name, cafe.address, hasHoursData]);
-
   // 매장 없음
   if (!loading && !storeData) {
     return (
@@ -1830,17 +1809,17 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         </button>
       )}
 
-      {/* ── 1순위 취향 조건 매칭 인터랙션 — 카페명/주소/영업시간 블록의 "오른쪽 절반"을 정확히
-          덮는 위치·크기(infoLeftRef 실측 높이)로 그리되, 스크롤되는 콘텐츠 밖(화면 기준 고정)에
-          띄워서 스크롤해도 같은 자리에 계속 떠 있게 함. 결과 화면과 같은 인터랙션 재생 후 "내
-          취향과 일치" 배지로 정착 */}
-      {tasteWinner && isTasteMatch && matchBoxHeight !== null && (
+      {/* ── 1순위 취향 조건 매칭 인터랙션 — 화면 오른쪽 절반(끝까지 꽉 채움)에, 결과 화면과 같은
+          315:350 비율로 띄움(너비에 맞춰 높이가 유동적으로 따라감). 스크롤되는 콘텐츠 밖(화면 기준
+          고정)에 그려서 스크롤해도 같은 자리에 계속 떠 있게 함. 재생이 끝나면 페이드아웃되며
+          완전히 사라지고("카페 정보" 타이틀 옆 배지로 넘어감 — 아래 카페 정보 섹션 참고) */}
+      {tasteWinner && isTasteMatch && !tasteInteractionDone && (
         <div style={{
-          position: 'absolute', top: showHero ? 260 : 0, right: 20,
-          width: 'calc(50% - 20px)', height: matchBoxHeight,
+          position: 'absolute', top: showHero ? 260 : 0, right: 0,
+          width: '50%', aspectRatio: '315 / 350',
           zIndex: 90,
         }}>
-          <TasteMatchInteraction key={cafe.id} conditionId={tasteWinner.id} />
+          <TasteMatchInteraction key={cafe.id} conditionId={tasteWinner.id} onDone={handleTasteInteractionDone} />
         </div>
       )}
 
@@ -1987,7 +1966,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
         {/* ── 기본 정보 섹션 ── */}
         <div ref={cafeInfoRef} style={{ padding: '20px 20px 0' }}>
-        <div ref={infoLeftRef}>
+        <div>
           {/* 카페명 + 닫기 버튼 (embedded 모드) */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', width: '100%', marginBottom: 10 }}>
             <h1 style={{ fontSize: 24, fontWeight: 700, color: '#191F28', flex: 1 }}>
@@ -2084,7 +2063,26 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
         {/* ── 카페 정보 섹션 ── */}
         <div style={{ padding: '20px 20px 4px' }}>
-          <SectionHeader title="카페 정보" marginBottom={16} />
+          <SectionHeader
+            title={
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                카페 정보
+                {/* 취향 매칭 인터랙션 재생이 끝난 뒤에만 나타나는 배지 — 처음 뜰 때만 팝인, 반복 없음 */}
+                {isTasteMatch && tasteInteractionDone && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 3,
+                    fontSize: 11, fontWeight: 700, color: '#3182F6',
+                    background: '#3182F614', borderRadius: 999, padding: '3px 8px',
+                    animation: 'taste-match-badge-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both',
+                  }}>
+                    <IcSparkle size={11} />
+                    내 취향과 일치
+                  </span>
+                )}
+              </span>
+            }
+            marginBottom={16}
+          />
 
           {/* 좌석 | 콘센트 (가로 배치) */}
           <div style={{
