@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 // ── 타입 ─────────────────────────────────
 interface SearchPageProps {
   onClose: () => void;
+  onReportCafe?: () => void;
 }
 
 // ── 아이콘 ────────────────────────────────
@@ -42,11 +43,54 @@ function ClockIcon() {
   );
 }
 
+/** 배너 우측 화살표 — 14×14 */
+function BannerChevron() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <path d="M9 6l6 6-6 6" stroke="#2A5FC1" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** 카페 제보 유도 배너 — "찾는 카페가 없을 땐, 너구리한테 카페 알려주러가기" */
+function ReportCafeBanner({ onTap }: { onTap?: () => void }) {
+  return (
+    <div
+      onClick={onTap}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '14px 16px',
+        borderRadius: 16,
+        background: '#DCE7FB',
+        cursor: onTap ? 'pointer' : 'default',
+      }}
+    >
+      <span style={{ fontSize: 26, lineHeight: 1, flexShrink: 0 }}>🦝</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'rgba(3,18,40,0.58)' }}>
+          찾는 카페가 없을 땐,
+        </p>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#191F28' }}>
+          너구리한테 카페 알려주러가기
+        </p>
+      </div>
+      <div style={{
+        width: 28, height: 28, borderRadius: '50%',
+        background: 'rgba(255,255,255,0.6)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <BannerChevron />
+      </div>
+    </div>
+  );
+}
+
 // ── 목업 최근 검색어 ──────────────────────
 const INITIAL_RECENT: string[] = ['강남 카공카페', '노트북 되는 카페', '조용한 카페'];
 
 // ── SearchPage ────────────────────────────
-export default function SearchPage({ onClose }: SearchPageProps) {
+export default function SearchPage({ onClose, onReportCafe }: SearchPageProps) {
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>(INITIAL_RECENT);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -136,7 +180,7 @@ export default function SearchPage({ onClose }: SearchPageProps) {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {query.trim() === '' ? (
           /* 입력 전: 최근 검색어 */
-          <div style={{ padding: '16px 0' }}>
+          <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
             {recentSearches.length > 0 ? (
               <>
                 <div
@@ -200,6 +244,11 @@ export default function SearchPage({ onClose }: SearchPageProps) {
                 <p style={{ fontSize: 14 }}>최근 검색어가 없어요</p>
               </div>
             )}
+
+            {/* 카페 제보 유도 배너 */}
+            <div style={{ padding: '0 16px' }}>
+              <ReportCafeBanner onTap={onReportCafe} />
+            </div>
           </div>
         ) : (
           /* 검색 중: 결과 영역 (Kakao API 연동 전 플레이스홀더) */
