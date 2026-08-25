@@ -23,7 +23,7 @@ import IcCopy from '../assets/icons/icon_copy.svg?react';
 import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
 import {
   getTasteWorldcupWinner, matchesTasteWorldcupWinner,
-  getResultFrameBg, getResultInteractionDurationMs,
+  getResultInteractionDurationMs,
   TASTE_WORLDCUP_CONDITION_LABELS,
 } from '../utils/tasteWorldcup';
 
@@ -54,12 +54,14 @@ function TasteMatchInteraction({ conditionId, onDone }: { conditionId: string; o
     <div style={{
       position: 'relative', width: '100%', height: '100%',
       borderRadius: 16, overflow: 'hidden',
-      background: getResultFrameBg(conditionId),
+      // 결과 화면(TasteWorldcup.tsx)의 getResultFrameBg는 lamp_ 조건에 어두운 배경(#66717F)을
+      // 깔지만, 여긴 카페 사진/정보 위에 얹히는 오버레이라 그 배경이 그대로 안 어울려서 투명으로 둠
+      background: 'transparent',
       opacity: fadingOut ? 0 : 1,
       transition: 'opacity 250ms ease',
     }}>
       <Suspense fallback={null}>
-        <LazyResultInteraction conditionId={conditionId} />
+        <LazyResultInteraction conditionId={conditionId} showLitFrameBg={false} enableLampFlicker />
       </Suspense>
     </div>
   );
@@ -1593,8 +1595,14 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   // 매칭 인터랙션(플로팅)이 다 재생되고 사라졌는지 — true가 되면 오버레이는 걷히고, 대신
   // "카페 정보" 타이틀 옆 배지가 나타남. 카페가 바뀌면 다시 처음부터 재생되도록 초기화
   const [tasteInteractionDone, setTasteInteractionDone] = useState(false);
-  useEffect(() => { setTasteInteractionDone(false); }, [cafe.id]);
+  // 배지를 탭하면 다시 처음부터 재생 — replayKey를 바꿔서 TasteMatchInteraction을 강제로 리마운트시킴
+  const [tasteReplayKey, setTasteReplayKey] = useState(0);
+  useEffect(() => { setTasteInteractionDone(false); setTasteReplayKey(0); }, [cafe.id]);
   const handleTasteInteractionDone = useCallback(() => setTasteInteractionDone(true), []);
+  const handleTasteBadgeTap = useCallback(() => {
+    setTasteInteractionDone(false);
+    setTasteReplayKey(k => k + 1);
+  }, []);
 
   const todayKey = getTodayKey();
 
@@ -1819,7 +1827,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           width: '50%', aspectRatio: '315 / 350',
           zIndex: 90,
         }}>
-          <TasteMatchInteraction key={cafe.id} conditionId={tasteWinner.id} onDone={handleTasteInteractionDone} />
+          <TasteMatchInteraction key={`${cafe.id}-${tasteReplayKey}`} conditionId={tasteWinner.id} onDone={handleTasteInteractionDone} />
         </div>
       )}
 
@@ -2067,17 +2075,22 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
             title={
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 카페 정보
-                {/* 취향 매칭 인터랙션 재생이 끝난 뒤에만 나타나는 배지 — 처음 뜰 때만 팝인, 반복 없음 */}
+                {/* 취향 매칭 인터랙션 재생이 끝난 뒤에만 나타나는 배지 — 처음 뜰 때만 팝인, 반복 없음.
+                    탭하면 인터랙션이 처음부터 다시 재생됨(ResultInteraction 탭 재생과 같은 패턴) */}
                 {isTasteMatch && tasteInteractionDone && (
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 3,
-                    fontSize: 11, fontWeight: 700, color: '#3182F6',
-                    background: '#3182F614', borderRadius: 999, padding: '3px 8px',
-                    animation: 'taste-match-badge-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both',
-                  }}>
+                  <button
+                    onClick={handleTasteBadgeTap}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                      fontSize: 11, fontWeight: 700, color: '#3182F6',
+                      background: '#3182F614', border: 'none', borderRadius: 999, padding: '3px 8px',
+                      cursor: 'pointer',
+                      animation: 'taste-match-badge-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both',
+                    }}
+                  >
                     <IcSparkle size={11} />
                     내 취향과 일치
-                  </span>
+                  </button>
                 )}
               </span>
             }

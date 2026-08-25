@@ -107,7 +107,7 @@ export const TASTE_WORLDCUP_CONDITION_LABELS: TasteWorldcupWinner[] = [
 ];
 
 export function getResultInteractionDurationMs(conditionId: string): number {
-  if (conditionId.startsWith('lamp_')) return 2300; // idle(1000)+approach(700)+tug(250)+lit 크로스페이드(350)
+  if (conditionId.startsWith('lamp_')) return 2850; // idle(1000)+approach(700)+tug(250)+lit 유지(500)+깜빡임(220+140)
   if (conditionId.startsWith('cafe_')) return 2250; // focus(1000)+toMatch 전환(950)+opacity 페이드(300)
   if (conditionId.startsWith('noise_')) return 4350; // bars(1700)+dial 정착/회전/정착(2300)+헤드폰 크로스페이드(350)
   if (conditionId === 'outlet') return 3000; // low(1000)+empty(750)+plugged(750)+full 전환 버퍼(500)

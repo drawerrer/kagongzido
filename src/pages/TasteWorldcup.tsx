@@ -604,24 +604,33 @@ function MoodInteraction({ src }: { src: string }) {
 }
 
 // 전구 전용 인터랙션 — 램프(lamp_idle)는 고정해두고, 손(lamp_hand, 투명 배경)만 별도 레이어로
-// (1) 아래에서 올라와 줄을 잡고 (2) 살짝 아래로 당긴 뒤 (3) 불이 켜지는 3단계로 구성
-const LAMP_PHASES = ['idle', 'approach', 'tug', 'lit'] as const;
+// (1) 아래에서 올라와 줄을 잡고 (2) 살짝 아래로 당긴 뒤 (3) 불이 켜지고 (4) 살짝 깜빡인 뒤 정착하는
+// 5단계로 구성 — 마지막 깜빡임은 "불이 딱 켜졌다"는 확신을 주는 디테일
+const LAMP_PHASES = ['idle', 'approach', 'tug', 'lit', 'flickerOff', 'flickerOn'] as const;
 type LampPhase = typeof LAMP_PHASES[number];
-const LAMP_PHASE_DURATION_MS: Record<Exclude<LampPhase, 'lit'>, number> = {
-  idle: 1000,     // 대기(흔들림)
-  approach: 700,  // 손이 올라와 줄을 잡음
-  tug: 250,       // 줄을 살짝 아래로 당김 — 당기는 동작이라 approach보다 빠르고 스냅감 있게
+const LAMP_PHASE_DURATION_MS: Record<Exclude<LampPhase, 'flickerOn'>, number> = {
+  idle: 1000,       // 대기(흔들림)
+  approach: 700,    // 손이 올라와 줄을 잡음
+  tug: 250,         // 줄을 살짝 아래로 당김 — 당기는 동작이라 approach보다 빠르고 스냅감 있게
+  lit: 500,         // 켜진 채로 잠깐 유지 — 바로 깜빡이면 "켜지는 도중"처럼 보여서 한 박자 쉬어줌
+  flickerOff: 220,  // 깜빡, 짧게 꺼짐
 };
+// 켜짐↔꺼짐 크로스페이드 속도 — tug→lit(처음 켜짐)은 은은하게, 깜빡임은 스냅 있게 빠른 속도로 구분
+const LAMP_LIT_FADE_MS = 350;
+const LAMP_FLICKER_FADE_MS = 140;
 
-function LampInteraction({ litSrc }: { litSrc: string }) {
+function LampInteraction({ litSrc, litFrameBg, showLitFrameBg = true, enableFlicker = false }: { litSrc: string; litFrameBg?: string; showLitFrameBg?: boolean; enableFlicker?: boolean }) {
   const [phase, setPhase] = useState<LampPhase>('idle');
 
   useEffect(() => {
-    if (phase === 'lit') return;
+    // 결과 화면(enableFlicker=false)은 원래대로 켜진 채 한 번에서 멈춤 — 깜빡임은 상세페이지 매칭
+    // 인터랙션(enableFlicker=true)에서만 재생됨
+    if (phase === 'lit' && !enableFlicker) return;
+    if (phase === 'flickerOn') return;
     const next = LAMP_PHASES[LAMP_PHASES.indexOf(phase) + 1];
     const t = setTimeout(() => setPhase(next), LAMP_PHASE_DURATION_MS[phase]);
     return () => clearTimeout(t);
-  }, [phase]);
+  }, [phase, enableFlicker]);
 
   const baseStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } as const;
 
@@ -636,14 +645,26 @@ function LampInteraction({ litSrc }: { litSrc: string }) {
     phase === 'lit' ? 'opacity 0.35s ease' :
     'none';
 
+  // 켜진 상태(lit, flickerOn)와 꺼진 상태(idle/approach/tug, flickerOff)를 오가는 크로스페이드.
+  // flickerOff/flickerOn 구간만 빠르게 전환해 "깜빡"하는 스냅감을 주고, 처음 켜질 때(tug→lit)는
+  // 그대로 은은한 속도를 유지함
+  const isLit = phase === 'lit' || phase === 'flickerOn';
+  const isFlickering = phase === 'flickerOff' || phase === 'flickerOn';
+  const litFadeTransition = `opacity ${isFlickering ? LAMP_FLICKER_FADE_MS : LAMP_LIT_FADE_MS}ms ${isFlickering ? 'linear' : 'ease'}`;
+
   return (
     <>
-      {/* 배경 램프 — idle/approach/tug 동안 고정, lit로 넘어갈 때 페이드아웃 */}
+      {/* 켜진 뒤 프레임 배경 — 결과 화면에서만(showLitFrameBg) 켜지는 순간 어두운 프레임 위에
+          깔림. 상세페이지 매칭 인터랙션은 이 레이어를 안 씀(showLitFrameBg=false)라 계속 투명 유지 */}
+      {showLitFrameBg && litFrameBg && (
+        <div style={{ position: 'absolute', inset: 0, background: litFrameBg, opacity: isLit ? 1 : 0, transition: litFadeTransition }} />
+      )}
+      {/* 배경 램프(꺼진 상태) — idle/approach/tug 동안 고정, 켜지면 페이드아웃, 깜빡일 때 다시 잠깐 페이드인 */}
       <img
         src={LampIdleImg}
         alt=""
         className={phase === 'idle' ? 'twc-wobble' : undefined}
-        style={{ ...baseStyle, opacity: phase === 'lit' ? 0 : 1, transition: 'opacity 0.35s ease' }}
+        style={{ ...baseStyle, opacity: isLit ? 0 : 1, transition: litFadeTransition }}
       />
       {/* 손 — 올라와 줄을 잡고(approach) 제자리에서 살짝 쥐는 스퀴즈(tug) 뒤 lit로 넘어갈 때 같이 사라짐
           lamp_hand.svg는 translateY로 움직여도 잘리지 않도록 세로로 여유(315×420, 프레임보다 70px 큼)를
@@ -660,11 +681,11 @@ function LampInteraction({ litSrc }: { litSrc: string }) {
           transition: handTransition,
         }}
       />
-      {/* 켜진 램프 — lit 단계에서 페이드인 후 유지 */}
+      {/* 켜진 램프 — lit에서 페이드인, flickerOff에서 잠깐 꺼졌다가 flickerOn에서 다시 페이드인 */}
       <img
         src={litSrc}
         alt=""
-        style={{ ...baseStyle, opacity: phase === 'lit' ? 1 : 0, transition: 'opacity 0.35s ease' }}
+        style={{ ...baseStyle, opacity: isLit ? 1 : 0, transition: litFadeTransition }}
       />
     </>
   );
@@ -831,14 +852,16 @@ function NoiseInteraction({ dial, headphonesSrc, headphonesWave = false }: { dia
 type ResultInteractionSpec =
   | { kind: 'sequence'; frames: InteractionFrame[] }
   | { kind: 'space'; groupSrc: string; groupZoomInScale: number }
-  | { kind: 'lamp'; litSrc: string }
+  | { kind: 'lamp'; litSrc: string; litFrameBg?: string }
   | { kind: 'noise'; dial: NoiseDialSpec; headphonesSrc: string; headphonesWave?: boolean }
   | { kind: 'mood'; src: string };
 
 // 1순위 조건 id → 결과 화면 인터랙션. 분위기 8종은 아직 스티커 애셋이 없어 매핑에서 제외(플레이스홀더 유지)
 const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
-  lamp_warm: { kind: 'lamp', litSrc: LampLitWarmImg },
-  lamp_low: { kind: 'lamp', litSrc: LampLitLowImg },
+  // litFrameBg: 켜진 뒤 프레임 배경색 — 결과 화면 전용(상세페이지 매칭 인터랙션에선 안 씀, 아래
+  // ResultInteraction의 showLitFrameBg 참고). white는 지정 안 해서 켜진 뒤에도 어두운 프레임(getResultFrameBg) 유지
+  lamp_warm: { kind: 'lamp', litSrc: LampLitWarmImg, litFrameBg: '#F3F3F3' },
+  lamp_low: { kind: 'lamp', litSrc: LampLitLowImg, litFrameBg: '#F3F3F3' },
   lamp_white: { kind: 'lamp', litSrc: LampLitWhiteImg },
   outlet: {
     kind: 'sequence',
@@ -880,7 +903,7 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
   mood_modern: { kind: 'mood', src: MoodModernResultImg },
 };
 
-export function ResultInteraction({ conditionId }: { conditionId: string }) {
+export function ResultInteraction({ conditionId, showLitFrameBg = true, enableLampFlicker = false }: { conditionId: string; showLitFrameBg?: boolean; enableLampFlicker?: boolean }) {
   const spec = WORLDCUP_RESULT_INTERACTIONS[conditionId];
   // 탭하면 처음부터 다시 재생 — replayKey를 바꿔서 내부 컴포넌트를 강제로 리마운트시킴
   const [replayKey, setReplayKey] = useState(0);
@@ -919,7 +942,9 @@ export function ResultInteraction({ conditionId }: { conditionId: string }) {
         .twc-tug { animation: twc-tug 260ms ease-in-out 1; transform-origin: center; }
       `}</style>
       {spec.kind === 'space' && <SpaceInteraction key={replayKey} groupSrc={spec.groupSrc} groupZoomInScale={spec.groupZoomInScale} />}
-      {spec.kind === 'lamp' && <LampInteraction key={replayKey} litSrc={spec.litSrc} />}
+      {spec.kind === 'lamp' && (
+        <LampInteraction key={replayKey} litSrc={spec.litSrc} litFrameBg={spec.litFrameBg} showLitFrameBg={showLitFrameBg} enableFlicker={enableLampFlicker} />
+      )}
       {spec.kind === 'noise' && (
         <NoiseInteraction key={replayKey} dial={spec.dial} headphonesSrc={spec.headphonesSrc} headphonesWave={spec.headphonesWave} />
       )}
