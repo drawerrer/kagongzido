@@ -63,6 +63,19 @@ function GpsIcon() {
   );
 }
 
+/** 제보하기 FAB — 원형(#525252) + '+' 아이콘(#F3F3F3) */
+function ReportFabIcon({ size = 56 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 56 56" fill="none" style={{ flexShrink: 0 }}>
+      {/* 원본 좌표가 뷰박스 정중앙(28,28)에서 살짝(0.02, 1.88) 벗어나 있어 보정 — 링 인터랙션과 어긋나지 않도록 정중앙 정렬 */}
+      <g transform="translate(0.02 1.88)">
+        <circle cx="27.98" cy="26.12" r="20.52" fill="#525252" />
+        <path fillRule="evenodd" clipRule="evenodd" d="M36.4719 24.8786H29.2261V17.6328C29.2261 17.3033 29.0952 16.9874 28.8623 16.7544C28.6294 16.5215 28.3134 16.3906 27.984 16.3906C27.6545 16.3906 27.3386 16.5215 27.1057 16.7544C26.8727 16.9874 26.7418 17.3033 26.7418 17.6328V24.8786H19.496C19.1666 24.8786 18.8507 25.0094 18.6177 25.2424C18.3848 25.4753 18.2539 25.7913 18.2539 26.1207C18.2539 26.4501 18.3848 26.7661 18.6177 26.999C18.8507 27.232 19.1666 27.3628 19.496 27.3628H26.7418V34.6086C26.7418 34.9381 26.8727 35.254 27.1057 35.487C27.3386 35.7199 27.6545 35.8508 27.984 35.8508C28.3134 35.8508 28.6294 35.7199 28.8623 35.487C29.0952 35.254 29.2261 34.9381 29.2261 34.6086V27.3628H36.4719C36.8014 27.3628 37.1173 27.232 37.3502 26.999C37.5832 26.7661 37.7141 26.4501 37.7141 26.1207C37.7141 25.7913 37.5832 25.4753 37.3502 25.2424C37.1173 25.0094 36.8014 24.8786 36.4719 24.8786Z" fill="#F3F3F3" />
+      </g>
+    </svg>
+  );
+}
+
 function ArrowDownIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -248,9 +261,10 @@ function CafeRow({ cafe, onTap }: { cafe: Cafe; onTap: () => void }) {
 interface MapPageProps {
   onSearchOpen: () => void;
   onDetailOpen: (cafeId: string) => void;
+  onReportCafe?: () => void;
 }
 
-export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
+export default function MapPage({ onSearchOpen, onDetailOpen, onReportCafe }: MapPageProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
 
@@ -482,6 +496,41 @@ export default function MapPage({ onSearchOpen, onDetailOpen }: MapPageProps) {
         >
           <FilterIcon active={filterApplied} />
         </button>
+      </div>
+
+      {/* ── 제보하기 버튼 (GPS 버튼 바로 위, 동일 크기/x축 정렬) ── */}
+      <div
+        style={{
+          position: 'absolute',
+          right: 16,
+          bottom: `calc(${panelBottomValue} + 56px)`,
+          zIndex: 20,
+          width: 44,
+          height: 44,
+          transition: 'bottom 0.3s ease',
+        }}
+      >
+        <button
+          onClick={onReportCafe}
+          style={{ position: 'relative', width: 44, height: 44, padding: 0, border: 'none', background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <ReportFabIcon size={60} />
+        </button>
+        {/* 스트록이 빛나며 도는 인터랙션 — 버튼 위에 그려서 가장자리를 가로지르며 맞물리도록 배치 */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: -2,
+            borderRadius: '50%',
+            background: 'conic-gradient(from 0deg, transparent 0%, #DFF9FF 8%, #3EE0FF 18%, transparent 40%, transparent 100%)',
+            animation: 'reportFabRingSpin 2s linear infinite',
+            WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px))',
+            mask: 'radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px))',
+            filter: 'drop-shadow(0 0 3px #3EE0FF)',
+            pointerEvents: 'none',
+          }}
+        />
+        <style>{`@keyframes reportFabRingSpin { to { transform: rotate(360deg); } }`}</style>
       </div>
 
       {/* ── GPS (현재 위치) 버튼 ── */}
