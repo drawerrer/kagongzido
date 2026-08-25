@@ -366,7 +366,7 @@ function PillCTAButton({
       style={{
         flex: 1,
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-        height: 25,
+        height: 35,
         borderRadius: 9999,
         background: isDark ? '#252525' : 'transparent',
         border: isDark ? 'none' : '1px solid #252525',
