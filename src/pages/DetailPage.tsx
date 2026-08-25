@@ -46,7 +46,7 @@ function TasteMatchInteraction({ conditionId, onDone }: { conditionId: string; o
 
   useEffect(() => {
     if (!fadingOut) return;
-    const t = setTimeout(onDone, 250); // 페이드아웃 트랜지션(250ms)이 끝난 뒤 완전히 제거
+    const t = setTimeout(onDone, 700); // 페이드아웃 트랜지션(700ms)이 끝난 뒤 완전히 제거
     return () => clearTimeout(t);
   }, [fadingOut, onDone]);
 
@@ -58,7 +58,8 @@ function TasteMatchInteraction({ conditionId, onDone }: { conditionId: string; o
       // 깔지만, 여긴 카페 사진/정보 위에 얹히는 오버레이라 그 배경이 그대로 안 어울려서 투명으로 둠
       background: 'transparent',
       opacity: fadingOut ? 0 : 1,
-      transition: 'opacity 250ms ease',
+      // ease-out — 처음엔 서서히, 뒤로 갈수록 점점 느리게 흐려지며 사라짐
+      transition: 'opacity 700ms ease-out',
     }}>
       <Suspense fallback={null}>
         <LazyResultInteraction conditionId={conditionId} showLitFrameBg={false} enableLampFlicker />
