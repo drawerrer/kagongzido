@@ -15,6 +15,7 @@ import EmptyState from '../components/EmptyState';
 import IcSearch from '../assets/icons/icon_search.svg?react';
 import IcHeart from '../assets/icons/icon_heart.svg?react';
 import IcMap from '../assets/icons/icon_map.svg?react';
+import RaccoonImage from '../assets/images/raccoon_mug.png';
 
 const SearchEmptyPlusIcon = (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
@@ -51,6 +52,42 @@ function HeartIconMd() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(3,18,40,0.70)">
       <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
     </svg>
+  );
+}
+
+/** 배너 우측 화살표 — 14×14 */
+function BannerChevron() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <path d="M9 6l6 6-6 6" stroke="#252525" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** 카페 제보 유도 배너 — "찾는 카페가 없을 땐, 너구리한테 카페 알려주러가기" */
+function ReportCafeBanner({ onTap }: { onTap?: () => void }) {
+  return (
+    <div
+      onClick={onTap}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '14px 16px',
+        borderRadius: 8,
+        background: '#D0DFF4',
+        cursor: onTap ? 'pointer' : 'default',
+      }}
+    >
+      <img src={RaccoonImage} alt="" style={{ width: 38, height: 44, flexShrink: 0, objectFit: 'contain' }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'rgba(3,18,40,0.58)' }}>
+          찾는 카페가 없을 땐,
+        </p>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#191F28' }}>
+          너구리한테 카페 알려주러가기
+        </p>
+      </div>
+      <BannerChevron />
+    </div>
   );
 }
 
@@ -249,6 +286,7 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onPlaceDet
   const [query, setQuery]           = useState('');
   const [activeChip, setActiveChip] = useState<string | null>(null);
   const [recentSearches, setRecentSearches] = useState<{ keyword: string; date: string }[]>([]);
+  const [visibleCount, setVisibleCount] = useState(5);
   const [allStores, setAllStores]   = useState<StoreRow[]>([]);
   const [libraries, setLibraries]     = useState<PlaceRow[]>([]);
   const [sharedSpaces, setSharedSpaces] = useState<PlaceRow[]>([]);
@@ -306,6 +344,11 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onPlaceDet
   // 'recent' 기본 컬렉션 제외, 사용자 생성 컬렉션만
   const userCollections = collections.filter(c => c.id !== 'recent');
   const isTyping        = query.trim() !== '';
+
+  // 검색어가 바뀌면 노출 개수를 5개로 리셋
+  useEffect(() => {
+    setVisibleCount(5);
+  }, [query]);
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 100);
@@ -460,27 +503,53 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onPlaceDet
                   ))}
                 </div>
               )}
-              {/* 카페/장소 결과 */}
-              {filteredResults.length > 0 && (
-                <div>
-                  <StoreCountBar count={filteredResults.length} />
-                  {filteredResults.map(cafe => (
-                    <StoreCardHome
-                      key={cafe.id}
-                      cafe={cafe}
-                      onTap={() => {
-                        if (cafe.placeType === 'cafe' || !cafe.placeType) {
-                          trackCafeDetailView(cafe.id, 'search');
-                          onDetailOpen?.(cafe.id);
-                        } else {
-                          const place = placeItems.find(p => p.id === cafe.id);
-                          if (place) onPlaceDetailOpen?.(place);
-                        }
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
+              {/* 카페/장소 결과 — 기본 5개, '더보기' 탭마다 5개씩 추가 노출 */}
+              {filteredResults.length > 0 && (() => {
+                const visibleResults = filteredResults.slice(0, visibleCount);
+                const hasMore = filteredResults.length > visibleCount;
+                return (
+                  <div>
+                    <StoreCountBar count={filteredResults.length} />
+                    {visibleResults.map(cafe => (
+                      <StoreCardHome
+                        key={cafe.id}
+                        cafe={cafe}
+                        onTap={() => {
+                          if (cafe.placeType === 'cafe' || !cafe.placeType) {
+                            trackCafeDetailView(cafe.id, 'search');
+                            onDetailOpen?.(cafe.id);
+                          } else {
+                            const place = placeItems.find(p => p.id === cafe.id);
+                            if (place) onPlaceDetailOpen?.(place);
+                          }
+                        }}
+                      />
+                    ))}
+
+                    {/* 카페 제보 유도 배너 — 보이는 마지막 리스트와 '더보기' 사이 */}
+                    <div style={{ marginTop: 10 }}>
+                      <ReportCafeBanner onTap={onReportCafe} />
+                    </div>
+
+                    {hasMore && (
+                      <button
+                        onClick={() => setVisibleCount(v => v + 5)}
+                        style={{
+                          marginTop: 10,
+                          width: '100%',
+                          height: 44,
+                          borderRadius: 10,
+                          backgroundColor: 'rgba(211,211,223,0.19)',
+                          border: 'none', cursor: 'pointer',
+                          fontSize: 15, fontWeight: 590, color: '#252525',
+                        }}
+                      >
+                        더보기
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
@@ -557,9 +626,12 @@ export default function SearchPage({ onClose: _onClose, onDetailOpen, onPlaceDet
         {/* ④ 기본 상태 (칩 미선택, 입력 전) — Figma: search_before_typing
             Frame 5766: 최근 검색어 행 (h=46 rows, gap=10) + "검색어 전체 삭제" 행 (h=44) */}
         {!isTyping && activeChip === null && (
-          <div style={{ paddingTop: 10, paddingLeft: 10, paddingRight: 10 }}>
+          <div style={{ paddingTop: 10, paddingLeft: 10, paddingRight: 10, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* 카페 제보 유도 배너 — 컬렉션 칩 바로 아래 */}
+            <ReportCafeBanner onTap={onReportCafe} />
+
             {recentSearches.length === 0 ? (
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginTop:80 }}>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, marginTop:80, marginBottom: 24 }}>
                 <IcSearch width={32} height={32} style={{ color: '#AAB4BE' }} />
                 <p style={{ fontSize: 14, color: 'rgba(3,18,40,0.30)' }}>최근 검색어가 없어요</p>
               </div>
