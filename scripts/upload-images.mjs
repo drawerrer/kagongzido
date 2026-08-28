@@ -29,10 +29,15 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join, extname } from 'path';
 import { createClient } from '@supabase/supabase-js';
+import sharp from 'sharp';
 
-// ── --batch 인자 파싱 ──────────────────────────────────────────
+// ── --batch / --only 인자 파싱 ──────────────────────────────────
 const batchIdx = process.argv.indexOf('--batch');
 const BATCH    = batchIdx !== -1 ? process.argv[batchIdx + 1] : null;
+
+// --only: images/ 기준 상대경로 폴더 하나만 처리 (예: "1234", "05.1차/1234")
+const onlyIdx = process.argv.indexOf('--only');
+const ONLY    = onlyIdx !== -1 ? process.argv[onlyIdx + 1] : null;
 
 // ── .env 파일 파싱 ──────────────────────────────────────────────
 function loadEnv() {
@@ -70,10 +75,27 @@ function getMimeType(ext) {
   return map[ext.toLowerCase()] ?? 'image/jpeg';
 }
 
+// ── 업로드 전 압축 (최대 가로 1600px, 원본 포맷 유지) ──────────────
+async function compressBuffer(buffer, ext) {
+  const img = sharp(buffer).resize({ width: 1600, withoutEnlargement: true });
+  const e = ext.toLowerCase();
+  if (e === '.png')  return img.png({ compressionLevel: 9 }).toBuffer();
+  if (e === '.webp') return img.webp({ quality: 78 }).toBuffer();
+  return img.jpeg({ quality: 78, mozjpeg: true }).toBuffer();
+}
+
 // ── Supabase Storage에 파일 업로드 ─────────────────────────────
 async function uploadFile(localPath, storagePath) {
-  const buffer      = readFileSync(localPath);
-  const contentType = getMimeType(extname(localPath));
+  const rawBuffer   = readFileSync(localPath);
+  const ext         = extname(localPath);
+  const contentType = getMimeType(ext);
+
+  let buffer = rawBuffer;
+  try {
+    buffer = await compressBuffer(rawBuffer, ext);
+  } catch (e) {
+    console.error(`  ⚠️  압축 실패, 원본 업로드: ${e.message}`);
+  }
 
   const { error } = await supabase.storage
     .from(BUCKET)
@@ -88,12 +110,15 @@ async function uploadFile(localPath, storagePath) {
 // ── images/ 하위에서 place_id 폴더 목록 수집 ──────────────────────
 // 평면 구조(images/{id}/)와 배치 구조(images/{배치명}/{id}/) 모두 지원
 // 판별 기준: 해당 폴더 안에 이미지 파일이 있으면 place_id 폴더, 없으면 배치 폴더
-function collectIdFolders(baseDir) {
+function collectIdFolders(baseDir, isRoot = false) {
   const result = []; // [{ placeId, folderPath }]
 
-  const entries = readdirSync(baseDir).filter(name =>
+  let entries = readdirSync(baseDir).filter(name =>
     statSync(join(baseDir, name)).isDirectory()
   );
+
+  // images/places/ 는 upload-place-images.mjs 전용 (UUID 기반 경로) — 전체 스캔에서 제외
+  if (isRoot) entries = entries.filter(name => name !== 'places');
 
   for (const name of entries) {
     const dirPath = join(baseDir, name);
@@ -125,23 +150,36 @@ async function main() {
     process.exit(1);
   }
 
-  // --batch 지정 시 해당 배치 폴더만 스캔
-  let scanDir = IMAGES_DIR;
-  if (BATCH) {
-    const batchDir = join(IMAGES_DIR, BATCH);
-    if (!existsSync(batchDir)) {
-      console.error(`❌ 배치 폴더를 찾을 수 없어요: images/${BATCH}/`);
-      console.error(`   images/ 안에 있는 폴더 목록:`);
-      readdirSync(IMAGES_DIR).forEach(name => console.error(`     - ${name}`));
+  // --only 지정 시 해당 폴더 하나만 처리 (배치 스캔 없이 바로 매장 폴더로 취급)
+  let idFolders;
+  if (ONLY) {
+    const onlyDir = join(IMAGES_DIR, ONLY);
+    if (!existsSync(onlyDir)) {
+      console.error(`❌ 폴더를 찾을 수 없어요: images/${ONLY}/`);
       process.exit(1);
     }
-    scanDir = batchDir;
-    console.log(`📦 배치: ${BATCH}`);
+    const placeId = ONLY.split('/').pop();
+    idFolders = [{ placeId, folderPath: onlyDir }];
+    console.log(`🎯 단일 폴더: images/${ONLY}/`);
   } else {
-    console.log(`📦 배치 미지정 — images/ 전체 스캔`);
-  }
+    // --batch 지정 시 해당 배치 폴더만 스캔
+    let scanDir = IMAGES_DIR;
+    if (BATCH) {
+      const batchDir = join(IMAGES_DIR, BATCH);
+      if (!existsSync(batchDir)) {
+        console.error(`❌ 배치 폴더를 찾을 수 없어요: images/${BATCH}/`);
+        console.error(`   images/ 안에 있는 폴더 목록:`);
+        readdirSync(IMAGES_DIR).forEach(name => console.error(`     - ${name}`));
+        process.exit(1);
+      }
+      scanDir = batchDir;
+      console.log(`📦 배치: ${BATCH}`);
+    } else {
+      console.log(`📦 배치 미지정 — images/ 전체 스캔 (places/ 는 제외)`);
+    }
 
-  const idFolders = collectIdFolders(scanDir);
+    idFolders = collectIdFolders(scanDir, scanDir === IMAGES_DIR);
+  }
 
   if (idFolders.length === 0) {
     console.error('❌ 업로드할 폴더를 찾지 못했어요. 구조를 확인해주세요.');
