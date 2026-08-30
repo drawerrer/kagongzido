@@ -20,7 +20,7 @@ const CATEGORY_META: Record<Category, { label: string; table: 'stores' | 'librar
 // ─── 실제 프로덕션 옵션 값 (WriteReviewPage.tsx / FilterModal.tsx 기준) ──
 // 카페(stores) 전용
 const OUTLET_OPTS = ['부족', '적당', '넉넉'];
-const SEAT_OPTS = ['불편', '적당', '편안'];
+const SPACE_SIZE_OPTS = ['대형', '중형', '소형'];
 // 카페/도서관/공유공간 공통
 const NOISE_OPTS = ['시끄러움', '적당', '조용'];
 // 도서관/공유공간(libraries, shared_spaces) 전용 — DB 컬럼은 단일값(text)
@@ -538,9 +538,9 @@ export default function PlaceRegisterTab() {
                   ))}
                 </div>
               </Field>
-              <Field label="좌석 상태">
+              <Field label="공간 크기">
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {SEAT_OPTS.map(o => (
+                  {SPACE_SIZE_OPTS.map(o => (
                     <Chip key={o} label={o} active={cafeOps.seatStatus === o} onClick={() => setCafeOps({ ...cafeOps, seatStatus: o })} />
                   ))}
                 </div>
