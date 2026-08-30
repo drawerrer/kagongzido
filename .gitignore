@@ -1,7 +1,17 @@
 node_modules/
 dist/
+dist-admin/
 .ait/
 *.ait
 .env
 .env.local
 .DS_Store
+granite.config.ts
+.granite/
+images/
+.vercel
+portfolio/
+portfolio-preview.html
+client_secret_*.json
+.ga4-token.json
+.env*
