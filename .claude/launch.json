@@ -2,10 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "preview (rsbuild)",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "dist", "-p", "4173", "-s"],
-      "port": 4173
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3010
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:admin"],
+      "port": 3020
     }
   ]
 }
