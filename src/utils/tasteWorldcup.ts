@@ -106,11 +106,12 @@ export const TASTE_WORLDCUP_CONDITION_LABELS: TasteWorldcupWinner[] = [
   { id: 'mood_modern', label: '모던 인테리어' },
 ];
 
+// cafe_large/cafe_small(대형/소형 공간)은 DetailPage.tsx의 FallingChairsInteraction이 따로
+// 자체 타이밍으로 처리해서 여기 안 거침 — 없어도 되지만 굳이 값을 추측해 넣지 않음
 export function getResultInteractionDurationMs(conditionId: string): number {
   if (conditionId.startsWith('lamp_')) return 2850; // idle(1000)+approach(700)+tug(250)+lit 유지(500)+깜빡임(220+140)
-  if (conditionId.startsWith('cafe_')) return 2250; // focus(1000)+toMatch 전환(950)+opacity 페이드(300)
   if (conditionId.startsWith('noise_')) return 4350; // bars(1700)+dial 정착/회전/정착(2300)+헤드폰 크로스페이드(350)
-  if (conditionId === 'outlet') return 3000; // low(1000)+empty(750)+plugged(750)+full 전환 버퍼(500)
+  if (conditionId === 'outlet') return 3300; // empty(750)+plugged(900)+batteryLow(650)+채움 애니메이션(900)
   if (conditionId.startsWith('mood_')) return 3450; // idle(300)+zoom(600)+sweep(700)+코멧 회전(1600)+페이드(250)
   return 2000;
 }

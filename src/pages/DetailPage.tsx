@@ -21,11 +21,16 @@ import IcX from '../assets/icons/icon_x.svg?react';
 import IcOpen from '../assets/icons/icon_open.svg?react';
 import IcCopy from '../assets/icons/icon_copy.svg?react';
 import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
+import ChairSingleImg from '../assets/interaction/chair_single.svg';
 import {
   getTasteWorldcupWinner, matchesTasteWorldcupWinner,
   getResultInteractionDurationMs,
   TASTE_WORLDCUP_CONDITION_LABELS,
 } from '../utils/tasteWorldcup';
+
+// 대형/소형 공간 조건인지 — 이 두 조건만 우측 절반 박스가 아니라 화면 전체에 의자가 떨어지는
+// 별도 연출(FallingChairsInteraction)을 씀
+const SPACE_CONDITION_IDS = new Set(['cafe_large', 'cafe_small']);
 
 // 취향 월드컵 결과 인터랙션(ResultInteraction) — TasteWorldcup.tsx는 조건 이미지 16종(~700KB)을
 // 포함한 별도 청크라, 매칭됐을 때만 동적 import로 불러옴(정적 import 시 상세페이지 기본 번들에
@@ -64,6 +69,94 @@ function TasteMatchInteraction({ conditionId, onDone }: { conditionId: string; o
       <Suspense fallback={null}>
         <LazyResultInteraction conditionId={conditionId} showLitFrameBg={false} enableLampFlicker />
       </Suspense>
+    </div>
+  );
+}
+
+// 대형/소형 공간 매칭 전용 연출 — 다른 조건들과 달리 우측 절반 박스 안이 아니라 화면 전체에
+// 의자 아이콘 여러 개가 위에서 후루룩 떨어져 쌓이는 장식. 장식용이라 pointer-events:none으로
+// 둬서 떨어지는 동안에도 길 안내 버튼 등 다른 UI를 계속 누를 수 있음.
+// 대형 공간(cafe_large)은 더 많은 의자가 다닥다닥 붙어서 떨어지고, 소형 공간(cafe_small)은
+// 기존처럼 적은 수가 여유 있게 떨어짐
+interface FallingChairConfig {
+  leftPercent: number;
+  delayMs: number;
+  durationMs: number;
+  landRotateDeg: number;
+  landBottomPercent: number;
+  size: number;
+}
+interface FallingChairsPreset {
+  count: number;
+  leftJitter: number;
+  rotateRange: number;
+  bottomRange: [number, number];
+  sizeRange: [number, number];
+}
+const FALLING_CHAIRS_SPARSE: FallingChairsPreset = {
+  count: 8, leftJitter: 3, rotateRange: 20, bottomRange: [4, 22], sizeRange: [64, 88],
+};
+const FALLING_CHAIRS_DENSE: FallingChairsPreset = {
+  count: 20, leftJitter: 2, rotateRange: 12, bottomRange: [2, 32], sizeRange: [46, 62],
+};
+function makeFallingChairConfigs({ count, leftJitter, rotateRange, bottomRange, sizeRange }: FallingChairsPreset): FallingChairConfig[] {
+  return Array.from({ length: count }, (_, i) => ({
+    // count로 균등 분산시킨 뒤 살짝 흔들어서 일렬로 안 보이게 함
+    leftPercent: 4 + i * (92 / (count - 1)) + (Math.random() * leftJitter * 2 - leftJitter),
+    delayMs: Math.round(Math.random() * 450),
+    durationMs: 650 + Math.round(Math.random() * 300),
+    landRotateDeg: Math.round(Math.random() * rotateRange * 2 - rotateRange),
+    landBottomPercent: bottomRange[0] + Math.random() * (bottomRange[1] - bottomRange[0]),
+    size: sizeRange[0] + Math.round(Math.random() * (sizeRange[1] - sizeRange[0])),
+  }));
+}
+
+function FallingChairsInteraction({ dense, onDone }: { dense: boolean; onDone: () => void }) {
+  const [chairs] = useState(() => makeFallingChairConfigs(dense ? FALLING_CHAIRS_DENSE : FALLING_CHAIRS_SPARSE));
+  const [falling, setFalling] = useState(false);
+  const [fadingOut, setFadingOut] = useState(false);
+
+  useEffect(() => {
+    // 마운트와 같은 렌더에서 바로 목표 위치로 두면 트랜지션 없이 순간이동해버려서 한 틱 늦춤
+    const t = setTimeout(() => setFalling(true), 30);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!falling) return;
+    const lastLanding = Math.max(...chairs.map(c => c.delayMs + c.durationMs));
+    const t = setTimeout(() => setFadingOut(true), lastLanding + 500); // 다 쌓인 뒤 잠깐 유지
+    return () => clearTimeout(t);
+  }, [falling, chairs]);
+
+  useEffect(() => {
+    if (!fadingOut) return;
+    const t = setTimeout(onDone, 500);
+    return () => clearTimeout(t);
+  }, [fadingOut, onDone]);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, pointerEvents: 'none', overflow: 'hidden' }}>
+      {chairs.map((c, i) => (
+        <img
+          key={i}
+          src={ChairSingleImg}
+          alt=""
+          style={{
+            position: 'absolute',
+            left: `${c.leftPercent}%`,
+            bottom: `${c.landBottomPercent}%`,
+            width: c.size, height: c.size,
+            opacity: fadingOut ? 0 : 1,
+            transform: falling
+              ? `translateY(0) rotate(${c.landRotateDeg}deg)`
+              : 'translateY(-120vh) rotate(0deg)',
+            transition: fadingOut
+              ? 'opacity 500ms ease'
+              : `transform ${c.durationMs}ms cubic-bezier(0.55, 0.06, 0.68, 0.19) ${c.delayMs}ms`,
+          }}
+        />
+      ))}
     </div>
   );
 }
@@ -1818,18 +1911,23 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         </button>
       )}
 
-      {/* ── 1순위 취향 조건 매칭 인터랙션 — 화면 오른쪽 절반(끝까지 꽉 채움)에, 결과 화면과 같은
-          315:350 비율로 띄움(너비에 맞춰 높이가 유동적으로 따라감). 스크롤되는 콘텐츠 밖(화면 기준
-          고정)에 그려서 스크롤해도 같은 자리에 계속 떠 있게 함. 재생이 끝나면 페이드아웃되며
-          완전히 사라지고("카페 정보" 타이틀 옆 배지로 넘어감 — 아래 카페 정보 섹션 참고) */}
+      {/* ── 1순위 취향 조건 매칭 인터랙션 — 대형/소형 공간은 화면 전체에 의자가 떨어지는 별도
+          연출(FallingChairsInteraction), 나머지는 화면 오른쪽 절반(끝까지 꽉 채움)에 결과 화면과
+          같은 315:350 비율로 띄움. 스크롤되는 콘텐츠 밖(화면 기준 고정)에 그려서 스크롤해도 같은
+          자리에 계속 떠 있게 함. 재생이 끝나면 페이드아웃되며 완전히 사라지고("카페 정보" 타이틀
+          옆 배지로 넘어감 — 아래 카페 정보 섹션 참고) */}
       {tasteWinner && isTasteMatch && !tasteInteractionDone && (
-        <div style={{
-          position: 'absolute', top: showHero ? 260 : 0, right: 0,
-          width: '50%', aspectRatio: '315 / 350',
-          zIndex: 90,
-        }}>
-          <TasteMatchInteraction key={`${cafe.id}-${tasteReplayKey}`} conditionId={tasteWinner.id} onDone={handleTasteInteractionDone} />
-        </div>
+        SPACE_CONDITION_IDS.has(tasteWinner.id) ? (
+          <FallingChairsInteraction key={`${cafe.id}-${tasteReplayKey}`} dense={tasteWinner.id === 'cafe_large'} onDone={handleTasteInteractionDone} />
+        ) : (
+          <div style={{
+            position: 'absolute', top: showHero ? 260 : 0, right: 0,
+            width: '50%', aspectRatio: '315 / 350',
+            zIndex: 90,
+          }}>
+            <TasteMatchInteraction key={`${cafe.id}-${tasteReplayKey}`} conditionId={tasteWinner.id} onDone={handleTasteInteractionDone} />
+          </div>
+        )
       )}
 
       {/* ── 스크롤 시 노출되는 상단 info 고정 패널 ── */}

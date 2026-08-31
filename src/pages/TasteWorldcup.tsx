@@ -28,11 +28,8 @@ import LampHandImg from '../assets/interaction/lamp_hand.svg';
 import LampLitWarmImg from '../assets/interaction/lamp_lit_warm.svg';
 import LampLitLowImg from '../assets/interaction/lamp_lit_low.svg';
 import LampLitWhiteImg from '../assets/interaction/lamp_lit_white.svg';
-import OutletLowImg from '../assets/interaction/outlet_low.svg';
 import OutletEmptyImg from '../assets/interaction/outlet_empty.svg';
 import OutletPluggedImg from '../assets/interaction/outlet_plugged.svg';
-import OutletFullImg from '../assets/interaction/outlet_full.svg';
-import OutletFullBackgroundImg from '../assets/interaction/outlet_full_background.svg';
 import ChairSingleImg from '../assets/interaction/chair_single.svg';
 import ChairLargeImg from '../assets/interaction/chair_large.svg';
 import ChairSmallImg from '../assets/interaction/chair_small.svg';
@@ -357,83 +354,94 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
 
 // ─────────────────────────────────────────────────────────────
 // 결과 화면 이미지 인터랙션 — 1순위 조건 카테고리별로 다른 모션 재생
-//  - 전구(조명 3종)/콘센트/소음: 여러 장면을 순서대로 크로스페이드
+//  - 전구(조명 3종): 손으로 줄을 당겨 불이 켜짐
+//  - 콘센트: 손으로 꽂은 뒤 배터리가 점점 차오름(OutletChargeInteraction)
 //  - 공간(대형/소형 카페): 완성된 한 장면을 확대 상태로 시작해 CSS transform으로 줌아웃
 //  - 분위기(우드/메탈 등) 8종: 스티커 인터랙션 애셋 준비 전이라 기존 플레이스홀더 유지
 // 마운트 시 한 번만 재생하고 멈춤(반복 없음) — 앱인토스 심사의 "과도한 반복 애니메이션" 반려 규칙 준수
 // ─────────────────────────────────────────────────────────────
-interface InteractionFrame {
-  src: string;
-  /** 다음 프레임으로 넘어가기까지 유지 시간(ms). 마지막 프레임은 더 이상 전환이 없어 무시됨 */
-  holdMs: number;
-  /** 이 프레임이 보이는 동안만 적용할 1회성 강조 애니메이션 클래스 */
-  animateClassName?: string;
-  /** 지정하면 이 위치에서 슬라이드해오며 페이드인 (예: 손이 다가오는 느낌). 기본은 제자리 크로스페이드 */
-  enterFromTransform?: string;
-  /** enterFromTransform 사용 시 전환 시간(ms) — 기본 크로스페이드(350ms)보다 느리게 "다가오는" 느낌을 주고 싶을 때 */
-  enterMs?: number;
-  /** 이 프레임 위에 겹쳐서 함께 등장하는 오버레이 — 아래서 위로 슬라이드해 올라오며 채워지는 연출(예: 콘센트 충전 완료) */
-  overlaySrc?: string;
-  /** overlaySrc 슬라이드업 전환 시간(ms) — 기본 900ms */
-  overlayEnterMs?: number;
-  /** overlaySrc가 슬라이드업을 시작하기까지 지연 시간(ms) — animateClassName과 동시에 움직이면
-      깜빡임 횟수가 흐트러져 보여서(예: 2회인데 2.5회처럼), 강조 애니메이션이 끝난 뒤에 시작하도록 지연 */
-  overlayDelayMs?: number;
-}
 
-function ImageSequence({ frames }: { frames: InteractionFrame[] }) {
-  const [index, setIndex] = useState(0);
+// 콘센트 전용 인터랙션 — 손으로 꽂는 장면 이후 배터리 아이콘이 낮은 충전량(빨강)에서 가득 찬
+// 충전량(초록)까지 rect 너비/색을 직접 애니메이션해서 "점점 차오르는" 느낌으로 자연스럽게
+// 이어지게 함(정지 이미지 컷 전환 방식은 폐기). 결과 화면·상세페이지 매칭 인터랙션 둘 다 이걸 씀
+const OUTLET_CHARGE_PHASES = ['empty', 'plugged', 'batteryLow', 'batteryFull'] as const;
+type OutletChargePhase = typeof OUTLET_CHARGE_PHASES[number];
+const OUTLET_CHARGE_PHASE_DURATION_MS: Record<Exclude<OutletChargePhase, 'batteryFull'>, number> = {
+  empty: 750,       // 빈 소켓
+  plugged: 900,     // 손으로 꽂는 크로스페이드(850ms) + 살짝 유지
+  batteryLow: 650,  // 배터리 아이콘으로 크로스페이드(350ms) + 낮은 충전량 잠깐 유지(300ms)
+};
+// 배터리 채움 막대 — 몸통/단자 좌표는 예전 outlet_low.svg·outlet_full.svg가 공유하던 값 그대로라
+// 막대 하나만 너비·색을 바꿔가며 애니메이션함(둘 사이 이미지 전환 없음)
+const OUTLET_FILL_X = 62;
+const OUTLET_FILL_Y = 138;
+const OUTLET_FILL_HEIGHT = 74;
+const OUTLET_FILL_RX = 12.0254;
+const OUTLET_FILL_LOW_WIDTH = 37;
+const OUTLET_FILL_FULL_WIDTH = 169;
+const OUTLET_FILL_ANIM_MS = 900;
+
+function OutletChargeInteraction() {
+  const [phase, setPhase] = useState<OutletChargePhase>('empty');
+  const [charged, setCharged] = useState(false);
 
   useEffect(() => {
-    if (index >= frames.length - 1) return;
-    const timer = setTimeout(() => setIndex(i => i + 1), frames[index].holdMs);
-    return () => clearTimeout(timer);
-  }, [index, frames]);
+    if (phase === 'batteryFull') return;
+    const next = OUTLET_CHARGE_PHASES[OUTLET_CHARGE_PHASES.indexOf(phase) + 1];
+    const t = setTimeout(() => setPhase(next), OUTLET_CHARGE_PHASE_DURATION_MS[phase]);
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== 'batteryFull') return;
+    // useEffect는 이미 낮은 충전량(37px)이 페인트된 뒤에 실행되므로 바로 목표값을 바꿔도
+    // 트랜지션이 정상 재생됨(requestAnimationFrame은 백그라운드 탭에서 아예 멈춰버려서 대신 안 씀)
+    setCharged(true);
+  }, [phase]);
+
+  const baseStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } as const;
+  const showBattery = phase === 'batteryLow' || phase === 'batteryFull';
 
   return (
     <>
-      {frames.map((frame, i) => {
-        const active = i === index;
-        const duration = frame.enterMs ?? 350;
-        return (
-          <div key={frame.src} style={{ position: 'absolute', inset: 0 }}>
-            {/* 배경 오버레이 — outlet_full 아트(불투명 소켓/플러그)는 그대로 위에 두고, 배경만 아래에서
-                슬라이드업해 초록색이 차오르는 느낌을 줌. 프레임 아트보다 먼저 그려서 뒤에 깔림 */}
-            {frame.overlaySrc && (
-              <img
-                src={frame.overlaySrc}
-                alt=""
-                style={{
-                  position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
-                  transform: active ? 'translateY(0)' : 'translateY(100%)',
-                  transition: `transform ${frame.overlayEnterMs ?? 900}ms ease-out ${frame.overlayDelayMs ?? 0}ms`,
-                }}
-              />
-            )}
-            <img
-              src={frame.src}
-              alt=""
-              className={active ? frame.animateClassName : undefined}
-              style={{
-                position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: 'cover', opacity: active ? 1 : 0,
-                transform: frame.enterFromTransform
-                  ? (active ? 'none' : frame.enterFromTransform)
-                  : undefined,
-                // 활성화되는 순간 강조 애니메이션(animateClassName)이 같이 시작되는 프레임은
-                // opacity 크로스페이드 트랜지션을 아예 꺼서 애니메이션과 경합하지 않게 함 —
-                // 모바일 WebView 일부 환경에서 트랜지션이 살짝 먼저 새어나와 깜빡임이 한 번 더
-                // 보이는 것처럼 렌더링되는 문제가 있었음(데스크톱 Chrome에서는 재현 안 됨)
-                transition: active && frame.animateClassName
-                  ? 'none'
-                  : frame.enterFromTransform
-                    ? `opacity ${duration}ms ease-out, transform ${duration}ms ease-out`
-                    : `opacity ${duration}ms ease`,
-              }}
-            />
-          </div>
-        );
-      })}
+      {/* 빈 소켓 → 꽂는 장면(손+플러그) 크로스페이드 */}
+      <img src={OutletEmptyImg} alt="" style={{ ...baseStyle, opacity: phase === 'empty' ? 1 : 0, transition: 'opacity 350ms ease' }} />
+      <img
+        src={OutletPluggedImg}
+        alt=""
+        style={{
+          ...baseStyle,
+          opacity: phase === 'empty' ? 0 : (showBattery ? 0 : 1),
+          transition: phase === 'plugged' ? 'opacity 850ms ease' : 'opacity 350ms ease',
+        }}
+      />
+      {/* 배터리 아이콘 — 몸통/단자는 고정, 채움 막대만 너비·색을 애니메이션 */}
+      <svg
+        viewBox="0 0 315 350" width="100%" height="100%"
+        style={{ position: 'absolute', inset: 0, opacity: showBattery ? 1 : 0, transition: 'opacity 350ms ease' }}
+      >
+        <rect x="54.082" y="129.305" width="187.596" height="91.3928" rx="16.8355" fill="#252525" stroke="black" strokeWidth={3} />
+        <path d="M241.678 154.559H251.298C256.611 154.559 260.918 158.866 260.918 164.179V185.825C260.918 191.138 256.611 195.445 251.298 195.445H241.678V154.559Z" fill="#252525" stroke="black" strokeWidth={3} />
+        <rect
+          x={OUTLET_FILL_X} y={OUTLET_FILL_Y} height={OUTLET_FILL_HEIGHT} rx={OUTLET_FILL_RX}
+          stroke="black" strokeWidth={3}
+          style={{
+            // width/fill을 일반 속성이 아니라 style로 줘야 transition이 확실히 걸림(다른 인터랙션
+            // 레이어들과 동일한 패턴)
+            width: charged ? OUTLET_FILL_FULL_WIDTH : OUTLET_FILL_LOW_WIDTH,
+            fill: charged ? '#12B26C' : '#ED2831',
+            fillOpacity: charged ? 0.59 : 0.43,
+            transition: `width ${OUTLET_FILL_ANIM_MS}ms ease-in-out, fill ${OUTLET_FILL_ANIM_MS}ms ease-in-out, fill-opacity ${OUTLET_FILL_ANIM_MS}ms ease-in-out`,
+          } as React.CSSProperties}
+        />
+        {/* 번개 아이콘 — 낮은 충전량일 때부터 계속 노란색으로 보임(충전 중임을 나타내는 아이콘이라
+            꽉 찼을 때만 나타나지 않고 처음부터 떠 있음) */}
+        <path
+          d="M135.082 179.498L150.48 151.305V171.809H160.953L145.43 200.003V179.498H135.082Z"
+          fill="#FFA000" fillOpacity={0.85}
+          stroke="black" strokeWidth={3} strokeLinejoin="round"
+        />
+      </svg>
     </>
   );
 }
@@ -850,7 +858,7 @@ function NoiseInteraction({ dial, headphonesSrc, headphonesWave = false }: { dia
 }
 
 type ResultInteractionSpec =
-  | { kind: 'sequence'; frames: InteractionFrame[] }
+  | { kind: 'outlet-charge' }
   | { kind: 'space'; groupSrc: string; groupZoomInScale: number }
   | { kind: 'lamp'; litSrc: string; litFrameBg?: string }
   | { kind: 'noise'; dial: NoiseDialSpec; headphonesSrc: string; headphonesWave?: boolean }
@@ -863,18 +871,7 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
   lamp_warm: { kind: 'lamp', litSrc: LampLitWarmImg, litFrameBg: '#F3F3F3' },
   lamp_low: { kind: 'lamp', litSrc: LampLitLowImg, litFrameBg: '#F3F3F3' },
   lamp_white: { kind: 'lamp', litSrc: LampLitWhiteImg },
-  outlet: {
-    kind: 'sequence',
-    frames: [
-      { src: OutletLowImg, holdMs: 1000, animateClassName: 'twc-blink' },
-      { src: OutletEmptyImg, holdMs: 750 },
-      // 콘센트 꽂는 동작 자체(empty→plugged 크로스페이드)를 기본(350ms)보다 0.5초 느리게
-      { src: OutletPluggedImg, holdMs: 750, enterMs: 850 },
-      // 배경은 첫 번째 깜빡임 한 사이클(0.5s) 동안만 차올라서 딱 맞춰 완성되고, 두 번째 깜빡임은
-      // 이미 다 찬 초록 배경 위에서 재생됨 — 깜빡임은 여전히 2회 그대로
-      { src: OutletFullImg, holdMs: 0, animateClassName: 'twc-blink', overlaySrc: OutletFullBackgroundImg, overlayEnterMs: 500 },
-    ],
-  },
+  outlet: { kind: 'outlet-charge' },
   // groupZoomInScale은 chair_single 대비 그룹 애셋 안 의자 하나의 크기 비율로 역산한 값
   // (그림자 타원 rx 기준: single 73.5, large 17.875, small 26.813)
   cafe_large: { kind: 'space', groupSrc: ChairLargeImg, groupZoomInScale: 1.64 },
@@ -903,7 +900,11 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
   mood_modern: { kind: 'mood', src: MoodModernResultImg },
 };
 
-export function ResultInteraction({ conditionId, showLitFrameBg = true, enableLampFlicker = false }: { conditionId: string; showLitFrameBg?: boolean; enableLampFlicker?: boolean }) {
+export function ResultInteraction({
+  conditionId, showLitFrameBg = true, enableLampFlicker = false,
+}: {
+  conditionId: string; showLitFrameBg?: boolean; enableLampFlicker?: boolean;
+}) {
   const spec = WORLDCUP_RESULT_INTERACTIONS[conditionId];
   // 탭하면 처음부터 다시 재생 — replayKey를 바꿔서 내부 컴포넌트를 강제로 리마운트시킴
   const [replayKey, setReplayKey] = useState(0);
@@ -921,8 +922,6 @@ export function ResultInteraction({ conditionId, showLitFrameBg = true, enableLa
         @property --mood-halo-angle { syntax: '<angle>'; inherits: false; initial-value: 180deg; }
         @keyframes twc-wobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
         .twc-wobble { animation: twc-wobble 0.5s ease-in-out 2; transform-origin: top center; }
-        @keyframes twc-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-        .twc-blink { animation: twc-blink 0.5s ease-in-out 2; }
         @keyframes twc-bar-0 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.3); } }
         @keyframes twc-bar-1 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.15); } }
         @keyframes twc-bar-2 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.4); } }
@@ -948,7 +947,7 @@ export function ResultInteraction({ conditionId, showLitFrameBg = true, enableLa
       {spec.kind === 'noise' && (
         <NoiseInteraction key={replayKey} dial={spec.dial} headphonesSrc={spec.headphonesSrc} headphonesWave={spec.headphonesWave} />
       )}
-      {spec.kind === 'sequence' && <ImageSequence key={replayKey} frames={spec.frames} />}
+      {spec.kind === 'outlet-charge' && <OutletChargeInteraction key={replayKey} />}
       {spec.kind === 'mood' && <MoodInteraction key={replayKey} src={spec.src} />}
     </div>
   );
