@@ -45,7 +45,7 @@ function TasteMatchInteraction({ conditionId, onDone }: { conditionId: string; o
   const [fadingOut, setFadingOut] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setFadingOut(true), getResultInteractionDurationMs(conditionId));
+    const t = setTimeout(() => setFadingOut(true), getResultInteractionDurationMs(conditionId, { skipNoiseBars: true }));
     return () => clearTimeout(t);
   }, [conditionId]);
 
@@ -67,7 +67,7 @@ function TasteMatchInteraction({ conditionId, onDone }: { conditionId: string; o
       transition: 'opacity 700ms ease-out',
     }}>
       <Suspense fallback={null}>
-        <LazyResultInteraction conditionId={conditionId} showLitFrameBg={false} enableLampFlicker />
+        <LazyResultInteraction conditionId={conditionId} showLitFrameBg={false} enableLampFlicker skipNoiseBars />
       </Suspense>
     </div>
   );

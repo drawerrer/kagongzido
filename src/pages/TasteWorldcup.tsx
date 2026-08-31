@@ -825,8 +825,10 @@ function DialReveal({ dial, active }: { dial: NoiseDialSpec; active: boolean }) 
   );
 }
 
-function NoiseInteraction({ dial, headphonesSrc, headphonesWave = false }: { dial: NoiseDialSpec; headphonesSrc: string; headphonesWave?: boolean }) {
-  const [phase, setPhase] = useState<'bars' | 'dial' | 'headphones'>('bars');
+// skipBars: 상세페이지 매칭 인터랙션 전용 — 처음 파동(bars) 단계를 건너뛰고 볼륨 조절(dial) 단계부터
+// 바로 시작함. 결과 페이지는 기본값(false)이라 기존처럼 파동 -> 다이얼 -> 헤드폰 순서 그대로 재생됨
+function NoiseInteraction({ dial, headphonesSrc, headphonesWave = false, skipBars = false }: { dial: NoiseDialSpec; headphonesSrc: string; headphonesWave?: boolean; skipBars?: boolean }) {
+  const [phase, setPhase] = useState<'bars' | 'dial' | 'headphones'>(skipBars ? 'dial' : 'bars');
 
   useEffect(() => {
     if (phase === 'bars') {
@@ -843,9 +845,11 @@ function NoiseInteraction({ dial, headphonesSrc, headphonesWave = false }: { dia
 
   return (
     <>
-      <div style={{ position: 'absolute', inset: 0, opacity: phase === 'bars' ? 1 : 0, transition: 'opacity 0.35s ease' }}>
-        <NoiseBars />
-      </div>
+      {!skipBars && (
+        <div style={{ position: 'absolute', inset: 0, opacity: phase === 'bars' ? 1 : 0, transition: 'opacity 0.35s ease' }}>
+          <NoiseBars />
+        </div>
+      )}
       <DialReveal dial={dial} active={phase === 'dial'} />
       <div style={{ position: 'absolute', inset: 0, opacity: phase === 'headphones' ? 1 : 0, transition: 'opacity 0.35s ease' }}>
         <img src={headphonesSrc} alt="" style={baseStyle} />
@@ -901,9 +905,9 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
 };
 
 export function ResultInteraction({
-  conditionId, showLitFrameBg = true, enableLampFlicker = false,
+  conditionId, showLitFrameBg = true, enableLampFlicker = false, skipNoiseBars = false,
 }: {
-  conditionId: string; showLitFrameBg?: boolean; enableLampFlicker?: boolean;
+  conditionId: string; showLitFrameBg?: boolean; enableLampFlicker?: boolean; skipNoiseBars?: boolean;
 }) {
   const spec = WORLDCUP_RESULT_INTERACTIONS[conditionId];
   // 탭하면 처음부터 다시 재생 — replayKey를 바꿔서 내부 컴포넌트를 강제로 리마운트시킴
@@ -945,7 +949,7 @@ export function ResultInteraction({
         <LampInteraction key={replayKey} litSrc={spec.litSrc} litFrameBg={spec.litFrameBg} showLitFrameBg={showLitFrameBg} enableFlicker={enableLampFlicker} />
       )}
       {spec.kind === 'noise' && (
-        <NoiseInteraction key={replayKey} dial={spec.dial} headphonesSrc={spec.headphonesSrc} headphonesWave={spec.headphonesWave} />
+        <NoiseInteraction key={replayKey} dial={spec.dial} headphonesSrc={spec.headphonesSrc} headphonesWave={spec.headphonesWave} skipBars={skipNoiseBars} />
       )}
       {spec.kind === 'outlet-charge' && <OutletChargeInteraction key={replayKey} />}
       {spec.kind === 'mood' && <MoodInteraction key={replayKey} src={spec.src} />}

@@ -108,9 +108,16 @@ export const TASTE_WORLDCUP_CONDITION_LABELS: TasteWorldcupWinner[] = [
 
 // cafe_large/cafe_small(대형/소형 공간)은 DetailPage.tsx의 FallingChairsInteraction이 따로
 // 자체 타이밍으로 처리해서 여기 안 거침 — 없어도 되지만 굳이 값을 추측해 넣지 않음
-export function getResultInteractionDurationMs(conditionId: string): number {
+//
+// skipNoiseBars: 상세페이지 매칭 인터랙션 전용 — NoiseInteraction의 skipBars와 짝을 맞춤(파동
+// 단계 없이 바로 다이얼부터 시작하므로 그만큼(1700ms) 짧게 잡음). 결과 페이지는 항상 false
+export function getResultInteractionDurationMs(conditionId: string, opts: { skipNoiseBars?: boolean } = {}): number {
   if (conditionId.startsWith('lamp_')) return 2850; // idle(1000)+approach(700)+tug(250)+lit 유지(500)+깜빡임(220+140)
-  if (conditionId.startsWith('noise_')) return 4350; // bars(1700)+dial 정착/회전/정착(2300)+헤드폰 크로스페이드(350)
+  if (conditionId.startsWith('noise_')) {
+    // (bars(1700) 생략) + dial 정착/회전/정착(2300) + 헤드폰 크로스페이드(350) + 헤드폰 유지(900)
+    // — 상세페이지는 헤드폰이 자리잡은 뒤 배지로 넘어가기 전 잠깐 더 보여주고 싶다는 요청으로 유지 시간 추가
+    return opts.skipNoiseBars ? 3550 : 4350;
+  }
   if (conditionId === 'outlet') return 3300; // empty(750)+plugged(900)+batteryLow(650)+채움 애니메이션(900)
   if (conditionId.startsWith('mood_')) return 3450; // idle(300)+zoom(600)+sweep(700)+코멧 회전(1600)+페이드(250)
   return 2000;
