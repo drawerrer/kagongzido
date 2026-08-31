@@ -79,6 +79,32 @@ function TasteWorldcupPage({ onBack, onStart, onDebugPager, enabled = true }: { 
     setActiveStep(Math.round(el.scrollLeft / el.clientWidth));
   };
 
+  // 캐러셀 자체(헤드라인+이미지 영역)는 overflow-x:auto라 그 안에서의 스와이프는 브라우저가
+  // 알아서 처리하지만, 인디케이터와 그 아래 여백은 캐러셀 밖의 별도 영역이라 스와이프가 안 먹힘.
+  // 이 감싸는 wrapper 전체에 포인터 제스처를 붙여서, 캐러셀 밖(인디케이터 위/아래 여백 포함)에서
+  // 쓸었을 때도 같은 방향으로 한 장씩 넘어가게 함. 캐러셀 내부에서 시작한 제스처는 이미 자체
+  // 스크롤로 처리되므로 여기서는 무시(중복 트리거 방지)
+  const dragStartRef = useRef<{ x: number; y: number; insideCarousel: boolean } | null>(null);
+  const handleWrapperPointerDown = (e: React.PointerEvent) => {
+    dragStartRef.current = {
+      x: e.clientX, y: e.clientY,
+      insideCarousel: !!scrollRef.current?.contains(e.target as Node),
+    };
+  };
+  const handleWrapperPointerUp = (e: React.PointerEvent) => {
+    const start = dragStartRef.current;
+    dragStartRef.current = null;
+    if (!start || start.insideCarousel) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return; // 가로로 충분히, 세로보다 더 많이 움직였을 때만 스와이프로 인식
+    const el = scrollRef.current;
+    if (!el || el.clientWidth === 0) return;
+    const dir = dx < 0 ? 1 : -1; // 왼쪽으로 쓸면 다음 장, 오른쪽으로 쓸면 이전 장
+    const nextStep = Math.min(TASTE_WORLDCUP_ONBOARDING_SLIDES.length - 1, Math.max(0, activeStep + dir));
+    el.scrollTo({ left: nextStep * el.clientWidth, behavior: 'smooth' });
+  };
+
   return (
     <div style={{
       position: 'relative', height: '100%', overflow: 'hidden', background: '#f3f3f3',
@@ -86,10 +112,14 @@ function TasteWorldcupPage({ onBack, onStart, onDebugPager, enabled = true }: { 
     }}>
       <style>{`.taste-worldcup-carousel::-webkit-scrollbar { display: none; }`}</style>
 
-      <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-      }}>
+      <div
+        onPointerDown={handleWrapperPointerDown}
+        onPointerUp={handleWrapperPointerUp}
+        style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+        }}
+      >
         {/* 캐러셀 — 헤드라인 + 이미지, 장마다 좌우 스와이프로 전환 */}
         <div
           ref={scrollRef}
