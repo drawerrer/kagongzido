@@ -8,7 +8,7 @@ dist-admin/
 .DS_Store
 granite.config.ts
 .granite/
-images/
+/images/
 .vercel
 portfolio/
 portfolio-preview.html
