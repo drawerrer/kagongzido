@@ -277,6 +277,13 @@ interface MapPageProps {
   onNearbySheetOpenChange?: (open: boolean) => void;
 }
 
+// 로딩 화면 표시까지의 유예 시간 — 이 안에 mapLoaded가 끝나면 로딩 화면은 아예 화면에
+// 나타나지도 않고, 이 시간을 넘겨야(첫 진입, 혹은 어쩌다 느려진 경우) 그제서야 띄움.
+// 홈 탭은 다른 탭 갔다가 돌아올 때마다 MapPage가 통째로 리마운트되는 구조라(App.tsx의
+// activeTab === 'home' && <MapPage key={...} /> 참고), 캐시된 SDK로 인해 대부분 즉시
+// 끝나는 재방문 케이스에서는 이 유예 시간 덕분에 깜빡임 없이 지나감
+const MAP_LOADING_SCREEN_DELAY_MS = 300;
+
 export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, onReportCafe, initialState, onStateChange, onFocusModeChange, hasOverlay = false, onNearbySheetOpenChange }: MapPageProps) {
   const touchStartYRef = useRef<number>(0);
   // 드래그 도중 scrollTop===0 에 도달한 적이 있는지 — expanded 시 사용자가 위에서 아래로
@@ -302,6 +309,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen,
   const clusterClickRef = useRef<boolean>(false);
 
   const [mapLoaded, setMapLoaded] = useState(false);
+  // 로딩 화면 노출 여부 — mapLoaded와 별도로 관리. 짧게 끝나면 한 번도 true가 안 되고 넘어감
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const [mapBounds, setMapBounds] = useState<{ swLat: number; swLng: number; neLat: number; neLng: number } | null>(null);
   const [heading, setHeading] = useState<number | null>(null);
@@ -524,9 +533,17 @@ const [filterOpen, setFilterOpen] = useState(false);
   const filteredLibraries = showLibraries ? applyPlaceFilters(libraries.filter(boundsFilter)) : [];
   const filteredSharedSpaces = showSharedSpaces ? applyPlaceFilters(sharedSpaces.filter(boundsFilter)) : [];
 
+  // ── 로딩 화면 유예 타이머 — MAP_LOADING_SCREEN_DELAY_MS 안에 mapLoaded되면 한 번도
+  // true가 안 되고 지나가서 로딩 화면이 아예 안 뜸(대부분의 탭 재방문 케이스) ──
+  useEffect(() => {
+    if (mapLoaded) return;
+    const t = setTimeout(() => setShowLoadingScreen(true), MAP_LOADING_SCREEN_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [mapLoaded]);
+
   // ── Kakao Maps SDK 초기화 (index.html에서 정적 로드 완료) ──
   useEffect(() => {
-    const init = () => window.kakao.maps.load(() => setMapLoaded(true));
+    const init = () => window.kakao.maps.load(() => { setMapLoaded(true); setShowLoadingScreen(false); });
     if (window.kakao?.maps) {
       init();
     } else {
@@ -1039,8 +1056,9 @@ const [filterOpen, setFilterOpen] = useState(false);
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
 
-      {/* ── 초기 로딩 화면 — Kakao 지도 SDK 초기화(mapLoaded) 끝날 때까지 전체화면으로 덮음 ── */}
-      <LoadingScreen visible={!mapLoaded} />
+      {/* ── 로딩 화면 — Kakao 지도 SDK 초기화가 유예 시간(300ms)을 넘겨야 뜸. 첫 진입처럼
+          진짜 오래 걸리는 경우엔 보이고, 탭 재방문처럼 캐시로 즉시 끝나는 경우엔 안 보임 ── */}
+      <LoadingScreen visible={showLoadingScreen} />
 
       {/* ── Kakao 지도 컨테이너 ── */}
       <div
