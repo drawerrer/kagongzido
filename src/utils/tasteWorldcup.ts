@@ -111,7 +111,14 @@ export const TASTE_WORLDCUP_CONDITION_LABELS: TasteWorldcupWinner[] = [
 //
 // skipNoiseBars: 상세페이지 매칭 인터랙션 전용 — NoiseInteraction의 skipBars와 짝을 맞춤(파동
 // 단계 없이 바로 다이얼부터 시작하므로 그만큼(1700ms) 짧게 잡음). 결과 페이지는 항상 false
-export function getResultInteractionDurationMs(conditionId: string, opts: { skipNoiseBars?: boolean } = {}): number {
+//
+// stickerMood: 상세페이지 매칭 인터랙션 전용 — DetailPage.tsx의 MoodStickerInteraction(스티커가
+// 붙는 짧은 연출)을 쓸 때는 결과 화면의 줌/쓸림/코멧 애니메이션(3450ms)이 아니라 훨씬 짧은
+// 자체 타이밍으로 감. 결과 페이지는 항상 false
+export function getResultInteractionDurationMs(
+  conditionId: string,
+  opts: { skipNoiseBars?: boolean; stickerMood?: boolean } = {},
+): number {
   if (conditionId.startsWith('lamp_')) return 2850; // idle(1000)+approach(700)+tug(250)+lit 유지(500)+깜빡임(220+140)
   if (conditionId.startsWith('noise_')) {
     // (bars(1700) 생략) + dial 정착/회전/정착(2300) + 헤드폰 크로스페이드(350) + 헤드폰 유지(900)
@@ -119,6 +126,8 @@ export function getResultInteractionDurationMs(conditionId: string, opts: { skip
     return opts.skipNoiseBars ? 3550 : 4350;
   }
   if (conditionId === 'outlet') return 3300; // empty(750)+plugged(900)+batteryLow(650)+채움 애니메이션(900)
-  if (conditionId.startsWith('mood_')) return 3450; // idle(300)+zoom(600)+sweep(700)+코멧 회전(1600)+페이드(250)
+  if (conditionId.startsWith('mood_')) {
+    return opts.stickerMood ? 1400 : 3450; // 스티커 붙는 트랜지션(550) + 잠깐 유지(850) / (결과 화면) idle(300)+zoom(600)+sweep(700)+코멧 회전(1600)+페이드(250)
+  }
   return 2000;
 }
