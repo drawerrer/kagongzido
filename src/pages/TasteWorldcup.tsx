@@ -304,9 +304,10 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
   // 이전으로 — 매치만 되돌리면 selectedSide는 그 매치의 기록에서 자동으로 복원됨
   const handleUndo = () => setStep(s => Math.max(1, s - 1));
 
-  // 카드 선택 — 선택과 동시에 바로 다음 매치로 이동(별도 "다음으로" CTA 없음), 마지막
-  // 라운드(결승)면 결과 화면으로 이동. 이전 선택과 다른 카드로 바꾸면 그 결과에 의존하던
-  // 이후 라운드 대진이 전부 달라지므로 현재 매치보다 뒤의 기록은 모두 무효화(삭제)한다
+  // 카드 선택 — 선택과 동시에 바로 다음 매치로 이동(별도 "다음으로" CTA 없음). 단 마지막
+  // 라운드(결승)는 선택만 반영하고 "결과보기" CTA를 눌러야 확정되도록 그대로 둠(handleFinish 참고).
+  // 이전 선택과 다른 카드로 바꾸면 그 결과에 의존하던 이후 라운드 대진이 전부 달라지므로
+  // 현재 매치보다 뒤의 기록은 모두 무효화(삭제)한다
   const handlePick = (side: 'left' | 'right') => {
     setSelectionHistory(h => {
       if (h[step] === side) return h;
@@ -319,13 +320,16 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
       return next;
     });
 
-    if (step === TASTE_WORLDCUP_TOTAL_PICKS) {
-      if (!match) return; // 카드 클릭 핸들러는 match가 있어야 렌더되므로 실제로는 항상 존재함
-      const winner = side === 'left' ? match[0] : match[1];
-      onFinish(winner);
-      return;
+    if (step < TASTE_WORLDCUP_TOTAL_PICKS) {
+      setStep(s => Math.min(TASTE_WORLDCUP_TOTAL_PICKS, s + 1));
     }
-    setStep(s => Math.min(TASTE_WORLDCUP_TOTAL_PICKS, s + 1));
+  };
+
+  // 결승 전용 "결과보기" CTA — 확정된 선택으로 winner를 계산해 결과 화면으로 이동
+  const handleFinish = () => {
+    if (!selectedSide || !match) return;
+    const winner = selectedSide === 'left' ? match[0] : match[1];
+    onFinish(winner);
   };
 
   if (!match) return null; // 이전 라운드 대진이 아직 확정되지 않은 경우(정상 플로우에서는 발생하지 않음)
@@ -368,25 +372,37 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
         </div>
       </div>
 
-      {/* 카드를 고르면 바로 다음 매치로 넘어가므로 "다음으로" CTA는 없음 — "이전으로"만 남김 */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', height: 50,
-        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 8px)`,
-      }}>
-        <button
-          onClick={handleUndo}
-          disabled={step <= 1}
-          style={{
-            background: 'none', border: 'none',
-            fontSize: 14, color: 'rgba(0,19,43,0.58)',
-            opacity: step <= 1 ? 0.4 : 1,
-            cursor: step <= 1 ? 'default' : 'pointer',
-          }}
-        >
-          ← 이전으로
-        </button>
-      </div>
+      {/* 결승(마지막 매치)은 이전처럼 "결과보기" CTA를 눌러야 확정됨 — 나머지 라운드는
+          카드를 고르면 바로 다음 매치로 넘어가므로 "다음으로" CTA 없이 "이전으로"만 둠 */}
+      {step === TASTE_WORLDCUP_TOTAL_PICKS ? (
+        <FocusBottomCTA.SingleWithUndo
+          label="결과보기"
+          onClick={handleFinish}
+          disabled={!selectedSide}
+          undoLabel="← 이전으로"
+          onUndo={handleUndo}
+          undoDisabled={step <= 1}
+        />
+      ) : (
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', height: 50,
+          paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 8px)`,
+        }}>
+          <button
+            onClick={handleUndo}
+            disabled={step <= 1}
+            style={{
+              background: 'none', border: 'none',
+              fontSize: 14, color: 'rgba(0,19,43,0.58)',
+              opacity: step <= 1 ? 0.4 : 1,
+              cursor: step <= 1 ? 'default' : 'pointer',
+            }}
+          >
+            ← 이전으로
+          </button>
+        </div>
+      )}
     </div>
   );
 }
