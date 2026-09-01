@@ -283,6 +283,12 @@ interface MapPageProps {
 // activeTab === 'home' && <MapPage key={...} /> 참고), 캐시된 SDK로 인해 대부분 즉시
 // 끝나는 재방문 케이스에서는 이 유예 시간 덕분에 깜빡임 없이 지나감
 const MAP_LOADING_SCREEN_DELAY_MS = 300;
+// 개발 중(dev 서버·이 브라우저 프리뷰 등)에는 카카오맵 도메인이 등록 안 돼 있어 지도가 안 뜨는
+// 경우가 있는데, 그러면 mapLoaded가 영영 true가 안 돼서 로딩 화면에 갇혀 나머지 화면을
+// 미리 볼 수가 없음. import.meta.env.DEV로 감싸서 프로덕션 빌드(번들 업로드본)에는 이
+// 안전장치 자체가 포함되지 않게 함 — 실기기 배포본에서는 지도가 끝내 안 떠도 로딩 화면이
+// 강제로 걷히지 않고 그대로 유지되어야 함(실제 장애 상황을 숨기지 않기 위함)
+const MAP_LOADING_SCREEN_DEV_MAX_MS = 3000;
 
 export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, onReportCafe, initialState, onStateChange, onFocusModeChange, hasOverlay = false, onNearbySheetOpenChange }: MapPageProps) {
   const touchStartYRef = useRef<number>(0);
@@ -538,6 +544,15 @@ const [filterOpen, setFilterOpen] = useState(false);
   useEffect(() => {
     if (mapLoaded) return;
     const t = setTimeout(() => setShowLoadingScreen(true), MAP_LOADING_SCREEN_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [mapLoaded]);
+
+  // ── 개발 전용 안전장치 — dev 서버에서 카카오맵 도메인 미등록 등으로 지도가 끝내 안 떠도
+  // 로딩 화면에 갇혀 나머지 화면을 미리보기 못 하는 걸 막음. import.meta.env.DEV라
+  // 프로덕션 빌드(번들 업로드본)에서는 이 useEffect 자체가 번들에서 제거됨 ──
+  useEffect(() => {
+    if (!import.meta.env.DEV || mapLoaded) return;
+    const t = setTimeout(() => setShowLoadingScreen(false), MAP_LOADING_SCREEN_DEV_MAX_MS);
     return () => clearTimeout(t);
   }, [mapLoaded]);
 
