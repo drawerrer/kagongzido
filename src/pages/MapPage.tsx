@@ -8,6 +8,7 @@ import { trackFilterOpen, trackFilterApply, trackChipTap, trackCafeDetailView, t
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
+import LoadingScreen from '../components/LoadingScreen';
 import DetailPage from './DetailPage';
 import PlaceDetailPage from './PlaceDetailPage';
 import { fetchAllStores, fetchLibraries, fetchSharedSpaces, type StoreRow } from '../services/db';
@@ -1037,6 +1038,9 @@ const [filterOpen, setFilterOpen] = useState(false);
 
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
+
+      {/* ── 초기 로딩 화면 — Kakao 지도 SDK 초기화(mapLoaded) 끝날 때까지 전체화면으로 덮음 ── */}
+      <LoadingScreen visible={!mapLoaded} />
 
       {/* ── Kakao 지도 컨테이너 ── */}
       <div
