@@ -301,22 +301,12 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
   const selectedSide = selectionHistory[step] ?? null;
   const match = getMatchPlayers(step, bracket, selectionHistory);
 
-  // 다음으로 CTA — 선택 고정된 카드로 매치를 확정하고 다음 매치로 이동, 마지막 라운드(결승)면 결과 화면으로 이동
-  const handleNext = () => {
-    if (step === TASTE_WORLDCUP_TOTAL_PICKS) {
-      if (!selectedSide || !match) return;
-      const winner = selectedSide === 'left' ? match[0] : match[1];
-      onFinish(winner);
-      return;
-    }
-    setStep(s => Math.min(TASTE_WORLDCUP_TOTAL_PICKS, s + 1));
-  };
   // 이전으로 — 매치만 되돌리면 selectedSide는 그 매치의 기록에서 자동으로 복원됨
   const handleUndo = () => setStep(s => Math.max(1, s - 1));
 
-  // 카드 선택 — 현재 매치의 선택을 기록에 저장 (매치 이동은 다음으로 CTA에서)
-  //  이전 선택과 다른 카드로 바꾸면, 그 결과에 의존하던 이후 라운드 대진이 전부 달라지므로
-  //  현재 매치보다 뒤의 기록은 모두 무효화(삭제)한다 — 다시 그 라운드부터 진행해야 함
+  // 카드 선택 — 선택과 동시에 바로 다음 매치로 이동(별도 "다음으로" CTA 없음), 마지막
+  // 라운드(결승)면 결과 화면으로 이동. 이전 선택과 다른 카드로 바꾸면 그 결과에 의존하던
+  // 이후 라운드 대진이 전부 달라지므로 현재 매치보다 뒤의 기록은 모두 무효화(삭제)한다
   const handlePick = (side: 'left' | 'right') => {
     setSelectionHistory(h => {
       if (h[step] === side) return h;
@@ -328,6 +318,14 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
       next[step] = side;
       return next;
     });
+
+    if (step === TASTE_WORLDCUP_TOTAL_PICKS) {
+      if (!match) return; // 카드 클릭 핸들러는 match가 있어야 렌더되므로 실제로는 항상 존재함
+      const winner = side === 'left' ? match[0] : match[1];
+      onFinish(winner);
+      return;
+    }
+    setStep(s => Math.min(TASTE_WORLDCUP_TOTAL_PICKS, s + 1));
   };
 
   if (!match) return null; // 이전 라운드 대진이 아직 확정되지 않은 경우(정상 플로우에서는 발생하지 않음)
@@ -370,14 +368,25 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
         </div>
       </div>
 
-      <FocusBottomCTA.SingleWithUndo
-        label={step === TASTE_WORLDCUP_TOTAL_PICKS ? '결과보기' : '다음으로'}
-        onClick={handleNext}
-        disabled={!selectedSide}
-        undoLabel="← 이전으로"
-        onUndo={handleUndo}
-        undoDisabled={step <= 1}
-      />
+      {/* 카드를 고르면 바로 다음 매치로 넘어가므로 "다음으로" CTA는 없음 — "이전으로"만 남김 */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', height: 50,
+        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 8px)`,
+      }}>
+        <button
+          onClick={handleUndo}
+          disabled={step <= 1}
+          style={{
+            background: 'none', border: 'none',
+            fontSize: 14, color: 'rgba(0,19,43,0.58)',
+            opacity: step <= 1 ? 0.4 : 1,
+            cursor: step <= 1 ? 'default' : 'pointer',
+          }}
+        >
+          ← 이전으로
+        </button>
+      </div>
     </div>
   );
 }
