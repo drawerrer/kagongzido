@@ -12,9 +12,10 @@ import {
   fetchUserReviews, deleteReview, updateReview, type UserReviewRow,
   fetchUserReports, type UserReportRow,
   fetchNotices, type NoticeRow,
+  fetchAllStores,
 } from '../services/db';
 import { clearCachedUser } from '../utils/userCache';
-import { getTasteWorldcupWinner } from '../utils/tasteWorldcup';
+import { getTasteWorldcupWinner, matchesTasteWorldcupWinner } from '../utils/tasteWorldcup';
 import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
 import CafePlaceholder from '../components/CafePlaceholder';
@@ -39,7 +40,7 @@ const EmptyPlusIcon = (
 // 타입
 // ─────────────────────────────────────────────────────────────
 type MyTab = '내 활동' | '설정';
-type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup' | 'taste-match-debug';
+type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup' | 'taste-match-debug' | 'taste-matched';
 
 interface CafeItem {
   id: string;
@@ -471,6 +472,62 @@ function RecentCafePage({
         {cafes.length === 0 ? (
           <EmptyState
             title="아직 최근에 본 카페가 없어요"
+            subtitle="지도에서 다양한 카페를 둘러보세요"
+            buttonLabel="카페 둘러보기"
+            buttonIcon={EmptyPlusIcon}
+            onButtonClick={onGoHome}
+          />
+        ) : (
+          <CafeGrid cafes={cafes} onDetailOpen={onDetailOpen} cardShadow />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** 마이페이지 프로필의 "취향 {label}" 탭 — 해당 1순위 취향 조건과 매칭되는 카페 리스트 */
+function TasteMatchedCafePage({
+  winner,
+  onBack,
+  onClose,
+  onDetailOpen,
+  onGoHome,
+  hasOverlay = false,
+}: {
+  winner: { id: string; label: string };
+  onBack: () => void;
+  onClose: () => void;
+  onDetailOpen?: (id: string) => void;
+  onGoHome?: () => void;
+  hasOverlay?: boolean;
+}) {
+  const [cafes, setCafes] = useState<CafeItem[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAllStores().then(stores => {
+      if (cancelled) return;
+      const matched = stores.filter(s => matchesTasteWorldcupWinner(winner.id, {
+        seats: s.seat_status,
+        outlets: s.outlet_status,
+        noise: s.noise_status,
+        vibeTagsRaw: s.vibe_tags,
+      }));
+      setCafes(matched.map(s => ({
+        id: s.api_place_id, name: s.name, address: s.address_road,
+        bg: '#E8EDF4', photo: s.thumbnail_url || undefined,
+      })));
+    });
+    return () => { cancelled = true; };
+  }, [winner.id]);
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
+      <SubHeader title={`취향 · ${winner.label}`} onBack={onBack} onMore={() => {}} onClose={onClose} enabled={!hasOverlay} />
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
+        {cafes === null ? null : cafes.length === 0 ? (
+          <EmptyState
+            title="아직 매칭되는 카페가 없어요"
             subtitle="지도에서 다양한 카페를 둘러보세요"
             buttonLabel="카페 둘러보기"
             buttonIcon={EmptyPlusIcon}
@@ -1498,15 +1555,22 @@ export default function MyPage({
                   </svg>
                 </button>
               </div>
-              {/* 취향 · 카페 제보 정보 */}
-              <div
-                onClick={() => changeSubPage('reported')}
-                style={{ fontSize: 14, fontWeight: 510, lineHeight: '18px', cursor: 'pointer' }}
-              >
+              {/* 취향 · 카페 제보 정보 — 값(취향/개수) 만 탭 가능, 고정 라벨은 탭 불가 */}
+              <div style={{ fontSize: 14, fontWeight: 510, lineHeight: '18px' }}>
                 <span style={{ color: '#9b9b9b' }}>취향 </span>
-                <span style={{ color: '#101010' }}>{tasteWinner?.label ?? '미설정'}</span>
+                <span
+                  onClick={() => tasteWinner ? changeSubPage('taste-matched') : handleOpenTasteWorldcup()}
+                  style={{ color: '#101010', cursor: 'pointer' }}
+                >
+                  {tasteWinner?.label ?? '미설정'}
+                </span>
                 <span style={{ color: '#9b9b9b' }}> · 카페 제보 </span>
-                <span style={{ color: '#101010' }}>{reportCount}개</span>
+                <span
+                  onClick={() => changeSubPage('reported')}
+                  style={{ color: '#101010', cursor: 'pointer' }}
+                >
+                  {reportCount}개
+                </span>
               </div>
             </div>
           </div>
@@ -1814,6 +1878,18 @@ export default function MyPage({
           onReportView={(report) => setViewingReport(report)}
           onReportNew={handleOpenReportCafe}
           hasOverlay={hasDetailOverlay || !!viewingReport}
+        />
+      </div>
+    )}
+    {subPage === 'taste-matched' && tasteWinner && (
+      <div ref={subViewRef ?? undefined} style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <TasteMatchedCafePage
+          winner={tasteWinner}
+          onBack={() => changeSubPage(null)}
+          onClose={() => changeSubPage(null)}
+          onDetailOpen={onDetailOpen}
+          onGoHome={onGoHome}
+          hasOverlay={hasDetailOverlay}
         />
       </div>
     )}
