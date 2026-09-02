@@ -8,6 +8,7 @@ import { trackFilterOpen, trackFilterApply, trackChipTap, trackCafeDetailView, t
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
+import LoadingScreen from '../components/LoadingScreen';
 import DetailPage from './DetailPage';
 import PlaceDetailPage from './PlaceDetailPage';
 import { fetchAllStores, fetchLibraries, fetchSharedSpaces, type StoreRow } from '../services/db';
@@ -276,6 +277,19 @@ interface MapPageProps {
   onNearbySheetOpenChange?: (open: boolean) => void;
 }
 
+// 로딩 화면 표시까지의 유예 시간 — 이 안에 mapLoaded가 끝나면 로딩 화면은 아예 화면에
+// 나타나지도 않고, 이 시간을 넘겨야(첫 진입, 혹은 어쩌다 느려진 경우) 그제서야 띄움.
+// 홈 탭은 다른 탭 갔다가 돌아올 때마다 MapPage가 통째로 리마운트되는 구조라(App.tsx의
+// activeTab === 'home' && <MapPage key={...} /> 참고), 캐시된 SDK로 인해 대부분 즉시
+// 끝나는 재방문 케이스에서는 이 유예 시간 덕분에 깜빡임 없이 지나감
+const MAP_LOADING_SCREEN_DELAY_MS = 300;
+// 개발 중(dev 서버·이 브라우저 프리뷰 등)에는 카카오맵 도메인이 등록 안 돼 있어 지도가 안 뜨는
+// 경우가 있는데, 그러면 mapLoaded가 영영 true가 안 돼서 로딩 화면에 갇혀 나머지 화면을
+// 미리 볼 수가 없음. import.meta.env.DEV로 감싸서 프로덕션 빌드(번들 업로드본)에는 이
+// 안전장치 자체가 포함되지 않게 함 — 실기기 배포본에서는 지도가 끝내 안 떠도 로딩 화면이
+// 강제로 걷히지 않고 그대로 유지되어야 함(실제 장애 상황을 숨기지 않기 위함)
+const MAP_LOADING_SCREEN_DEV_MAX_MS = 3000;
+
 export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, onReportCafe, initialState, onStateChange, onFocusModeChange, hasOverlay = false, onNearbySheetOpenChange }: MapPageProps) {
   const touchStartYRef = useRef<number>(0);
   // 드래그 도중 scrollTop===0 에 도달한 적이 있는지 — expanded 시 사용자가 위에서 아래로
@@ -301,6 +315,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen,
   const clusterClickRef = useRef<boolean>(false);
 
   const [mapLoaded, setMapLoaded] = useState(false);
+  // 로딩 화면 노출 여부 — mapLoaded와 별도로 관리. 짧게 끝나면 한 번도 true가 안 되고 넘어감
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const [mapBounds, setMapBounds] = useState<{ swLat: number; swLng: number; neLat: number; neLng: number } | null>(null);
   const [heading, setHeading] = useState<number | null>(null);
@@ -523,9 +539,26 @@ const [filterOpen, setFilterOpen] = useState(false);
   const filteredLibraries = showLibraries ? applyPlaceFilters(libraries.filter(boundsFilter)) : [];
   const filteredSharedSpaces = showSharedSpaces ? applyPlaceFilters(sharedSpaces.filter(boundsFilter)) : [];
 
+  // ── 로딩 화면 유예 타이머 — MAP_LOADING_SCREEN_DELAY_MS 안에 mapLoaded되면 한 번도
+  // true가 안 되고 지나가서 로딩 화면이 아예 안 뜸(대부분의 탭 재방문 케이스) ──
+  useEffect(() => {
+    if (mapLoaded) return;
+    const t = setTimeout(() => setShowLoadingScreen(true), MAP_LOADING_SCREEN_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [mapLoaded]);
+
+  // ── 개발 전용 안전장치 — dev 서버에서 카카오맵 도메인 미등록 등으로 지도가 끝내 안 떠도
+  // 로딩 화면에 갇혀 나머지 화면을 미리보기 못 하는 걸 막음. import.meta.env.DEV라
+  // 프로덕션 빌드(번들 업로드본)에서는 이 useEffect 자체가 번들에서 제거됨 ──
+  useEffect(() => {
+    if (!import.meta.env.DEV || mapLoaded) return;
+    const t = setTimeout(() => setShowLoadingScreen(false), MAP_LOADING_SCREEN_DEV_MAX_MS);
+    return () => clearTimeout(t);
+  }, [mapLoaded]);
+
   // ── Kakao Maps SDK 초기화 (index.html에서 정적 로드 완료) ──
   useEffect(() => {
-    const init = () => window.kakao.maps.load(() => setMapLoaded(true));
+    const init = () => window.kakao.maps.load(() => { setMapLoaded(true); setShowLoadingScreen(false); });
     if (window.kakao?.maps) {
       init();
     } else {
@@ -1037,6 +1070,10 @@ const [filterOpen, setFilterOpen] = useState(false);
 
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
+
+      {/* ── 로딩 화면 — Kakao 지도 SDK 초기화가 유예 시간(300ms)을 넘겨야 뜸. 첫 진입처럼
+          진짜 오래 걸리는 경우엔 보이고, 탭 재방문처럼 캐시로 즉시 끝나는 경우엔 안 보임 ── */}
+      <LoadingScreen visible={showLoadingScreen} />
 
       {/* ── Kakao 지도 컨테이너 ── */}
       <div

@@ -22,6 +22,15 @@ import IcOpen from '../assets/icons/icon_open.svg?react';
 import IcCopy from '../assets/icons/icon_copy.svg?react';
 import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
 import ChairSingleImg from '../assets/interaction/chair_single.svg';
+import MoodBackgroundImg from '../assets/interaction/mood_background.png';
+import MoodWoodImg from '../assets/interaction/mood_wood.svg';
+import MoodMetalImg from '../assets/interaction/mood_metal.svg';
+import MoodWhiteImg from '../assets/interaction/mood_white.svg';
+import MoodBlackImg from '../assets/interaction/mood_black.svg';
+import MoodPlantImg from '../assets/interaction/mood_plant.svg';
+import MoodStoneImg from '../assets/interaction/mood_stone.svg';
+import MoodBrickImg from '../assets/interaction/mood_brick.svg';
+import MoodModernImg from '../assets/interaction/mood_modern.svg';
 import {
   getTasteWorldcupWinner, matchesTasteWorldcupWinner,
   getResultInteractionDurationMs,
@@ -31,6 +40,50 @@ import {
 // 대형/소형 공간 조건인지 — 이 두 조건만 우측 절반 박스가 아니라 화면 전체에 의자가 떨어지는
 // 별도 연출(FallingChairsInteraction)을 씀
 const SPACE_CONDITION_IDS = new Set(['cafe_large', 'cafe_small']);
+
+// 분위기(mood_) 조건 8종 — 결과 화면의 줌/쓸림/코멧 연출 대신, mood_background.png(원형 스티커)
+// 안에 조건별 이미지가 들어간 형태로 상세페이지 전용 연출(MoodStickerInteraction)을 씀
+const MOOD_STICKER_IMAGES: Record<string, string> = {
+  mood_wood: MoodWoodImg,
+  mood_metal: MoodMetalImg,
+  mood_white: MoodWhiteImg,
+  mood_black: MoodBlackImg,
+  mood_plant: MoodPlantImg,
+  mood_stone: MoodStoneImg,
+  mood_brick: MoodBrickImg,
+  mood_modern: MoodModernImg,
+};
+
+// 스티커가 살짝 커지고 기울어진 상태에서 튕기듯 제자리로 붙는 연출 — mood_background.png(원형
+// 스티커 프레임) 안에 조건별 이미지를 원형으로 잘라 넣음. 스티커 링 안쪽 여백(약 7%)은
+// mood_background.png의 검은 원 테두리 안쪽 픽셀 좌표를 실측해서 잡은 값
+function MoodStickerInteraction({ conditionId }: { conditionId: string }) {
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    // 마운트와 같은 렌더에서 바로 목표 상태로 두면 트랜지션 없이 순간이동해버려서 한 틱 늦춤
+    const t = setTimeout(() => setStuck(true), 30);
+    return () => clearTimeout(t);
+  }, []);
+
+  const src = MOOD_STICKER_IMAGES[conditionId];
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      transform: stuck ? 'scale(1) rotate(0deg)' : 'scale(1.35) rotate(-14deg)',
+      opacity: stuck ? 1 : 0,
+      transition: 'transform 550ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 250ms ease-out',
+    }}>
+      <div style={{ position: 'relative', width: '64%', aspectRatio: '1 / 1' }}>
+        <img src={MoodBackgroundImg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+        <div style={{ position: 'absolute', top: '7%', left: '7%', right: '7%', bottom: '7%', borderRadius: '50%', overflow: 'hidden' }}>
+          {src && <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // 취향 월드컵 결과 인터랙션(ResultInteraction) — TasteWorldcup.tsx는 조건 이미지 16종(~700KB)을
 // 포함한 별도 청크라, 매칭됐을 때만 동적 import로 불러옴(정적 import 시 상세페이지 기본 번들에
@@ -43,9 +96,10 @@ const LazyResultInteraction = lazy(() =>
 // 재생한 뒤 사라지는 플로팅 오버레이. 다 사라진 뒤엔 "카페 정보" 타이틀 옆 배지(아래 참고)로 넘어감
 function TasteMatchInteraction({ conditionId, onDone }: { conditionId: string; onDone: () => void }) {
   const [fadingOut, setFadingOut] = useState(false);
+  const isMood = conditionId.startsWith('mood_');
 
   useEffect(() => {
-    const t = setTimeout(() => setFadingOut(true), getResultInteractionDurationMs(conditionId, { skipNoiseBars: true }));
+    const t = setTimeout(() => setFadingOut(true), getResultInteractionDurationMs(conditionId, { skipNoiseBars: true, stickerMood: true }));
     return () => clearTimeout(t);
   }, [conditionId]);
 
@@ -66,9 +120,13 @@ function TasteMatchInteraction({ conditionId, onDone }: { conditionId: string; o
       // ease-out — 처음엔 서서히, 뒤로 갈수록 점점 느리게 흐려지며 사라짐
       transition: 'opacity 700ms ease-out',
     }}>
-      <Suspense fallback={null}>
-        <LazyResultInteraction conditionId={conditionId} showLitFrameBg={false} enableLampFlicker skipNoiseBars />
-      </Suspense>
+      {isMood ? (
+        <MoodStickerInteraction conditionId={conditionId} />
+      ) : (
+        <Suspense fallback={null}>
+          <LazyResultInteraction conditionId={conditionId} showLitFrameBg={false} enableLampFlicker skipNoiseBars />
+        </Suspense>
+      )}
     </div>
   );
 }
@@ -1922,7 +1980,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         ) : (
           <div style={{
             position: 'absolute', top: showHero ? 260 : 0, right: 0,
-            width: '50%', aspectRatio: '315 / 350',
+            width: '38%', aspectRatio: '315 / 315',
             zIndex: 90,
           }}>
             <TasteMatchInteraction key={`${cafe.id}-${tasteReplayKey}`} conditionId={tasteWinner.id} onDone={handleTasteInteractionDone} />

@@ -7,6 +7,9 @@ import RoundBadge from '../components/RoundBadge';
 import WorldcupProgressIndicator from '../components/WorldcupProgressIndicator';
 import WorldcupChoiceCard from '../components/WorldcupChoiceCard';
 import VsBadge from '../components/VsBadge';
+import WorldcupOnboarding1Img from '../assets/images/worldcup_Onboarding_1.png';
+import WorldcupOnboarding2Img from '../assets/images/worldcup_Onboarding_2.png';
+import WorldcupOnboarding3Img from '../assets/images/worldcup_Onboarding_3.png';
 import LampWarmImg from '../assets/condition/lamp_warm.svg';
 import LampLowImg from '../assets/condition/lamp_low.svg';
 import LampWhiteImg from '../assets/condition/lamp_white.svg';
@@ -35,7 +38,9 @@ import ChairLargeImg from '../assets/interaction/chair_large.svg';
 import ChairSmallImg from '../assets/interaction/chair_small.svg';
 import NoiseDialNormalGridImg from '../assets/interaction/noise_dial_normal_grid.svg';
 import NoiseDialKnobImg from '../assets/interaction/noise_dial_normal_knob.svg';
-import NoiseDialSmallImg from '../assets/interaction/noise_dial_small.svg';
+import NoiseDialSmallRingImg from '../assets/interaction/noise_dial_small_ring.svg';
+import NoiseDialSmallTicksImg from '../assets/interaction/noise_dial_small_ticks.svg';
+import NoiseDialSmallKnobImg from '../assets/interaction/noise_dial_small_knob.svg';
 import NoiseDialHandImg from '../assets/interaction/noise_dial_hand.svg';
 import NoiseHeadphonesNormalImg from '../assets/interaction/noise_headphones_normal.svg';
 import NoiseHeadphonesSmallImg from '../assets/interaction/noise_headphones_small.svg';
@@ -54,11 +59,23 @@ import MoodModernResultImg from '../assets/interaction/mood_modern.svg';
 // MyPage에서 React.lazy로 지연 로드하여 취향 월드컵을 열 때만 다운로드되게 함
 // ─────────────────────────────────────────────────────────────
 
+// 온보딩 슬라이드 — image(정적 일러스트) 또는 video(실제 화면 녹화본) 중 하나만 채워서 씀.
+// 둘 다 없으면 회색 플레이스홀더로 대체 렌더링됨(아래 TasteWorldcupPage 참고)
+interface TasteWorldcupOnboardingSlide {
+  main: string;
+  sub: string;
+  image?: string;
+  video?: string;
+}
+
 // 서브 페이지: 카페 취향 월드컵 온보딩 (3장, 좌우 스와이프 — Figma 스펙 반영)
-const TASTE_WORLDCUP_ONBOARDING_SLIDES = [
-  { main: '나는 어떤 카공 스타일일까?', sub: '콘센트, 조명, 분위기... 카공 취향을 알아봐요' },
-  { main: '둘 중 더 끌리는 조건을 선택해요', sub: '2개의 보기 중 내 마음에 쏙 드는 걸 가볍게 툭툭 선택해요' },
-  { main: '카공 스팟을 한눈에 찾아드려요', sub: '내 1순위 조건과 일치하는 카페를 발견했을 때 특별한 효과로 확실하게 알려드릴게요' },
+const TASTE_WORLDCUP_ONBOARDING_SLIDES: TasteWorldcupOnboardingSlide[] = [
+  { main: '나는 어떤 카공 스타일일까?', sub: '콘센트, 조명, 분위기... 카공 취향을 알아봐요', image: WorldcupOnboarding1Img },
+  { main: '둘 중 더 끌리는 조건을 선택해요', sub: '2개의 보기 중 내 마음에 쏙 드는 걸 가볍게 툭툭 선택해요', image: WorldcupOnboarding2Img },
+  // 지금은 정적 일러스트로 채워둔 상태 — 실제 화면(카드 선택 → 상세페이지 진입 → 매칭
+  // 인터랙션 재생) 녹화본 준비되면 video 항목에 mp4 경로 추가해서 교체 가능(소리 없이
+  // 무한 반복 재생되도록 짧게(3~5초) 다듬어서 넘겨줄 것 — TasteWorldcupOnboardingSlide 참고)
+  { main: '카공 스팟을 한눈에 찾아드려요', sub: '내 1순위 조건과 일치하는 카페를 발견했을 때 특별한 효과로 확실하게 알려드릴게요', image: WorldcupOnboarding3Img },
 ];
 
 // 헤드라인 영역과 인디케이터 영역의 높이를 동일하게 맞추기 위한 기준값
@@ -67,6 +84,10 @@ const HEADLINE_MAIN_HEIGHT = 27.5;
 const HEADLINE_GAP = 14;
 const HEADLINE_SUB_MAX_HEIGHT = 36;
 const HEADLINE_AREA_HEIGHT = HEADLINE_MAIN_HEIGHT + HEADLINE_GAP + HEADLINE_SUB_MAX_HEIGHT;
+
+// 온보딩 슬라이드 인디케이터 점 크기/간격
+const INDICATOR_DOT_SIZE = 6;
+const INDICATOR_DOT_GAP = 10;
 
 function TasteWorldcupPage({ onBack, onStart, onDebugPager, enabled = true }: { onBack: () => void; onStart: () => void; onDebugPager?: () => void; enabled?: boolean }) {
   useBackEvent(onBack, enabled);
@@ -143,22 +164,55 @@ function TasteWorldcupPage({ onBack, onStart, onDebugPager, enabled = true }: { 
                 </p>
               </div>
 
-              {/* 이미지 영역 — 텍스트와 50px 간격, 300:280 비율로 화면 폭에 맞춰 반응형 리사이즈 */}
-              {/* TODO: Figma "Character" 노드가 아직 빈 이미지라 실제 일러스트 에셋 없음 — 받는 대로 교체 필요 */}
-              <div style={{ marginTop: 50, width: '100%', aspectRatio: '300 / 280', background: '#e5e8eb' }} />
+              {/* 이미지/영상 영역 — 텍스트와 50px 간격, 300:280 비율로 화면 폭에 맞춰 반응형 리사이즈.
+                  video가 있으면 최우선(실제 화면 녹화본), 없으면 image(정적 일러스트), 둘 다 없으면
+                  플레이스홀더 — TODO: 3번째 장은 Figma "Character" 노드가 아직 에셋 없음, 받는 대로 교체 필요 */}
+              {slide.video ? (
+                <video
+                  src={slide.video}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  style={{ marginTop: 50, width: '100%', aspectRatio: '300 / 280', objectFit: 'contain' }}
+                />
+              ) : slide.image ? (
+                <img
+                  src={slide.image}
+                  alt=""
+                  style={{ marginTop: 50, width: '100%', aspectRatio: '300 / 280', objectFit: 'contain' }}
+                />
+              ) : (
+                <div style={{ marginTop: 50, width: '100%', aspectRatio: '300 / 280', background: '#e5e8eb' }} />
+              )}
             </div>
           ))}
         </div>
 
-        {/* 인디케이터 — 캐러셀 밖에 하나만 두고 activeStep에 따라 갱신. 헤드라인과 동일한 높이로 좌우 대칭 */}
-        <div style={{ marginTop: 40, height: HEADLINE_AREA_HEIGHT, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-          {TASTE_WORLDCUP_ONBOARDING_SLIDES.map((_, i) => (
-            <div key={i} style={{
-              width: 6, height: 6, borderRadius: 4,
-              background: i === activeStep ? '#252525' : '#bbbbbb',
-              transition: 'background 0.15s',
+        {/* 인디케이터 — 캐러셀 밖에 하나만 두고 activeStep에 따라 갱신. 헤드라인과 동일한 높이로 좌우 대칭.
+            점 3개는 고정 배경으로 깔아두고, 활성 점 하나가 스크롤 방향에 맞춰 위치를 슬라이드하며 이동함 */}
+        <div style={{ marginTop: 40, height: HEADLINE_AREA_HEIGHT, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{
+            position: 'relative',
+            width: INDICATOR_DOT_SIZE * TASTE_WORLDCUP_ONBOARDING_SLIDES.length + INDICATOR_DOT_GAP * (TASTE_WORLDCUP_ONBOARDING_SLIDES.length - 1),
+            height: INDICATOR_DOT_SIZE,
+          }}>
+            {TASTE_WORLDCUP_ONBOARDING_SLIDES.map((_, i) => (
+              <div key={i} style={{
+                position: 'absolute', left: i * (INDICATOR_DOT_SIZE + INDICATOR_DOT_GAP), top: 0,
+                width: INDICATOR_DOT_SIZE, height: INDICATOR_DOT_SIZE, borderRadius: INDICATOR_DOT_SIZE / 2,
+                background: '#bbbbbb',
+              }} />
+            ))}
+            {/* 활성 점 — 배경 점들 위에 겹쳐서 transform으로 슬라이드 이동 */}
+            <div style={{
+              position: 'absolute', left: 0, top: 0,
+              width: INDICATOR_DOT_SIZE, height: INDICATOR_DOT_SIZE, borderRadius: INDICATOR_DOT_SIZE / 2,
+              background: '#252525',
+              transform: `translateX(${activeStep * (INDICATOR_DOT_SIZE + INDICATOR_DOT_GAP)}px)`,
+              transition: 'transform 0.2s ease',
             }} />
-          ))}
+          </div>
         </div>
       </div>
 
@@ -301,22 +355,23 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
   const selectedSide = selectionHistory[step] ?? null;
   const match = getMatchPlayers(step, bracket, selectionHistory);
 
-  // 다음으로 CTA — 선택 고정된 카드로 매치를 확정하고 다음 매치로 이동, 마지막 라운드(결승)면 결과 화면으로 이동
-  const handleNext = () => {
-    if (step === TASTE_WORLDCUP_TOTAL_PICKS) {
-      if (!selectedSide || !match) return;
-      const winner = selectedSide === 'left' ? match[0] : match[1];
-      onFinish(winner);
-      return;
-    }
-    setStep(s => Math.min(TASTE_WORLDCUP_TOTAL_PICKS, s + 1));
-  };
   // 이전으로 — 매치만 되돌리면 selectedSide는 그 매치의 기록에서 자동으로 복원됨
   const handleUndo = () => setStep(s => Math.max(1, s - 1));
 
-  // 카드 선택 — 현재 매치의 선택을 기록에 저장 (매치 이동은 다음으로 CTA에서)
-  //  이전 선택과 다른 카드로 바꾸면, 그 결과에 의존하던 이후 라운드 대진이 전부 달라지므로
-  //  현재 매치보다 뒤의 기록은 모두 무효화(삭제)한다 — 다시 그 라운드부터 진행해야 함
+  // 카드 선택 → 0.5초 뒤 다음 매치로 이동 — 그 사이 카드에 선택 표시(selected)가 잠깐
+  // 보였다가 넘어가도록 딜레이를 둠. 연속으로 빠르게 다시 고르면 이전 타이머는 취소하고
+  // 새로 0.5초를 다시 잼(마지막 선택 기준으로만 한 번 넘어가게)
+  const pickAdvanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (pickAdvanceTimeoutRef.current) clearTimeout(pickAdvanceTimeoutRef.current);
+    };
+  }, []);
+
+  // 카드 선택 — 별도 "다음으로" CTA 없이 0.5초 뒤 자동으로 다음 매치로 이동. 단 마지막
+  // 라운드(결승)는 선택만 반영하고 "결과보기" CTA를 눌러야 확정되도록 그대로 둠(handleFinish 참고).
+  // 이전 선택과 다른 카드로 바꾸면 그 결과에 의존하던 이후 라운드 대진이 전부 달라지므로
+  // 현재 매치보다 뒤의 기록은 모두 무효화(삭제)한다
   const handlePick = (side: 'left' | 'right') => {
     setSelectionHistory(h => {
       if (h[step] === side) return h;
@@ -328,6 +383,21 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
       next[step] = side;
       return next;
     });
+
+    if (pickAdvanceTimeoutRef.current) clearTimeout(pickAdvanceTimeoutRef.current);
+
+    if (step < TASTE_WORLDCUP_TOTAL_PICKS) {
+      pickAdvanceTimeoutRef.current = setTimeout(() => {
+        setStep(s => Math.min(TASTE_WORLDCUP_TOTAL_PICKS, s + 1));
+      }, 500);
+    }
+  };
+
+  // 결승 전용 "결과보기" CTA — 확정된 선택으로 winner를 계산해 결과 화면으로 이동
+  const handleFinish = () => {
+    if (!selectedSide || !match) return;
+    const winner = selectedSide === 'left' ? match[0] : match[1];
+    onFinish(winner);
   };
 
   if (!match) return null; // 이전 라운드 대진이 아직 확정되지 않은 경우(정상 플로우에서는 발생하지 않음)
@@ -370,14 +440,37 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
         </div>
       </div>
 
-      <FocusBottomCTA.SingleWithUndo
-        label={step === TASTE_WORLDCUP_TOTAL_PICKS ? '결과보기' : '다음으로'}
-        onClick={handleNext}
-        disabled={!selectedSide}
-        undoLabel="← 이전으로"
-        onUndo={handleUndo}
-        undoDisabled={step <= 1}
-      />
+      {/* 결승(마지막 매치)은 이전처럼 "결과보기" CTA를 눌러야 확정됨 — 나머지 라운드는
+          카드를 고르면 바로 다음 매치로 넘어가므로 "다음으로" CTA 없이 "이전으로"만 둠 */}
+      {step === TASTE_WORLDCUP_TOTAL_PICKS ? (
+        <FocusBottomCTA.SingleWithUndo
+          label="결과보기"
+          onClick={handleFinish}
+          disabled={!selectedSide}
+          undoLabel="← 이전으로"
+          onUndo={handleUndo}
+          undoDisabled={step <= 1}
+        />
+      ) : (
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', height: 50,
+          paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 8px)`,
+        }}>
+          <button
+            onClick={handleUndo}
+            disabled={step <= 1}
+            style={{
+              background: 'none', border: 'none',
+              fontSize: 14, color: 'rgba(0,19,43,0.58)',
+              opacity: step <= 1 ? 0.4 : 1,
+              cursor: step <= 1 ? 'default' : 'pointer',
+            }}
+          >
+            ← 이전으로
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -787,11 +880,12 @@ function HeadphoneWave() {
 // 다이얼 등장 — 눈금/위치선(grid)은 고정, 가운데 원형 조작부(knob)만 회전.
 // fromDeg/toDeg로 조건별 시작·정착 각도를 지정 — noise_small은 noise_normal이 멈추는
 // 위치(12시, -130deg)에서 이어받아 반시계 방향으로 7시 위치(-280deg)까지 더 돌아감
-// swapSrc가 있으면 회전이 다 끝난 뒤 grid+knob 조합에서 전용 통짜 애셋으로 크로스페이드 전환
+// swapRingSrc/swapKnobSrc가 있으면 회전이 다 끝난 뒤 grid+knob 조합에서 전용 통짜 애셋(링/노브
+// 두 장으로 분리된 최종 모양)으로 크로스페이드 전환 — 그림자를 링에만 CSS로 씌우기 위해 두 장으로 나눔
 // (knob이 noise_normal 것을 재사용한 임시 조합이라, 최종 정지 모양은 실제 애셋으로 마무리)
 // active(다이얼 단계 진입)가 true로 바뀌는 시점에 회전이 시작되도록 별도 상태로 관리 —
 // 그냥 마운트 시점에 걸면 아직 안 보이는 bars 단계에서 미리 끝나버림
-type NoiseDialSpec = { gridSrc: string; knobSrc: string; fromDeg?: number; toDeg?: number; swapSrc?: string };
+type NoiseDialSpec = { gridSrc: string; knobSrc: string; fromDeg?: number; toDeg?: number; swapRingSrc?: string; swapTicksSrc?: string; swapKnobSrc?: string };
 
 function DialReveal({ dial, active }: { dial: NoiseDialSpec; active: boolean }) {
   const [rotated, setRotated] = useState(true);
@@ -803,10 +897,10 @@ function DialReveal({ dial, active }: { dial: NoiseDialSpec; active: boolean }) 
   }, [active]);
 
   useEffect(() => {
-    if (!active || rotated || !dial.swapSrc) return;
+    if (!active || rotated || !dial.swapRingSrc) return;
     const t = setTimeout(() => setSwapped(true), 700); // 회전 트랜지션(0.7s) 다 끝난 뒤 전용 애셋으로 교체
     return () => clearTimeout(t);
-  }, [active, rotated, dial.swapSrc]);
+  }, [active, rotated, dial.swapRingSrc]);
 
   const baseStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } as const;
   // 기본값(20deg → -130deg): 그리드의 볼륨 위치 표시선 방향(5시경, 시계 기준 약 150°)에서 상단 중앙(12시)으로 정착
@@ -844,12 +938,16 @@ function DialReveal({ dial, active }: { dial: NoiseDialSpec; active: boolean }) 
           }}
         />
       </div>
-      {dial.swapSrc && (
-        <img
-          src={dial.swapSrc}
-          alt=""
-          style={{ ...baseStyle, opacity: active && swapped ? 1 : 0, transition: active ? 'opacity 0.35s ease' : 'none' }}
-        />
+      {/* 최종 정지 모양은 링/눈금/노브 세 장으로 분리해서 씀 — 그림자는 원형 트랙(링)에만 CSS로
+          씌우고(noise_dial_normal 패턴과 동일), 눈금과 빨간 노브는 그림자 없이 위에 얹음 */}
+      {dial.swapRingSrc && (
+        <div style={{ position: 'absolute', inset: 0, opacity: active && swapped ? 1 : 0, transition: active ? 'opacity 0.35s ease' : 'none' }}>
+          <div style={{ ...baseStyle, filter: 'drop-shadow(3.28px 3.28px 2.29px rgba(0, 0, 0, 0.25))' }}>
+            <img src={dial.swapRingSrc} alt="" style={baseStyle} />
+          </div>
+          {dial.swapTicksSrc && <img src={dial.swapTicksSrc} alt="" style={baseStyle} />}
+          {dial.swapKnobSrc && <img src={dial.swapKnobSrc} alt="" style={baseStyle} />}
+        </div>
       )}
     </>
   );
@@ -921,7 +1019,7 @@ const WORLDCUP_RESULT_INTERACTIONS: Record<string, ResultInteractionSpec> = {
   // 전용 통짜 애셋(noise_dial_small)으로 교체하고 나서 헤드폰 단계로 넘어감
   noise_small: {
     kind: 'noise',
-    dial: { gridSrc: NoiseDialNormalGridImg, knobSrc: NoiseDialKnobImg, fromDeg: -130, toDeg: -270, swapSrc: NoiseDialSmallImg },
+    dial: { gridSrc: NoiseDialNormalGridImg, knobSrc: NoiseDialKnobImg, fromDeg: -130, toDeg: -270, swapRingSrc: NoiseDialSmallRingImg, swapTicksSrc: NoiseDialSmallTicksImg, swapKnobSrc: NoiseDialSmallKnobImg },
     headphonesSrc: NoiseHeadphonesSmallImg,
   },
   mood_wood: { kind: 'mood', src: MoodWoodResultImg },
