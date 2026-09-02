@@ -15,7 +15,7 @@ import EmptyState from '../components/EmptyState';
 import IcSearch from '../assets/icons/icon_search.svg?react';
 import IcHeart from '../assets/icons/icon_heart.svg?react';
 import IcMap from '../assets/icons/icon_map.svg?react';
-import RaccoonImage from '../assets/images/raccoon_mug.png';
+import BearImage from '../assets/images/bear_mug.png';
 
 const SearchEmptyPlusIcon = (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
@@ -64,7 +64,7 @@ function BannerChevron() {
   );
 }
 
-/** 카페 제보 유도 배너 — "찾는 카페가 없을 땐, 너구리한테 카페 알려주러가기" */
+/** 카페 제보 유도 배너 — "찾는 카페가 없을 땐, 곰한테 카페 제보하기" */
 function ReportCafeBanner({ onTap }: { onTap?: () => void }) {
   return (
     <div
@@ -73,17 +73,17 @@ function ReportCafeBanner({ onTap }: { onTap?: () => void }) {
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '14px 16px',
         borderRadius: 8,
-        background: '#D0DFF4',
+        background: '#E0D8C3',
         cursor: onTap ? 'pointer' : 'default',
       }}
     >
-      <img src={RaccoonImage} alt="" style={{ width: 38, height: 44, flexShrink: 0, objectFit: 'contain' }} />
+      <img src={BearImage} alt="" style={{ width: 53, height: 44, flexShrink: 0, objectFit: 'contain' }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'rgba(3,18,40,0.58)' }}>
           찾는 카페가 없을 땐,
         </p>
         <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#191F28' }}>
-          너구리한테 카페 알려주러가기
+          곰한테 카페 제보하기
         </p>
       </div>
       <BannerChevron />
