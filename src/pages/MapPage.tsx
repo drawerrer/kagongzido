@@ -275,6 +275,8 @@ interface MapPageProps {
   hasOverlay?: boolean;
   /** "지금 내 주변 노트북 펴기 좋은 카페 3곳" 시트가 떠 있는지 — 상위 App의 화면 탭 감지(예: 탭바 툴팁 닫힘)가 이 시트를 닫는 탭과 겹치지 않도록 전달 */
   onNearbySheetOpenChange?: (open: boolean) => void;
+  /** 필터 모달 열림 상태 — App에서 탭바를 숨기는 데 씀(탭바가 필터 CTA를 가림) */
+  onFilterOpenChange?: (open: boolean) => void;
 }
 
 // 로딩 화면 표시까지의 유예 시간 — 이 안에 mapLoaded가 끝나면 로딩 화면은 아예 화면에
@@ -290,7 +292,7 @@ const MAP_LOADING_SCREEN_DELAY_MS = 300;
 // 강제로 걷히지 않고 그대로 유지되어야 함(실제 장애 상황을 숨기지 않기 위함)
 const MAP_LOADING_SCREEN_DEV_MAX_MS = 3000;
 
-export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, onReportCafe, initialState, onStateChange, onFocusModeChange, hasOverlay = false, onNearbySheetOpenChange }: MapPageProps) {
+export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, onReportCafe, initialState, onStateChange, onFocusModeChange, hasOverlay = false, onNearbySheetOpenChange, onFilterOpenChange }: MapPageProps) {
   const touchStartYRef = useRef<number>(0);
   // 드래그 도중 scrollTop===0 에 도달한 적이 있는지 — expanded 시 사용자가 위에서 아래로
   // 끝까지 끌어내려 collapse 의도를 보일 때 잡기 위함
@@ -345,6 +347,8 @@ const [filterOpen, setFilterOpen] = useState(false);
   const [nearbySheetCafes, setNearbySheetCafes] = useState<Cafe[]>([]);
 
   useEffect(() => { onNearbySheetOpenChange?.(nearbySheetOpen); }, [nearbySheetOpen, onNearbySheetOpenChange]);
+  // 필터 모달은 탭바(zIndex 100)보다 바깥 stacking context에 있어 CTA가 가려짐 -> 열려 있는 동안 탭바를 숨김
+  useEffect(() => { onFilterOpenChange?.(filterOpen); }, [filterOpen, onFilterOpenChange]);
 
   // cafesRef 항상 최신 유지
   useEffect(() => { cafesRef.current = cafes; }, [cafes]);

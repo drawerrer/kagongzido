@@ -284,6 +284,8 @@ function AppInner() {
   // 홈 진입 시 뜨는 "내 주변 노트북 펴기 좋은 카페 3곳" 시트가 떠 있는 동안엔
   // 그 시트를 닫으려는 탭이 툴팁까지 같이 닫아버리지 않도록 리스너 자체를 잠시 꺼둠
   const [isNearbySheetOpen, setIsNearbySheetOpen] = useState(false);
+  // 홈 필터 모달 열림 — 탭바가 필터 CTA 위에 그려져서(탭바는 isolate 컨테이너 밖) 열린 동안 숨김
+  const [isMapFilterOpen, setIsMapFilterOpen] = useState(false);
   const dismissWorldcupTooltip = () => setShowWorldcupTooltip(false);
   useEffect(() => {
     setShowWorldcupTooltip(true);
@@ -345,6 +347,7 @@ function AppInner() {
     isCollectionEditMode ||
     !!photoReview ||
     isDetailFocusMode ||
+    isMapFilterOpen ||
     (!!myPageSubPage && FOCUS_MY_SUBPAGES.includes(myPageSubPage));
 
   // ── 왼쪽 엣지 스와이프 뒤로가기 (인터랙티브) ──────────────────
@@ -472,6 +475,7 @@ function AppInner() {
             onFocusModeChange={setIsDetailFocusMode}
             hasOverlay={!!detailCafeId || showSearch}
             onNearbySheetOpenChange={setIsNearbySheetOpen}
+            onFilterOpenChange={setIsMapFilterOpen}
           />
         )}
         {activeTab === 'guidebook' && (
