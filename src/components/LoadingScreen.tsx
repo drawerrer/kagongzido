@@ -23,21 +23,24 @@ export default function LoadingScreen({ visible }: { visible: boolean }) {
       transition: 'opacity 400ms ease',
       pointerEvents: visible ? 'auto' : 'none',
     }}>
-      {/* 제자리 걸음 — 좌우 이동 없이, 발을 내딛듯 위아래로 튀면서 살짝 좌우로 기울여
-          체중이 한쪽 발에서 다른 쪽 발로 옮겨가는 느낌을 냄(다리 프레임이 따로 없는 정지 이미지라 흉내만 냄) */}
+      {/* 둥둥 떠 있는 느낌 — 회전 없이 위아래로만 천천히 오르내리고,
+          정점에서 아주 살짝 커져 부력이 실린 것처럼 보이게 함.
+          무한 반복이지만 로딩이 끝나면 오버레이째 사라지는 일시적 모션 */}
       <style>{`
-        @keyframes loading-bear-walk {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          25% { transform: translateY(-7px) rotate(-4deg); }
-          50% { transform: translateY(0) rotate(0deg); }
-          75% { transform: translateY(-7px) rotate(4deg); }
+        @keyframes loading-bear-float {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50%      { transform: translateY(-19px) scale(1.015); }
+        }
+        .loading-bear {
+          width: 140px;
+          animation: loading-bear-float 1400ms ease-in-out infinite;
+          will-change: transform;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .loading-bear { animation: none; }
         }
       `}</style>
-      <img
-        src={LoadingBearImg}
-        alt=""
-        style={{ width: 140, transformOrigin: 'bottom center', animation: 'loading-bear-walk 900ms ease-in-out infinite' }}
-      />
+      <img src={LoadingBearImg} alt="" className="loading-bear" />
       <p style={{ marginTop: 20, fontSize: 15, fontWeight: 500, color: '#6B7684' }}>
         근처 카페를 찾고 있어요
       </p>
