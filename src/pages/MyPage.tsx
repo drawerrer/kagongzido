@@ -1948,7 +1948,12 @@ export default function MyPage({
     {subPage === 'taste-worldcup' && (
       <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
         <Suspense fallback={null}>
-          <TasteWorldcup onExit={() => changeSubPage(null)} enabled={!hasDetailOverlay} />
+          <TasteWorldcup
+            onExit={() => changeSubPage(null)}
+            // 결과 화면 CTA — 월드컵 서브페이지를 닫고 홈 탭으로 보냄
+            onGoHome={() => { changeSubPage(null); onGoHome?.(); }}
+            enabled={!hasDetailOverlay}
+          />
         </Suspense>
       </div>
     )}

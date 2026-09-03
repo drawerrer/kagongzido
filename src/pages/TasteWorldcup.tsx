@@ -1185,7 +1185,7 @@ type TasteWorldcupPhase = 'onboarding' | 'game' | 'result' | 'debug-pager';
  * MyPage에서 React.lazy(() => import('./TasteWorldcup'))로 지연 로드해서
  * 이 화면을 열 때만 16개 조건 이미지(~700KB)를 다운로드하게 함.
  */
-export default function TasteWorldcupFlow({ onExit, enabled = true }: { onExit: () => void; enabled?: boolean }) {
+export default function TasteWorldcupFlow({ onExit, onGoHome, enabled = true }: { onExit: () => void; onGoHome?: () => void; enabled?: boolean }) {
   const [phase, setPhase] = useState<TasteWorldcupPhase>('onboarding');
   const [winner, setWinner] = useState<{ id: string; label: string } | null>(null);
 
@@ -1204,7 +1204,10 @@ export default function TasteWorldcupFlow({ onExit, enabled = true }: { onExit: 
       <TasteWorldcupResultPage
         winner={winner}
         onBack={() => setPhase('game')}
-        onConfirm={onExit}
+        // 결과 CTA는 월드컵을 닫고 홈 탭으로 이동 — 방금 뽑은 1순위 취향 카페를 바로 찾아보게 함.
+        // onGoHome을 안 넘기면 기존처럼 마이페이지로 복귀(디버그 페이저 등)
+        onConfirm={onGoHome ?? onExit}
+        confirmLabel={`${winner.label} 카페 보러가기`}
         enabled={enabled}
       />
     );
