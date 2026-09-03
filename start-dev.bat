@@ -18,7 +18,8 @@ echo ============================================
 echo.
 
 echo [1/5] 최신 코드 받아오는 중...
-git pull origin develop
+for /f "delims=" %%b in ('git branch --show-current') do echo     현재 브랜치: %%b
+git pull
 echo.
 
 echo [2/5] Wi-Fi IP 감지 및 설정 중...
@@ -50,14 +51,22 @@ timeout /t 1 /nobreak >nul
 echo [5/5] 서버 시작 중... (%TIME%)
 echo.
 npm run dev
+set "NPMEXIT=%ERRORLEVEL%"
 
 echo.
 echo ============================================
-echo  서버 종료됨.
-echo  [R] 재시작  /  [Q] 완전 종료 + 방화벽 정리
-echo  5초 후 자동 재시작됩니다.
-echo ============================================
-choice /C RQ /N /T 5 /D R /M "선택 (R=재시작 / Q=종료+방화벽정리): "
+if not "%NPMEXIT%"=="0" (
+    echo  [!] 서버가 오류로 종료됐어요. exit code=%NPMEXIT%
+    echo  위쪽 에러 메시지를 읽어보세요. 자동 재시작은 하지 않습니다.
+    echo ============================================
+    choice /C RQ /N /M "선택 (R=재시작 / Q=종료+방화벽정리): "
+) else (
+    echo  서버 종료됨.
+    echo  [R] 재시작  /  [Q] 완전 종료 + 방화벽 정리
+    echo  5초 후 자동 재시작됩니다.
+    echo ============================================
+    choice /C RQ /N /T 5 /D R /M "선택 (R=재시작 / Q=종료+방화벽정리): "
+)
 if %ERRORLEVEL% EQU 2 goto CLEANUP
 goto RESTART
 

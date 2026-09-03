@@ -1,33 +1,17 @@
 Set-Location "C:\cafe\kagongzido"
 
-# [1/3] Wi-Fi IP 감지
-Write-Host "[1/3] Wi-Fi IP 감지 중..."
-$ip = (Get-NetIPAddress -InterfaceAlias "Wi-Fi" -AddressFamily IPv4 -ErrorAction SilentlyContinue).IPAddress
+$file = "C:\cafe\kagongzido\granite.config.ts"
 
-if (-not $ip) {
-    $ip = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
-        Where-Object {
-            $_.IPAddress -notmatch '^127\.' -and
-            $_.IPAddress -notmatch '^169\.' -and
-            $_.PrefixOrigin -ne 'WellKnown'
-        } | Select-Object -First 1).IPAddress
-}
-
-if (-not $ip) {
-    Write-Host "[오류] IP를 감지하지 못했어요. granite.config.ts를 직접 수정하세요."
+# [1/3] granite.config.ts 무결성 확인 + IP 반영 (가드는 setup-ip.ps1에 있음)
+Write-Host "[1/3] IP 감지 및 granite.config.ts 업데이트 중..."
+& powershell -NoProfile -ExecutionPolicy Bypass -File "C:\cafe\kagongzido\setup-ip.ps1"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[오류] IP 설정 실패."
     Read-Host "엔터를 누르면 닫힙니다"
     exit 1
 }
 
-Write-Host "[1/3] IP: $ip"
-
-# [2/3] granite.config.ts 업데이트
-Write-Host "[2/3] granite.config.ts 업데이트 중..."
-$file = "C:\cafe\kagongzido\granite.config.ts"
-$content = [IO.File]::ReadAllText($file, [Text.Encoding]::UTF8)
-$updated = $content -replace "host: '[^']+'", "host: '$ip'"
-[IO.File]::WriteAllText($file, $updated, [Text.Encoding]::UTF8)
-Write-Host "[2/3] 완료 - host: '$ip'"
+$ip = ([regex]::Match([IO.File]::ReadAllText($file, [Text.Encoding]::UTF8), "host: '([^']+)'")).Groups[1].Value
 
 # [3/3] 개발 서버 시작
 Write-Host ""
@@ -36,3 +20,8 @@ Write-Host ""
 
 $env:PATH = "C:\Program Files\nodejs;$env:PATH"
 & "C:\Program Files\nodejs\npm.cmd" run dev
+
+# 서버가 죽어도 창이 바로 닫히지 않도록
+Write-Host ""
+Write-Host "서버가 종료됐습니다. (exit code: $LASTEXITCODE)"
+Read-Host "엔터를 누르면 닫힙니다"
