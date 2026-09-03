@@ -1,4 +1,4 @@
-Set-Location "C:\cafe\kagongzido"
+﻿Set-Location "C:\cafe\kagongzido"
 
 $file = "C:\cafe\kagongzido\granite.config.ts"
 

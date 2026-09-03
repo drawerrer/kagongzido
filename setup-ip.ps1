@@ -1,15 +1,15 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $file = "C:\cafe\kagongzido\granite.config.ts"
 
 # [가드 1] 설정 파일이 없거나 비어 있으면 절대 덮어쓰지 않고 중단
 if (-not (Test-Path $file)) {
     Write-Host "[오류] granite.config.ts 가 없습니다. (git pull 로 삭제됐을 수 있어요)"
-    Write-Host "복구: git show faa09d1^:granite.config.ts > granite.config.ts"
+    Write-Host "복구: granite.config.example.ts 를 granite.config.ts 로 복사한 뒤 host 를 본인 IP 로 수정하세요"
     exit 1
 }
 if ((Get-Item $file).Length -lt 50) {
     Write-Host "[오류] granite.config.ts 가 비어 있습니다 ($((Get-Item $file).Length) bytes)."
-    Write-Host "복구: git show faa09d1^:granite.config.ts > granite.config.ts"
+    Write-Host "복구: granite.config.example.ts 를 granite.config.ts 로 복사한 뒤 host 를 본인 IP 로 수정하세요"
     exit 1
 }
 
