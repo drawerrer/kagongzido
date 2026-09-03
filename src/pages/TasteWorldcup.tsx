@@ -70,12 +70,12 @@ interface TasteWorldcupOnboardingSlide {
 
 // 서브 페이지: 카페 취향 월드컵 온보딩 (3장, 좌우 스와이프 — Figma 스펙 반영)
 const TASTE_WORLDCUP_ONBOARDING_SLIDES: TasteWorldcupOnboardingSlide[] = [
-  { main: '나는 어떤 카공 스타일일까?', sub: '콘센트, 조명, 분위기... 카공 취향을 알아봐요', image: WorldcupOnboarding1Img },
-  { main: '둘 중 더 끌리는 조건을 선택해요', sub: '2개의 보기 중 내 마음에 쏙 드는 걸 가볍게 툭툭 선택해요', image: WorldcupOnboarding2Img },
+  { main: '나는 어떤 카공 스타일일까?', sub: '콘센트, 조명, 분위기 등 나의 카공 취향을 알아봐요', image: WorldcupOnboarding1Img },
+  { main: '둘 중 더 끌리는 조건을 골라봐요', sub: '카공할 장소를 고를 때 절대 놓칠 수 없는 건 무엇인가요?', image: WorldcupOnboarding2Img },
   // 지금은 정적 일러스트로 채워둔 상태 — 실제 화면(카드 선택 → 상세페이지 진입 → 매칭
   // 인터랙션 재생) 녹화본 준비되면 video 항목에 mp4 경로 추가해서 교체 가능(소리 없이
   // 무한 반복 재생되도록 짧게(3~5초) 다듬어서 넘겨줄 것 — TasteWorldcupOnboardingSlide 참고)
-  { main: '카공 스팟을 한눈에 찾아드려요', sub: '내 1순위 조건과 일치하는 카페를 발견했을 때 특별한 효과로 확실하게 알려드릴게요', image: WorldcupOnboarding3Img },
+  { main: '취향에 맞는 카페를 찾아드려요', sub: '1순위 조건의 카페를 만나면 특별한 효과로 알려드릴게요', image: WorldcupOnboarding3Img },
 ];
 
 // 헤드라인 영역과 인디케이터 영역의 높이를 동일하게 맞추기 위한 기준값
