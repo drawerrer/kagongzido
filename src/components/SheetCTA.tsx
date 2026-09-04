@@ -8,6 +8,7 @@
  *
  * 사용 예:
  *   <SheetCTA.Single label="확인" onClick={...} disabled={...} background="#F3F3F3" />
+ *   <SheetCTA.Single label="확인" onClick={...} height={48} />   // 컴팩트 다이얼로그 전용 예외
  *   <SheetCTA.Double leftLabel="닫기" leftOnClick={...} rightLabel="확인" rightOnClick={...} background="#FFFFFF" />
  *   <SheetCTA.Double leftLabel="초기화" leftOnClick={...} leftWidth={88}
  *                    rightLabel="적용하기" rightOnClick={...} background="#F3F3F3" />   // 비대칭(FilterModal)
@@ -68,9 +69,15 @@ interface SingleProps {
   variant?: 'primary' | 'secondary';
   /** 시트의 바탕색 — 그라데이션 끝 색상으로 사용 (기본 #FFFFFF) */
   background?: string;
+  /**
+   * 버튼 높이 예외값 (px). 기본은 토스 표준 56.
+   * 콘텐츠가 작아 표준 높이가 과하게 보이는 컴팩트 다이얼로그에서만 쓸 것
+   * (예: NearbyLaptopCafesDialog). 일반 바텀시트는 기본값을 유지한다.
+   */
+  height?: number;
 }
 
-function Single({ label, onClick, disabled = false, variant = 'primary', background = '#FFFFFF' }: SingleProps) {
+function Single({ label, onClick, disabled = false, variant = 'primary', background = '#FFFFFF', height = HEIGHT }: SingleProps) {
   const bg = disabled
     ? DISABLED_BG
     : variant === 'secondary' ? SECONDARY_BG : PRIMARY_BG;
@@ -84,6 +91,7 @@ function Single({ label, onClick, disabled = false, variant = 'primary', backgro
         disabled={disabled}
         style={{
           ...BUTTON_BASE,
+          height,
           flex: 1,
           background: bg,
           color: text,
