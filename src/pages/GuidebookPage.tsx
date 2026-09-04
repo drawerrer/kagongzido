@@ -52,6 +52,10 @@ interface GuidebookStore {
   photos: string[];     // 실제 이미지 URL 배열
 }
 
+// 매장 한 곳당 수집되는 사진 최대 장수 (thumbnail 1 + photo_urls 9).
+// scripts/fetch-google-photos.mjs 의 MAX_PHOTOS 와 같은 값 — 그쪽을 바꾸면 여기도 맞출 것
+const MAX_STORE_PHOTOS = 10;
+
 interface GuidebookItem {
   id: string;
   title: string;
@@ -549,13 +553,17 @@ function GuideBookDetailView({
                             position: 'relative',
                           }}
                         >
-                          {pi === s.photos.length - 1 && s.photos.length > 1 && (
+                          {/* 마지막 장 더보기 오버레이 — 수집 스크립트(fetch-google-photos.mjs)가
+                              구글 Places 최대치인 10장(thumbnail 1 + photo_urls 9)까지 받아오므로,
+                              10장을 채운 카페만 "더 있을 수 있다"고 보고 표시한다.
+                              10장 미만이면 그게 전부라 아무것도 띄우지 않음 */}
+                          {pi === s.photos.length - 1 && s.photos.length >= MAX_STORE_PHOTOS && (
                             <div style={{
                               position: 'absolute', inset: 0,
                               background: 'rgba(0,0,0,0.52)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}>
-                              <span style={{ color: 'white', fontSize: 18, fontWeight: 590 }}>+{s.photos.length - 1}</span>
+                              <span style={{ color: 'white', fontSize: 18, fontWeight: 590 }}>더보기</span>
                             </div>
                           )}
                         </div>
