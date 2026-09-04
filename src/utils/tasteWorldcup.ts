@@ -84,27 +84,6 @@ export function getResultFrameBg(conditionId: string): string {
 // 매칭 배지처럼 인터랙션 재생이 끝난 뒤 다른 UI로 전환해야 하는 곳에서 씀. TasteWorldcup.tsx의
 // 각 인터랙션 컴포넌트(LampInteraction/SpaceInteraction/NoiseInteraction/ImageSequence/
 // MoodInteraction) phase 타이머 합과 수동으로 동기화한 값 — 그쪽 타이밍을 바꾸면 여기도 같이 바꿀 것
-// 16개 조건 id + 라벨(텍스트만, 애셋 없음) — TasteWorldcup.tsx의 TASTE_WORLDCUP_CONDITIONS와
-// 반드시 동기화할 것. 상세페이지 매칭 인터랙션 개발용 페이저(DetailPageTasteMatchDebugPager)에서만
-// 씀 — 거기서 TasteWorldcup.tsx를 직접 import하면 무거운 청크가 딸려오므로 텍스트만 여기 따로 둠
-export const TASTE_WORLDCUP_CONDITION_LABELS: TasteWorldcupWinner[] = [
-  { id: 'lamp_warm', label: '웜톤 조명' },
-  { id: 'lamp_low', label: '로우톤 조명' },
-  { id: 'lamp_white', label: '화이트톤 조명' },
-  { id: 'cafe_large', label: '대형 공간' },
-  { id: 'cafe_small', label: '소형 공간' },
-  { id: 'noise_normal', label: '적당한 소음' },
-  { id: 'noise_small', label: '조용한 소음' },
-  { id: 'outlet', label: '넉넉한 콘센트' },
-  { id: 'mood_wood', label: '우드 인테리어' },
-  { id: 'mood_metal', label: '메탈 인테리어' },
-  { id: 'mood_white', label: '화이트 인테리어' },
-  { id: 'mood_black', label: '블랙 인테리어' },
-  { id: 'mood_plant', label: '플랜트 인테리어' },
-  { id: 'mood_stone', label: '스톤 인테리어' },
-  { id: 'mood_brick', label: '브릭 인테리어' },
-  { id: 'mood_modern', label: '모던 인테리어' },
-];
 
 // cafe_large/cafe_small(대형/소형 공간)은 DetailPage.tsx의 FallingChairsInteraction이 따로
 // 자체 타이밍으로 처리해서 여기 안 거침 — 없어도 되지만 굳이 값을 추측해 넣지 않음

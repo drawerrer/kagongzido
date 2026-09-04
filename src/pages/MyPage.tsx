@@ -6,7 +6,6 @@ import FocusBottomCTA from '../components/FocusBottomCTA';
 import SheetMenuRow from '../components/SheetMenuRow';
 import SheetCTA from '../components/SheetCTA';
 import { useFavorites } from '../context/FavoritesContext';
-import { DetailPageTasteMatchDebugPager } from './DetailPage';
 import {
   insertCafeReport, deleteUserData,
   fetchUserReviews, deleteReview, updateReview, type UserReviewRow,
@@ -40,7 +39,7 @@ const EmptyPlusIcon = (
 // 타입
 // ─────────────────────────────────────────────────────────────
 type MyTab = '내 활동' | '설정';
-type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup' | 'taste-match-debug' | 'taste-matched';
+type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup' | 'taste-matched';
 
 interface CafeItem {
   id: string;
@@ -1597,16 +1596,6 @@ export default function MyPage({
               onClick={handleOpenReportCafe}
             />
           </div>
-          {/* TODO(임시 개발용): 상세페이지 취향 매칭 인터랙션 점검용 페이저 진입 버튼 — 다듬기 끝나면 제거 */}
-          <button
-            onClick={() => changeSubPage('taste-match-debug')}
-            style={{
-              background: 'none', border: 'none', padding: '4px 0 0',
-              fontSize: 12, color: '#B0B8C1', cursor: 'pointer', textAlign: 'left',
-            }}
-          >
-            취향 매칭 인터랙션 미리보기(개발용)
-          </button>
         </div>
 
         {/* 탭 바 */}
@@ -1965,11 +1954,6 @@ export default function MyPage({
             enabled={!hasDetailOverlay}
           />
         </Suspense>
-      </div>
-    )}
-    {subPage === 'taste-match-debug' && (
-      <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
-        <DetailPageTasteMatchDebugPager onExit={() => changeSubPage(null)} />
       </div>
     )}
     {editingReview && (

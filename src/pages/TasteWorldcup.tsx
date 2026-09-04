@@ -89,7 +89,7 @@ const HEADLINE_AREA_HEIGHT = HEADLINE_MAIN_HEIGHT + HEADLINE_GAP + HEADLINE_SUB_
 const INDICATOR_DOT_SIZE = 6;
 const INDICATOR_DOT_GAP = 10;
 
-function TasteWorldcupPage({ onBack, onStart, onDebugPager, enabled = true }: { onBack: () => void; onStart: () => void; onDebugPager?: () => void; enabled?: boolean }) {
+function TasteWorldcupPage({ onBack, onStart, enabled = true }: { onBack: () => void; onStart: () => void; enabled?: boolean }) {
   useBackEvent(onBack, enabled);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
@@ -206,20 +206,6 @@ function TasteWorldcupPage({ onBack, onStart, onDebugPager, enabled = true }: { 
 
       {/* 하단 CTA와의 여백 확보용 스페이서 — 바디 바깥, 바디 아래 */}
       <div style={{ flexShrink: 0, height: 120 }} />
-
-      {/* TODO(임시 개발용): 결과 인터랙션 점검용 페이저 진입 버튼 — 다듬기 끝나면 제거 */}
-      {onDebugPager && (
-        <button
-          onClick={onDebugPager}
-          style={{
-            position: 'absolute', top: 12, right: 16,
-            background: 'none', border: 'none', padding: 4,
-            fontSize: 12, color: '#B0B8C1', cursor: 'pointer', zIndex: 1,
-          }}
-        >
-          결과 인터랙션 미리보기(개발용)
-        </button>
-      )}
 
       <FocusBottomCTA.Single label="시작하기" onClick={onStart} />
     </div>
@@ -1134,39 +1120,7 @@ function TasteWorldcupResultPage({
   );
 }
 
-// TODO(임시 개발용): 결과 인터랙션을 라운드를 다 돌지 않고 실제 결과 화면 그대로, 한 조건씩 넘겨보며
-// 점검하기 위한 페이저. "다음으로"를 누를 때마다 다음 조건의 인터랙션이 처음부터 재생됨(끝까지 가면 처음으로 순환).
-// 인터랙션 디테일 다듬기 끝나면 이 컴포넌트와 TasteWorldcupPage의 진입 버튼을 함께 제거할 것.
-function TasteWorldcupResultDebugPager({ onExit }: { onExit: () => void }) {
-  const total = TASTE_WORLDCUP_CONDITIONS.length;
-  const [index, setIndex] = useState(0);
-  const condition = TASTE_WORLDCUP_CONDITIONS[index];
-
-  return (
-    <div style={{ position: 'relative', height: '100%' }}>
-      {/* 현재 몇 번째 조건인지 표시 — 디버그 전용 오버레이 */}
-      <div style={{
-        position: 'absolute', top: 12, left: 20, zIndex: 2,
-        fontSize: 12, color: '#B0B8C1', background: 'rgba(255,255,255,0.85)',
-        padding: '2px 8px', borderRadius: 8,
-      }}>
-        {index + 1} / {total} · {condition.id}
-      </div>
-      <TasteWorldcupResultPage
-        // 조건이 바뀔 때마다 컴포넌트를 새로 마운트해서 인터랙션 애니메이션이 처음부터 재생되게 함
-        key={condition.id}
-        winner={condition}
-        onBack={onExit}
-        onConfirm={() => setIndex(i => (i + 1) % total)}
-        confirmLabel="다음으로"
-        onPrev={() => setIndex(i => (i - 1 + total) % total)}
-        prevLabel="← 이전으로"
-      />
-    </div>
-  );
-}
-
-type TasteWorldcupPhase = 'onboarding' | 'game' | 'result' | 'debug-pager';
+type TasteWorldcupPhase = 'onboarding' | 'game' | 'result';
 
 /**
  * 카페 취향 월드컵 플로우 전체를 감싸는 진입점.
@@ -1201,15 +1155,10 @@ export default function TasteWorldcupFlow({ onExit, onGoHome, enabled = true }: 
     );
   }
 
-  if (phase === 'debug-pager') {
-    return <TasteWorldcupResultDebugPager onExit={() => setPhase('onboarding')} />;
-  }
-
   return (
     <TasteWorldcupPage
       onBack={onExit}
       onStart={() => setPhase('game')}
-      onDebugPager={() => setPhase('debug-pager')}
       enabled={enabled}
     />
   );

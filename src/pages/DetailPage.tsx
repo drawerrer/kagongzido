@@ -35,7 +35,6 @@ import MoodModernImg from '../assets/interaction/mood_modern.svg';
 import {
   getTasteWorldcupWinner, matchesTasteWorldcupWinner,
   getResultInteractionDurationMs,
-  TASTE_WORLDCUP_CONDITION_LABELS,
 } from '../utils/tasteWorldcup';
 
 // 대형/소형 공간 조건인지 — 이 두 조건만 우측 절반 박스가 아니라 화면 전체에 의자가 떨어지는
@@ -1237,9 +1236,6 @@ interface DetailPageProps {
   showHero?: boolean; // false면 포토 히어로 영역 숨김 (MapPage 기본 바텀시트 상태)
   onFocusModeChange?: (active: boolean) => void; // 사진리뷰/리뷰작성 등 풀스크린 액션 진입 시 true (탭바 숨김 신호)
   onScrollChange?: (scrolled: boolean) => void; // embedded: sticky header 등장 여부 전달
-  // TODO(임시 개발용): 취향 매칭 인터랙션 점검용 — 지정하면 실제 태그 매칭과 무관하게 이 조건으로
-  // "매칭됨" 취급함. 인터랙션 디테일 다듬기 끝나면 이 prop과 DetailPageTasteMatchDebugPager를 함께 제거할 것.
-  debugForceTasteConditionId?: string;
 }
 
 // 아바타 색상 (user_id 기반 고정 색)
@@ -1462,7 +1458,7 @@ function EditMyReviewPage({
   );
 }
 
-export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false, onSwipeDown, showHero = true, onFocusModeChange, onScrollChange, debugForceTasteConditionId }: DetailPageProps) {
+export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home', onTabChange, scrollToReview, openDirections, embedded = false, onSwipeDown, showHero = true, onFocusModeChange, onScrollChange }: DetailPageProps) {
   const [storeData, setStoreData] = useState<CafeDetailData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -1726,17 +1722,13 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
   const { label: statusLabel, color: statusColor } = getStatusInfo(cafe);
   // 카페 취향 월드컵 1순위 조건과 이 카페가 일치하는지 — 결과는 기기 로컬(localStorage)에 저장돼 있음
-  const tasteWinner = debugForceTasteConditionId
-    ? { id: debugForceTasteConditionId, label: '' }
-    : getTasteWorldcupWinner();
-  const isTasteMatch = !!tasteWinner && (
-    !!debugForceTasteConditionId || matchesTasteWorldcupWinner(tasteWinner.id, {
-      seats: cafe.seats,
-      outlets: cafe.outlets,
-      noise: cafe.noise,
-      vibeTagsRaw: cafe.vibeTagsRaw,
-    })
-  );
+  const tasteWinner = getTasteWorldcupWinner();
+  const isTasteMatch = !!tasteWinner && matchesTasteWorldcupWinner(tasteWinner.id, {
+    seats: cafe.seats,
+    outlets: cafe.outlets,
+    noise: cafe.noise,
+    vibeTagsRaw: cafe.vibeTagsRaw,
+  });
   // 매칭 인터랙션(플로팅)이 다 재생되고 사라졌는지 — true가 되면 오버레이는 걷히고, 대신
   // "카페 정보" 타이틀 옆 배지가 나타남. 카페가 바뀌면 다시 처음부터 재생되도록 초기화
   const [tasteInteractionDone, setTasteInteractionDone] = useState(false);
@@ -2606,62 +2598,6 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         onClose={() => setShowShareSheet(false)}
         shareTitle={cafe.name}
         onShare={(method) => trackShareCafe(cafe.id, method)}
-      />
-    </div>
-  );
-}
-
-// TODO(임시 개발용): 취향 매칭 인터랙션(사진 위 오버레이 배지)을 실제 월드컵을 매번 플레이하지
-// 않고 조건 16종을 하나씩 넘겨보며 점검하기 위한 페이저. "다음으로"를 누를 때마다 다음 조건으로
-// 강제 매칭시켜(debugForceTasteConditionId) 같은 카페 상세페이지를 다시 마운트함(끝까지 가면
-// 처음으로 순환). 인터랙션 디테일 다듬기 끝나면 이 컴포넌트와 진입 버튼을 함께 제거할 것.
-const DEBUG_CAFE_ID = '1466542951'; // 셀렉티드닉스 — 개발 DB에 항상 존재하는 카페로 고정
-export function DetailPageTasteMatchDebugPager({ onExit }: { onExit: () => void }) {
-  const total = TASTE_WORLDCUP_CONDITION_LABELS.length;
-  const [index, setIndex] = useState(0);
-  const condition = TASTE_WORLDCUP_CONDITION_LABELS[index];
-
-  return (
-    <div style={{ position: 'relative', height: '100%' }}>
-      {/* 현재 몇 번째 조건인지 표시 — 디버그 전용 오버레이 */}
-      <div style={{
-        position: 'absolute', top: 12, left: 20, zIndex: 999,
-        fontSize: 12, color: '#B0B8C1', background: 'rgba(255,255,255,0.85)',
-        padding: '2px 8px', borderRadius: 8,
-      }}>
-        {index + 1} / {total} · {condition.id}
-      </div>
-      <div style={{
-        // 하단 탭바(홈/가이드북/모음집/마이)와 겹치지 않도록 충분히 띄움
-        position: 'absolute', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 90px)', left: 20, right: 20, zIndex: 999,
-        display: 'flex', gap: 8,
-      }}>
-        <button
-          onClick={() => setIndex(i => (i - 1 + total) % total)}
-          style={{
-            flex: 1, padding: '10px 0', borderRadius: 8, border: 'none', cursor: 'pointer',
-            background: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 700, color: '#252525',
-          }}
-        >
-          ← 이전 조건
-        </button>
-        <button
-          onClick={() => setIndex(i => (i + 1) % total)}
-          style={{
-            flex: 1, padding: '10px 0', borderRadius: 8, border: 'none', cursor: 'pointer',
-            background: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: 700, color: '#252525',
-          }}
-        >
-          다음 조건 →
-        </button>
-      </div>
-      <DetailPage
-        // 조건이 바뀔 때마다 컴포넌트를 새로 마운트해서 인터랙션 애니메이션이 처음부터 재생되게 함
-        key={condition.id}
-        cafeId={DEBUG_CAFE_ID}
-        onBack={onExit}
-        onClose={onExit}
-        debugForceTasteConditionId={condition.id}
       />
     </div>
   );
