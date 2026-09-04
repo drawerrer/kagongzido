@@ -190,28 +190,16 @@ function TasteWorldcupPage({ onBack, onStart, onDebugPager, enabled = true }: { 
         </div>
 
         {/* 인디케이터 — 캐러셀 밖에 하나만 두고 activeStep에 따라 갱신. 헤드라인과 동일한 높이로 좌우 대칭.
-            점 3개는 고정 배경으로 깔아두고, 활성 점 하나가 스크롤 방향에 맞춰 위치를 슬라이드하며 이동함 */}
+            점은 제자리에 두고 색만 바뀜 — 가이드북 사진 인디케이터(GuidebookPage)와 동일한 패턴 */}
         <div style={{ marginTop: 40, height: HEADLINE_AREA_HEIGHT, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{
-            position: 'relative',
-            width: INDICATOR_DOT_SIZE * TASTE_WORLDCUP_ONBOARDING_SLIDES.length + INDICATOR_DOT_GAP * (TASTE_WORLDCUP_ONBOARDING_SLIDES.length - 1),
-            height: INDICATOR_DOT_SIZE,
-          }}>
+          <div style={{ display: 'flex', gap: INDICATOR_DOT_GAP }}>
             {TASTE_WORLDCUP_ONBOARDING_SLIDES.map((_, i) => (
               <div key={i} style={{
-                position: 'absolute', left: i * (INDICATOR_DOT_SIZE + INDICATOR_DOT_GAP), top: 0,
                 width: INDICATOR_DOT_SIZE, height: INDICATOR_DOT_SIZE, borderRadius: INDICATOR_DOT_SIZE / 2,
-                background: '#bbbbbb',
+                backgroundColor: i === activeStep ? '#252525' : '#bbbbbb',
+                transition: 'background-color 0.25s ease',
               }} />
             ))}
-            {/* 활성 점 — 배경 점들 위에 겹쳐서 transform으로 슬라이드 이동 */}
-            <div style={{
-              position: 'absolute', left: 0, top: 0,
-              width: INDICATOR_DOT_SIZE, height: INDICATOR_DOT_SIZE, borderRadius: INDICATOR_DOT_SIZE / 2,
-              background: '#252525',
-              transform: `translateX(${activeStep * (INDICATOR_DOT_SIZE + INDICATOR_DOT_GAP)}px)`,
-              transition: 'transform 0.2s ease',
-            }} />
           </div>
         </div>
       </div>
