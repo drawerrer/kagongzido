@@ -531,31 +531,6 @@ function AppInner() {
         )}
       </div>
 
-      {/* ── TEMP: 검색화면 미리보기 버튼 — 개발 중에만 노출, 배포 빌드에서 자동 제거됨 (import.meta.env.DEV) ── */}
-      {import.meta.env.DEV && activeTab === 'home' && !topOverlay && (
-        <button
-          onClick={() => setShowSearch(true)}
-          style={{
-            position: 'fixed',
-            left: 16,
-            top: 'calc(env(safe-area-inset-top, 0px) + 16px)',
-            zIndex: 101,
-            height: 40,
-            padding: '0 14px',
-            borderRadius: 20,
-            border: 'none',
-            background: '#ff3b30',
-            color: '#ffffff',
-            fontSize: 13,
-            fontWeight: 700,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
-            cursor: 'pointer',
-          }}
-        >
-          🔍 검색화면 미리보기
-        </button>
-      )}
-
       {/* ── 탭바 ── */}
       <nav
         style={{
