@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, Component } from 'react';
 import { getAnonymousKey, partner } from '@apps-in-toss/web-framework';
+import { Toast } from '@toss/tds-mobile';
 import { getOrCreateUser, getOrCreateUserWithAuth, userExists, fetchLibraries, fetchSharedSpaces } from './services/db';
 import { trackUtmEntry, trackPageView } from './services/analytics';
 import { supabase } from './services/supabase';
@@ -331,6 +332,11 @@ function AppInner() {
     if (!collectionDetail) setIsCollectionEditMode(false);
   }, [collectionDetail]);
   const [myPageSubPage, setMyPageSubPage] = useState<string | null>(null);
+  // 카페 제보를 홈/검색에서 열었는지 — 제보 화면은 마이 탭 소속이라 뒤로가기가 마이페이지로
+  // 가버리는데, 홈에서 들어왔으면 홈으로 되돌려야 해서 진입 출처를 기억해 둔다
+  const [reportCafeFromHome, setReportCafeFromHome] = useState(false);
+  // 홈에서 시작한 제보가 완료됐을 때 홈에서 띄우는 완료 토스트
+  const [homeReportToast, setHomeReportToast] = useState(false);
   const [guidebookView, setGuidebookView] = useState<string | null>(null);
   const [guidebookStoreIndex, setGuidebookStoreIndex] = useState(0);
   const [detailScrollToReview, setDetailScrollToReview] = useState(false);
@@ -469,6 +475,7 @@ function AppInner() {
             onPlaceDetailOpen={(place) => { setDetailPlace(place); setDetailCafeId(place.id); }}
             onGoToFavorites={() => setActiveTab('collection')}
             onReportCafe={() => {
+              setReportCafeFromHome(true);
               setActiveTab('mypage');
               setMyPageSubPage('report-cafe');
             }}
@@ -521,10 +528,20 @@ function AppInner() {
               onDetailOpen={(id) => setDetailCafeId(id)}
               onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
               initialSubPage={myPageSubPage as any}
-              onSubPageChange={setMyPageSubPage}
+              onSubPageChange={(page) => {
+                // 제보 화면을 벗어나면(제출 완료 포함) 진입 출처 기억을 비운다
+                if (page !== 'report-cafe') setReportCafeFromHome(false);
+                setMyPageSubPage(page);
+              }}
               onRegisterBack={(fn) => { myPageBackRef.current = fn; }}
               subViewRef={myPageSubViewRef}
               onGoHome={() => setActiveTab('home')}
+              onReportCafeExit={reportCafeFromHome ? (result) => {
+                setReportCafeFromHome(false);
+                setMyPageSubPage(null);
+                setActiveTab('home');
+                if (result === 'submitted') setHomeReportToast(true);
+              } : undefined}
               hasDetailOverlay={!!detailCafeId}
             />
           </div>
@@ -655,6 +672,15 @@ function AppInner() {
         )}
       </nav>
 
+      {/* 제보 완료 토스트 — 홈에서 시작한 제보는 홈으로 돌아와 여기서 안내한다.
+          마이페이지에서 시작한 제보는 MyPage 가 자체 토스트로 처리 */}
+      <Toast
+        open={homeReportToast}
+        position="top"
+        text="제보를 등록했어요"
+        onClose={() => setHomeReportToast(false)}
+      />
+
       {/* ── 오버레이 페이지들 (절대 위치 — 슬라이드 시 베이스가 비침) ── */}
       {collectionDetail && (
         <div
@@ -685,6 +711,7 @@ function AppInner() {
             onDetailOpen={(id) => { setDetailCafeId(id); }}
             onPlaceDetailOpen={(place) => { setDetailPlace(place); setDetailCafeId(place.id); }}
             onReportCafe={() => {
+              setReportCafeFromHome(true);
               setShowSearch(false);
               setActiveTab('mypage');
               setMyPageSubPage('report-cafe');

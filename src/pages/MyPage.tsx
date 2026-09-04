@@ -1436,6 +1436,7 @@ export default function MyPage({
   onRegisterBack,
   subViewRef,
   onGoHome,
+  onReportCafeExit,
   hasDetailOverlay = false,
 }: {
   onDetailOpen?: (id: string) => void;
@@ -1447,6 +1448,14 @@ export default function MyPage({
   subViewRef?: RefObject<HTMLDivElement> | null;
   /** 빈 상태 등에서 홈 탭으로 이동 */
   onGoHome?: () => void;
+  /**
+   * 홈/검색에서 진입한 카페 제보를 빠져나올 때의 처리.
+   * 제보 화면은 마이 탭 소속이라 기본 동작이 마이페이지 복귀인데,
+   * 홈에서 들어왔으면 홈으로 돌려보내야 해서 App이 이 콜백을 넘긴다.
+   * 'submitted' 면 App이 홈에서 완료 토스트까지 띄우므로 MyPage 토스트는 건너뛴다.
+   * 넘어오지 않으면(마이페이지에서 직접 진입) 기존대로 마이페이지 복귀 + 자체 토스트.
+   */
+  onReportCafeExit?: (result: 'back' | 'submitted') => void;
   /** App 상위에서 DetailPage 등 오버레이가 떠 있는지 — 하위 SubHeader backEvent 위임용 */
   hasDetailOverlay?: boolean;
 } = {}) {
@@ -1931,11 +1940,12 @@ export default function MyPage({
     {subPage === 'report-cafe' && (
       <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
         <ReportCafePage
-          onBack={() => changeSubPage(null)}
-          onClose={() => changeSubPage(null)}
+          onBack={() => { if (onReportCafeExit) { onReportCafeExit('back'); return; } changeSubPage(null); }}
+          onClose={() => { if (onReportCafeExit) { onReportCafeExit('submitted'); return; } changeSubPage(null); }}
           onSubmitted={() => {
             setReportRefreshTrigger(t => t + 1);
-            setReportSubmitToast(true);
+            // 홈으로 돌아가는 경우엔 App이 홈에서 토스트를 띄운다 (여기서 띄우면 화면이 바뀌며 사라짐)
+            if (!onReportCafeExit) setReportSubmitToast(true);
           }}
         />
       </div>
