@@ -19,6 +19,7 @@ import IcCamera from '../assets/icons/icon_camera.svg?react';
 import IcWarning from '../assets/icons/icon_warning.svg?react';
 import IcX from '../assets/icons/icon_x.svg?react';
 import IcOpen from '../assets/icons/icon_open.svg?react';
+import IcThumbUp from '../assets/icons/icon_thumbup.svg?react';
 import IcCopy from '../assets/icons/icon_copy.svg?react';
 import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
 import ChairSingleImg from '../assets/interaction/chair_single.svg';
@@ -220,14 +221,6 @@ function FallingChairsInteraction({ dense, onDone }: { dense: boolean; onDone: (
 }
 
 // ── 편의시설 SVG 아이콘 ──────────────────────────────────────
-// 카페 취향 월드컵 1순위 매칭 배지용 반짝임 아이콘
-function IcSparkle({ size = 13 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M12 2.5c.42 3.6 1.13 5.98 2.15 7.35 1.02 1.37 3.02 2.24 6 2.65-2.98.41-4.98 1.28-6 2.65-1.02 1.37-1.73 3.75-2.15 7.35-.42-3.6-1.13-5.98-2.15-7.35-1.02-1.37-3.02-2.24-6-2.65 2.98-.41 4.98-1.28 6-2.65C10.87 8.48 11.58 6.1 12 2.5Z" fill="currentColor"/>
-    </svg>
-  );
-}
 function IcParking() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -2239,14 +2232,15 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
                     onClick={handleTasteBadgeTap}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 3,
-                      fontSize: 11, fontWeight: 700, color: '#3182F6',
-                      background: '#3182F614', border: 'none', borderRadius: 999, padding: '3px 8px',
+                      // 배경/텍스트 색은 같은 페이지의 '길 안내'(SubButton light)와 통일
+                      fontSize: 11, fontWeight: 590, color: 'rgba(3,18,40,0.7)',
+                      background: '#E7E8EB', border: '0.5px solid rgba(3,18,40,0.16)', borderRadius: 12, padding: '1px 8px',
                       cursor: 'pointer',
                       animation: 'taste-match-badge-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both',
                     }}
                   >
-                    <IcSparkle size={11} />
                     내 취향과 일치
+                    <IcThumbUp width={12} height={12} />
                   </button>
                 )}
               </span>
