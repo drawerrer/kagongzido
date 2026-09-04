@@ -8,9 +8,14 @@ dist-admin/
 .DS_Store
 granite.config.ts
 .granite/
-images/
+/images/
 .vercel
 portfolio/
 portfolio-preview.html
 client_secret_*.json
 .ga4-token.json
+
+# 개인 개발서버 실행 스크립트 (각자 PC 경로가 하드코딩돼 있어 공유하지 않음)
+start-dev.bat
+start-dev.ps1
+setup-ip.ps1

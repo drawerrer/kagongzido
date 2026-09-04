@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { openURL, partner, tdsEvent, fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
 import { trackMapOpen, trackShareCafe, trackPhoneCopy } from '../services/analytics';
@@ -19,8 +19,205 @@ import IcCamera from '../assets/icons/icon_camera.svg?react';
 import IcWarning from '../assets/icons/icon_warning.svg?react';
 import IcX from '../assets/icons/icon_x.svg?react';
 import IcOpen from '../assets/icons/icon_open.svg?react';
+import IcThumbUp from '../assets/icons/icon_thumbup.svg?react';
 import IcCopy from '../assets/icons/icon_copy.svg?react';
 import DiscardConfirmDialog from '../components/DiscardConfirmDialog';
+import ChairSingleImg from '../assets/interaction/chair_single.svg';
+import MoodBackgroundImg from '../assets/interaction/mood_background.png';
+import MoodWoodImg from '../assets/interaction/mood_wood.svg';
+import MoodMetalImg from '../assets/interaction/mood_metal.svg';
+import MoodWhiteImg from '../assets/interaction/mood_white.svg';
+import MoodBlackImg from '../assets/interaction/mood_black.svg';
+import MoodPlantImg from '../assets/interaction/mood_plant.svg';
+import MoodStoneImg from '../assets/interaction/mood_stone.svg';
+import MoodBrickImg from '../assets/interaction/mood_brick.svg';
+import MoodModernImg from '../assets/interaction/mood_modern.svg';
+import {
+  getTasteWorldcupWinner, matchesTasteWorldcupWinner,
+  getResultInteractionDurationMs,
+} from '../utils/tasteWorldcup';
+
+// 대형/소형 공간 조건인지 — 이 두 조건만 우측 절반 박스가 아니라 화면 전체에 의자가 떨어지는
+// 별도 연출(FallingChairsInteraction)을 씀
+const SPACE_CONDITION_IDS = new Set(['cafe_large', 'cafe_small']);
+
+// 분위기(mood_) 조건 8종 — 결과 화면의 줌/쓸림/코멧 연출 대신, mood_background.png(원형 스티커)
+// 안에 조건별 이미지가 들어간 형태로 상세페이지 전용 연출(MoodStickerInteraction)을 씀
+const MOOD_STICKER_IMAGES: Record<string, string> = {
+  mood_wood: MoodWoodImg,
+  mood_metal: MoodMetalImg,
+  mood_white: MoodWhiteImg,
+  mood_black: MoodBlackImg,
+  mood_plant: MoodPlantImg,
+  mood_stone: MoodStoneImg,
+  mood_brick: MoodBrickImg,
+  mood_modern: MoodModernImg,
+};
+
+// 스티커가 살짝 커지고 기울어진 상태에서 튕기듯 제자리로 붙는 연출 — mood_background.png(원형
+// 스티커 프레임) 안에 조건별 이미지를 원형으로 잘라 넣음. 스티커 링 안쪽 여백(약 7%)은
+// mood_background.png의 검은 원 테두리 안쪽 픽셀 좌표를 실측해서 잡은 값
+function MoodStickerInteraction({ conditionId }: { conditionId: string }) {
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    // 마운트와 같은 렌더에서 바로 목표 상태로 두면 트랜지션 없이 순간이동해버려서 한 틱 늦춤
+    const t = setTimeout(() => setStuck(true), 30);
+    return () => clearTimeout(t);
+  }, []);
+
+  const src = MOOD_STICKER_IMAGES[conditionId];
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      transform: stuck ? 'scale(1) rotate(0deg)' : 'scale(1.35) rotate(-14deg)',
+      opacity: stuck ? 1 : 0,
+      transition: 'transform 550ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 250ms ease-out',
+    }}>
+      <div style={{ position: 'relative', width: '64%', aspectRatio: '1 / 1' }}>
+        <img src={MoodBackgroundImg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+        <div style={{ position: 'absolute', top: '7%', left: '7%', right: '7%', bottom: '7%', borderRadius: '50%', overflow: 'hidden' }}>
+          {src && <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 취향 월드컵 결과 인터랙션(ResultInteraction) — TasteWorldcup.tsx는 조건 이미지 16종(~700KB)을
+// 포함한 별도 청크라, 매칭됐을 때만 동적 import로 불러옴(정적 import 시 상세페이지 기본 번들에
+// 딸려 들어가 모든 카페 상세페이지 진입마다 로드돼버림)
+const LazyResultInteraction = lazy(() =>
+  import('./TasteWorldcup').then(m => ({ default: m.ResultInteraction }))
+);
+
+// 상세페이지 진입 시 1순위 취향 조건과 이 카페가 일치하면, 결과 화면과 같은 인터랙션을 한 번
+// 재생한 뒤 사라지는 플로팅 오버레이. 다 사라진 뒤엔 "카페 정보" 타이틀 옆 배지(아래 참고)로 넘어감
+function TasteMatchInteraction({ conditionId, onDone }: { conditionId: string; onDone: () => void }) {
+  const [fadingOut, setFadingOut] = useState(false);
+  const isMood = conditionId.startsWith('mood_');
+
+  useEffect(() => {
+    const t = setTimeout(() => setFadingOut(true), getResultInteractionDurationMs(conditionId, { skipNoiseBars: true, stickerMood: true }));
+    return () => clearTimeout(t);
+  }, [conditionId]);
+
+  useEffect(() => {
+    if (!fadingOut) return;
+    const t = setTimeout(onDone, 700); // 페이드아웃 트랜지션(700ms)이 끝난 뒤 완전히 제거
+    return () => clearTimeout(t);
+  }, [fadingOut, onDone]);
+
+  return (
+    <div style={{
+      position: 'relative', width: '100%', height: '100%',
+      borderRadius: 16, overflow: 'hidden',
+      // 결과 화면(TasteWorldcup.tsx)의 getResultFrameBg는 lamp_ 조건에 어두운 배경(#66717F)을
+      // 깔지만, 여긴 카페 사진/정보 위에 얹히는 오버레이라 그 배경이 그대로 안 어울려서 투명으로 둠
+      background: 'transparent',
+      opacity: fadingOut ? 0 : 1,
+      // ease-out — 처음엔 서서히, 뒤로 갈수록 점점 느리게 흐려지며 사라짐
+      transition: 'opacity 700ms ease-out',
+    }}>
+      {isMood ? (
+        <MoodStickerInteraction conditionId={conditionId} />
+      ) : (
+        <Suspense fallback={null}>
+          <LazyResultInteraction conditionId={conditionId} showLitFrameBg={false} enableLampFlicker skipNoiseBars />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
+// 대형/소형 공간 매칭 전용 연출 — 다른 조건들과 달리 우측 절반 박스 안이 아니라 화면 전체에
+// 의자 아이콘 여러 개가 위에서 후루룩 떨어져 쌓이는 장식. 장식용이라 pointer-events:none으로
+// 둬서 떨어지는 동안에도 길 안내 버튼 등 다른 UI를 계속 누를 수 있음.
+// 대형 공간(cafe_large)은 더 많은 의자가 다닥다닥 붙어서 떨어지고, 소형 공간(cafe_small)은
+// 기존처럼 적은 수가 여유 있게 떨어짐
+interface FallingChairConfig {
+  leftPercent: number;
+  delayMs: number;
+  durationMs: number;
+  landRotateDeg: number;
+  landBottomPercent: number;
+  size: number;
+}
+interface FallingChairsPreset {
+  count: number;
+  leftJitter: number;
+  rotateRange: number;
+  bottomRange: [number, number];
+  sizeRange: [number, number];
+}
+const FALLING_CHAIRS_SPARSE: FallingChairsPreset = {
+  count: 8, leftJitter: 3, rotateRange: 20, bottomRange: [4, 22], sizeRange: [64, 88],
+};
+const FALLING_CHAIRS_DENSE: FallingChairsPreset = {
+  count: 20, leftJitter: 2, rotateRange: 12, bottomRange: [2, 32], sizeRange: [46, 62],
+};
+function makeFallingChairConfigs({ count, leftJitter, rotateRange, bottomRange, sizeRange }: FallingChairsPreset): FallingChairConfig[] {
+  return Array.from({ length: count }, (_, i) => ({
+    // count로 균등 분산시킨 뒤 살짝 흔들어서 일렬로 안 보이게 함
+    leftPercent: 4 + i * (92 / (count - 1)) + (Math.random() * leftJitter * 2 - leftJitter),
+    delayMs: Math.round(Math.random() * 450),
+    durationMs: 650 + Math.round(Math.random() * 300),
+    landRotateDeg: Math.round(Math.random() * rotateRange * 2 - rotateRange),
+    landBottomPercent: bottomRange[0] + Math.random() * (bottomRange[1] - bottomRange[0]),
+    size: sizeRange[0] + Math.round(Math.random() * (sizeRange[1] - sizeRange[0])),
+  }));
+}
+
+function FallingChairsInteraction({ dense, onDone }: { dense: boolean; onDone: () => void }) {
+  const [chairs] = useState(() => makeFallingChairConfigs(dense ? FALLING_CHAIRS_DENSE : FALLING_CHAIRS_SPARSE));
+  const [falling, setFalling] = useState(false);
+  const [fadingOut, setFadingOut] = useState(false);
+
+  useEffect(() => {
+    // 마운트와 같은 렌더에서 바로 목표 위치로 두면 트랜지션 없이 순간이동해버려서 한 틱 늦춤
+    const t = setTimeout(() => setFalling(true), 30);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!falling) return;
+    const lastLanding = Math.max(...chairs.map(c => c.delayMs + c.durationMs));
+    const t = setTimeout(() => setFadingOut(true), lastLanding + 500); // 다 쌓인 뒤 잠깐 유지
+    return () => clearTimeout(t);
+  }, [falling, chairs]);
+
+  useEffect(() => {
+    if (!fadingOut) return;
+    const t = setTimeout(onDone, 500);
+    return () => clearTimeout(t);
+  }, [fadingOut, onDone]);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, pointerEvents: 'none', overflow: 'hidden' }}>
+      {chairs.map((c, i) => (
+        <img
+          key={i}
+          src={ChairSingleImg}
+          alt=""
+          style={{
+            position: 'absolute',
+            left: `${c.leftPercent}%`,
+            bottom: `${c.landBottomPercent}%`,
+            width: c.size, height: c.size,
+            opacity: fadingOut ? 0 : 1,
+            transform: falling
+              ? `translateY(0) rotate(${c.landRotateDeg}deg)`
+              : 'translateY(-120vh) rotate(0deg)',
+            transition: fadingOut
+              ? 'opacity 500ms ease'
+              : `transform ${c.durationMs}ms cubic-bezier(0.55, 0.06, 0.68, 0.19) ${c.delayMs}ms`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 // ── 편의시설 SVG 아이콘 ──────────────────────────────────────
 function IcParking() {
@@ -203,7 +400,10 @@ interface CafeDetailData {
   regularHoliday: DayKey[];
   seats?: string;
   outlets?: string;
+  noise?: string;
   vibe?: string;
+  /** vibe_tags 원본 배열(정규화 전) — 취향 월드컵 매칭용 */
+  vibeTagsRaw?: string[];
   priceRange?: string;
   phone?: string;
   snsUrl?: string;
@@ -1284,6 +1484,8 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
           hoursText: typeof store.business_hours === 'string' ? store.business_hours : undefined,
           seats: store.seat_status || undefined,
           outlets: store.outlet_status || undefined,
+          noise: store.noise_status || undefined,
+          vibeTagsRaw: vibeTags,
           vibe: (() => {
             const tags = vibeTags
               .flatMap(t => t.split(/[\n,]+/))
@@ -1519,6 +1721,26 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
   }, [isFavorite, heartActive]);
 
   const { label: statusLabel, color: statusColor } = getStatusInfo(cafe);
+  // 카페 취향 월드컵 1순위 조건과 이 카페가 일치하는지 — 결과는 기기 로컬(localStorage)에 저장돼 있음
+  const tasteWinner = getTasteWorldcupWinner();
+  const isTasteMatch = !!tasteWinner && matchesTasteWorldcupWinner(tasteWinner.id, {
+    seats: cafe.seats,
+    outlets: cafe.outlets,
+    noise: cafe.noise,
+    vibeTagsRaw: cafe.vibeTagsRaw,
+  });
+  // 매칭 인터랙션(플로팅)이 다 재생되고 사라졌는지 — true가 되면 오버레이는 걷히고, 대신
+  // "카페 정보" 타이틀 옆 배지가 나타남. 카페가 바뀌면 다시 처음부터 재생되도록 초기화
+  const [tasteInteractionDone, setTasteInteractionDone] = useState(false);
+  // 배지를 탭하면 다시 처음부터 재생 — replayKey를 바꿔서 TasteMatchInteraction을 강제로 리마운트시킴
+  const [tasteReplayKey, setTasteReplayKey] = useState(0);
+  useEffect(() => { setTasteInteractionDone(false); setTasteReplayKey(0); }, [cafe.id]);
+  const handleTasteInteractionDone = useCallback(() => setTasteInteractionDone(true), []);
+  const handleTasteBadgeTap = useCallback(() => {
+    setTasteInteractionDone(false);
+    setTasteReplayKey(k => k + 1);
+  }, []);
+
   const todayKey = getTodayKey();
 
   const handleScroll = () => {
@@ -1732,6 +1954,25 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
         </button>
       )}
 
+      {/* ── 1순위 취향 조건 매칭 인터랙션 — 대형/소형 공간은 화면 전체에 의자가 떨어지는 별도
+          연출(FallingChairsInteraction), 나머지는 화면 오른쪽 절반(끝까지 꽉 채움)에 결과 화면과
+          같은 315:350 비율로 띄움. 스크롤되는 콘텐츠 밖(화면 기준 고정)에 그려서 스크롤해도 같은
+          자리에 계속 떠 있게 함. 재생이 끝나면 페이드아웃되며 완전히 사라지고("카페 정보" 타이틀
+          옆 배지로 넘어감 — 아래 카페 정보 섹션 참고) */}
+      {tasteWinner && isTasteMatch && !tasteInteractionDone && (
+        SPACE_CONDITION_IDS.has(tasteWinner.id) ? (
+          <FallingChairsInteraction key={`${cafe.id}-${tasteReplayKey}`} dense={tasteWinner.id === 'cafe_large'} onDone={handleTasteInteractionDone} />
+        ) : (
+          <div style={{
+            position: 'absolute', top: showHero ? 260 : 0, right: 0,
+            width: '38%', aspectRatio: '315 / 315',
+            zIndex: 90,
+          }}>
+            <TasteMatchInteraction key={`${cafe.id}-${tasteReplayKey}`} conditionId={tasteWinner.id} onDone={handleTasteInteractionDone} />
+          </div>
+        )
+      )}
+
       {/* ── 스크롤 시 노출되는 상단 info 고정 패널 ── */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0,
@@ -1875,6 +2116,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
         {/* ── 기본 정보 섹션 ── */}
         <div ref={cafeInfoRef} style={{ padding: '20px 20px 0' }}>
+        <div>
           {/* 카페명 + 닫기 버튼 (embedded 모드) */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', width: '100%', marginBottom: 10 }}>
             <h1 style={{ fontSize: 24, fontWeight: 700, color: '#191F28', flex: 1 }}>
@@ -1932,6 +2174,7 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
               </span>
             </button>
           )}
+        </div>
 
           {/* 영업시간 전체 펼침 */}
           {hoursExpanded && (
@@ -1970,7 +2213,32 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
 
         {/* ── 카페 정보 섹션 ── */}
         <div style={{ padding: '20px 20px 4px' }}>
-          <SectionHeader title="카페 정보" marginBottom={16} />
+          <SectionHeader
+            title={
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                카페 정보
+                {/* 취향 매칭 인터랙션 재생이 끝난 뒤에만 나타나는 배지 — 처음 뜰 때만 팝인, 반복 없음.
+                    탭하면 인터랙션이 처음부터 다시 재생됨(ResultInteraction 탭 재생과 같은 패턴) */}
+                {isTasteMatch && tasteInteractionDone && (
+                  <button
+                    onClick={handleTasteBadgeTap}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                      // 배경/텍스트 색은 같은 페이지의 '길 안내'(SubButton light)와 통일
+                      fontSize: 11, fontWeight: 590, color: 'rgba(3,18,40,0.7)',
+                      background: '#E7E8EB', border: '0.5px solid rgba(3,18,40,0.16)', borderRadius: 12, padding: '1px 8px',
+                      cursor: 'pointer',
+                      animation: 'taste-match-badge-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both',
+                    }}
+                  >
+                    내 취향과 일치
+                    <IcThumbUp width={12} height={12} />
+                  </button>
+                )}
+              </span>
+            }
+            marginBottom={16}
+          />
 
           {/* 좌석 | 콘센트 (가로 배치) */}
           <div style={{

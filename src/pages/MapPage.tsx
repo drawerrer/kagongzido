@@ -8,6 +8,7 @@ import { trackFilterOpen, trackFilterApply, trackChipTap, trackCafeDetailView, t
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
 import { useFavorites } from '../context/FavoritesContext';
 import Snackbar from '../components/Snackbar';
+import LoadingScreen from '../components/LoadingScreen';
 import DetailPage from './DetailPage';
 import PlaceDetailPage from './PlaceDetailPage';
 import { fetchAllStores, fetchLibraries, fetchSharedSpaces, type StoreRow } from '../services/db';
@@ -161,6 +162,19 @@ function GpsIcon() {
 }
 
 
+/** 제보하기 FAB — 원형 + '+' 아이콘 (검정 배경 #252525 + 흰색 플러스 #F3F3F3) */
+function ReportFabIcon({ size = 56 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 56 56" fill="none" style={{ flexShrink: 0 }}>
+      {/* 원본 좌표가 뷰박스 정중앙(28,28)에서 살짝(0.02, 1.88) 벗어나 있어 보정 — 링 인터랙션과 어긋나지 않도록 정중앙 정렬 */}
+      <g transform="translate(0.02 1.88)">
+        <circle cx="27.98" cy="26.12" r="20.52" fill="#252525" />
+        <path fillRule="evenodd" clipRule="evenodd" d="M36.4719 24.8786H29.2261V17.6328C29.2261 17.3033 29.0952 16.9874 28.8623 16.7544C28.6294 16.5215 28.3134 16.3906 27.984 16.3906C27.6545 16.3906 27.3386 16.5215 27.1057 16.7544C26.8727 16.9874 26.7418 17.3033 26.7418 17.6328V24.8786H19.496C19.1666 24.8786 18.8507 25.0094 18.6177 25.2424C18.3848 25.4753 18.2539 25.7913 18.2539 26.1207C18.2539 26.4501 18.3848 26.7661 18.6177 26.999C18.8507 27.232 19.1666 27.3628 19.496 27.3628H26.7418V34.6086C26.7418 34.9381 26.8727 35.254 27.1057 35.487C27.3386 35.7199 27.6545 35.8508 27.984 35.8508C28.3134 35.8508 28.6294 35.7199 28.8623 35.487C29.0952 35.254 29.2261 34.9381 29.2261 34.6086V27.3628H36.4719C36.8014 27.3628 37.1173 27.232 37.3502 26.999C37.5832 26.7661 37.7141 26.4501 37.7141 26.1207C37.7141 25.7913 37.5832 25.4753 37.3502 25.2424C37.1173 25.0094 36.8014 24.8786 36.4719 24.8786Z" fill="#F3F3F3" />
+      </g>
+    </svg>
+  );
+}
+
 function makePlacePillHtml(placeId: string, name: string, placeType: 'library' | 'shared_space', selected: boolean): string {
   const label = name.length > 8 ? name.slice(0, 8) + '…' : name;
   const bg = selected ? '#252525' : '#ffffff';
@@ -253,14 +267,32 @@ interface MapPageProps {
   /** 도서관/공유공간 리스트 항목 탭 — 카페와 동일하게 풀스크린 상세로 전환 (App.tsx 오버레이) */
   onPlaceDetailOpen: (place: PlaceItem) => void;
   onGoToFavorites?: () => void;
+  onReportCafe?: () => void;
   onFocusModeChange?: (active: boolean) => void;
   initialState?: MapPageState;
   onStateChange?: (state: MapPageState) => void;
   /** 상위 App 에서 DetailPage/Search 등 오버레이가 떠 있는지 — 닫혔을 때 search accessory button 복구 트리거 */
   hasOverlay?: boolean;
+  /** "지금 내 주변 노트북 펴기 좋은 카페 3곳" 시트가 떠 있는지 — 상위 App의 화면 탭 감지(예: 탭바 툴팁 닫힘)가 이 시트를 닫는 탭과 겹치지 않도록 전달 */
+  onNearbySheetOpenChange?: (open: boolean) => void;
+  /** 필터 모달 열림 상태 — App에서 탭바를 숨기는 데 씀(탭바가 필터 CTA를 가림) */
+  onFilterOpenChange?: (open: boolean) => void;
 }
 
-export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, initialState, onStateChange, onFocusModeChange, hasOverlay = false }: MapPageProps) {
+// 로딩 화면 표시까지의 유예 시간 — 이 안에 mapLoaded가 끝나면 로딩 화면은 아예 화면에
+// 나타나지도 않고, 이 시간을 넘겨야(첫 진입, 혹은 어쩌다 느려진 경우) 그제서야 띄움.
+// 홈 탭은 다른 탭 갔다가 돌아올 때마다 MapPage가 통째로 리마운트되는 구조라(App.tsx의
+// activeTab === 'home' && <MapPage key={...} /> 참고), 캐시된 SDK로 인해 대부분 즉시
+// 끝나는 재방문 케이스에서는 이 유예 시간 덕분에 깜빡임 없이 지나감
+const MAP_LOADING_SCREEN_DELAY_MS = 300;
+// 개발 중(dev 서버·이 브라우저 프리뷰 등)에는 카카오맵 도메인이 등록 안 돼 있어 지도가 안 뜨는
+// 경우가 있는데, 그러면 mapLoaded가 영영 true가 안 돼서 로딩 화면에 갇혀 나머지 화면을
+// 미리 볼 수가 없음. import.meta.env.DEV로 감싸서 프로덕션 빌드(번들 업로드본)에는 이
+// 안전장치 자체가 포함되지 않게 함 — 실기기 배포본에서는 지도가 끝내 안 떠도 로딩 화면이
+// 강제로 걷히지 않고 그대로 유지되어야 함(실제 장애 상황을 숨기지 않기 위함)
+const MAP_LOADING_SCREEN_DEV_MAX_MS = 3000;
+
+export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, onReportCafe, initialState, onStateChange, onFocusModeChange, hasOverlay = false, onNearbySheetOpenChange, onFilterOpenChange }: MapPageProps) {
   const touchStartYRef = useRef<number>(0);
   // 드래그 도중 scrollTop===0 에 도달한 적이 있는지 — expanded 시 사용자가 위에서 아래로
   // 끝까지 끌어내려 collapse 의도를 보일 때 잡기 위함
@@ -285,6 +317,8 @@ export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen,
   const clusterClickRef = useRef<boolean>(false);
 
   const [mapLoaded, setMapLoaded] = useState(false);
+  // 로딩 화면 노출 여부 — mapLoaded와 별도로 관리. 짧게 끝나면 한 번도 true가 안 되고 넘어감
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const [mapBounds, setMapBounds] = useState<{ swLat: number; swLng: number; neLat: number; neLng: number } | null>(null);
   const [heading, setHeading] = useState<number | null>(null);
@@ -311,6 +345,10 @@ const [filterOpen, setFilterOpen] = useState(false);
   const [removedCafe, setRemovedCafe] = useState<HomeCafe | null>(null);
   const [nearbySheetOpen, setNearbySheetOpen] = useState(false);
   const [nearbySheetCafes, setNearbySheetCafes] = useState<Cafe[]>([]);
+
+  useEffect(() => { onNearbySheetOpenChange?.(nearbySheetOpen); }, [nearbySheetOpen, onNearbySheetOpenChange]);
+  // 필터 모달은 탭바(zIndex 100)보다 바깥 stacking context에 있어 CTA가 가려짐 -> 열려 있는 동안 탭바를 숨김
+  useEffect(() => { onFilterOpenChange?.(filterOpen); }, [filterOpen, onFilterOpenChange]);
 
   // cafesRef 항상 최신 유지
   useEffect(() => { cafesRef.current = cafes; }, [cafes]);
@@ -505,9 +543,26 @@ const [filterOpen, setFilterOpen] = useState(false);
   const filteredLibraries = showLibraries ? applyPlaceFilters(libraries.filter(boundsFilter)) : [];
   const filteredSharedSpaces = showSharedSpaces ? applyPlaceFilters(sharedSpaces.filter(boundsFilter)) : [];
 
+  // ── 로딩 화면 유예 타이머 — MAP_LOADING_SCREEN_DELAY_MS 안에 mapLoaded되면 한 번도
+  // true가 안 되고 지나가서 로딩 화면이 아예 안 뜸(대부분의 탭 재방문 케이스) ──
+  useEffect(() => {
+    if (mapLoaded) return;
+    const t = setTimeout(() => setShowLoadingScreen(true), MAP_LOADING_SCREEN_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [mapLoaded]);
+
+  // ── 개발 전용 안전장치 — dev 서버에서 카카오맵 도메인 미등록 등으로 지도가 끝내 안 떠도
+  // 로딩 화면에 갇혀 나머지 화면을 미리보기 못 하는 걸 막음. import.meta.env.DEV라
+  // 프로덕션 빌드(번들 업로드본)에서는 이 useEffect 자체가 번들에서 제거됨 ──
+  useEffect(() => {
+    if (!import.meta.env.DEV || mapLoaded) return;
+    const t = setTimeout(() => setShowLoadingScreen(false), MAP_LOADING_SCREEN_DEV_MAX_MS);
+    return () => clearTimeout(t);
+  }, [mapLoaded]);
+
   // ── Kakao Maps SDK 초기화 (index.html에서 정적 로드 완료) ──
   useEffect(() => {
-    const init = () => window.kakao.maps.load(() => setMapLoaded(true));
+    const init = () => window.kakao.maps.load(() => { setMapLoaded(true); setShowLoadingScreen(false); });
     if (window.kakao?.maps) {
       init();
     } else {
@@ -1020,6 +1075,10 @@ const [filterOpen, setFilterOpen] = useState(false);
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
 
+      {/* ── 로딩 화면 — Kakao 지도 SDK 초기화가 유예 시간(300ms)을 넘겨야 뜸. 첫 진입처럼
+          진짜 오래 걸리는 경우엔 보이고, 탭 재방문처럼 캐시로 즉시 끝나는 경우엔 안 보임 ── */}
+      <LoadingScreen visible={showLoadingScreen} />
+
       {/* ── Kakao 지도 컨테이너 ── */}
       <div
         ref={mapContainerRef}
@@ -1032,6 +1091,39 @@ const [filterOpen, setFilterOpen] = useState(false);
           transition: 'bottom 0.3s ease',
         }}
       />
+
+      {/* ── 제보하기 버튼 (GPS 버튼 바로 위, 동일 크기/x축 정렬) ── */}
+      <div
+        style={{
+          position: 'absolute',
+          right: 16,
+          bottom: panelState === 'minimized' ? `calc(${GPS_MIN_BOTTOM} + 56px)` : 'calc(50vh + 12px + 56px)',
+          zIndex: 8,
+          width: 44,
+          height: 44,
+        }}
+      >
+        <button
+          onClick={onReportCafe}
+          style={{ position: 'relative', width: 44, height: 44, padding: 0, border: 'none', background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', boxShadow: '0 1.87px 3.73px rgba(0,0,0,0.15)' }}
+        >
+          <ReportFabIcon size={60} />
+        </button>
+        {/* 스트록이 빛나며 도는 인터랙션 — 원 안쪽 가장자리를 따라 얇게 배치 */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '50%',
+            background: 'conic-gradient(from 90deg, rgba(24,97,202,0.91) 0deg, rgba(49,130,246,0.91) 114deg, rgba(126,179,255,0.91) 230deg, #ffffff 320deg, rgba(24,97,202,0.91) 360deg)',
+            animation: 'reportFabRingSpin 2s linear infinite',
+            WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px))',
+            mask: 'radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px))',
+            pointerEvents: 'none',
+          }}
+        />
+        <style>{`@keyframes reportFabRingSpin { to { transform: rotate(360deg); } }`}</style>
+      </div>
 
       {/* ── GPS 버튼 ── */}
       <button

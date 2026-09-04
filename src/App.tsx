@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, Component } from 'react';
 import { getAnonymousKey, partner } from '@apps-in-toss/web-framework';
+import { Toast } from '@toss/tds-mobile';
 import { getOrCreateUser, getOrCreateUserWithAuth, userExists, fetchLibraries, fetchSharedSpaces } from './services/db';
 import { trackUtmEntry, trackPageView } from './services/analytics';
 import { supabase } from './services/supabase';
@@ -31,6 +32,7 @@ import NicknameSheetPreviewPage from './pages/NicknameSheetPreviewPage';
 import { getCachedUser, setCachedUser, clearCachedUser } from './utils/userCache';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { useFavorites } from './context/FavoritesContext';
+import IcMypageNew from './assets/icons/ic_mypage_new.svg?react';
 
 // ── 탭바 SVG 아이콘 (TDS Mobile) ─────────────────────────────
 function TabHomeIcon() {
@@ -55,11 +57,8 @@ function TabCollectionIcon() {
   );
 }
 function TabMypageIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path fillRule="evenodd" clipRule="evenodd" d="M16.8872 6.64352C16.8872 7.28634 16.7607 7.92288 16.5148 8.5168C16.2688 9.11071 15.9083 9.65037 15.4538 10.105C14.9993 10.5595 14.4597 10.9202 13.8659 11.1662C13.272 11.4123 12.6355 11.539 11.9927 11.539C10.6944 11.5392 9.44932 11.0236 8.53124 10.1057C7.61315 9.18777 7.0973 7.94276 7.09717 6.64452C7.09711 6.0017 7.22365 5.36516 7.46959 4.77125C7.71553 4.17734 8.07603 3.63768 8.53053 3.18309C9.44843 2.265 10.6934 1.74916 11.9917 1.74902C13.2899 1.74889 14.535 2.26449 15.4531 3.18238C16.3712 4.10028 16.887 5.34529 16.8872 6.64352ZM11.9922 13.0365C4.94317 13.0365 2.20117 17.5225 2.20117 19.6095C2.20117 21.6955 8.03817 22.2515 11.9922 22.2515C15.9462 22.2515 21.7832 21.6955 21.7832 19.6095C21.7832 17.5225 19.0412 13.0365 11.9922 13.0365Z" fill="currentColor"/>
-    </svg>
-  );
+  // 카페 취향 월드컵 출시 알림 — person 아이콘 + N 뱃지(고정 레드, currentColor 미적용)
+  return <IcMypageNew />;
 }
 
 // 피그마 "홈 | 가이드북 | 모음집 | 마이페이지" 탭 구조와 동일
@@ -281,6 +280,26 @@ function AppInner() {
   const [isDetailFocusMode, setIsDetailFocusMode] = useState(false); // DetailPage 내부의 사진리뷰/리뷰작성 진입 시 탭바 숨김
   const { isFavorited, addFavorite, removeFavorite, favorites } = useFavorites();
 
+  // 카페 취향 월드컵 출시 안내 툴팁 — 앱 진입할 때마다(매 실행마다) 마이 탭 위에 노출
+  const [showWorldcupTooltip, setShowWorldcupTooltip] = useState(false);
+  // 홈 진입 시 뜨는 "내 주변 노트북 펴기 좋은 카페 3곳" 시트가 떠 있는 동안엔
+  // 그 시트를 닫으려는 탭이 툴팁까지 같이 닫아버리지 않도록 리스너 자체를 잠시 꺼둠
+  const [isNearbySheetOpen, setIsNearbySheetOpen] = useState(false);
+  // 홈 필터 모달 열림 — 탭바가 필터 CTA 위에 그려져서(탭바는 isolate 컨테이너 밖) 열린 동안 숨김
+  const [isMapFilterOpen, setIsMapFilterOpen] = useState(false);
+  const dismissWorldcupTooltip = () => setShowWorldcupTooltip(false);
+  useEffect(() => {
+    setShowWorldcupTooltip(true);
+  }, []);
+  // 노출 중이고, 다른 플로팅 시트가 떠 있지 않을 때만 화면 터치로 닫힘 —
+  // capture 단계라 탭바 등 다른 클릭 핸들러보다 항상 먼저 실행됨
+  useEffect(() => {
+    if (!showWorldcupTooltip || isNearbySheetOpen) return;
+    const handlePointerDown = () => dismissWorldcupTooltip();
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    return () => document.removeEventListener('pointerdown', handlePointerDown, true);
+  }, [showWorldcupTooltip, isNearbySheetOpen]);
+
   // detailCafeId가 도서관/공유공간을 가리키는 경우 — 카페 전용 DetailPage가 아닌 PlaceDetailPage를 보여줌.
   // 타입 판별 우선순위:
   //   1) detailPlace 가 이미 채워져 있고 id 가 일치 — MapPage 리스트에서 place 객체를 직접 전달받은 경우 (onPlaceDetailOpen)
@@ -313,6 +332,11 @@ function AppInner() {
     if (!collectionDetail) setIsCollectionEditMode(false);
   }, [collectionDetail]);
   const [myPageSubPage, setMyPageSubPage] = useState<string | null>(null);
+  // 카페 제보를 홈/검색에서 열었는지 — 제보 화면은 마이 탭 소속이라 뒤로가기가 마이페이지로
+  // 가버리는데, 홈에서 들어왔으면 홈으로 되돌려야 해서 진입 출처를 기억해 둔다
+  const [reportCafeFromHome, setReportCafeFromHome] = useState(false);
+  // 홈에서 시작한 제보가 완료됐을 때 홈에서 띄우는 완료 토스트
+  const [homeReportToast, setHomeReportToast] = useState(false);
   const [guidebookView, setGuidebookView] = useState<string | null>(null);
   const [guidebookStoreIndex, setGuidebookStoreIndex] = useState(0);
   const [detailScrollToReview, setDetailScrollToReview] = useState(false);
@@ -324,11 +348,12 @@ function AppInner() {
   //  - DetailPage 안의 사진리뷰/리뷰작성 (isDetailFocusMode)
   //  - 마이 탭의 카페 제보하기/리뷰 편집 (FOCUS_MY_SUBPAGES)
   //  - 향후 추가 예정: 'inquiry' (문의하기), 'withdraw' (회원탈퇴) — 구현 시 아래 배열에 슬러그 추가
-  const FOCUS_MY_SUBPAGES = ['report-cafe', 'review-edit'];
+  const FOCUS_MY_SUBPAGES = ['report-cafe', 'review-edit', 'taste-worldcup'];
   const isFocusMode =
     isCollectionEditMode ||
     !!photoReview ||
     isDetailFocusMode ||
+    isMapFilterOpen ||
     (!!myPageSubPage && FOCUS_MY_SUBPAGES.includes(myPageSubPage));
 
   // ── 왼쪽 엣지 스와이프 뒤로가기 (인터랙티브) ──────────────────
@@ -449,8 +474,15 @@ function AppInner() {
             onDetailOpen={(id) => setDetailCafeId(id)}
             onPlaceDetailOpen={(place) => { setDetailPlace(place); setDetailCafeId(place.id); }}
             onGoToFavorites={() => setActiveTab('collection')}
+            onReportCafe={() => {
+              setReportCafeFromHome(true);
+              setActiveTab('mypage');
+              setMyPageSubPage('report-cafe');
+            }}
             onFocusModeChange={setIsDetailFocusMode}
             hasOverlay={!!detailCafeId || showSearch}
+            onNearbySheetOpenChange={setIsNearbySheetOpen}
+            onFilterOpenChange={setIsMapFilterOpen}
           />
         )}
         {activeTab === 'guidebook' && (
@@ -496,10 +528,20 @@ function AppInner() {
               onDetailOpen={(id) => setDetailCafeId(id)}
               onDetailOpenToReview={(id) => { setDetailCafeId(id); setDetailScrollToReview(true); }}
               initialSubPage={myPageSubPage as any}
-              onSubPageChange={setMyPageSubPage}
+              onSubPageChange={(page) => {
+                // 제보 화면을 벗어나면(제출 완료 포함) 진입 출처 기억을 비운다
+                if (page !== 'report-cafe') setReportCafeFromHome(false);
+                setMyPageSubPage(page);
+              }}
               onRegisterBack={(fn) => { myPageBackRef.current = fn; }}
               subViewRef={myPageSubViewRef}
               onGoHome={() => setActiveTab('home')}
+              onReportCafeExit={reportCafeFromHome ? (result) => {
+                setReportCafeFromHome(false);
+                setMyPageSubPage(null);
+                setActiveTab('home');
+                if (result === 'submitted') setHomeReportToast(true);
+              } : undefined}
               hasDetailOverlay={!!detailCafeId}
             />
           </div>
@@ -589,7 +631,55 @@ function AppInner() {
             </button>
           );
         })}
+
+        {showWorldcupTooltip && (
+          <>
+            {/* 말풍선 — 네비게이션 오른쪽 끝에 맞춰 정렬 */}
+            <div
+              style={{
+                position: 'absolute',
+                right: 0,
+                bottom: 'calc(100% + 10px)',
+                background: 'rgba(14, 12, 10, 0.9)',
+                color: '#f3f3f3',
+                fontSize: 11,
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+                padding: '7px 12px',
+                borderRadius: 999,
+                boxShadow: '0 6px 16px -6px rgba(0, 0, 0, 0.35)',
+                animation: 'tab-tooltip-in 0.2s ease both',
+              }}
+            >
+              카페 취향 월드컵 오픈
+            </div>
+            {/* 꼬리 — 말풍선과 별개로, 마이 탭(마지막 탭) 아이콘 정중앙(오른쪽에서 1/8 지점)에 고정 */}
+            <div
+              style={{
+                position: 'absolute',
+                // 삼각형은 좌우 border 5px씩이라 실제 중심이 right 기준점보다 5px 왼쪽에 잡힘 — 보정
+                right: 'calc(12.5% - 5px)',
+                // 삼각형 높이(5px)만큼 말풍선의 bottom(100% + 10px)보다 낮춰서 서로 정확히 맞닿게 함
+                bottom: 'calc(100% + 5px)',
+                width: 0,
+                height: 0,
+                borderLeft: '5px solid transparent',
+                borderRight: '5px solid transparent',
+                borderTop: '5px solid rgba(14, 12, 10, 0.9)',
+              }}
+            />
+          </>
+        )}
       </nav>
+
+      {/* 제보 완료 토스트 — 홈에서 시작한 제보는 홈으로 돌아와 여기서 안내한다.
+          마이페이지에서 시작한 제보는 MyPage 가 자체 토스트로 처리 */}
+      <Toast
+        open={homeReportToast}
+        position="top"
+        text="제보를 등록했어요"
+        onClose={() => setHomeReportToast(false)}
+      />
 
       {/* ── 오버레이 페이지들 (절대 위치 — 슬라이드 시 베이스가 비침) ── */}
       {collectionDetail && (
@@ -621,6 +711,7 @@ function AppInner() {
             onDetailOpen={(id) => { setDetailCafeId(id); }}
             onPlaceDetailOpen={(place) => { setDetailPlace(place); setDetailCafeId(place.id); }}
             onReportCafe={() => {
+              setReportCafeFromHome(true);
               setShowSearch(false);
               setActiveTab('mypage');
               setMyPageSubPage('report-cafe');

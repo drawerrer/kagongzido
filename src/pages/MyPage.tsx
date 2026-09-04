@@ -1,4 +1,4 @@
-import { useState, useEffect, type RefObject } from 'react';
+import { useState, useEffect, lazy, Suspense, type RefObject } from 'react';
 import { fetchAlbumPhotos, openCamera, openURL } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { Toast, ConfirmDialog } from '@toss/tds-mobile';
@@ -11,8 +11,10 @@ import {
   fetchUserReviews, deleteReview, updateReview, type UserReviewRow,
   fetchUserReports, type UserReportRow,
   fetchNotices, type NoticeRow,
+  fetchAllStores,
 } from '../services/db';
 import { clearCachedUser } from '../utils/userCache';
+import { getTasteWorldcupWinner, matchesTasteWorldcupWinner } from '../utils/tasteWorldcup';
 import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
 import CafePlaceholder from '../components/CafePlaceholder';
@@ -22,6 +24,9 @@ import IcPhoto from '../assets/icons/icon_photo.svg?react';
 import IcCamera from '../assets/icons/icon_camera.svg?react';
 import IcMail from '../assets/icons/icon_mail.svg?react';
 import LogoImg from '../assets/LOGO/logo_mockup.png';
+
+// 카페 취향 월드컵 — 조건 이미지 16종(~700KB)을 포함해 별도 청크로 분리, 진입 시에만 지연 로드
+const TasteWorldcup = lazy(() => import('./TasteWorldcup'));
 
 // EmptyState 액션 버튼 공용 + 아이콘
 const EmptyPlusIcon = (
@@ -34,7 +39,7 @@ const EmptyPlusIcon = (
 // 타입
 // ─────────────────────────────────────────────────────────────
 type MyTab = '내 활동' | '설정';
-type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices';
+type SubPage = 'reported' | 'recent' | 'reviews' | 'review-edit' | 'report-cafe' | 'notices' | 'taste-worldcup' | 'taste-matched';
 
 interface CafeItem {
   id: string;
@@ -341,6 +346,46 @@ function MenuRow({
   );
 }
 
+// 마이페이지 상단 CTA 알약형 버튼 — '카페 취향 월드컵' / '카페 제보하기'
+function PillCTAButton({
+  label,
+  onClick,
+  variant,
+  style,
+}: {
+  label: string;
+  onClick?: () => void;
+  variant: 'outline' | 'dark';
+  style?: React.CSSProperties;
+}) {
+  const isDark = variant === 'dark';
+  const iconColor = isDark ? '#F3F3F3' : '#252525';
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+        height: 32,
+        borderRadius: 9999,
+        background: isDark ? '#252525' : 'transparent',
+        border: isDark ? 'none' : '1px solid #252525',
+        cursor: 'pointer',
+        fontSize: 12, fontWeight: 590,
+        color: isDark ? '#F3F3F3' : '#252525',
+        whiteSpace: 'nowrap',
+        ...style,
+      }}
+    >
+      {label}
+      <svg width="12" height="12" viewBox="0 0 10 10" fill="none">
+        <path d="M2.5 7.5L7.5 2.5" stroke={iconColor} strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M3 2.5H7.5V7" stroke={iconColor} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────
 // 서브 페이지: 제보한 카페
 // ─────────────────────────────────────────────────────────────
@@ -426,6 +471,62 @@ function RecentCafePage({
         {cafes.length === 0 ? (
           <EmptyState
             title="아직 최근에 본 카페가 없어요"
+            subtitle="지도에서 다양한 카페를 둘러보세요"
+            buttonLabel="카페 둘러보기"
+            buttonIcon={EmptyPlusIcon}
+            onButtonClick={onGoHome}
+          />
+        ) : (
+          <CafeGrid cafes={cafes} onDetailOpen={onDetailOpen} cardShadow />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** 마이페이지 프로필의 "취향 {label}" 탭 — 해당 1순위 취향 조건과 매칭되는 카페 리스트 */
+function TasteMatchedCafePage({
+  winner,
+  onBack,
+  onClose,
+  onDetailOpen,
+  onGoHome,
+  hasOverlay = false,
+}: {
+  winner: { id: string; label: string };
+  onBack: () => void;
+  onClose: () => void;
+  onDetailOpen?: (id: string) => void;
+  onGoHome?: () => void;
+  hasOverlay?: boolean;
+}) {
+  const [cafes, setCafes] = useState<CafeItem[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAllStores().then(stores => {
+      if (cancelled) return;
+      const matched = stores.filter(s => matchesTasteWorldcupWinner(winner.id, {
+        seats: s.seat_status,
+        outlets: s.outlet_status,
+        noise: s.noise_status,
+        vibeTagsRaw: s.vibe_tags,
+      }));
+      setCafes(matched.map(s => ({
+        id: s.api_place_id, name: s.name, address: s.address_road,
+        bg: '#E8EDF4', photo: s.thumbnail_url || undefined,
+      })));
+    });
+    return () => { cancelled = true; };
+  }, [winner.id]);
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f3f3f3' }}>
+      <SubHeader title={`취향 · ${winner.label}`} onBack={onBack} onMore={() => {}} onClose={onClose} enabled={!hasOverlay} />
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
+        {cafes === null ? null : cafes.length === 0 ? (
+          <EmptyState
+            title="아직 매칭되는 카페가 없어요"
             subtitle="지도에서 다양한 카페를 둘러보세요"
             buttonLabel="카페 둘러보기"
             buttonIcon={EmptyPlusIcon}
@@ -1334,6 +1435,7 @@ export default function MyPage({
   onRegisterBack,
   subViewRef,
   onGoHome,
+  onReportCafeExit,
   hasDetailOverlay = false,
 }: {
   onDetailOpen?: (id: string) => void;
@@ -1345,6 +1447,14 @@ export default function MyPage({
   subViewRef?: RefObject<HTMLDivElement> | null;
   /** 빈 상태 등에서 홈 탭으로 이동 */
   onGoHome?: () => void;
+  /**
+   * 홈/검색에서 진입한 카페 제보를 빠져나올 때의 처리.
+   * 제보 화면은 마이 탭 소속이라 기본 동작이 마이페이지 복귀인데,
+   * 홈에서 들어왔으면 홈으로 돌려보내야 해서 App이 이 콜백을 넘긴다.
+   * 'submitted' 면 App이 홈에서 완료 토스트까지 띄우므로 MyPage 토스트는 건너뛴다.
+   * 넘어오지 않으면(마이페이지에서 직접 진입) 기존대로 마이페이지 복귀 + 자체 토스트.
+   */
+  onReportCafeExit?: (result: 'back' | 'submitted') => void;
   /** App 상위에서 DetailPage 등 오버레이가 떠 있는지 — 하위 SubHeader backEvent 위임용 */
   hasDetailOverlay?: boolean;
 } = {}) {
@@ -1355,6 +1465,12 @@ export default function MyPage({
     setSubPage(page);
     onSubPageChange?.(page);
   };
+
+  // 카페 취향 월드컵 결과 — 서브페이지에서 돌아올 때마다 새로 읽어서 최신 상태 반영
+  const [tasteWinner, setTasteWinner] = useState(() => getTasteWorldcupWinner());
+  useEffect(() => {
+    if (subPage === null) setTasteWinner(getTasteWorldcupWinner());
+  }, [subPage]);
 
   const [editingReview, setEditingReview] = useState<ReviewItem | null>(null);
   const [reviewRefreshTrigger, setReviewRefreshTrigger] = useState(0);
@@ -1398,6 +1514,8 @@ export default function MyPage({
     if (!ok) return;
     changeSubPage('report-cafe');
   };
+  // 카페 취향 월드컵 진입 — 온보딩/진행/결과 플로우 전체는 TasteWorldcup.tsx에서 지연 로드
+  const handleOpenTasteWorldcup = () => changeSubPage('taste-worldcup');
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [showContactPopup, setShowContactPopup] = useState(false);
   const [copiedToast, setCopiedToast] = useState(false);
@@ -1421,50 +1539,62 @@ export default function MyPage({
       {/* 스크롤 영역 */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}>
         {/* 프로필 */}
-        <div style={{ padding: '24px', background: '#f3f3f3', display: 'flex', gap: 16, alignItems: 'center' }}>
-          {/* 프로필 원형 60×60 */}
-          <div style={{
-            width: 60, height: 60, borderRadius: 1000,
-            background: '#d2d2d2',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <span style={{ fontSize: 28, fontWeight: 700, color: '#101010', lineHeight: 1 }}>{displayName[0]}</span>
-          </div>
-          {/* 이름 + 정보 + 제보하기 배지 */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 18, fontWeight: 510, color: '#101010', lineHeight: '23px' }}>{displayName}</span>
-              <button
-                onClick={() => setShowNameSheet(true)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path fill="#9b9b9b" fillRule="evenodd" d="m12.335 5.454-9.062 9.062-1.236 4.61-.813 3.037a.501.501 0 0 0 .613.613l3.035-.814 4.61-1.236h.002l9.062-9.062zm9.958 1.05-4.796-4.797a1 1 0 0 0-1.414 0l-2.475 2.474 6.21 6.211 2.475-2.475a1 1 0 0 0 0-1.414" clipRule="evenodd"/>
-                </svg>
-              </button>
+        <div style={{ padding: '24px', background: '#f3f3f3', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            {/* 프로필 원형 40×40 */}
+            <div style={{
+              width: 40, height: 40, borderRadius: 1000,
+              background: '#d2d2d2',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#101010', lineHeight: 1 }}>{displayName[0]}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div
-                onClick={() => changeSubPage('reported')}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
-              >
-                <span style={{ fontSize: 14, fontWeight: 510, color: '#9b9b9b', lineHeight: '18px' }}>제보한 카페</span>
-                <span style={{ fontSize: 14, fontWeight: 510, color: '#101010', lineHeight: '18px' }}>{reportCount}개</span>
+            {/* 이름 + 정보 */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 18, fontWeight: 510, color: '#101010', lineHeight: '23px' }}>{displayName}</span>
+                <button
+                  onClick={() => setShowNameSheet(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path fill="#9b9b9b" fillRule="evenodd" d="m12.335 5.454-9.062 9.062-1.236 4.61-.813 3.037a.501.501 0 0 0 .613.613l3.035-.814 4.61-1.236h.002l9.062-9.062zm9.958 1.05-4.796-4.797a1 1 0 0 0-1.414 0l-2.475 2.474 6.21 6.211 2.475-2.475a1 1 0 0 0 0-1.414" clipRule="evenodd"/>
+                  </svg>
+                </button>
               </div>
-              <div style={{ flex: 1 }} />
-              <button
-                onClick={handleOpenReportCafe}
-                style={{
-                  background: '#252525', borderRadius: 13,
-                  height: 29, padding: '0 10px',
-                  fontSize: 12, fontWeight: 510, color: '#ffffff',
-                  border: 'none', cursor: 'pointer', lineHeight: '21px',
-                }}
-              >
-                제보하기
-              </button>
+              {/* 취향 · 카페 제보 정보 — 값(취향/개수) 만 탭 가능, 고정 라벨은 탭 불가 */}
+              <div style={{ fontSize: 14, fontWeight: 510, lineHeight: '18px' }}>
+                <span style={{ color: '#9b9b9b' }}>취향 </span>
+                <span
+                  onClick={() => tasteWinner ? changeSubPage('taste-matched') : handleOpenTasteWorldcup()}
+                  style={{ color: '#101010', cursor: 'pointer' }}
+                >
+                  {tasteWinner?.label ?? '미설정'}
+                </span>
+                <span style={{ color: '#9b9b9b' }}> · 카페 제보 </span>
+                <span
+                  onClick={() => changeSubPage('reported')}
+                  style={{ color: '#101010', cursor: 'pointer' }}
+                >
+                  {reportCount}개
+                </span>
+              </div>
             </div>
+          </div>
+          {/* CTA 버튼 2개 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginTop: 20 }}>
+            <PillCTAButton
+              label="카페 취향 월드컵"
+              variant="outline"
+              onClick={handleOpenTasteWorldcup}
+              style={{ animation: 'worldcup-cta-pulse 0.55s ease-in-out 2' }}
+            />
+            <PillCTAButton
+              label="카페 제보하기"
+              variant="dark"
+              onClick={handleOpenReportCafe}
+            />
           </div>
         </div>
 
@@ -1749,6 +1879,18 @@ export default function MyPage({
         />
       </div>
     )}
+    {subPage === 'taste-matched' && tasteWinner && (
+      <div ref={subViewRef ?? undefined} style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <TasteMatchedCafePage
+          winner={tasteWinner}
+          onBack={() => changeSubPage(null)}
+          onClose={() => changeSubPage(null)}
+          onDetailOpen={onDetailOpen}
+          onGoHome={onGoHome}
+          hasOverlay={hasDetailOverlay}
+        />
+      </div>
+    )}
     {/* 제보 내용 보기 — 사용자가 작성했던 제보 폼을 읽기 전용으로 표시 */}
     {viewingReport && (
       <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3', zIndex: 10 }}>
@@ -1787,11 +1929,12 @@ export default function MyPage({
     {subPage === 'report-cafe' && (
       <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
         <ReportCafePage
-          onBack={() => changeSubPage(null)}
-          onClose={() => changeSubPage(null)}
+          onBack={() => { if (onReportCafeExit) { onReportCafeExit('back'); return; } changeSubPage(null); }}
+          onClose={() => { if (onReportCafeExit) { onReportCafeExit('submitted'); return; } changeSubPage(null); }}
           onSubmitted={() => {
             setReportRefreshTrigger(t => t + 1);
-            setReportSubmitToast(true);
+            // 홈으로 돌아가는 경우엔 App이 홈에서 토스트를 띄운다 (여기서 띄우면 화면이 바뀌며 사라짐)
+            if (!onReportCafeExit) setReportSubmitToast(true);
           }}
         />
       </div>
@@ -1799,6 +1942,18 @@ export default function MyPage({
     {subPage === 'notices' && (
       <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
         <NoticesPage onBack={() => changeSubPage(null)} enabled={!hasDetailOverlay} />
+      </div>
+    )}
+    {subPage === 'taste-worldcup' && (
+      <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <Suspense fallback={null}>
+          <TasteWorldcup
+            onExit={() => changeSubPage(null)}
+            // 결과 화면 CTA — 월드컵 서브페이지를 닫고 홈 탭으로 보냄
+            onGoHome={() => { changeSubPage(null); onGoHome?.(); }}
+            enabled={!hasDetailOverlay}
+          />
+        </Suspense>
       </div>
     )}
     {editingReview && (

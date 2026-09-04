@@ -83,8 +83,9 @@ export default function NearbyLaptopCafesDialog({
           </div>
         </div>
 
-        {/* 확인 CTA — Primary color */}
-        <SheetCTA.Single label="확인" onClick={onClose} background="#FFFFFF" />
+        {/* 확인 CTA — Primary color
+            매장 카드가 작아 표준 56px이 과하게 보여 이 다이얼로그만 48px로 낮춤 */}
+        <SheetCTA.Single label="확인" onClick={onClose} background="#FFFFFF" height={48} />
       </div>
 
       <style>{`
