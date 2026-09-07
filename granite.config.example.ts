@@ -4,21 +4,26 @@
  * 실제 `granite.config.ts` 는 각자 PC의 dev host IP 가 달라 .gitignore 처리되어 있어요.
  * 본인 PC 의 `granite.config.ts` 를 아래 내용 기준으로 맞춰 주세요.
  *
- * ─── appName 슬롯 안내 ──────────────────────────────────────
- *   콘솔에 두 슬롯이 등록되어 있어요. 빌드 전 용도에 맞게 변경:
- *     1) 'cafeindex-test'  → 개발 테스트 슬롯 ("카페인덱스")
- *     2) 'kagongzido'      → 실제 배포 슬롯  ("카공지도")
- *   appName 이 슬롯과 다르면 콘솔 업로드 시 거부돼요.
+ * ─── appName 안내 ──────────────────────────────────────────
+ *   appName 은 "이 번들이 어느 앱 것인지" 알려주는 꼬리표예요.
+ *   콘솔에 등록된 앱 이름과 다르면 업로드가 거부됩니다.
+ *   기본값 'kagongzido' 를 그대로 두세요 — 개발·배포 모두 이 값을 씁니다.
+ *
+ *   실기기 확인은 슬롯을 바꾸지 않고 합니다:
+ *     번들 업로드 → 콘솔 "테스트하기" → QR 스캔 → 토스 앱에서 실행
+ *     (심사 전에도 가능. https://developers-apps-in-toss.toss.im/development/test/sandbox.md)
+ *
+ *   콘솔에 'cafeindex-test'("카페인덱스") 앱도 남아 있지만 지금은 쓰지 않아요.
+ *   최초 등록 때 이름에 test 가 붙었는데 appName 은 등록 후 변경이 안 돼서,
+ *   배포용으로 'kagongzido' 를 새로 등록한 흔적입니다.
  *
  * dev host IP / port 는 본인 PC 환경에 맞게 두시면 됩니다.
  */
 import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
-  // ⚠️ 슬롯에 따라 변경:
-  //   - 개발 테스트: 'cafeindex-test'  → 콘솔 1번 슬롯
-  //   - 실제 배포 : 'kagongzido'       → 콘솔 2번 슬롯
-  appName: 'cafeindex-test',
+  // 개발·배포 모두 이 값을 그대로 씁니다 (바꿀 일 없음)
+  appName: 'kagongzido',
 
   web: {
     host: '0.0.0.0', // ← 본인 PC 의 IP 로 변경
