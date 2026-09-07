@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { useFavorites } from '../context/FavoritesContext';
-import { saveTasteWorldcupWinner, getResultFrameBg } from '../utils/tasteWorldcup';
+import { saveTasteWorldcupWinner, getTasteWorldcupWinner, getResultFrameBg } from '../utils/tasteWorldcup';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import RoundBadge from '../components/RoundBadge';
 import WorldcupProgressIndicator from '../components/WorldcupProgressIndicator';
@@ -1127,9 +1127,22 @@ type TasteWorldcupPhase = 'onboarding' | 'game' | 'result';
  * MyPage에서 React.lazy(() => import('./TasteWorldcup'))로 지연 로드해서
  * 이 화면을 열 때만 16개 조건 이미지(~700KB)를 다운로드하게 함.
  */
-export default function TasteWorldcupFlow({ onExit, onGoHome, enabled = true }: { onExit: () => void; onGoHome?: () => void; enabled?: boolean }) {
-  const [phase, setPhase] = useState<TasteWorldcupPhase>('onboarding');
-  const [winner, setWinner] = useState<{ id: string; label: string } | null>(null);
+export default function TasteWorldcupFlow({ onExit, onGoHome, initialResult = false, enabled = true }: {
+  onExit: () => void;
+  onGoHome?: () => void;
+  /**
+   * true 면 저장된 1순위 취향의 결과 화면부터 연다 (마이페이지 "취향" 탭 진입).
+   * 이때는 대진을 거치지 않았으므로 뒤로가기가 진행 화면이 아니라 마이페이지로 가고,
+   * CTA 도 "취향 진단 다시하기"가 된다. 다시하기를 누르면 일반 플로우로 돌아간다.
+   */
+  initialResult?: boolean;
+  enabled?: boolean;
+}) {
+  // 저장된 결과로 바로 여는 경우 — 결과가 없으면 온보딩부터 (진입 조건상 거의 없음)
+  const [savedWinner] = useState(() => (initialResult ? getTasteWorldcupWinner() : null));
+  const [directResult, setDirectResult] = useState(initialResult && !!savedWinner);
+  const [phase, setPhase] = useState<TasteWorldcupPhase>(directResult ? 'result' : 'onboarding');
+  const [winner, setWinner] = useState<{ id: string; label: string } | null>(savedWinner);
 
   if (phase === 'game') {
     return (
@@ -1145,11 +1158,15 @@ export default function TasteWorldcupFlow({ onExit, onGoHome, enabled = true }: 
     return (
       <TasteWorldcupResultPage
         winner={winner}
-        onBack={() => setPhase('game')}
-        // 결과 CTA는 월드컵을 닫고 홈 탭으로 이동 — 방금 뽑은 1순위 취향 카페를 바로 찾아보게 함.
-        // onGoHome을 안 넘기면 기존처럼 마이페이지로 복귀(디버그 페이저 등)
-        onConfirm={onGoHome ?? onExit}
-        confirmLabel={`${winner.label} 카페 보러가기`}
+        // 대진을 거쳐 온 결과면 진행 화면으로, 취향 탭에서 바로 연 결과면 마이페이지로
+        onBack={directResult ? onExit : () => setPhase('game')}
+        // 대진 직후: 월드컵을 닫고 홈으로 — 방금 뽑은 취향의 카페를 바로 찾아보게 함
+        //            (onGoHome 미전달 시 기존처럼 마이페이지 복귀)
+        // 취향 탭 진입: 다시 진단하도록 온보딩으로 되돌림
+        onConfirm={directResult
+          ? () => { setDirectResult(false); setWinner(null); setPhase('onboarding'); }
+          : (onGoHome ?? onExit)}
+        confirmLabel={directResult ? '취향 진단 다시하기' : `${winner.label} 카페 보러가기`}
         enabled={enabled}
       />
     );

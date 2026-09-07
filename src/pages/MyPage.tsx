@@ -484,8 +484,15 @@ function RecentCafePage({
   );
 }
 
-/** 마이페이지 프로필의 "취향 {label}" 탭 — 해당 1순위 취향 조건과 매칭되는 카페 리스트 */
-function TasteMatchedCafePage({
+
+/**
+ * 마이페이지 프로필의 "취향 {label}" 탭에서 쓰던 화면 — 1순위 취향과 매칭되는 카페 리스트.
+ *
+ * 지금은 취향 탭이 월드컵 결과 화면을 열도록 바뀌어 화면에서 도달할 수 없다.
+ * 나중에 다시 쓸 수 있어 남겨둠 (export 없으면 noUnusedLocals 로 빌드가 실패한다).
+ * 어디서도 import 하지 않으므로 번들에는 포함되지 않는다.
+ */
+export function TasteMatchedCafePage({
   winner,
   onBack,
   onClose,
@@ -539,7 +546,6 @@ function TasteMatchedCafePage({
     </div>
   );
 }
-
 // ─────────────────────────────────────────────────────────────
 // 서브 페이지: 수정하기
 // ─────────────────────────────────────────────────────────────
@@ -1879,16 +1885,18 @@ export default function MyPage({
         />
       </div>
     )}
+    {/* 프로필의 "취향" 탭 — 저장된 1순위 취향의 월드컵 결과 화면을 그대로 보여준다.
+        CTA 는 '취향 진단 다시하기'로, 누르면 온보딩부터 다시 진행 (TasteWorldcup 의 initialResult) */}
     {subPage === 'taste-matched' && tasteWinner && (
-      <div ref={subViewRef ?? undefined} style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
-        <TasteMatchedCafePage
-          winner={tasteWinner}
-          onBack={() => changeSubPage(null)}
-          onClose={() => changeSubPage(null)}
-          onDetailOpen={onDetailOpen}
-          onGoHome={onGoHome}
-          hasOverlay={hasDetailOverlay}
-        />
+      <div style={{ position: 'absolute', inset: 0, background: '#f3f3f3' }}>
+        <Suspense fallback={null}>
+          <TasteWorldcup
+            initialResult
+            onExit={() => changeSubPage(null)}
+            onGoHome={() => { changeSubPage(null); onGoHome?.(); }}
+            enabled={!hasDetailOverlay}
+          />
+        </Suspense>
       </div>
     )}
     {/* 제보 내용 보기 — 사용자가 작성했던 제보 폼을 읽기 전용으로 표시 */}
