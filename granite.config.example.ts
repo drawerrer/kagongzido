@@ -7,22 +7,33 @@
  * ─── appName 안내 ──────────────────────────────────────────
  *   appName 은 "이 번들이 어느 앱 것인지" 알려주는 꼬리표예요.
  *   콘솔에 등록된 앱 이름과 다르면 업로드가 거부됩니다.
- *   기본값 'kagongzido' 를 그대로 두세요 — 개발·배포 모두 이 값을 씁니다.
+ *   기본값 'kagongzido'(배포용) 를 그대로 두세요.
  *
- *   실기기 확인은 슬롯을 바꾸지 않고 합니다:
- *     번들 업로드 → 콘솔 "테스트하기" → QR 스캔 → 토스 앱에서 실행
- *     (심사 전에도 가능. https://developers-apps-in-toss.toss.im/development/test/sandbox.md)
+ * ─── 콘솔에 앱이 두 개인 이유 ───────────────────────────────
+ *   1) 'cafeindex-test' ("카페인덱스")  — 최초 등록본. 미출시
+ *   2) 'kagongzido'     ("카공지도")    — 실제 배포용
+ *   최초 등록 때 이름에 test 가 붙었는데 appName 은 등록 후 변경이 안 돼서
+ *   배포용을 새로 등록했어요. 그래서 콘솔에는 앱이 두 개로 보입니다.
  *
- *   콘솔에 'cafeindex-test'("카페인덱스") 앱도 남아 있지만 지금은 쓰지 않아요.
- *   최초 등록 때 이름에 test 가 붙었는데 appName 은 등록 후 변경이 안 돼서,
- *   배포용으로 'kagongzido' 를 새로 등록한 흔적입니다.
+ * ─── 실기기 확인 (관측된 동작) ─────────────────────────────
+ *   개발 서버를 켜고 토스 테스트앱에서 열 때,
+ *     'cafeindex-test' 슬롯 → 로컬 개발 서버에 연결됨 (정상)
+ *     'kagongzido'     슬롯 → 오류
+ *   이 동작은 appName 값과 무관했어요 (appName 을 kagongzido 로 둔 상태에서도
+ *   테스트 슬롯만 연결됨). 즉 개발 중 실기기 확인은 카페인덱스 테스트 슬롯으로 합니다.
+ *
+ *   ⚠️ 왜 그런지는 공식 문서에 설명이 없습니다. 출시 여부와 관계있어 보이지만
+ *      확인된 바 없으니, 이 슬롯을 지우거나 정리하기 전에 토스에 문의할 것.
+ *
+ *   업로드한 번들을 실기기로 볼 때는 콘솔 "테스트하기" → QR 스캔을 씁니다.
+ *   (심사 전에도 가능. https://developers-apps-in-toss.toss.im/development/test/sandbox.md)
  *
  * dev host IP / port 는 본인 PC 환경에 맞게 두시면 됩니다.
  */
 import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
-  // 개발·배포 모두 이 값을 그대로 씁니다 (바꿀 일 없음)
+  // 업로드 대상 앱 이름. 배포용 그대로 두면 됩니다
   appName: 'kagongzido',
 
   web: {
