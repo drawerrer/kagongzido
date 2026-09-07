@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import LoadingBearImg from '../assets/interaction/Loading.png';
+import LoadingBearImg from '../assets/interaction/Loading.webp';
 
 // 지도/카페 데이터를 처음 불러오는 동안 보여주는 전체화면 로딩 오버레이.
 // visible이 false로 바뀌면 페이드아웃(400ms) 후 렌더 트리에서 완전히 제거됨
