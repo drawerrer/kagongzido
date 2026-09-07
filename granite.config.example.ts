@@ -39,7 +39,10 @@ export default defineConfig({
   brand: {
     displayName: '카공지도',
     primaryColor: '#252525',
-    icon: './src/assets/LOGO/logo.png',
+    // ⚠️ 로컬 파일 경로가 아니라 "이미지 주소(URL)"여야 함 — 콘솔에 등록한 아이콘과
+    //    동일한 이미지의 공개 URL을 넣을 것. 로컬 경로를 넣으면 빌드 매니페스트에
+    //    그 문자열이 그대로 박혀서 앱 로고가 안 보임 (2026-09 반려 원인).
+    icon: 'https://static.toss.im/appsintoss/28041/ea0a9c34-064b-4632-8e7c-a06f27955f91.png',
   },
 
   // 토스 공통 내비게이션 바
