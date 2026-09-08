@@ -157,3 +157,80 @@ export function trackMapMove(lat: number, lng: number, zoomLevel: number) {
   ait(params);
   ga('map_move', params);
 }
+
+// ── 카페 취향 월드컵 ──────────────────────────────────────────
+/** [마이] 탭의 '카페 취향 월드컵' CTA를 눌러 진입했을 때 */
+export function trackTasteWorldcupMyPageClick() {
+  ait({ log_name: 'taste_worldcup_mypage_click' });
+  ga('taste_worldcup_mypage_click');
+}
+
+/** 온보딩 화면에서 '시작하기'를 눌러 실제로 게임을 시작했을 때 */
+export function trackTasteWorldcupStart() {
+  ait({ log_name: 'taste_worldcup_start' });
+  ga('taste_worldcup_start');
+}
+
+/** 16강을 모두 마치고 결과 페이지에 도달했을 때(winner 확정 시점) */
+export function trackTasteWorldcupResultView(winnerId: string) {
+  const params = { log_name: 'taste_worldcup_result_view', winner_id: winnerId };
+  ait(params);
+  ga('taste_worldcup_result_view', params);
+}
+
+/** 게임을 시작했지만 결과 페이지에 도달하기 전에 이탈(뒤로가기/스와이프/탭 전환 등)했을 때 */
+export function trackTasteWorldcupAbandon(step: number) {
+  const params = { log_name: 'taste_worldcup_abandon', step };
+  ait(params);
+  ga('taste_worldcup_abandon', params);
+}
+
+// ── 카페 제보하기 — 진입 경로별 클릭/완료 ─────────────────────
+/** [홈] 탭 지도 화면의 '카페 제보하기' 플로팅 버튼을 눌렀을 때 */
+export function trackReportHomeFloatingClick() {
+  ait({ log_name: 'report_home_floating_click' });
+  ga('report_home_floating_click');
+}
+
+/** 홈 플로팅 버튼을 통해 진입한 제보를 실제로 제출 완료했을 때 */
+export function trackReportHomeFloatingSubmit() {
+  ait({ log_name: 'report_home_floating_submit' });
+  ga('report_home_floating_submit');
+}
+
+/** [마이] 탭의 '카페 제보하기' CTA 버튼을 눌렀을 때 */
+export function trackReportMyPageClick() {
+  ait({ log_name: 'report_mypage_click' });
+  ga('report_mypage_click');
+}
+
+/** 마이페이지에서 진입한 제보를 실제로 제출 완료했을 때 */
+export function trackReportMyPageSubmit() {
+  ait({ log_name: 'report_mypage_submit' });
+  ga('report_mypage_submit');
+}
+
+/** [검색] 페이지 배너를 눌렀을 때 */
+export function trackReportSearchBannerClick() {
+  ait({ log_name: 'report_search_banner_click' });
+  ga('report_search_banner_click');
+}
+
+/** 검색 배너를 통해 진입한 제보를 실제로 제출 완료했을 때 */
+export function trackReportSearchBannerSubmit() {
+  ait({ log_name: 'report_search_banner_submit' });
+  ga('report_search_banner_submit');
+}
+
+// ── 상세페이지 체류시간 (취향 매칭 라벨 유무 비교) ──────────────
+/**
+ * 상세페이지를 벗어날 때(뒤로가기/닫기/언마운트) 체류시간을 기록.
+ * matched: 이 카페가 사용자의 '내 취향과 일치' 라벨이 붙어 노출된 상세페이지였는지 여부.
+ * matched=true/false 두 그룹의 duration_ms 평균을 GA4에서 비교하면 라벨 유무에 따른
+ * 체류시간 차이를 분석할 수 있다.
+ */
+export function trackDetailDwellTime(cafeId: string, matched: boolean, durationMs: number) {
+  const params = { log_name: 'detail_dwell_time', cafe_id: cafeId, matched, duration_ms: Math.round(durationMs) };
+  ait(params);
+  ga('detail_dwell_time', params);
+}
