@@ -15,6 +15,7 @@ import {
 } from '../services/db';
 import { clearCachedUser } from '../utils/userCache';
 import { getTasteWorldcupWinner, matchesTasteWorldcupWinner } from '../utils/tasteWorldcup';
+import { trackTasteWorldcupMyPageClick, trackReportMyPageClick, trackReportMyPageSubmit } from '../services/analytics';
 import StoreCountBar from '../components/StoreCountBar';
 import EmptyState from '../components/EmptyState';
 import CafePlaceholder from '../components/CafePlaceholder';
@@ -1516,12 +1517,16 @@ export default function MyPage({
   }, [nickname]);
   // 제보 작성 진입 — 닉네임 없으면 입력 시트 먼저 띄움
   const handleOpenReportCafe = async () => {
+    trackReportMyPageClick();
     const ok = await requireNickname();
     if (!ok) return;
     changeSubPage('report-cafe');
   };
   // 카페 취향 월드컵 진입 — 온보딩/진행/결과 플로우 전체는 TasteWorldcup.tsx에서 지연 로드
-  const handleOpenTasteWorldcup = () => changeSubPage('taste-worldcup');
+  const handleOpenTasteWorldcup = () => {
+    trackTasteWorldcupMyPageClick();
+    changeSubPage('taste-worldcup');
+  };
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [showContactPopup, setShowContactPopup] = useState(false);
   const [copiedToast, setCopiedToast] = useState(false);
@@ -1941,8 +1946,12 @@ export default function MyPage({
           onClose={() => { if (onReportCafeExit) { onReportCafeExit('submitted'); return; } changeSubPage(null); }}
           onSubmitted={() => {
             setReportRefreshTrigger(t => t + 1);
-            // 홈으로 돌아가는 경우엔 App이 홈에서 토스트를 띄운다 (여기서 띄우면 화면이 바뀌며 사라짐)
-            if (!onReportCafeExit) setReportSubmitToast(true);
+            // 홈/검색에서 시작한 제보는 App(onReportCafeExit)이 진입 경로별로 완료를 기록한다 —
+            // 여기서는 마이페이지에서 직접 시작한 제보만 기록해 중복 집계를 막는다
+            if (!onReportCafeExit) {
+              trackReportMyPageSubmit();
+              setReportSubmitToast(true);
+            }
           }}
         />
       </div>

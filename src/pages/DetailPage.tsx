@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { openURL, partner, tdsEvent, fetchAlbumPhotos, openCamera } from '@apps-in-toss/web-framework';
-import { trackMapOpen, trackShareCafe, trackPhoneCopy } from '../services/analytics';
+import { trackMapOpen, trackShareCafe, trackPhoneCopy, trackDetailDwellTime } from '../services/analytics';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { ConfirmDialog, Toast } from '@toss/tds-mobile';
 import BottomSheet from '../components/BottomSheet';
@@ -1729,6 +1729,17 @@ export default function DetailPage({ cafeId, onBack, onClose, activeTab = 'home'
     noise: cafe.noise,
     vibeTagsRaw: cafe.vibeTagsRaw,
   });
+  // 체류시간 트래킹 — '내 취향과 일치' 라벨 유무(isTasteMatch)에 따른 체류시간 차이를
+  // GA4에서 비교하기 위함. cafeId가 바뀌거나(부모가 리마운트 없이 id만 교체하는 경우 포함)
+  // 이 페이지를 벗어날 때 그 시점까지의 체류시간을 한 번 기록한다.
+  const isTasteMatchRef = useRef(isTasteMatch);
+  isTasteMatchRef.current = isTasteMatch;
+  useEffect(() => {
+    const enteredAt = Date.now();
+    return () => {
+      trackDetailDwellTime(cafeId, isTasteMatchRef.current, Date.now() - enteredAt);
+    };
+  }, [cafeId]);
   // 매칭 인터랙션(플로팅)이 다 재생되고 사라졌는지 — true가 되면 오버레이는 걷히고, 대신
   // "카페 정보" 타이틀 옆 배지가 나타남. 카페가 바뀌면 다시 처음부터 재생되도록 초기화
   const [tasteInteractionDone, setTasteInteractionDone] = useState(false);

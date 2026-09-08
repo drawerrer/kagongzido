@@ -2,7 +2,11 @@ import { useState, useRef, useEffect, Component } from 'react';
 import { getAnonymousKey, partner } from '@apps-in-toss/web-framework';
 import { Toast } from '@toss/tds-mobile';
 import { getOrCreateUser, getOrCreateUserWithAuth, userExists, fetchLibraries, fetchSharedSpaces } from './services/db';
-import { trackUtmEntry, trackPageView } from './services/analytics';
+import {
+  trackUtmEntry, trackPageView,
+  trackReportHomeFloatingClick, trackReportHomeFloatingSubmit,
+  trackReportSearchBannerClick, trackReportSearchBannerSubmit,
+} from './services/analytics';
 import { supabase } from './services/supabase';
 import type { ReactNode, ErrorInfo } from 'react';
 
@@ -335,6 +339,10 @@ function AppInner() {
   // 카페 제보를 홈/검색에서 열었는지 — 제보 화면은 마이 탭 소속이라 뒤로가기가 마이페이지로
   // 가버리는데, 홈에서 들어왔으면 홈으로 되돌려야 해서 진입 출처를 기억해 둔다
   const [reportCafeFromHome, setReportCafeFromHome] = useState(false);
+  // reportCafeFromHome은 '마이 탭 밖에서 왔는지'만 구분함 — 홈 플로팅 버튼과 검색 배너
+  // 둘 다 완료 시 GA4 이벤트가 달라야 해서(report_home_floating_submit vs
+  // report_search_banner_submit) 트래킹 전용으로 진입 출처를 별도로 기억해 둔다
+  const [reportCafeSource, setReportCafeSource] = useState<'home' | 'search' | null>(null);
   // 홈에서 시작한 제보가 완료됐을 때 홈에서 띄우는 완료 토스트
   const [homeReportToast, setHomeReportToast] = useState(false);
   const [guidebookView, setGuidebookView] = useState<string | null>(null);
@@ -475,7 +483,9 @@ function AppInner() {
             onPlaceDetailOpen={(place) => { setDetailPlace(place); setDetailCafeId(place.id); }}
             onGoToFavorites={() => setActiveTab('collection')}
             onReportCafe={() => {
+              trackReportHomeFloatingClick();
               setReportCafeFromHome(true);
+              setReportCafeSource('home');
               setActiveTab('mypage');
               setMyPageSubPage('report-cafe');
             }}
@@ -530,14 +540,19 @@ function AppInner() {
               initialSubPage={myPageSubPage as any}
               onSubPageChange={(page) => {
                 // 제보 화면을 벗어나면(제출 완료 포함) 진입 출처 기억을 비운다
-                if (page !== 'report-cafe') setReportCafeFromHome(false);
+                if (page !== 'report-cafe') { setReportCafeFromHome(false); setReportCafeSource(null); }
                 setMyPageSubPage(page);
               }}
               onRegisterBack={(fn) => { myPageBackRef.current = fn; }}
               subViewRef={myPageSubViewRef}
               onGoHome={() => setActiveTab('home')}
               onReportCafeExit={reportCafeFromHome ? (result) => {
+                if (result === 'submitted') {
+                  if (reportCafeSource === 'search') trackReportSearchBannerSubmit();
+                  else trackReportHomeFloatingSubmit();
+                }
                 setReportCafeFromHome(false);
+                setReportCafeSource(null);
                 setMyPageSubPage(null);
                 setActiveTab('home');
                 if (result === 'submitted') setHomeReportToast(true);
@@ -711,7 +726,9 @@ function AppInner() {
             onDetailOpen={(id) => { setDetailCafeId(id); }}
             onPlaceDetailOpen={(place) => { setDetailPlace(place); setDetailCafeId(place.id); }}
             onReportCafe={() => {
+              trackReportSearchBannerClick();
               setReportCafeFromHome(true);
+              setReportCafeSource('search');
               setShowSearch(false);
               setActiveTab('mypage');
               setMyPageSubPage('report-cafe');

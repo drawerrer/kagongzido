@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useBackEvent } from '../hooks/useBackEvent';
 import { useFavorites } from '../context/FavoritesContext';
 import { saveTasteWorldcupWinner, getTasteWorldcupWinner, getResultFrameBg } from '../utils/tasteWorldcup';
+import { trackTasteWorldcupStart, trackTasteWorldcupResultView, trackTasteWorldcupAbandon } from '../services/analytics';
 import FocusBottomCTA from '../components/FocusBottomCTA';
 import RoundBadge from '../components/RoundBadge';
 import WorldcupProgressIndicator from '../components/WorldcupProgressIndicator';
@@ -329,6 +330,18 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
   const selectedSide = selectionHistory[step] ?? null;
   const match = getMatchPlayers(step, bracket, selectionHistory);
 
+  // 이탈 트래킹 — 결과 화면에 도달하지 못한 채 이 화면이 언마운트되면(뒤로가기로 온보딩
+  // 복귀 포함, 엣지스와이프/탭 전환으로 인한 강제 종료 포함) 진행 중이던 step에서 이탈한 것으로 기록.
+  // finishedRef는 handleFinish에서 true로 세팅 — cleanup 시점엔 이미 결과 화면으로 넘어간 뒤라 이탈이 아님.
+  const finishedRef = useRef(false);
+  const stepRef = useRef(step);
+  stepRef.current = step;
+  useEffect(() => {
+    return () => {
+      if (!finishedRef.current) trackTasteWorldcupAbandon(stepRef.current);
+    };
+  }, []);
+
   // 이전으로 — 매치만 되돌리면 selectedSide는 그 매치의 기록에서 자동으로 복원됨
   const handleUndo = () => setStep(s => Math.max(1, s - 1));
 
@@ -371,6 +384,7 @@ function TasteWorldcupGamePage({ onBack, onFinish, enabled = true }: { onBack: (
   const handleFinish = () => {
     if (!selectedSide || !match) return;
     const winner = selectedSide === 'left' ? match[0] : match[1];
+    finishedRef.current = true;
     onFinish(winner);
   };
 
@@ -1148,7 +1162,7 @@ export default function TasteWorldcupFlow({ onExit, onGoHome, initialResult = fa
     return (
       <TasteWorldcupGamePage
         onBack={() => setPhase('onboarding')}
-        onFinish={(w) => { setWinner(w); saveTasteWorldcupWinner(w); setPhase('result'); }}
+        onFinish={(w) => { setWinner(w); saveTasteWorldcupWinner(w); trackTasteWorldcupResultView(w.id); setPhase('result'); }}
         enabled={enabled}
       />
     );
@@ -1175,7 +1189,7 @@ export default function TasteWorldcupFlow({ onExit, onGoHome, initialResult = fa
   return (
     <TasteWorldcupPage
       onBack={onExit}
-      onStart={() => setPhase('game')}
+      onStart={() => { trackTasteWorldcupStart(); setPhase('game'); }}
       enabled={enabled}
     />
   );
