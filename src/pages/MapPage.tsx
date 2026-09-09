@@ -295,6 +295,11 @@ interface MapPageProps {
   onFilterOpenChange?: (open: boolean) => void;
   /** 취향 칩을 눌렀는데 월드컵 결과가 없을 때 — 월드컵으로 보냄 */
   onOpenTasteWorldcup?: () => void;
+  /**
+   * 월드컵 결과 CTA로 홈에 들어올 때 취향 칩을 켠 상태로 만들기 위한 신호.
+   * 값이 바뀔 때마다 반응하므로 같은 동작을 여러 번 해도 매번 적용된다.
+   */
+  applyTasteFilterSignal?: number;
 }
 
 // 로딩 화면 표시까지의 유예 시간 — 이 안에 mapLoaded가 끝나면 로딩 화면은 아예 화면에
@@ -310,7 +315,7 @@ const MAP_LOADING_SCREEN_DELAY_MS = 300;
 // 강제로 걷히지 않고 그대로 유지되어야 함(실제 장애 상황을 숨기지 않기 위함)
 const MAP_LOADING_SCREEN_DEV_MAX_MS = 3000;
 
-export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, onReportCafe, initialState, onStateChange, onFocusModeChange, hasOverlay = false, onNearbySheetOpenChange, onFilterOpenChange, onOpenTasteWorldcup }: MapPageProps) {
+export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, onReportCafe, initialState, onStateChange, onFocusModeChange, hasOverlay = false, onNearbySheetOpenChange, onFilterOpenChange, onOpenTasteWorldcup, applyTasteFilterSignal }: MapPageProps) {
   const touchStartYRef = useRef<number>(0);
   // 드래그 도중 scrollTop===0 에 도달한 적이 있는지 — expanded 시 사용자가 위에서 아래로
   // 끝까지 끌어내려 collapse 의도를 보일 때 잡기 위함
@@ -367,6 +372,15 @@ const [filterOpen, setFilterOpen] = useState(false);
   const [tasteWinner, setTasteWinner] = useState(() => getTasteWorldcupWinner());
   // 월드컵을 마치고 돌아오면 최신 결과를 다시 읽음
   useEffect(() => { if (!hasOverlay) setTasteWinner(getTasteWorldcupWinner()); }, [hasOverlay]);
+  // 결과 CTA로 홈에 들어온 경우 — 방금 저장된 결과를 읽어 칩을 켜둔다
+  useEffect(() => {
+    if (!applyTasteFilterSignal) return;
+    const w = getTasteWorldcupWinner();
+    if (!w) return;
+    setTasteWinner(w);
+    setTasteOnly(true);
+    setActiveChip(null);   // 칩 단일 선택 유지
+  }, [applyTasteFilterSignal]);
   // 칩 줄 끝단 페이드 — 더 스크롤할 수 있는 쪽에만 그라데이션을 붙여 잘린 걸 자연스럽게 보이게 함
   const chipRowRef = useRef<HTMLDivElement>(null);
   const [chipFade, setChipFade] = useState({ left: false, right: false });

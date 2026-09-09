@@ -1442,6 +1442,7 @@ export default function MyPage({
   onRegisterBack,
   subViewRef,
   onGoHome,
+  onGoHomeWithTaste,
   onReportCafeExit,
   hasDetailOverlay = false,
 }: {
@@ -1454,6 +1455,11 @@ export default function MyPage({
   subViewRef?: RefObject<HTMLDivElement> | null;
   /** 빈 상태 등에서 홈 탭으로 이동 */
   onGoHome?: () => void;
+  /**
+   * 월드컵 결과 CTA 전용 — 홈으로 이동하면서 취향 칩까지 켜야 해서
+   * 일반 onGoHome 과 분리했다. 없으면 onGoHome 으로 폴백.
+   */
+  onGoHomeWithTaste?: () => void;
   /**
    * 홈/검색에서 진입한 카페 제보를 빠져나올 때의 처리.
    * 제보 화면은 마이 탭 소속이라 기본 동작이 마이페이지 복귀인데,
@@ -1898,7 +1904,7 @@ export default function MyPage({
           <TasteWorldcup
             initialResult
             onExit={() => changeSubPage(null)}
-            onGoHome={() => { changeSubPage(null); onGoHome?.(); }}
+            onGoHome={() => { changeSubPage(null); (onGoHomeWithTaste ?? onGoHome)?.(); }}
             enabled={!hasDetailOverlay}
           />
         </Suspense>
@@ -1967,7 +1973,7 @@ export default function MyPage({
           <TasteWorldcup
             onExit={() => changeSubPage(null)}
             // 결과 화면 CTA — 월드컵 서브페이지를 닫고 홈 탭으로 보냄
-            onGoHome={() => { changeSubPage(null); onGoHome?.(); }}
+            onGoHome={() => { changeSubPage(null); (onGoHomeWithTaste ?? onGoHome)?.(); }}
             enabled={!hasDetailOverlay}
           />
         </Suspense>

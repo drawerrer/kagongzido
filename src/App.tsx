@@ -345,6 +345,8 @@ function AppInner() {
   const [reportCafeSource, setReportCafeSource] = useState<'home' | 'search' | null>(null);
   // 홈에서 시작한 제보가 완료됐을 때 홈에서 띄우는 완료 토스트
   const [homeReportToast, setHomeReportToast] = useState(false);
+  // 월드컵 결과 CTA — 홈으로 보내면서 취향 칩을 켜기 위한 신호(값이 바뀔 때마다 반응)
+  const [tasteFilterSignal, setTasteFilterSignal] = useState(0);
   const [guidebookView, setGuidebookView] = useState<string | null>(null);
   const [guidebookStoreIndex, setGuidebookStoreIndex] = useState(0);
   const [detailScrollToReview, setDetailScrollToReview] = useState(false);
@@ -495,6 +497,7 @@ function AppInner() {
             onFilterOpenChange={setIsMapFilterOpen}
             // 홈 취향 칩 — 월드컵 결과가 없을 때 월드컵으로 보냄
             onOpenTasteWorldcup={() => { setActiveTab('mypage'); setMyPageSubPage('taste-worldcup'); }}
+            applyTasteFilterSignal={tasteFilterSignal}
           />
         )}
         {activeTab === 'guidebook' && (
@@ -548,6 +551,8 @@ function AppInner() {
               onRegisterBack={(fn) => { myPageBackRef.current = fn; }}
               subViewRef={myPageSubViewRef}
               onGoHome={() => setActiveTab('home')}
+              // 월드컵 결과 CTA — 홈으로 이동하면서 취향 칩을 켠다
+              onGoHomeWithTaste={() => { setActiveTab('home'); setTasteFilterSignal(n => n + 1); }}
               onReportCafeExit={reportCafeFromHome ? (result) => {
                 if (result === 'submitted') {
                   if (reportCafeSource === 'search') trackReportSearchBannerSubmit();
