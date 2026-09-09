@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { getCurrentLocation, Accuracy, partner, tdsEvent } from '@apps-in-toss/web-framework';
 import { useBackEvent } from '../hooks/useBackEvent';
 import FilterModal, { FilterState, DEFAULT_FILTERS } from '../components/FilterModal';
+import { getTasteWorldcupWinner, matchesTasteWorldcupWinner } from '../utils/tasteWorldcup';
 import { expandHours, getHoursStatus } from '../utils/hours';
 import { trackFilterOpen, trackFilterApply, trackChipTap, trackCafeDetailView, trackViewModeChange, trackNearbyLaptopSheetShow, trackNearbyLaptopSheetConfirm, trackMapMove } from '../services/analytics';
 import LocationPermissionSheet, { LocationSheetType } from '../components/LocationPermissionSheet';
@@ -66,10 +67,25 @@ interface Cafe {
   outletStatus?: string;
   /** 좌석 규모 — '소형' | '중형' | '대형' ("노트북 펴기 좋은 카페" 추천 산정용) */
   seatStatus?: string;
+  /** 소음 상태 — '조용' | '적당' | '시끄러움' (취향 필터 매칭용) */
+  noiseStatus?: string;
+  /** vibe_tags 원본 (정규화 전) — 취향 필터 매칭용 */
+  vibeTagsRaw?: string[] | null;
 }
 
 
 const CATEGORY_CHIPS = ['전체', '카페', '도서관', '공유공간'];
+
+// 칩 줄 끝단 페이드 마스크 — 더 스크롤할 수 있는 쪽만 투명하게 깎아 잘린 지점을 부드럽게 만든다.
+// 배경색을 겹쳐 덮는 대신 mask 를 써서 시트 배경이 무엇이든 자연스럽게 이어진다.
+const CHIP_FADE_WIDTH = 24;
+function chipFadeMask({ left, right }: { left: boolean; right: boolean }): string | undefined {
+  if (!left && !right) return undefined;
+  const stops = ['#000 0', '#000 100%'];
+  if (left)  stops.splice(0, 1, 'transparent 0', `#000 ${CHIP_FADE_WIDTH}px`);
+  if (right) stops.splice(stops.length - 1, 1, `#000 calc(100% - ${CHIP_FADE_WIDTH}px)`, 'transparent 100%');
+  return `linear-gradient(to right, ${stops.join(', ')})`;
+}
 
 // amenity key → cafe option 라벨 매핑 (storeToOptions와 동기화)
 const AMENITY_TO_CAFE_OPTION: Record<string, string> = {
@@ -277,6 +293,8 @@ interface MapPageProps {
   onNearbySheetOpenChange?: (open: boolean) => void;
   /** 필터 모달 열림 상태 — App에서 탭바를 숨기는 데 씀(탭바가 필터 CTA를 가림) */
   onFilterOpenChange?: (open: boolean) => void;
+  /** 취향 칩을 눌렀는데 월드컵 결과가 없을 때 — 월드컵으로 보냄 */
+  onOpenTasteWorldcup?: () => void;
 }
 
 // 로딩 화면 표시까지의 유예 시간 — 이 안에 mapLoaded가 끝나면 로딩 화면은 아예 화면에
@@ -292,7 +310,7 @@ const MAP_LOADING_SCREEN_DELAY_MS = 300;
 // 강제로 걷히지 않고 그대로 유지되어야 함(실제 장애 상황을 숨기지 않기 위함)
 const MAP_LOADING_SCREEN_DEV_MAX_MS = 3000;
 
-export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, onReportCafe, initialState, onStateChange, onFocusModeChange, hasOverlay = false, onNearbySheetOpenChange, onFilterOpenChange }: MapPageProps) {
+export default function MapPage({ onSearchOpen, onDetailOpen, onPlaceDetailOpen, onGoToFavorites, onReportCafe, initialState, onStateChange, onFocusModeChange, hasOverlay = false, onNearbySheetOpenChange, onFilterOpenChange, onOpenTasteWorldcup }: MapPageProps) {
   const touchStartYRef = useRef<number>(0);
   // 드래그 도중 scrollTop===0 에 도달한 적이 있는지 — expanded 시 사용자가 위에서 아래로
   // 끝까지 끌어내려 collapse 의도를 보일 때 잡기 위함
@@ -343,6 +361,27 @@ const [filterOpen, setFilterOpen] = useState(false);
   const [locSheet, setLocSheet] = useState<LocationSheetType | null>(null);
   const [favoriteSnackbar, setFavoriteSnackbar] = useState<'added' | 'removed' | null>(null);
   const [removedCafe, setRemovedCafe] = useState<HomeCafe | null>(null);
+  // 취향 칩 — 월드컵 1순위 취향과 맞는 카페만 보기 (boolean 토글).
+  // 결과가 없으면 칩을 눌렀을 때 필터가 아니라 월드컵으로 보낸다
+  const [tasteOnly, setTasteOnly] = useState(false);
+  const [tasteWinner, setTasteWinner] = useState(() => getTasteWorldcupWinner());
+  // 월드컵을 마치고 돌아오면 최신 결과를 다시 읽음
+  useEffect(() => { if (!hasOverlay) setTasteWinner(getTasteWorldcupWinner()); }, [hasOverlay]);
+  // 칩 줄 끝단 페이드 — 더 스크롤할 수 있는 쪽에만 그라데이션을 붙여 잘린 걸 자연스럽게 보이게 함
+  const chipRowRef = useRef<HTMLDivElement>(null);
+  const [chipFade, setChipFade] = useState({ left: false, right: false });
+  const updateChipFade = () => {
+    const el = chipRowRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setChipFade({ left: el.scrollLeft > 1, right: el.scrollLeft < max - 1 });
+  };
+  useEffect(() => {
+    updateChipFade();
+    window.addEventListener('resize', updateChipFade);
+    return () => window.removeEventListener('resize', updateChipFade);
+  }, [tasteWinner, panelState]);
+
   const [nearbySheetOpen, setNearbySheetOpen] = useState(false);
   const [nearbySheetCafes, setNearbySheetCafes] = useState<Cafe[]>([]);
 
@@ -461,6 +500,11 @@ const [filterOpen, setFilterOpen] = useState(false);
         c.lat >= mapBounds.swLat && c.lat <= mapBounds.neLat &&
         c.lng >= mapBounds.swLng && c.lng <= mapBounds.neLng
       );
+    }
+    if (tasteOnly && tasteWinner) {
+      filtered = filtered.filter(c => matchesTasteWorldcupWinner(tasteWinner.id, {
+        seats: c.seatStatus, outlets: c.outletStatus, noise: c.noiseStatus, vibeTagsRaw: c.vibeTagsRaw,
+      }));
     }
     if (appliedFilters.moods.length > 0) filtered = filtered.filter(c => appliedFilters.moods.some(m => c.moods.includes(m)));
     if (appliedFilters.priceMax < DEFAULT_FILTERS.priceMax) filtered = filtered.filter(c => c.priceRange <= appliedFilters.priceMax);
@@ -902,6 +946,8 @@ const [filterOpen, setFilterOpen] = useState(false);
         badges: sortVibeTagsByLightFirst(splitVibeTags(store.vibe_tags)),
         outletStatus: store.outlet_status || undefined,
         seatStatus: store.seat_status || undefined,
+        noiseStatus: store.noise_status || undefined,
+        vibeTagsRaw: store.vibe_tags,
       }));
       mapped.sort((a, b) => a.distance - b.distance);
       setCafes(mapped);
@@ -1214,14 +1260,40 @@ const [filterOpen, setFilterOpen] = useState(false);
               padding: panelState === 'expanded' ? '20px 16px 8px' : '8px 16px',
               flexShrink: 0,
             }}>
-              <div style={{ display: 'flex', gap: 8 }}>
+              {/* 칩 줄 — 취향 칩이 늘어 375px 에서 필터 버튼과 겹치므로 가로 스크롤.
+                  필터 버튼은 flexShrink:0 으로 자리를 지키고 칩만 밀린다 */}
+              <div
+                ref={chipRowRef}
+                onScroll={updateChipFade}
+                style={{
+                  display: 'flex', gap: 8, overflowX: 'auto', minWidth: 0,
+                  scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
+                  // 배경색에 의존하지 않도록 mask 로 끝단을 투명하게 깎음
+                  WebkitMaskImage: chipFadeMask(chipFade),
+                  maskImage: chipFadeMask(chipFade),
+                }}
+              >
                 {CATEGORY_CHIPS.map(chip => (
                   <Chip key={chip} label={chip} isActive={activeChip === chip} onClick={() => {
-                    if (activeChip === chip) return;
+                    if (activeChip === chip && !tasteOnly) return;
+                    setTasteOnly(false);   // 칩은 하나만 선택된다 — 취향 해제
                     trackChipTap(chip, true);
                     setActiveChip(chip);
                   }} />
                 ))}
+                {/* 취향 칩 — 카테고리와 함께 단일 선택. 켜면 카테고리가 풀려 카페만 남는다.
+                    월드컵 결과가 없으면 필터 대신 월드컵으로 보낸다 */}
+                <Chip
+                  label="취향"
+                  isActive={tasteOnly}
+                  onClick={() => {
+                    if (!tasteWinner) { onOpenTasteWorldcup?.(); return; }
+                    const next = !tasteOnly;
+                    setTasteOnly(next);
+                    // 켜면 카테고리 해제(activeChip=null 이면 카페만 표시), 끄면 기본값 전체로 복귀
+                    setActiveChip(next ? null : '전체');
+                  }}
+                />
               </div>
               <button
                 onClick={() => { setFilterOpenKey(k => k + 1); setFilterOpen(true); trackFilterOpen(); }}

@@ -493,6 +493,8 @@ function AppInner() {
             hasOverlay={!!detailCafeId || showSearch}
             onNearbySheetOpenChange={setIsNearbySheetOpen}
             onFilterOpenChange={setIsMapFilterOpen}
+            // 홈 취향 칩 — 월드컵 결과가 없을 때 월드컵으로 보냄
+            onOpenTasteWorldcup={() => { setActiveTab('mypage'); setMyPageSubPage('taste-worldcup'); }}
           />
         )}
         {activeTab === 'guidebook' && (
