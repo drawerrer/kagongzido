@@ -1127,6 +1127,9 @@ function TasteWorldcupResultPage({
       <FocusBottomCTA.SingleWithUndo
         label={confirmLabel}
         onClick={onConfirm}
+        // 결과 화면에 들어온 직후 CTA로 시선을 끌어준다.
+        // 마이페이지 '카페 취향 월드컵' 버튼과 같은 펄스 — 2회만 재생(반복 없음)
+        animation="worldcup-cta-pulse 0.55s ease-in-out 2"
         undoLabel={onPrev ? (prevLabel ?? '← 이전으로') : undefined}
         onUndo={onPrev}
       />

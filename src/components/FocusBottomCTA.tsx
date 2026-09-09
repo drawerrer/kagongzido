@@ -135,6 +135,12 @@ interface SingleWithUndoProps {
   label: string;
   onClick: () => void;
   disabled?: boolean;
+  /**
+   * CSS animation 단축 속성. 주의를 끌어야 하는 CTA 에만 쓴다.
+   * 반복(infinite)은 앱인토스 심사에서 '과도한 애니메이션'으로 걸리므로 회수를 명시할 것.
+   * 예: 'worldcup-cta-pulse 0.55s ease-in-out 2'
+   */
+  animation?: string;
   /** 생략하면 보조 텍스트 링크 줄 없이 버튼만 렌더링 (예: 월드컵 결과 화면) */
   undoLabel?: string;
   onUndo?: () => void;
@@ -143,7 +149,7 @@ interface SingleWithUndoProps {
 
 function SingleWithUndo({
   label, onClick, disabled = false,
-  undoLabel, onUndo, undoDisabled = false,
+  undoLabel, onUndo, undoDisabled = false, animation,
 }: SingleWithUndoProps) {
   return (
     <div style={{
@@ -181,6 +187,7 @@ function SingleWithUndo({
             background: disabled ? COLOR_PRIMARY_DISABLED_BG : COLOR_PRIMARY,
             color: disabled ? COLOR_PRIMARY_DISABLED_TEXT : COLOR_TEXT_ON_PRIMARY,
             cursor: disabled ? 'not-allowed' : 'pointer',
+            animation,
           }}
         >
           {label}
